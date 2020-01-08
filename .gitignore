@@ -1,0 +1,119 @@
+venv/*
+env
+env3
+.idea/*
+
+# R specific #
+##############
+.Rhistory
+.Rproj.user/
+..Rcheck/
+.Rds
+.RData
+shiny.Rproj
+.rds
+.rda
+.rdata
+.Rapp.history
+
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.o.d
+
+# Packages #
+############
+# it's better to unpack these files and commit the raw source
+# git has its own built in compression methods
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Logs and databases #
+######################
+*.csv
+*.log
+*.sqlite
+*.dta
+*.dat
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+.dropbox
+
+# Temp files #
+##############
+*~
+
+# Emacs #
+#########
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# netbeans #
+############
+*_netbeans
+
+.arcconfig
+.ipynb_checkpoints
+.vscode
+__pycache__
+build/
+dist/
+uTS.egg-info/
+uTS/stan_model/
+env_docs/
+docs/_build/
+*.pyc
+
+.*
+!.arcconfig
+!.gitignore
+!.gitmodules
+!.jenkins/
+!.scaffold.yaml
+
+# Java
+*.class
+
+# Intellij
+*.iml
+*.iws
+
+# Gradle
+build/
+classes/
+
+log/
+tmp/
+/out/
+ins.xml
+examples/lgt_stan_model_comparing_with_R.pkl
+examples/slgt_stan_model_comparing_with_R.pkl
+examples/backtest_results/
+examples/orbit_benchmark_results/
+
