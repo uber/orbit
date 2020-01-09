@@ -49,6 +49,7 @@ def test_backtest_run(iclaims_training_data):
     assert bt.bt_res.shape == expected_shape
     assert list(bt.bt_res.columns) == expected_columns
 
+
 def test_backtest_invalid_scheme(iclaims_training_data):
     with pytest.raises(BacktestException):
         lgt = LGT(

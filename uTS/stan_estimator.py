@@ -17,8 +17,7 @@ from uTS.utils.constants import (
     StanInputMapper
 )
 
-from uTS.utils.vb_extract import vb_extract
-from uTS.utils.utils import is_ordered_datetime
+from uTS.utils.utils import vb_extract, is_ordered_datetime
 
 
 class StanEstimator(object):

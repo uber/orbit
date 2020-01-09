@@ -1,7 +1,7 @@
 from enum import Enum
 import os
 
-from uTS.utils.utils_base import get_parent_path
+from uTS.utils.utils import get_parent_path
 
 
 class StanInputMapper(Enum):
@@ -147,16 +147,16 @@ class PlotLabels(Enum):
     ACTUAL_RESPONSE = 'actual_response'
 
 
-class StanModelKeys(Enum):
-    """
-    All of the keys in the trained stan model from uTS. For example, for LGT/SLGT,
-    the model is the output of SLGT.fit() and input of SLGTModel.
-    """
-    STAN_INPUTS = "stan_inputs"
-    MODELS = "models"
-    REGRESSOR_COLUMNS = "regressor_columns"
-    RESPONSE_COLUMN = "response_column"
-    DATE_INFO = "date_info"
+# class StanModelKeys(Enum):
+#     """
+#     All of the keys in the trained stan model from uTS. For example, for LGT/SLGT,
+#     the model is the output of SLGT.fit() and input of SLGTModel.
+#     """
+#     STAN_INPUTS = "stan_inputs"
+#     MODELS = "models"
+#     REGRESSOR_COLUMNS = "regressor_columns"
+#     RESPONSE_COLUMN = "response_column"
+#     DATE_INFO = "date_info"
 
 
 class DateInfo(Enum):
@@ -182,6 +182,7 @@ class BacktestMetaKeys(Enum):
     TEST_IDX = 'test_idx'
     FORECAST_DATES = 'forecast_dates'
 
+
 class BacktestFitColumnNames(Enum):
     """ column names for the data frame of back-test fitting result
     """
@@ -191,6 +192,7 @@ class BacktestFitColumnNames(Enum):
     ACTUAL = 'actual'
     PRED = 'pred'
     PRED_HORIZON = 'pred_horizon'
+
 
 class BacktestAnalyzeKeys(Enum):
     """ hash table keys for the dictionary of back-test aggregation analysis result
