@@ -1,4 +1,4 @@
-from orbit.stan_estimator import StanEstimator
+from orbit.estimator import Estimator
 from orbit.utils.constants import (
     LocalTrendStanSamplingParameters,
     SeasonalityStanSamplingParameters,
@@ -22,7 +22,7 @@ from scipy.stats import nct
 import math as math
 
 
-class DLT(StanEstimator):
+class DLT(Estimator):
     """Implementation of Damped-Local-Trend (LGT) model with seasonality.
 
 
