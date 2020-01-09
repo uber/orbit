@@ -1,6 +1,6 @@
 import mock
 
-from orbit.stan_estimator import StanEstimator
+from orbit.estimator import Estimator
 
 
 def test_prediction_flow():

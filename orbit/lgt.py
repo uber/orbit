@@ -1,4 +1,4 @@
-from orbit.stan_estimator import StanEstimator
+from orbit.estimator import Estimator
 from orbit.utils.constants import (
     LocalTrendStanSamplingParameters,
     GlobalTrendStanSamplingParameters,
@@ -24,7 +24,7 @@ import torch
 from copy import deepcopy
 
 
-class LGT(StanEstimator):
+class LGT(Estimator):
     """Implementation of Local-Global-Trend (LGT) model with seasonality.
 
 
@@ -160,7 +160,8 @@ class LGT(StanEstimator):
             local_trend_coef_min=0, local_trend_coef_max=1,
             level_smoothing_min=0, level_smoothing_max=1,
             slope_smoothing_min=0, slope_smoothing_max=1,
-            regression_coef_max=1.0, fix_regression_coef_sd=1, regressor_sigma_sd=1.0, **kwargs
+            regression_coef_max=1.0, fix_regression_coef_sd=1, regressor_sigma_sd=1.0,
+            **kwargs
     ):
 
         # get all init args and values and set

@@ -10,7 +10,7 @@ from orbit.models import get_compiled_stan_model
 from orbit.exceptions import (
     IllegalArgument
 )
-
+from orbit.pyro.wrapper import pyro_map, pyro_svi
 from orbit.utils.constants import (
     PredictMethod,
     SampleMethod,
@@ -20,7 +20,7 @@ from orbit.utils.constants import (
 from orbit.utils.utils import vb_extract, is_ordered_datetime
 
 
-class StanEstimator(object):
+class Estimator(object):
     """The abstract base mix-in class for stan Bayesian time series models.
 
     This module contains the implementation for the common interfaces and methods
@@ -97,7 +97,7 @@ class StanEstimator(object):
             # vi additional parameters
             max_iter=10000, grad_samples=1, elbo_samples=100, adapt_engaged=True,
             tol_rel_obj=0.01, eval_elbo=100, adapt_iter=50,
-            verbose=False, **kwargs
+            inference_engine='stan', verbose=False, **kwargs
     ):
 
         # TODO: mutable defaults are dangerous. Use sentinel value
@@ -285,53 +285,83 @@ class StanEstimator(object):
         # stan model parameters
         self._set_model_param_names()
 
-        compiled_stan_file = get_compiled_stan_model(self.stan_model_name)
+        if self.inference_engine == 'stan':
 
-        if self.predict_method == PredictMethod.MAP.value:
-            stan_extract = compiled_stan_file.optimizing(
-                data=self.stan_inputs,
-                init=self.stan_init,
-                seed=self.seed,
-                algorithm=self.algorithm
-            )
-            self._set_map_posterior(stan_extract=stan_extract)
-        elif self.sample_method == SampleMethod.VARIATIONAL_INFERENCE.value:
-            stan_extract = vb_extract(compiled_stan_file.vb(
-                data=self.stan_inputs,
-                pars=self.model_param_names,
-                iter=self.max_iter,
-                output_samples=self.num_sample,
-                init=self.stan_init,
-                seed=self.seed,
-                algorithm=self.algorithm,
-                grad_samples=self.grad_samples,
-                elbo_samples=self.elbo_samples,
-                adapt_engaged=self.adapt_engaged,
-                tol_rel_obj=self.tol_rel_obj,
-                eval_elbo=self.eval_elbo,
-                adapt_iter=self.adapt_iter
-            ))
-            # set posterior samples instance var
-            self._set_aggregate_posteriors(stan_extract=stan_extract)
-        elif self.sample_method == SampleMethod.MARKOV_CHAIN_MONTE_CARLO.value:
-            stan_extract = compiled_stan_file.sampling(
-                data=self.stan_inputs,
-                pars=self.model_param_names,
-                iter=self.num_iter_per_chain,
-                warmup=self.num_warmup_per_chain,
-                chains=self.chains,
-                n_jobs=self.cores,
-                init=self.stan_init,
-                seed=self.seed,
-                algorithm=self.algorithm,
-                control=self.stan_control
-            ).extract(permuted=True)
-            # set posterior samples instance var
-            self._set_aggregate_posteriors(stan_extract=stan_extract)
+            compiled_stan_file = get_compiled_stan_model(self.stan_model_name)
+
+            if self.predict_method == PredictMethod.MAP.value:
+                stan_extract = compiled_stan_file.optimizing(
+                    data=self.stan_inputs,
+                    init=self.stan_init,
+                    seed=self.seed,
+                    algorithm=self.algorithm
+                )
+                self._set_map_posterior(stan_extract=stan_extract)
+            elif self.sample_method == SampleMethod.VARIATIONAL_INFERENCE.value:
+                stan_extract = vb_extract(compiled_stan_file.vb(
+                    data=self.stan_inputs,
+                    pars=self.model_param_names,
+                    iter=self.max_iter,
+                    output_samples=self.num_sample,
+                    init=self.stan_init,
+                    seed=self.seed,
+                    algorithm=self.algorithm,
+                    grad_samples=self.grad_samples,
+                    elbo_samples=self.elbo_samples,
+                    adapt_engaged=self.adapt_engaged,
+                    tol_rel_obj=self.tol_rel_obj,
+                    eval_elbo=self.eval_elbo,
+                    adapt_iter=self.adapt_iter
+                ))
+                # set posterior samples instance var
+                self._set_aggregate_posteriors(stan_extract=stan_extract)
+            elif self.sample_method == SampleMethod.MARKOV_CHAIN_MONTE_CARLO.value:
+                stan_extract = compiled_stan_file.sampling(
+                    data=self.stan_inputs,
+                    pars=self.model_param_names,
+                    iter=self.num_iter_per_chain,
+                    warmup=self.num_warmup_per_chain,
+                    chains=self.chains,
+                    n_jobs=self.cores,
+                    init=self.stan_init,
+                    seed=self.seed,
+                    algorithm=self.algorithm,
+                    control=self.stan_control
+                ).extract(permuted=True)
+                # set posterior samples instance var
+                self._set_aggregate_posteriors(stan_extract=stan_extract)
+            else:
+                raise NotImplementedError('Invalid sampling/predict method supplied.')
+
+            self.posterior_samples = stan_extract
+
+        elif self.inference_engine == 'pyro':
+            if self.predict_method == 'map':
+                pyro_extract = pyro_map(
+                    model_name="orbit.pyro.lgt.LGTModel",
+                    data=self.stan_inputs,
+                    seed=self.seed,
+                )
+                self._set_map_posterior(stan_extract=pyro_extract)
+
+            elif self.predict_method in ['svi', 'mean', 'median']:
+                pyro_extract = pyro_svi(
+                    model_name="orbit.pyro.lgt.LGTModel",
+                    data=self.stan_inputs,
+                    seed=self.seed,
+                    num_samples=self.num_sample,
+                )
+                self._set_aggregate_posteriors(stan_extract=pyro_extract)
+
+            else:
+                raise ValueError(
+                    'Pyro inferece does not support prediction method: "{}"'.format(
+                        self.predict_method))
+
+            self.posterior_samples = pyro_extract
+
         else:
-            raise NotImplementedError('Invalid sampling/predict method supplied.')
-
-        self.posterior_samples = stan_extract
+            raise ValueError('Unknown inference engine: "{}"'.format(self.inference_engine))
 
     @abstractmethod
     def plot(self):
