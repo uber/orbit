@@ -1,5 +1,9 @@
 # ORBIT 
 
+## Disclaimer
+This project may contain experimental code and may not be ready for general use. Support and/or new releases may be limited.
+
+## Intro
 **ORBIT** is a package for **O**bject-o**R**iented **B**ayes**I**an **T**imes-series
 model. It provides fast and robust forecast on generic time-series data in a Bayesian style with
 flexible object-oriented design.
