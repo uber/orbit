@@ -1,0 +1,23 @@
+language: python
+
+install:
+    - pip install -U pip
+    - pip install -r requirements.txt
+    - pip install -r requirements-test.txt
+    - pip install .
+
+before_script:
+	- "curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install.sh | sudo bash"
+
+jobs:
+    include:
+        - stage: test
+          name: test
+          script: pytest -sv
+        - stage: fossa
+          name: fossa
+          script:
+              # NOTE: before running `fossa` make sure to save your FOSSA_API_KEY in your
+              # environment variable in Travis see below.
+              - fossa init
+              - fossa analyze
