@@ -10,7 +10,7 @@ DESCRIPTION = "Orbit is a package for bayesian time series modeling and inferenc
 AUTHOR = "Edwin Ng <edwinng@uber.com>, Steve Yang <steve.yang@uber.com>, Huigang Chen <huigang@uber.com>"
 
 
-def read_long_description(filename="README.rst"):
+def read_long_description(filename="README.md"):
     with open(filename) as f:
         return f.read().strip()
 
