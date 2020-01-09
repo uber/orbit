@@ -1,10 +1,5 @@
 language: python
 
-python:
-    - "3.6"
-    - "3.7"
-    - "3.8"
-
 install:
     - pip install -U pip
     - pip install -r requirements.txt
@@ -26,3 +21,6 @@ jobs:
               # environment variable in Travis see below.
               - fossa init
               - fossa analyze
+
+after_success:
+    - cd <SOURCE_DIR> && fossa test
