@@ -1,29 +1,31 @@
-from uTS.stan_estimator import StanEstimator
-from uTS.utils.constants import (
+from orbit.stan_estimator import StanEstimator
+from orbit.utils.constants import (
     LocalTrendStanSamplingParameters,
+    GlobalTrendStanSamplingParameters,
     SeasonalityStanSamplingParameters,
-    DAMPEDTRENDStanSamplingParameters,
     RegressionStanSamplingParameters,
     DEFAULT_REGRESSOR_SIGN,
     DEFAULT_REGRESSOR_BETA,
     DEFAULT_REGRESSOR_SIGMA
 )
 
-from uTS.exceptions import (
+from orbit.exceptions import (
     PredictionException,
     IllegalArgument
 )
 
-from uTS.utils.utils import is_ordered_datetime
+from orbit.utils.utils import is_ordered_datetime
 
 import numpy as np
 import pandas as pd
 from scipy.stats import nct
 import math as math
+import torch
+from copy import deepcopy
 
 
-class DLT(StanEstimator):
-    """Implementation of Damped-Local-Trend (LGT) model with seasonality.
+class LGT(StanEstimator):
+    """Implementation of Local-Global-Trend (LGT) model with seasonality.
 
 
     Prediction
@@ -153,11 +155,12 @@ class DLT(StanEstimator):
             cauchy_sd=None, min_nu=5, max_nu=40,
             seasonality=0, seasonality_min=-1.0, seasonality_max=1.0,
             seasonality_smoothing_min=0, seasonality_smoothing_max=1,
+            global_trend_coef_min=-0.5, global_trend_coef_max=0.5,
+            global_trend_pow_min=0, global_trend_pow_max=1,
+            local_trend_coef_min=0, local_trend_coef_max=1,
             level_smoothing_min=0, level_smoothing_max=1,
             slope_smoothing_min=0, slope_smoothing_max=1,
-            use_damped_trend=0, damped_factor_min=0.8, damped_factor_max=0.999,
-            regression_coef_max=1.0, fix_regression_coef_sd=1, regressor_sigma_sd=1.0,
-            damped_factor_fixed=0.9, **kwargs
+            regression_coef_max=1.0, fix_regression_coef_sd=1, regressor_sigma_sd=1.0, **kwargs
     ):
 
         # get all init args and values and set
@@ -168,7 +171,7 @@ class DLT(StanEstimator):
         super().__init__(**kwargs)
 
         # associates with the *.stan model resource
-        self.stan_model_name = "dlt"
+        self.stan_model_name = "lgt"
 
     def _set_computed_params(self):
         self._setup_computed_regression_params()
@@ -233,6 +236,7 @@ class DLT(StanEstimator):
         self.cauchy_sd = max(
                 self.response,
             ) / 300 if self.cauchy_sd is None else self.cauchy_sd
+
         self._setup_regressor_inputs()
 
     def _setup_seasonality_init(self):
@@ -275,57 +279,67 @@ class DLT(StanEstimator):
                 items=self.regular_regressor_col,).values
 
     def _set_model_param_names(self):
-        self.model_param_names += [param for param in LocalTrendStanSamplingParameters]
+        self.model_param_names += [param.value for param in LocalTrendStanSamplingParameters]
 
         # append seasonality param names
         if self.seasonality > 1:
-            self.model_param_names += [param for param in SeasonalityStanSamplingParameters]
+            self.model_param_names += [param.value for param in SeasonalityStanSamplingParameters]
 
-        # append damped trend param names
-        if self.damped_factor_fixed < 0:
-            self.model_param_names += [param for param in DAMPEDTRENDStanSamplingParameters]
+        # append trend param names
+        self.model_param_names += [param.value for param in GlobalTrendStanSamplingParameters]
 
         # append positive regressors if any
         if self.num_of_positive_regressors > 0:
-            self.model_param_names += [RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA]
+            self.model_param_names += [RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
 
         # append regular regressors if any
         if self.num_of_regular_regressors > 0:
-            self.model_param_names += [RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA]
+            self.model_param_names += [RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value]
 
-    def _predict_once(self, df=None, include_error=False, decompose=False):
+    def _predict(self, df=None, include_error=False, decompose=False):
+        """Vectorized version of prediction math"""
 
         ################################################################
         # Model Attributes
         ################################################################
 
-        # get model attributes
-        model = self._posterior_state
+        model = deepcopy(self._posterior_state)
+        for k, v in model.items():
+            model[k] = torch.from_numpy(v)
+
+        # We can pull any arbitrary value from teh dictionary because we hold the
+        # safe assumption: the length of the first dimension is always the number of samples
+        # thus can be safely used to determine `num_sample`. If predict_method is anything
+        # other than full, the value here should be 1
+        arbitrary_posterior_value = list(model.values())[0]
+        num_sample = arbitrary_posterior_value.shape[0]
 
         # seasonality components
-        seasonality_levels = model.get(SeasonalityStanSamplingParameters.SEASONALITY_LEVELS)
+        seasonality_levels = model.get(SeasonalityStanSamplingParameters.SEASONALITY_LEVELS.value)
         seasonality_smoothing_factor = model.get(
-            SeasonalityStanSamplingParameters.SEASONALITY_SMOOTHING_FACTOR
+            SeasonalityStanSamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
         )
 
         # trend components
-        slope_smoothing_factor = model.get(LocalTrendStanSamplingParameters.SLOPE_SMOOTHING_FACTOR)
-        level_smoothing_factor = model.get(LocalTrendStanSamplingParameters.LEVEL_SMOOTHING_FACTOR)
-        local_global_trend_sums = model.get(LocalTrendStanSamplingParameters.LOCAL_GLOBAL_TREND_SUMS)
-        local_trend_levels = model.get(LocalTrendStanSamplingParameters.LOCAL_TREND_LEVELS)
-        local_trend_slopes = model.get(LocalTrendStanSamplingParameters.LOCAL_TREND_SLOPES)
-        residual_degree_of_freedom = model.get(LocalTrendStanSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM)
-        residual_sigma = model.get(LocalTrendStanSamplingParameters.RESIDUAL_SIGMA)
+        slope_smoothing_factor = model.get(LocalTrendStanSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
+        level_smoothing_factor = model.get(LocalTrendStanSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
+        local_global_trend_sums = model.get(LocalTrendStanSamplingParameters.LOCAL_GLOBAL_TREND_SUMS.value)
+        local_trend_levels = model.get(LocalTrendStanSamplingParameters.LOCAL_TREND_LEVELS.value)
+        local_trend_slopes = model.get(LocalTrendStanSamplingParameters.LOCAL_TREND_SLOPES.value)
+        residual_degree_of_freedom = model.get(LocalTrendStanSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
+        residual_sigma = model.get(LocalTrendStanSamplingParameters.RESIDUAL_SIGMA.value)
 
-        if self.damped_factor_fixed > 0:
-            damped_factor = self.damped_factor_fixed
-        else:
-            damped_factor = model.get(DAMPEDTRENDStanSamplingParameters.DAMPED_FACTOR)
+        local_trend_coef = model.get(GlobalTrendStanSamplingParameters.LOCAL_TREND_COEF.value)
+        global_trend_power = model.get(GlobalTrendStanSamplingParameters.GLOBAL_TREND_POWER.value)
+        global_trend_coef = model.get(GlobalTrendStanSamplingParameters.GLOBAL_TREND_COEF.value)
 
         # regression components
-        pr_beta = model.get(RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA, np.array([]))
-        rr_beta = model.get(RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA, np.array([]))
-        regressor_beta = np.concatenate((pr_beta, rr_beta))
+        pr_beta = model.get(RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+        rr_beta = model.get(RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+        if pr_beta is not None and rr_beta is not None:
+            regressor_beta = torch.cat((pr_beta, rr_beta), dim=1)
+        else:
+            regressor_beta = pr_beta or rr_beta
 
         ################################################################
         # Prediction Attributes
@@ -380,11 +394,14 @@ class DLT(StanEstimator):
 
         # calculate regression component
         if self.regressor_col is not None and len(self.regular_regressor_col) > 0:
-            regressor_matrix = df[self.regressor_col]
-            regressor_component = regressor_matrix.dot(regressor_beta).values
+            regressor_beta = regressor_beta.t()
+            regressor_matrix = df[self.regressor_col].values
+            regressor_torch = torch.from_numpy(regressor_matrix)
+            regressor_component = torch.matmul(regressor_torch, regressor_beta)
+            regressor_component = regressor_component.t()
         else:
             # regressor is always dependent with df. hence, no need to make full size
-            regressor_component = np.zeros(output_len)
+            regressor_component = torch.zeros((num_sample, output_len), dtype=torch.double)
 
         ################################################################
         # Seasonality Component
@@ -392,15 +409,16 @@ class DLT(StanEstimator):
 
         # calculate seasonality component
         if self.seasonality > 1:
-            if full_len <= len(seasonality_levels):
-                seasonality_component = seasonality_levels[:full_len]
+            if full_len <= seasonality_levels.shape[1]:
+                seasonality_component = seasonality_levels[:, :full_len]
             else:
-                seasonality_component = np.concatenate((
-                    seasonality_levels,
-                    np.zeros(full_len - len(seasonality_levels)),
-                ))
+                seasonality_forecast_length = full_len - seasonality_levels.shape[1]
+                seasonality_forecast_matrix \
+                    = torch.zeros((num_sample, seasonality_forecast_length), dtype=torch.double)
+                seasonality_component = torch.cat(
+                    (seasonality_levels, seasonality_forecast_matrix), dim=1)
         else:
-            seasonality_component = np.zeros(full_len)
+            seasonality_component = torch.zeros((num_sample, full_len), dtype=torch.double)
 
         ################################################################
         # Trend Component
@@ -409,19 +427,27 @@ class DLT(StanEstimator):
         # calculate level component.
         # However, if predicted end of period > training period, update with out-of-samples forecast
         if full_len <= trained_len:
-            trend_component = local_global_trend_sums[:full_len]
+            trend_component = local_global_trend_sums[:, :full_len]
         else:
-            trend_component = np.concatenate((
-                local_global_trend_sums, np.zeros(full_len - trained_len),
-            ))
+            trend_forecast_length = full_len - trained_len
+            trend_forecast_matrix \
+                = torch.zeros((num_sample, trend_forecast_length), dtype=torch.double)
+            trend_component = torch.cat((local_global_trend_sums, trend_forecast_matrix), dim=1)
 
-            last_local_trend_level = local_trend_levels[-1]
-            last_local_trend_slope = local_trend_slopes[-1]
+            last_local_trend_level = local_trend_levels[:, -1]
+            last_local_trend_slope = local_trend_slopes[:, -1]
+
+            trend_component_zeros = torch.zeros_like(trend_component[:, 0])
 
             for idx in range(trained_len, full_len):
-                # based on model, split cases for trend update
-                current_local_trend = damped_factor * last_local_trend_slope
-                trend_component[idx] = last_local_trend_level + current_local_trend
+                current_local_trend = local_trend_coef.flatten() * last_local_trend_slope
+                global_trend_power_term = torch.pow(
+                    torch.abs(last_local_trend_level),
+                    global_trend_power.flatten()
+                )
+                current_global_trend = global_trend_coef.flatten() * global_trend_power_term
+                trend_component[:, idx] \
+                    = last_local_trend_level + current_local_trend + current_global_trend
 
                 if include_error:
                     error_value = nct.rvs(
@@ -429,26 +455,34 @@ class DLT(StanEstimator):
                         nc=0,
                         loc=0,
                         scale=residual_sigma,
-                        size=1
-                    )[0]  # scalar value
-                    trend_component[idx] += error_value
+                        size=num_sample
+                    )
+                    error_value = torch.from_numpy(error_value).double()
+                    trend_component[:, idx] += error_value
 
-                trend_component[idx] = max(trend_component[idx], 0)
+                # a 2d tensor of size (num_sample, 2) in which one of the elements
+                # is always zero. We can use this to torch.max() across the sample dimensions
+                trend_component_augmented = torch.cat(
+                    (trend_component[:, idx][:, None], trend_component_zeros[:, None]), dim=1)
+
+                max_value, _ = torch.max(trend_component_augmented, dim=1)
+
+                trend_component[:, idx] = max_value
 
                 new_local_trend_level = \
-                    level_smoothing_factor * trend_component[idx] \
+                    level_smoothing_factor * trend_component[:, idx] \
                     + (1 - level_smoothing_factor) * last_local_trend_level
+
                 last_local_trend_slope = \
-                    slope_smoothing_factor * (new_local_trend_level -
-                                                       last_local_trend_level) \
-                    + (1 - slope_smoothing_factor) * damped_factor * last_local_trend_slope
+                    slope_smoothing_factor * (new_local_trend_level - last_local_trend_level) \
+                    + (1 - slope_smoothing_factor) * last_local_trend_slope
 
                 if self.seasonality > 1 and idx + self.seasonality < full_len:
-                    seasonality_component[idx + self.seasonality] = \
-                        seasonality_smoothing_factor \
-                        * (trend_component[idx] + seasonality_component[idx] -
+                    seasonality_component[:, idx + self.seasonality] = \
+                        seasonality_smoothing_factor.flatten() \
+                        * (trend_component[:, idx] + seasonality_component[:, idx] -
                            new_local_trend_level) \
-                        + (1 - seasonality_smoothing_factor) * seasonality_component[idx]
+                        + (1 - seasonality_smoothing_factor.flatten()) * seasonality_component[:, idx]
 
                 last_local_trend_level = new_local_trend_level
 
@@ -457,8 +491,8 @@ class DLT(StanEstimator):
         ################################################################
 
         # trim component with right start index
-        trend_component = trend_component[start:]
-        seasonality_component = seasonality_component[start:]
+        trend_component = trend_component[:, start:]
+        seasonality_component = seasonality_component[:, start:]
 
         # sum components
         pred_array = trend_component + seasonality_component + regressor_component
@@ -466,15 +500,15 @@ class DLT(StanEstimator):
         # if decompose output dictionary of components
         if decompose:
             decomp_dict = {
-                'prediction': pred_array,
-                'trend': trend_component,
-                'seasonality': seasonality_component,
-                'regression': regressor_component
+                'prediction': pred_array.numpy(),
+                'trend': trend_component.numpy(),
+                'seasonality': seasonality_component.numpy(),
+                'regression': regressor_component.numpy()
             }
 
             return decomp_dict
 
-        return {'prediction': pred_array}
+        return {'prediction': pred_array.numpy()}
 
     def _validate_params(self):
         pass

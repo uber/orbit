@@ -38,7 +38,7 @@ df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']] = \
 
 test_size=52
 train_df=df[:-test_size]
-# in uTS we make assertion that test dates need to be between train start/end
+orbit
 test_df=df[-test_size-1:]
 ```
 ## Local-Global-Trend (LGT) Model with FULL Bayesian Prediction

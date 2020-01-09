@@ -2,11 +2,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from uTS.exceptions import BacktestException
-from uTS.utils.constants import BacktestFitColumnNames
+from orbit.exceptions import BacktestException
+from orbit.utils.constants import BacktestFitColumnNames
 
-from uTS.lgt import LGT
-from uTS.backtest import BacktestEngine
+from orbit.lgt import LGT
+from orbit.backtest import BacktestEngine
 
 
 def test_backtest_meta(iclaims_training_data):

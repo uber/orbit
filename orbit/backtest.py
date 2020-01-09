@@ -8,13 +8,13 @@ import datetime as dt
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from uTS.exceptions import BacktestException
-from uTS.utils.constants import (
+from orbit.exceptions import BacktestException
+from orbit.utils.constants import (
     BacktestMetaKeys,
     BacktestFitColumnNames,
     BacktestAnalyzeKeys
 )
-from uTS.utils.utils import is_ordered_datetime
+from orbit.utils.utils import is_ordered_datetime
 
 
 # a few utility functions to calculate mape/wmape/smape metrics

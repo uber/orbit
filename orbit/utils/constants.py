@@ -1,7 +1,7 @@
 from enum import Enum
 import os
 
-from uTS.utils.utils import get_parent_path
+from orbit.utils.utils import get_parent_path
 
 
 class StanInputMapper(Enum):
@@ -149,7 +149,7 @@ class PlotLabels(Enum):
 
 # class StanModelKeys(Enum):
 #     """
-#     All of the keys in the trained stan model from uTS. For example, for LGT/SLGT,
+#     All of the keys in the trained stan model from orbit. For example, for LGT/SLGT,
 #     the model is the output of SLGT.fit() and input of SLGTModel.
 #     """
 #     STAN_INPUTS = "stan_inputs"

@@ -6,18 +6,18 @@ import pickle
 import numpy as np
 import pandas as pd
 import multiprocessing
-from uTS.models import get_compiled_stan_model
-from uTS.exceptions import (
+from orbit.models import get_compiled_stan_model
+from orbit.exceptions import (
     IllegalArgument
 )
 
-from uTS.utils.constants import (
+from orbit.utils.constants import (
     PredictMethod,
     SampleMethod,
     StanInputMapper
 )
 
-from uTS.utils.utils import vb_extract, is_ordered_datetime
+from orbit.utils.utils import vb_extract, is_ordered_datetime
 
 
 class StanEstimator(object):
@@ -196,7 +196,7 @@ class StanEstimator(object):
             setattr(self, key, value)
 
     def save(self, path='./uts_model.pkl'):
-        """Serializes the entire `uTS` class to `path`"""
+        """Serializes the entire `orbit` class to `path`"""
         # todo: this method needs to be fixed
         try:
             self.posterior_samples

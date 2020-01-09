@@ -10,11 +10,11 @@ def compile_stan_model(stan_model_name):
     Compile stan model and save as pkl
     """
     source_model = pkg_resources.resource_filename(
-        'uTS',
+        'orbit',
         'stan/{}.stan'.format(stan_model_name)
     )
     compiled_model = pkg_resources.resource_filename(
-        'uTS',
+        'orbit',
         'stan_model/{}.pkl'.format(stan_model_name)
     )
 
@@ -44,7 +44,7 @@ def get_compiled_stan_model(stan_model_name):
     compile_stan_model(stan_model_name)
 
     model_file = pkg_resources.resource_filename(
-        'uTS',
+        'orbit',
         'stan_model/{}.pkl'.format(stan_model_name)
     )
     with open(model_file, 'rb') as f:

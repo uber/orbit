@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 import pytest
-from uTS.lgt import LGT
-from uTS.exceptions import IllegalArgument
+from orbit.lgt import LGT
+from orbit.exceptions import IllegalArgument
 
 
 def test_lgt_fit(iclaims_training_data):

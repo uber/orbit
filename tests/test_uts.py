@@ -1,6 +1,6 @@
 import mock
 
-from uTS.stan_estimator import StanEstimator
+from orbit.stan_estimator import StanEstimator
 
 
 def test_uts_predict_flow():
