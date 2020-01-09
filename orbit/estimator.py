@@ -10,7 +10,7 @@ from orbit.models import get_compiled_stan_model
 from orbit.exceptions import (
     IllegalArgument
 )
-
+from orbit.pyro.wrapper import pyro_map, pyro_svi
 from orbit.utils.constants import (
     PredictMethod,
     SampleMethod,
@@ -338,7 +338,7 @@ class Estimator(object):
         elif self.inference_engine == 'pyro':
             if self.predict_method == 'map':
                 pyro_extract = pyro_map(
-                    model_name="uTS.pyro.lgt.LGTModel",
+                    model_name="orbit.pyro.lgt.LGTModel",
                     data=self.stan_inputs,
                     seed=self.seed,
                 )
@@ -346,17 +346,19 @@ class Estimator(object):
 
             elif self.predict_method in ['svi', 'mean', 'median']:
                 pyro_extract = pyro_svi(
-                    model_name="uTS.pyro.lgt.LGTModel",
+                    model_name="orbit.pyro.lgt.LGTModel",
                     data=self.stan_inputs,
                     seed=self.seed,
                     num_samples=self.num_sample,
                 )
-                self._set_posterior_samples(stan_extract=pyro_extract)
+                self._set_aggregate_posteriors(stan_extract=pyro_extract)
 
             else:
                 raise ValueError(
                     'Pyro inferece does not support prediction method: "{}"'.format(
                         self.predict_method))
+
+            self.posterior_samples = pyro_extract
 
         else:
             raise ValueError('Unknown inference engine: "{}"'.format(self.inference_engine))

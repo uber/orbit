@@ -17,7 +17,7 @@ class LGTModel:
 
         # transformed data
         self.is_seasonal = (self.seasonality > 1)
-        self.lev_lower_bound = -float('inf') if self.use_damped_trend else 0
+        self.lev_lower_bound = 0
 
     def __call__(self):
         response = self.response
@@ -106,40 +106,23 @@ class LGTModel:
         # states initial condition
         b[0] = torch.zeros_like(slp_sm)
         l[0] = (response[0] - r[0]).expand_as(b[0])
-        if self.use_damped_trend:
-            if self.damped_factor_fixed >= 0:
-                damped_factor = self.damped_factor_fixed
-            else:
-                damped_factor = pyro.sample("damped_factor",
-                                            dist.Uniform(self.damped_factor_min,
-                                                         self.damped_factor_max))
-            lgt_sum_t = l[0]
-            for t in range(1, num_of_obs):
-                l[t] = lev_sm * (response[t] - s[t] - r[t]) + (1 - lev_sm) * lgt_sum_t
-                b[t] = slp_sm * (l[t] - l[t - 1]) + (1 - slp_sm) * damped_factor * b[t - 1]
-                if self.is_seasonal:
-                    s[t + self.seasonality] = \
-                        sea_sm * (response[t] - l[t] - r[t]) + (1 - sea_sm) * s[t]
-                lgt_sum_t = l[t - 1] + damped_factor * b[t - 1]
-        else:
-            for t in range(1, num_of_obs):
-                # this update equation with l[t-1] ONLY.
-                # intentionally different from the Holt-Winter form
-                # this change is suggested from Slawek's original SLGT model
-                l[t] = lev_sm * (response[t] - s[t] - r[t]) + (1 - lev_sm) * l[t - 1]
-                b[t] = slp_sm * (l[t] - l[t - 1]) + (1 - slp_sm) * b[t - 1]
-                if self.is_seasonal:
-                    s[t + self.seasonality] = \
-                        sea_sm * (response[t] - l[t] - r[t]) + (1 - sea_sm) * s[t]
+
+        for t in range(1, num_of_obs):
+            # this update equation with l[t-1] ONLY.
+            # intentionally different from the Holt-Winter form
+            # this change is suggested from Slawek's original SLGT model
+            l[t] = lev_sm * (response[t] - s[t] - r[t]) + (1 - lev_sm) * l[t - 1]
+            b[t] = slp_sm * (l[t] - l[t - 1]) + (1 - slp_sm) * b[t - 1]
+            if self.is_seasonal:
+                s[t + self.seasonality] = \
+                    sea_sm * (response[t] - l[t] - r[t]) + (1 - sea_sm) * s[t]
 
         # vectorize as much math as possible
         b = torch.stack(b, dim=-1).reshape(b[0].shape[:-1] + (-1,))
         l = torch.stack(l, dim=-1).reshape(l[0].shape[:-1] + (-1,))
         s = torch.stack(s, dim=-1).reshape(s[0].shape[:-1] + (-1,))
-        if self.use_damped_trend:
-            lgt_sum = l + damped_factor * b
-        else:
-            lgt_sum = l + gt_coef * l.abs() ** gt_pow + lt_coef * b
+
+        lgt_sum = l + gt_coef * l.abs() ** gt_pow + lt_coef * b
         lgt_sum = torch.cat([l[..., :1], lgt_sum[..., :-1]], dim=-1)  # shift by 1
         yhat = lgt_sum + s[..., :num_of_obs] + r
 
