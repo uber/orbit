@@ -46,11 +46,13 @@ test_df=df[-test_size:]
 from orbit.lgt import LGT
 from orbit.utils.utils import plot_predicted_data
 
-lgt_mcmc = LGT(response_col='claims', date_col='week', seasonality=52,
-               num_warmup=4000, num_sample=500, sample_method='mcmc', predict_method='full',
-               n_bootstrap_draws=500)
+lgt_mcmc = LGT(response_col='claims', date_col='week', seasonality=52)
 lgt_mcmc.fit(df=train_df)
+
+# predicted df
 predicted_df = lgt_mcmc.predict(df=test_df)
+
+# plot predictions
 plot_predicted_data(training_actual_df=train_df, predicted_df=predicted_df,
                     date_col=lgt_mcmc.date_col, actual_col=lgt_mcmc.response_col, pred_col=50,
                     test_actual_df=test_df)
