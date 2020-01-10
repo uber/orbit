@@ -84,8 +84,8 @@ tramp
 __pycache__
 build/
 dist/
-uTS.egg-info/
-uTS/stan_model/
+orbit.egg-info/
+orbit/stan_model/
 env_docs/
 docs/_build/
 *.pyc
