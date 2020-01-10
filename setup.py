@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import sys
 
-from setuptools import setup, find_packages
+from setuptools import dist, setup, find_packages
 from setuptools.command.test import test as TestCommand
 
 VERSION = '0.4.0'
@@ -40,7 +40,8 @@ setup(
     setup_requires=[
         # Setuptools 18.0 properly handles Cython extensions.
         'setuptools>=18.0',
-        'cython'
+        'cython',
+        'numpy'
     ],
     install_requires=requirements('requirements.txt'),
     tests_require=requirements('requirements-test.txt'),
