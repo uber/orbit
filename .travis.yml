@@ -26,4 +26,4 @@ jobs:
               - fossa analyze
 
 after_success:
-    - cd <SOURCE_DIR> && fossa test
+    - cd orbit && fossa test
