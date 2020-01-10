@@ -2,8 +2,12 @@ from __future__ import print_function
 
 import sys
 
-from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
+from setuptools import dist, setup, find_packages
+from setuptools.command.build_py import build_py
+from setuptools.command.develop import develop
+from setuptools.command.test import test as test_command
+
+dist.Distribution().fetch_build_eggs(['cython'])
 
 VERSION = '0.4.0'
 DESCRIPTION = "Orbit is a package for bayesian time series modeling and inference."
@@ -20,9 +24,9 @@ def requirements(filename="requirements.txt"):
         return f.readlines()
 
 
-class PyTest(TestCommand):
+class PyTest(test_command):
     def finalize_options(self):
-        TestCommand.finalize_options(self)
+        test_command.finalize_options(self)
         self.test_args = []
         self.test_suite = True
 
@@ -40,8 +44,11 @@ setup(
     install_requires=requirements('requirements.txt'),
     tests_require=requirements('requirements-test.txt'),
     cmdclass={
-        'test': PyTest
+        'build_py': build_py,
+        'develop': develop,
+        'test': PyTest,
     },
+    test_suite='orbit.tests',
     license='closed',
     long_description=read_long_description(),
     name='orbit',
