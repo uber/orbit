@@ -7,10 +7,11 @@ from setuptools.command.build_py import build_py
 from setuptools.command.develop import develop
 from setuptools.command.test import test as test_command
 
-# see also:
-#   https://bugs.python.org/issue23114
-#   https://bugs.python.org/issue23102
-dist.Distribution().fetch_build_eggs(['cython'])  # forces cython to use setuptools dist
+# # force cython to use setuptools dist
+# # see also:
+# #   https://bugs.python.org/issue23114
+# #   https://bugs.python.org/issue23102
+# dist.Distribution().fetch_build_eggs(['cython'])
 
 VERSION = '0.4.0'
 DESCRIPTION = "Orbit is a package for bayesian time series modeling and inference."
@@ -30,7 +31,7 @@ def requirements(filename="requirements.txt"):
 class PyTest(test_command):
     def finalize_options(self):
         test_command.finalize_options(self)
-        self.test_args = []
+        self.test_args = ['-v']  # test args
         self.test_suite = True
 
     def run_tests(self):
