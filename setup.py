@@ -7,7 +7,7 @@ from setuptools.command.build_py import build_py
 from setuptools.command.develop import develop
 from setuptools.command.test import test as test_command
 
-dist.Distribution().fetch_build_eggs(['cython'])
+# dist.Distribution().fetch_build_eggs(['cython'])
 
 VERSION = '0.4.0'
 DESCRIPTION = "Orbit is a package for bayesian time series modeling and inference."

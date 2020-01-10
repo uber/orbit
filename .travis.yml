@@ -16,14 +16,14 @@ jobs:
     include:
         - stage: test
           name: test
-          script: python setup.py test
-#        - stage: fossa
-#          name: fossa
-#          script:
-#              # NOTE: before running `fossa` make sure to save your FOSSA_API_KEY in your
-#              # environment variable in Travis see below.
-#              - fossa init
-#              - fossa analyze
-#
-#after_success:
-#    - cd <SOURCE_DIR> && fossa test
+          script: pytest -sv
+        - stage: fossa
+          name: fossa
+          script:
+              # NOTE: before running `fossa` make sure to save your FOSSA_API_KEY in your
+              # environment variable in Travis see below.
+              - fossa init
+              - fossa analyze
+
+after_success:
+    - cd <SOURCE_DIR> && fossa test
