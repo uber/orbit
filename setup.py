@@ -3,7 +3,7 @@ from __future__ import print_function
 import sys
 
 from setuptools import setup, find_packages
-from setuptools.command.test import test as TestCommand
+# from setuptools.command.test import test as TestCommand
 
 VERSION = '0.4.0'
 DESCRIPTION = "Orbit is a package for bayesian time series modeling and inference."
@@ -20,16 +20,16 @@ def requirements(filename="requirements.txt"):
         return f.readlines()
 
 
-class PyTest(TestCommand):
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        import pytest
-        errcode = pytest.main(self.test_args)
-        sys.exit(errcode)
+# class PyTest(TestCommand):
+#     def finalize_options(self):
+#         TestCommand.finalize_options(self)
+#         self.test_args = []
+#         self.test_suite = True
+#
+#     def run_tests(self):
+#         import pytest
+#         errcode = pytest.main(self.test_args)
+#         sys.exit(errcode)
 
 
 setup(
@@ -39,9 +39,9 @@ setup(
     include_package_data=True,
     install_requires=requirements('requirements.txt'),
     tests_require=requirements('requirements-test.txt'),
-    cmdclass={
-        'test': PyTest
-    },
+    # cmdclass={
+    #     'test': PyTest
+    # },
     license='closed',
     long_description=read_long_description(),
     name='orbit',
