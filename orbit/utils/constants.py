@@ -1,7 +1,7 @@
 from enum import Enum
 import os
 
-from orbit.utils.utils import get_parent_path
+from uTS.utils.utils_base import get_parent_path
 
 
 class StanInputMapper(Enum):
@@ -66,24 +66,30 @@ class StanInputMapper(Enum):
 class LocalTrendStanSamplingParameters(Enum):
     LOCAL_TREND_LEVELS = 'l'
     LOCAL_TREND_SLOPES = 'b'
-    LOCAL_GLOBAL_TREND_SUMS = 'lgt_sum'
     RESIDUAL_SIGMA = 'obs_sigma'
     RESIDUAL_DEGREE_OF_FREEDOM = 'nu'
     LEVEL_SMOOTHING_FACTOR = 'lev_sm'
     SLOPE_SMOOTHING_FACTOR = 'slp_sm'
 
+
 class GlobalTrendStanSamplingParameters(Enum):
     """
     The most basic stan output sampling parameters, local + global + trend model.
     """
+    LOCAL_GLOBAL_TREND_SUMS = 'lgt_sum'
     GLOBAL_TREND_POWER = 'gt_pow'
     LOCAL_TREND_COEF = 'lt_coef'
     GLOBAL_TREND_COEF = 'gt_coef'
 
 
-class DAMPEDTRENDStanSamplingParameters(Enum):
+class DampedTrendDynamicStanSamplingParameters(Enum):
     DAMPED_FACTOR = 'damped_factor'
 
+class DampedTrendStanSamplingParameters(Enum):
+    LOCAL_TREND = 'lt_sum'
+    GLOBAL_TREND = 'gt_sum'
+    GLOBAL_TREND_SLOPE = 'gb'
+    GLOBAL_TREND_LEVEL = 'gl'
 
 class RegressionStanSamplingParameters(Enum):
     """
@@ -147,16 +153,16 @@ class PlotLabels(Enum):
     ACTUAL_RESPONSE = 'actual_response'
 
 
-# class StanModelKeys(Enum):
-#     """
-#     All of the keys in the trained stan model from orbit. For example, for LGT/SLGT,
-#     the model is the output of SLGT.fit() and input of SLGTModel.
-#     """
-#     STAN_INPUTS = "stan_inputs"
-#     MODELS = "models"
-#     REGRESSOR_COLUMNS = "regressor_columns"
-#     RESPONSE_COLUMN = "response_column"
-#     DATE_INFO = "date_info"
+class StanModelKeys(Enum):
+    """
+    All of the keys in the trained stan model from uTS. For example, for LGT/SLGT,
+    the model is the output of SLGT.fit() and input of SLGTModel.
+    """
+    STAN_INPUTS = "stan_inputs"
+    MODELS = "models"
+    REGRESSOR_COLUMNS = "regressor_columns"
+    RESPONSE_COLUMN = "response_column"
+    DATE_INFO = "date_info"
 
 
 class DateInfo(Enum):
@@ -182,7 +188,6 @@ class BacktestMetaKeys(Enum):
     TEST_IDX = 'test_idx'
     FORECAST_DATES = 'forecast_dates'
 
-
 class BacktestFitColumnNames(Enum):
     """ column names for the data frame of back-test fitting result
     """
@@ -192,7 +197,6 @@ class BacktestFitColumnNames(Enum):
     ACTUAL = 'actual'
     PRED = 'pred'
     PRED_HORIZON = 'pred_horizon'
-
 
 class BacktestAnalyzeKeys(Enum):
     """ hash table keys for the dictionary of back-test aggregation analysis result

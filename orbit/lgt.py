@@ -1,5 +1,5 @@
-from orbit.estimator import Estimator
-from orbit.utils.constants import (
+from uTS.stan_estimator import StanEstimator
+from uTS.utils.constants import (
     LocalTrendStanSamplingParameters,
     GlobalTrendStanSamplingParameters,
     SeasonalityStanSamplingParameters,
@@ -9,22 +9,21 @@ from orbit.utils.constants import (
     DEFAULT_REGRESSOR_SIGMA
 )
 
-from orbit.exceptions import (
+from uTS.exceptions import (
     PredictionException,
     IllegalArgument
 )
 
-from orbit.utils.utils import is_ordered_datetime
+from uTS.utils.utils import is_ordered_datetime
 
 import numpy as np
 import pandas as pd
 from scipy.stats import nct
-import math as math
 import torch
 from copy import deepcopy
 
 
-class LGT(Estimator):
+class LGT(StanEstimator):
     """Implementation of Local-Global-Trend (LGT) model with seasonality.
 
 
@@ -160,8 +159,7 @@ class LGT(Estimator):
             local_trend_coef_min=0, local_trend_coef_max=1,
             level_smoothing_min=0, level_smoothing_max=1,
             slope_smoothing_min=0, slope_smoothing_max=1,
-            regression_coef_max=1.0, fix_regression_coef_sd=1, regressor_sigma_sd=1.0,
-            **kwargs
+            regression_coef_max=1.0, fix_regression_coef_sd=1, regressor_sigma_sd=1.0, **kwargs
     ):
 
         # get all init args and values and set
@@ -324,7 +322,7 @@ class LGT(Estimator):
         # trend components
         slope_smoothing_factor = model.get(LocalTrendStanSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
         level_smoothing_factor = model.get(LocalTrendStanSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
-        local_global_trend_sums = model.get(LocalTrendStanSamplingParameters.LOCAL_GLOBAL_TREND_SUMS.value)
+        local_global_trend_sums = model.get(GlobalTrendStanSamplingParameters.LOCAL_GLOBAL_TREND_SUMS.value)
         local_trend_levels = model.get(LocalTrendStanSamplingParameters.LOCAL_TREND_LEVELS.value)
         local_trend_slopes = model.get(LocalTrendStanSamplingParameters.LOCAL_TREND_SLOPES.value)
         residual_degree_of_freedom = model.get(LocalTrendStanSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
