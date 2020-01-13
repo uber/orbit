@@ -328,3 +328,50 @@ class BacktestEngine:
         return fig
 
 
+def run_group_backtest(data, date_col, response_col, key_col, pred_cols,
+                       mod_list, model_callbacks, fit_callbacks, pred_callbacks,
+                       min_train_len, incremental_len, forecast_len,
+                       transform_fun=None, start_date=None, end_date=None,
+                       keep_cols=None, regressor_col=None, mod_names=None,
+                       scheme='expanding'):
+
+    metric_dict = {}
+    assert len(mod_list) == len(
+        pred_cols), 'check if the model list is consistent with the prediction columns'
+    if mod_names is not None:
+        assert len(mod_list) == len(mod_names)
+    unique_keys = data[key_col].unique()
+    all_res = []
+    for i, mod in enumerate(mod_list):
+        idxer = i if mod_names is None else mod_names[i]
+        metric_dict[idxer] = {}
+        res = []
+        tic = time.time()
+        for key in unique_keys:
+            df = data[data[key_col] == key]
+            bt_expand = BacktestEngine(mod, df, date_col=date_col, response_col=response_col,
+                                       model_callbacks=model_callbacks[i])
+
+            bt_expand.create_meta(min_train_len, incremental_len, forecast_len,
+                                  start_date=start_date, end_date=end_date, keep_cols=keep_cols,
+                                  scheme=scheme)
+
+            bt_expand.run(verbose=False, save_results=False,
+                          fit_callbacks=fit_callbacks[i], pred_callbacks=pred_callbacks[i],
+                          pred_col=pred_cols[i],
+                          date_col=date_col, response_col=response_col, regressor_col=regressor_col)
+            tmp = bt_expand.bt_res.copy()
+            res.append(tmp)
+
+        res = pd.concat(res, axis=0, ignore_index=True)
+        if mod_names is not None:
+            res['model'] = mod_names[i]
+        all_res.append(res)
+        if transform_fun is not None:
+            res[['actual', 'pred']] = res[['actual', 'pred']].apply(transform_fun)
+        toc = time.time()
+        print('time elapsed {}'.format(time.strftime("%H:%M:%S", time.gmtime(toc - tic))))
+    all_res = pd.concat(all_res, axis=0, ignore_index=True)
+    return all_res
+
+
