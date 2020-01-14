@@ -103,39 +103,6 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
                          _predicted_df[pred_quantiles_col[1]].values,
                          _predicted_df[pred_quantiles_col[0]].values,
                          facecolor='#42999E', alpha=0.5)
-        # plt.plot(
-        #     _predicted_df[date_col].values,
-        #     _predicted_df[5].values,
-        #     linestyle=':', color='blue', label='Lower Prediction Interval'
-        # )
-        # plt.plot(
-        #     _predicted_df[date_col].values,
-        #     _predicted_df[95].values,
-        #     linestyle=':', color='blue', label='Upper Prediction Interval'
-        # )
-        # plt.plot(
-        #     predicted_df_quantiles[date_col].values.ravel(),
-        #     predicted_df_quantiles[
-        #         'pred_05'
-        #     ].iloc[:, 0].values,
-        #     linestyle=':', color='blue', label='Lower Prediction Interval'
-        # )
-        # plt.plot(
-        #     predicted_df_quantiles[date_col].values.ravel(),
-        #     predicted_df_quantiles[
-        #         'pred_95'
-        #     ].iloc[:, 1].values,
-        #     linestyle=':', color='blue', label='Upper Prediction Interval'
-        # )
-
-    # if pred_col in predicted_df.columns:
-    #     plt.scatter(predicted_df[date_col].values,
-    #                 predicted_df[pred_col].values,
-    #                 marker='+', color='red', alpha=0.5, label=PlotLabels.ACTUAL_RESPONSE.value)
-    #     mape = mean_absolute_percentage_error(
-    #         predicted_df[pred_col],
-    #         predicted_df[pred_col])
-    #     title = "{}, MAPE = {}".format(title, '%.3f' % mape)
 
     plt.suptitle(title, fontsize=16)
     plt.legend()

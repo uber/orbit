@@ -82,10 +82,13 @@ parameters {
   real<lower=SLP_SM_MIN,upper=SLP_SM_MAX> slp_sm; //slope smoothing parameter
 
   // residual tuning parameters
-  real<lower=0> obs_sigma;
+  // real<lower=0> obs_sigma;
+  real<lower=0, upper=pi()/2> obs_sigma_unif_dummy;
   real<lower=MIN_NU,upper=MAX_NU> nu;
 
   // trend parameters
+  real gl; // global level
+  real<lower=-1,upper=1> gb; // global slope
   real<lower=DAMPED_FACTOR_MIN,upper=DAMPED_FACTOR_MAX> damped_factor[DAMPED_FACTOR_SIZE];
 
   // seasonal parameters
@@ -93,15 +96,17 @@ parameters {
   real<lower=SEA_SM_MIN,upper=SEA_SM_MAX> sea_sm[IS_SEASONAL ? 1:0];
   //initial seasonality
   vector<lower=SEA_MIN,upper=SEA_MAX>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
+
 }
 transformed parameters {
-  // level; we don't have lower bound for damped trend but 0 for lgt
-  vector[NUM_OF_OBS] l;
-  vector[NUM_OF_OBS] b; // slope
+  real<lower=0> obs_sigma;
+  vector[NUM_OF_OBS] l; // local level
+  vector[NUM_OF_OBS] b; // local slope
   vector[NUM_OF_OBS] pr; //positive regression component
   vector[NUM_OF_OBS] rr; //regular regression component
   vector[NUM_OF_OBS] r; //regression component
-  vector[NUM_OF_OBS] lgt_sum; // integrated trend - sum of local & global trend
+  vector[NUM_OF_OBS] gt_sum; // sum of global trend
+  vector[NUM_OF_OBS] lt_sum; // sum of local trend
   vector[NUM_OF_OBS] yhat; // response prediction
   //seasonality vector with 1-cycle upfront as the initial condition
   vector[(NUM_OF_OBS + SEASONALITY) * IS_SEASONAL] s;
@@ -130,13 +135,14 @@ transformed parameters {
     s[SEASONALITY] = -1 * sum_init_sea;
     s[SEASONALITY + 1] = init_sea[1];
   }
+  gt_sum[1] = gl;
   b[1] = 0;
   if (IS_SEASONAL) {
-    l[1] = RESPONSE[1] - s[1] - r[1];
+    l[1] = RESPONSE[1] - gl - s[1] - r[1];
   } else {
-    l[1] = RESPONSE[1] - r[1];
+    l[1] = RESPONSE[1] - gl - r[1];
   }
-  lgt_sum[1] = l[1];
+  lt_sum[1] = l[1];
   yhat[1] = RESPONSE[1];
 
   // sequential sampling on state variables
@@ -154,17 +160,24 @@ transformed parameters {
     } else {
         s_t = 0.0;
     }
-    lgt_sum[t] = l[t-1] + damped_factor_dummy * b[t-1];
-    l[t] = lev_sm * (RESPONSE[t] - s_t - r[t]) + (1 - lev_sm) * lgt_sum[t-1];
+    lt_sum[t] = l[t-1] + damped_factor_dummy * b[t-1];
+    gt_sum[t] = gt_sum[t-1] + gb;
+    yhat[t] = gt_sum[t] + lt_sum[t] + s_t + r[t];
+
+    l[t] = lev_sm * (RESPONSE[t] - gt_sum[t] - s_t - r[t]) + (1 - lev_sm) * lt_sum[t];
     b[t] = slp_sm * (l[t] - l[t-1]) + (1 - slp_sm) * damped_factor_dummy * b[t-1];
+    // with parameterization as mentioned in 7.3 "Forecasting: Principles and Practice"
+    // we can safely use "l[t]" instead of "l[t-1] + b[t-1]" where 0 < sea_sm < 1
+    // otherwise with original one, use 0 < sea_sm < 1 - lev_sm
     if (IS_SEASONAL)
-        s[t + SEASONALITY] = sea_sm[1] * (RESPONSE[t] - l[t] - r[t]) + (1 - sea_sm[1]) * s_t;
-    yhat[t] = lgt_sum[t] + s_t + r[t];
+        s[t + SEASONALITY] = sea_sm[1] * (RESPONSE[t] - gt_sum[t] - l[t] - r[t]) + (1 - sea_sm[1]) * s_t;
   }
+
+  obs_sigma = CAUCHY_SD * tan(obs_sigma_unif_dummy); // obs_sigma ~ cauchy(0, CAUCHY_SD);
 }
 model {
-  //prior for residuals
-  obs_sigma ~ cauchy(0, CAUCHY_SD) T[0,];
+  // prior for residuals
+  // obs_sigma ~ cauchy(0, CAUCHY_SD) T[0,];
   if (NUM_OF_PR > 0) {
     if (FIX_REG_COEF_SD == 0) {
       //weak prior for sigma

@@ -63,26 +63,35 @@ class StanInputMapper(Enum):
     # MIN_AMPLITUDE = 'min_amplitude'
     # MAX_AMPLITUDE = 'max_amplitude'
 
+
 class LocalTrendStanSamplingParameters(Enum):
     LOCAL_TREND_LEVELS = 'l'
     LOCAL_TREND_SLOPES = 'b'
-    LOCAL_GLOBAL_TREND_SUMS = 'lgt_sum'
     RESIDUAL_SIGMA = 'obs_sigma'
     RESIDUAL_DEGREE_OF_FREEDOM = 'nu'
     LEVEL_SMOOTHING_FACTOR = 'lev_sm'
     SLOPE_SMOOTHING_FACTOR = 'slp_sm'
 
+
 class GlobalTrendStanSamplingParameters(Enum):
     """
     The most basic stan output sampling parameters, local + global + trend model.
     """
+    LOCAL_GLOBAL_TREND_SUMS = 'lgt_sum'
     GLOBAL_TREND_POWER = 'gt_pow'
     LOCAL_TREND_COEF = 'lt_coef'
     GLOBAL_TREND_COEF = 'gt_coef'
 
 
-class DAMPEDTRENDStanSamplingParameters(Enum):
+class DampedTrendDynamicStanSamplingParameters(Enum):
     DAMPED_FACTOR = 'damped_factor'
+
+
+class DampedTrendStanSamplingParameters(Enum):
+    LOCAL_TREND = 'lt_sum'
+    GLOBAL_TREND = 'gt_sum'
+    GLOBAL_TREND_SLOPE = 'gb'
+    GLOBAL_TREND_LEVEL = 'gl'
 
 
 class RegressionStanSamplingParameters(Enum):
