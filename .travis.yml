@@ -20,7 +20,7 @@ jobs:
         - stage: fossa
           # FOSSA_API_KEY unavailable for pull requests
           # https://docs.travis-ci.com/user/pull-requests/#pull-requests-and-security-restrictions
-          if: $TRAVIS_PULL_REQUEST = "false"
+          if: fork = false
           name: fossa
           script:
               # NOTE: before running `fossa` make sure to save your FOSSA_API_KEY in your
