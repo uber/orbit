@@ -19,7 +19,6 @@ from orbit.utils.utils import is_ordered_datetime
 import numpy as np
 import pandas as pd
 from scipy.stats import nct
-import math as math
 import torch
 from copy import deepcopy
 
@@ -324,7 +323,6 @@ class LGT(Estimator):
         # trend components
         slope_smoothing_factor = model.get(LocalTrendStanSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
         level_smoothing_factor = model.get(LocalTrendStanSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
-        local_global_trend_sums = model.get(LocalTrendStanSamplingParameters.LOCAL_GLOBAL_TREND_SUMS.value)
         local_trend_levels = model.get(LocalTrendStanSamplingParameters.LOCAL_TREND_LEVELS.value)
         local_trend_slopes = model.get(LocalTrendStanSamplingParameters.LOCAL_TREND_SLOPES.value)
         residual_degree_of_freedom = model.get(LocalTrendStanSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
@@ -333,6 +331,7 @@ class LGT(Estimator):
         local_trend_coef = model.get(GlobalTrendStanSamplingParameters.LOCAL_TREND_COEF.value)
         global_trend_power = model.get(GlobalTrendStanSamplingParameters.GLOBAL_TREND_POWER.value)
         global_trend_coef = model.get(GlobalTrendStanSamplingParameters.GLOBAL_TREND_COEF.value)
+        local_global_trend_sums = model.get(GlobalTrendStanSamplingParameters.LOCAL_GLOBAL_TREND_SUMS.value)
 
         # regression components
         pr_beta = model.get(RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)

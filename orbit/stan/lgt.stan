@@ -144,6 +144,9 @@ transformed parameters {
     // The change is suggested from Slawek's original SLGT model
     l[t] = lev_sm * (RESPONSE[t] - s_t - r[t]) + (1 - lev_sm) * l[t-1];
     b[t] = slp_sm * (l[t] - l[t-1]) + (1 - slp_sm) * b[t-1];
+    // with parameterization as mentioned in 7.3 "Forecasting: Principles and Practice"
+    // we can safely use "l[t]" instead of "l[t-1] + b[t-1]" where 0 < sea_sm < 1
+    // otherwise with original one, use 0 < sea_sm < 1 - lev_sm
     if (IS_SEASONAL)
       s[t + SEASONALITY] = sea_sm[1] * (RESPONSE[t] - l[t] - r[t]) + (1 - sea_sm[1]) * s_t;
     yhat[t] = lgt_sum[t] + s_t + r[t];
