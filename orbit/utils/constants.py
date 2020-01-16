@@ -1,7 +1,7 @@
 from enum import Enum
 import os
 
-from uTS.utils.utils_base import get_parent_path
+from orbit.utils.utils import get_parent_path
 
 
 class StanInputMapper(Enum):
