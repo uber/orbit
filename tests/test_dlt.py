@@ -19,6 +19,7 @@ def test_dlt_fit(iclaims_training_data):
 
     assert len(dlt.posterior_samples) == expected_posterior_parameters
 
+
 def test_dlt_get_params(iclaims_training_data):
     dlt = DLT(
         response_col='claims',
