@@ -399,54 +399,23 @@ class DLT(LGT):
         ################################################################
 
         # trim component with right start index
-        full_global_trend = full_global_trend[:, start:]
-        full_local_trend = full_local_trend[:, start:]
+        trend_component = full_global_trend[:, start:] + full_local_trend[:, start:]
         seasonality_component = seasonality_component[:, start:]
 
         # sum components
-        pred_array = \
-            full_global_trend + full_local_trend + seasonality_component + regressor_component
+        pred_array = trend_component + seasonality_component + regressor_component
 
         # if decompose output dictionary of components
         if decompose:
             decomp_dict = {
                 'prediction': pred_array.numpy(),
-                'trend': full_global_trend + full_local_trend.numpy(),
+                'trend': trend_component.numpy(),
                 'seasonality': seasonality_component.numpy(),
                 'regression': regressor_component.numpy()
             }
             return decomp_dict
 
         return {'prediction': pred_array.numpy()}
-
-    # # over ride the parent class to dodge a bug for now
-    # @classmethod
-    # def _get_param_names(cls):
-    #     """Get all class attribute names
-    #
-    #     This method gets class attribute names for `cls` and child classes.
-    #     """
-    #
-    #     # Return a tuple of class cls’s base classes
-    #     # including cls, in method resolution order (mro)
-    #     class_hierarchy = inspect.getmro(cls)
-    #
-    #     # inspect.signature() of cls and all parents
-    #     # excluding `object` base class and LGT
-    #     init_signatures = \
-    #         [inspect.signature(c.__init__) for c in class_hierarchy if not c in (object, LGT)]
-    #
-    #     # unpacked into flat list of params
-    #     all_params = []
-    #     for sig in init_signatures:
-    #         params = [p for p in sig.parameters.values()
-    #                   if p.name != 'self' and p.kind != p.VAR_KEYWORD
-    #                   and p.kind != p.VAR_POSITIONAL]
-    #         all_params.extend(params)
-    #
-    #     param_names = [p.name for p in all_params]
-    #
-    #     return param_names
 
     def _validate_params(self):
         pass

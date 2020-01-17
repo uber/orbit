@@ -13,6 +13,7 @@ def test_dlt_fit(iclaims_training_data):
             chains=4,
         )
 
+    dlt.get_params()
     dlt.fit(df=iclaims_training_data)
 
     expected_posterior_parameters = 13

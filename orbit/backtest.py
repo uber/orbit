@@ -104,38 +104,37 @@ class BacktestEngine:
 
         # if n_train is specified, derive min_train_len internally
         if self.n_train:
-            if n_train < 1:
+            if self.n_train < 1:
                 raise BacktestException('n_train must be >= 1.')
-            self.n_train = n_train
-            self.min_train_len = end_date_idx - forecast_len - (n_train - 1) * self.incremental_len
-        else:
-            self.min_train_len = min_train_len
-            self.n_train = n_train
+            min_train_len = \
+                end_date_idx - self.forecast_len - (self.n_train - 1) * self.incremental_len
 
-        if min_train_len + forecast_len > end_date_idx - start_date_idx + 1:
+        self.min_train_len = min_train_len
+
+        if self.min_train_len + self.forecast_len > end_date_idx - start_date_idx + 1:
             raise BacktestException('required time span is more than the full data frame...')
-        if forecast_len <= 0:
+        if self.forecast_len <= 0:
             raise BacktestException('holdout period length must be positive...')
         if scheme not in ['expanding', 'rolling']:
             raise BacktestException('unknown scheme name...')
 
         # it's more robust to deal with idx instead of dates?
-        bt_end_min = start_date_idx + min_train_len - 1
+        bt_end_min = start_date_idx + self.min_train_len - 1
         bt_end_max = end_date_idx - forecast_len
-        bt_seq = range(bt_end_min, bt_end_max + 1, incremental_len)
+        bt_seq = range(bt_end_min, bt_end_max + 1, self.incremental_len)
 
         bt_meta = {}
         for i, train_end_idx in enumerate(bt_seq):
             bt_meta[i] = {}
             bt_meta[i][BacktestMetaKeys.MODEL.value] = self.model.__class__(**self.model.get_params())
-            train_start_idx = train_end_idx - min_train_len + 1 if scheme == 'rolling' else start_date_idx
+            train_start_idx = train_end_idx - self.min_train_len + 1 if scheme == 'rolling' else start_date_idx
             bt_meta[i][BacktestMetaKeys.TRAIN_START_DATE.value] = df[date_col].iloc[train_start_idx]
             bt_meta[i][BacktestMetaKeys.TRAIN_END_DATE.value] = df[date_col].iloc[train_end_idx]
             bt_meta[i][BacktestMetaKeys.TRAIN_IDX.value] = range(train_start_idx, train_end_idx + 1)
             bt_meta[i][BacktestMetaKeys.TEST_IDX.value] = range(
-                train_end_idx+1, train_end_idx + forecast_len + 1)
+                train_end_idx+1, train_end_idx + self.forecast_len + 1)
             bt_meta[i][BacktestMetaKeys.FORECAST_DATES.value] = df[date_col].iloc[range(
-                train_end_idx+1, train_end_idx + forecast_len + 1)] # one row less
+                train_end_idx+1, train_end_idx + self.forecast_len + 1)] # one row less
 
         self.bt_meta = bt_meta
 

@@ -157,6 +157,8 @@ class Estimator(object):
         out = dict()
 
         for key in self._get_param_names():
+            if not hasattr(self, key):
+                continue
             out[key] = getattr(self, key)
 
         return out
