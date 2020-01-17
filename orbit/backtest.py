@@ -63,8 +63,8 @@ class BacktestEngine:
         if not is_ordered_datetime(df[self.date_col]):
             raise BacktestException('Datetime index must be ordered and not repeat...')
 
-    def create_meta(self, min_train_len, incremental_len, forecast_len, start_date=None,
-                    end_date=None, keep_cols=None,  scheme='expanding'):
+    def create_meta(self, min_train_len, incremental_len, forecast_len, n_train=None,
+                    start_date=None, end_date=None, keep_cols=None, scheme='expanding'):
         """create meta data for back-testing based on the scheduling related parameters.
 
         Parameters
@@ -87,9 +87,9 @@ class BacktestEngine:
 
         """
         self.scheme = scheme
-        self.min_train_len = min_train_len
         self.incremental_len = incremental_len
         self.forecast_len = forecast_len
+        self.n_train = n_train
         self.keep_cols = keep_cols
 
         df = self.df
@@ -101,6 +101,16 @@ class BacktestEngine:
 
         start_date_idx = np.where(df[date_col] == start_date)[0][0]
         end_date_idx = np.where(df[date_col] == end_date)[0][0]
+
+        # if n_train is specified, derive min_train_len internally
+        if self.n_train:
+            if n_train < 1:
+                raise BacktestException('n_train must be >= 1.')
+            self.n_train = n_train
+            self.min_train_len = end_date_idx - forecast_len - (n_train - 1) * self.incremental_len
+        else:
+            self.min_train_len = min_train_len
+            self.n_train = n_train
 
         if min_train_len + forecast_len > end_date_idx - start_date_idx + 1:
             raise BacktestException('required time span is more than the full data frame...')
@@ -230,7 +240,7 @@ class BacktestEngine:
 
 def run_group_backtest(data, date_col, response_col, key_col, pred_cols,
                        mod_list, model_callbacks, fit_callbacks, pred_callbacks,
-                       min_train_len, incremental_len, forecast_len,
+                       min_train_len, incremental_len, forecast_len, n_train=None,
                        transform_fun=None, start_date=None, end_date=None,
                        keep_cols=None, regressor_col=None, mod_names=None,
                        scheme='expanding'):
@@ -252,7 +262,7 @@ def run_group_backtest(data, date_col, response_col, key_col, pred_cols,
             bt_expand = BacktestEngine(mod, df, date_col=date_col, response_col=response_col,
                                        model_callbacks=model_callbacks[i])
 
-            bt_expand.create_meta(min_train_len, incremental_len, forecast_len,
+            bt_expand.create_meta(min_train_len, incremental_len, forecast_len, n_train=n_train,
                                   start_date=start_date, end_date=end_date, keep_cols=keep_cols,
                                   scheme=scheme)
 

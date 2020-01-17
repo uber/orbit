@@ -63,6 +63,7 @@ class StanInputMapper(Enum):
     # MIN_AMPLITUDE = 'min_amplitude'
     # MAX_AMPLITUDE = 'max_amplitude'
 
+
 class LocalTrendStanSamplingParameters(Enum):
     LOCAL_TREND_LEVELS = 'l'
     LOCAL_TREND_SLOPES = 'b'
@@ -85,11 +86,13 @@ class GlobalTrendStanSamplingParameters(Enum):
 class DampedTrendDynamicStanSamplingParameters(Enum):
     DAMPED_FACTOR = 'damped_factor'
 
+
 class DampedTrendStanSamplingParameters(Enum):
     LOCAL_TREND = 'lt_sum'
     GLOBAL_TREND = 'gt_sum'
     GLOBAL_TREND_SLOPE = 'gb'
     GLOBAL_TREND_LEVEL = 'gl'
+
 
 class RegressionStanSamplingParameters(Enum):
     """
@@ -188,6 +191,7 @@ class BacktestMetaKeys(Enum):
     TEST_IDX = 'test_idx'
     FORECAST_DATES = 'forecast_dates'
 
+
 class BacktestFitColumnNames(Enum):
     """ column names for the data frame of back-test fitting result
     """
@@ -197,6 +201,7 @@ class BacktestFitColumnNames(Enum):
     ACTUAL = 'actual'
     PRED = 'pred'
     PRED_HORIZON = 'pred_horizon'
+
 
 class BacktestAnalyzeKeys(Enum):
     """ hash table keys for the dictionary of back-test aggregation analysis result

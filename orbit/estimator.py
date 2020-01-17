@@ -175,7 +175,7 @@ class Estimator(object):
         # inspect.signature() of cls and all parents
         # excluding `object` base class
         init_signatures = \
-            [inspect.signature(c.__init__) for c in class_hierarchy if type(c) is not object]
+            [inspect.signature(c.__init__) for c in class_hierarchy if c is not object]
 
         # unpacked into flat list of params
         all_params = []
