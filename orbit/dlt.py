@@ -167,114 +167,10 @@ class DLT(LGT):
         kw_params = locals()['kwargs']
 
         self.set_params(**local_params)
-        super().__init__(**kwargs)
+        super(LGT, self).__init__(**kwargs)
 
         # associates with the *.stan model resource
         self.stan_model_name = "dlt"
-
-    # def _set_computed_params(self):
-    #     self._setup_computed_regression_params()
-    #     self._setup_seasonality_init()
-
-    # def _setup_computed_regression_params(self):
-    #
-    #     def _validate(regression_params, valid_length):
-    #         for p in regression_params:
-    #             if p is not None and len(p) != valid_length:
-    #                 raise IllegalArgument('Wrong dimension length in Regression Param Input')
-    #
-    #     # start with defaults
-    #     self.num_of_positive_regressors = 0
-    #     self.positive_regressor_col = []
-    #     self.positive_regressor_beta_prior = []
-    #     self.positive_regressor_sigma_prior = []
-    #
-    #     self.num_of_regular_regressors = 0
-    #     self.regular_regressor_col = []
-    #     self.regular_regressor_beta_prior = []
-    #     self.regular_regressor_sigma_prior = []
-    #
-    #     # if no regressors, end here
-    #     if self.regressor_col is None:
-    #         return
-    #
-    #     num_of_regressors = len(self.regressor_col)
-    #
-    #     _validate(
-    #         [self.regressor_sign, self.regressor_beta_prior, self.regressor_sigma_prior],
-    #         num_of_regressors
-    #     )
-    #
-    #     if self.regressor_sign is None:
-    #         self.regressor_sign = [DEFAULT_REGRESSOR_SIGN] * num_of_regressors
-    #
-    #     if self.regressor_beta_prior is None:
-    #         self.regressor_beta_prior = [DEFAULT_REGRESSOR_BETA] * num_of_regressors
-    #
-    #     if self.regressor_sigma_prior is None:
-    #         self.regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * num_of_regressors
-    #
-    #     # inside *.stan files, we need to distinguish regular regressors from positive regressors
-    #     for index, reg_sign in enumerate(self.regressor_sign):
-    #         if reg_sign == '+':
-    #             self.num_of_positive_regressors += 1
-    #             self.positive_regressor_col.append(self.regressor_col[index])
-    #             self.positive_regressor_beta_prior.append(self.regressor_beta_prior[index])
-    #             self.positive_regressor_sigma_prior.append(self.regressor_sigma_prior[index])
-    #         else:
-    #             self.num_of_regular_regressors += 1
-    #             self.regular_regressor_col.append(self.regressor_col[index])
-    #             self.regular_regressor_beta_prior.append(self.regressor_beta_prior[index])
-    #             self.regular_regressor_sigma_prior.append(self.regressor_sigma_prior[index])
-    #
-    # def _set_dynamic_inputs(self):
-    #
-    #     # a few of the following are related with training data.
-    #     self.response = self.df[self.response_col].values
-    #     self.num_of_observations = len(self.response)
-    #     self.cauchy_sd = max(
-    #             self.response,
-    #         ) / 300 if self.cauchy_sd is None else self.cauchy_sd
-    #     self._setup_regressor_inputs()
-
-    # def _setup_seasonality_init(self):
-    #     if self.seasonality > 1:
-    #         # use the seed so we can replicate results with same seed
-    #         np.random.seed(self.seed)
-    #         # replace with empty list from purely 'random'
-    #         self.stan_init = []
-    #         # ch is not used but we need the for loop to append init points across chains
-    #         for ch in range(self.chains):
-    #             temp_init = {}
-    #             # note that although seed fixed, points are different across chains
-    #             seas_init = np.random.normal(loc=0, scale=0.05, size=self.seasonality - 1)
-    #             seas_init[seas_init > self.seasonality_max] = self.seasonality_max
-    #             seas_init[seas_init < self.seasonality_min] = self.seasonality_min
-    #             temp_init['init_sea'] = seas_init
-    #             self.stan_init.append(temp_init)
-
-    # def _setup_regressor_inputs(self):
-    #
-    #     def _validate():
-    #         if self.regressor_col is not None and \
-    #                 not set(self.regressor_col).issubset(self.df.columns):
-    #             raise IllegalArgument(
-    #                 "DataFrame does not contain specified regressor colummn(s)."
-    #             )
-    #
-    #     _validate()
-    #
-    #     self.positive_regressor_matrix = np.zeros((self.num_of_observations, 0))
-    #     self.regular_regressor_matrix = np.zeros((self.num_of_observations, 0))
-    #
-    #     # update regression matrices
-    #     if self.num_of_positive_regressors > 0:
-    #         self.positive_regressor_matrix = self.df.filter(
-    #             items=self.positive_regressor_col,).values
-    #
-    #     if self.num_of_regular_regressors > 0:
-    #         self.regular_regressor_matrix = self.df.filter(
-    #             items=self.regular_regressor_col,).values
 
     def _set_model_param_names(self):
         self.model_param_names += [param.value for param in LocalTrendStanSamplingParameters]
@@ -502,14 +398,14 @@ class DLT(LGT):
         # if decompose output dictionary of components
         if decompose:
             decomp_dict = {
-                'prediction': pred_array,
-                'trend': full_global_trend + full_local_trend,
-                'seasonality': seasonality_component,
-                'regression': regressor_component
+                'prediction': pred_array.numpy(),
+                'trend': full_global_trend + full_local_trend.numpy(),
+                'seasonality': seasonality_component.numpy(),
+                'regression': regressor_component.numpy()
             }
             return decomp_dict
 
-        return {'prediction': pred_array}
+        return {'prediction': pred_array.numpy()}
 
     def _validate_params(self):
         pass
