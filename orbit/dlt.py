@@ -17,7 +17,6 @@ from orbit.exceptions import (
 
 from orbit.utils.utils import is_ordered_datetime
 
-import numpy as np
 import pandas as pd
 from scipy.stats import nct
 import torch
@@ -182,15 +181,18 @@ class DLT(LGT):
 
         # append damped trend param names
         if self.damped_factor_fixed < 0:
-            self.model_param_names += [param.value for param in DampedTrendDynamicStanSamplingParameters]
+            self.model_param_names += [param.value for param in
+                                       DampedTrendDynamicStanSamplingParameters]
 
         # append positive regressors if any
         if self.num_of_positive_regressors > 0:
-            self.model_param_names += [RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
+            self.model_param_names += [
+                RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
 
         # append regular regressors if any
         if self.num_of_regular_regressors > 0:
-            self.model_param_names += [RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value]
+            self.model_param_names += [
+                RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value]
 
     def _predict(self, df=None, include_error=False, decompose=False):
 
@@ -218,12 +220,15 @@ class DLT(LGT):
         )
 
         # trend components
-        slope_smoothing_factor = model.get(LocalTrendStanSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
-        level_smoothing_factor = model.get(LocalTrendStanSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
+        slope_smoothing_factor = model.get(
+            LocalTrendStanSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
+        level_smoothing_factor = model.get(
+            LocalTrendStanSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
         local_trend_levels = model.get(LocalTrendStanSamplingParameters.LOCAL_TREND_LEVELS.value)
         local_trend_slopes = model.get(LocalTrendStanSamplingParameters.LOCAL_TREND_SLOPES.value)
         local_trend = model.get(DampedTrendStanSamplingParameters.LOCAL_TREND.value)
-        residual_degree_of_freedom = model.get(LocalTrendStanSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
+        residual_degree_of_freedom = model.get(
+            LocalTrendStanSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
         residual_sigma = model.get(LocalTrendStanSamplingParameters.RESIDUAL_SIGMA.value)
 
         # set an additional attribute for damped factor when it is fixed
@@ -285,7 +290,8 @@ class DLT(LGT):
             # check if prediction df is a subset of training df
             # e.g. "negative" forecast steps
             n_forecast_steps = len(forecast_dates) or \
-                -(len(set(training_df_meta['date_array']) - set(prediction_df_meta['date_array'])))
+                               -(len(set(training_df_meta['date_array']) - set(
+                                   prediction_df_meta['date_array'])))
             # time index for prediction start
             start = pd.Index(
                 training_df_meta['date_array']).get_loc(prediction_df_meta['prediction_start'])
@@ -338,14 +344,15 @@ class DLT(LGT):
             trend_forecast_matrix \
                 = torch.zeros((num_sample, trend_forecast_length), dtype=torch.double)
             full_local_trend = torch.cat((local_trend[:, :full_len], trend_forecast_matrix), dim=1)
-            full_global_trend = torch.cat((global_trend[:, :full_len], trend_forecast_matrix), dim=1)
+            full_global_trend = torch.cat((global_trend[:, :full_len], trend_forecast_matrix),
+                                          dim=1)
 
             last_local_trend_level = local_trend_levels[:, -1]
             last_local_trend_slope = local_trend_slopes[:, -1]
 
             for idx in range(trained_len, full_len):
                 # based on model, split cases for trend update
-                curr_local_trend =\
+                curr_local_trend = \
                     last_local_trend_level + damped_factor.flatten() * last_local_trend_slope
                 full_local_trend[:, idx] = curr_local_trend
                 full_global_trend[:, idx] = full_global_trend[:, idx - 1] + global_trend_slope
@@ -367,18 +374,20 @@ class DLT(LGT):
                 # now full_local_trend contains the error term and hence we need to use
                 # curr_local_trend as a proxy of previous level index
                 new_local_trend_level = \
-                    level_smoothing_factor * full_local_trend[:, idx]\
+                    level_smoothing_factor * full_local_trend[:, idx] \
                     + (1 - level_smoothing_factor) * curr_local_trend
                 last_local_trend_slope = \
-                    slope_smoothing_factor * (new_local_trend_level - last_local_trend_level)\
-                    + (1 - slope_smoothing_factor) * damped_factor.flatten() * last_local_trend_slope
+                    slope_smoothing_factor * (new_local_trend_level - last_local_trend_level) \
+                    + (
+                            1 - slope_smoothing_factor) * damped_factor.flatten() * last_local_trend_slope
 
                 if self.seasonality > 1 and idx + self.seasonality < full_len:
                     seasonality_component[:, idx + self.seasonality] = \
                         seasonality_smoothing_factor.flatten() \
                         * (full_local_trend[:, idx] + seasonality_component[:, idx] -
                            new_local_trend_level) \
-                        + (1 - seasonality_smoothing_factor.flatten()) * seasonality_component[:, idx]
+                        + (1 - seasonality_smoothing_factor.flatten()) * seasonality_component[:,
+                                                                         idx]
 
                 last_local_trend_level = new_local_trend_level
 
@@ -387,19 +396,17 @@ class DLT(LGT):
         ################################################################
 
         # trim component with right start index
-        full_global_trend = full_global_trend[:, start:]
-        full_local_trend = full_local_trend[:, start:]
+        trend_component = full_global_trend[:, start:] + full_local_trend[:, start:]
         seasonality_component = seasonality_component[:, start:]
 
         # sum components
-        pred_array = \
-            full_global_trend + full_local_trend + seasonality_component + regressor_component
+        pred_array = trend_component + seasonality_component + regressor_component
 
         # if decompose output dictionary of components
         if decompose:
             decomp_dict = {
                 'prediction': pred_array.numpy(),
-                'trend': full_global_trend + full_local_trend.numpy(),
+                'trend': trend_component.numpy(),
                 'seasonality': seasonality_component.numpy(),
                 'regression': regressor_component.numpy()
             }
@@ -409,4 +416,3 @@ class DLT(LGT):
 
     def _validate_params(self):
         pass
-
