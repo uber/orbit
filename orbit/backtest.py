@@ -165,7 +165,7 @@ class BacktestEngine:
         df = self.df
         if verbose:
             print('run {} window back-testing:'.format(self.scheme))
-        for i in tqdm.tqdm(self.bt_meta.keys()):
+        for i in self.bt_meta.keys():
             forecast_dates = self.bt_meta[i][BacktestMetaKeys.FORECAST_DATES.value]
             if verbose:
                 print(
@@ -256,7 +256,7 @@ def run_group_backtest(data, date_col, response_col, key_col, pred_cols,
         metric_dict[idxer] = {}
         res = []
         tic = time.time()
-        for key in unique_keys:
+        for key in tqdm.tqdm(unique_keys):
             df = data[data[key_col] == key]
             bt_expand = BacktestEngine(mod, df, date_col=date_col, response_col=response_col,
                                        model_callbacks=model_callbacks[i])
@@ -268,8 +268,7 @@ def run_group_backtest(data, date_col, response_col, key_col, pred_cols,
             bt_expand.run(verbose=False, save_results=False, fit_callbacks=fit_callbacks[i],
                           pred_callbacks=pred_callbacks[i], pred_col=pred_cols[i],
                           # additional arguments to facilitate model such as prophet
-                          date_col=date_col, response_col=response_col, regressor_col=regressor_col,
-                          )
+                          date_col=date_col, response_col=response_col, regressor_col=regressor_col)
             tmp = bt_expand.bt_res.copy()
             res.append(tmp)
 
@@ -281,6 +280,8 @@ def run_group_backtest(data, date_col, response_col, key_col, pred_cols,
             res[['actual', 'pred']] = res[['actual', 'pred']].apply(transform_fun)
         toc = time.time()
         print('time elapsed {}'.format(time.strftime("%H:%M:%S", time.gmtime(toc - tic))))
+        # sleep to make sure logs are aligned
+        time.sleep(0.68)
     all_res = pd.concat(all_res, axis=0, ignore_index=True)
     return all_res
 
