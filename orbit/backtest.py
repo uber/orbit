@@ -56,11 +56,11 @@ class BacktestEngine:
 
         self.model = model_callbacks(model) if model_callbacks is not None else model
         self.df = df.copy()
-        for key in ['date_col', 'response_col']:
+        for key in ['date_col', 'response_col', 'regressor_col']:
             setattr(self, key, kwargs[key]) if key in kwargs.keys() else \
                 setattr(self, key, getattr(model, key))
 
-        if not is_ordered_datetime(df[self.date_col]):
+        if not is_ordered_datetime(self.df[self.date_col]):
             raise BacktestException('Datetime index must be ordered and not repeat...')
 
     def create_meta(self, min_train_len, incremental_len, forecast_len, n_train=None,
@@ -259,6 +259,7 @@ def run_group_backtest(data, date_col, response_col, key_col, pred_cols,
         for key in tqdm.tqdm(unique_keys):
             df = data[data[key_col] == key]
             bt_expand = BacktestEngine(mod, df, date_col=date_col, response_col=response_col,
+                                       regressor_col=regressor_col,
                                        model_callbacks=model_callbacks[i])
 
             bt_expand.create_meta(min_train_len, incremental_len, forecast_len, n_train=n_train,
@@ -267,8 +268,8 @@ def run_group_backtest(data, date_col, response_col, key_col, pred_cols,
 
             bt_expand.run(verbose=False, save_results=False, fit_callbacks=fit_callbacks[i],
                           pred_callbacks=pred_callbacks[i], pred_col=pred_cols[i],
-                          # additional arguments to facilitate model such as prophet
-                          date_col=date_col, response_col=response_col, regressor_col=regressor_col)
+                          date_col=date_col, response_col=response_col,
+                          regressor_col=regressor_col)
             tmp = bt_expand.bt_res.copy()
             res.append(tmp)
 
@@ -302,16 +303,92 @@ def get_scores(result, metrics={'wmape':wmape, 'smape':smape}, by=None,
         key column(s) such as model tag, geo tag or prediction horizon etc. they are passed as
         into groupby within pandas
     '''
-    if by is None:
-        by = ['dummy_key']
-        result = result.assign(dummy_key='dummy')
-    else:
+    if by:
         # cast `by` as a list
         if not isinstance(by, list):
             by = [by]
+    else:
+        by = ['dummy_key']
+        result = result.assign(dummy_key='dummy')
+
     result_summary = {}
     for metric_name, metric_fun in metrics.items():
         result_summary[metric_name] = result.groupby(by=by).apply(
             lambda x: metric_fun(x[response_col], x[pred_col])).reset_index(name=metric_name)
 
     return result_summary
+
+
+def get_horizon_cum_scores(result, metrics={'wmape':wmape, 'smape':smape}, by=None,
+                           horizon=[1],
+                           pred_horizon_col='pred_horizon',
+                           response_col=BacktestFitColumnNames.ACTUAL.value,
+                           pred_col=BacktestFitColumnNames.PRED.value):
+    ''' utility function to calculate the aggregated metrics based on the back-testing runs
+
+    Parameters
+    ----------
+    result: pd.DataFrame
+        data frame from backtest
+    metrics: dictionary of function
+        metrics such as 'mape', 'wmape', or 'smape' which takes f(actual, pred) as arguments.
+        they are passed into apply within pandas
+    by: list of str
+        key column(s) such as model tag, geo tag or prediction horizon etc. they are passed as
+        into groupby within pandas
+    '''
+    if by:
+        # cast `by` as a list
+        if not isinstance(by, list):
+            by = [by]
+    else:
+        by = ['dummy_key']
+        result = result.assign(dummy_key='dummy')
+
+    result_summary = {}
+    for metric_name, metric_fun in metrics.items():
+        temp_list = []
+        for h in horizon:
+            temp = result[result[pred_horizon_col] <= h].groupby(by=by).apply(
+                lambda x: metric_fun(x[response_col], x[pred_col])).reset_index(name=metric_name)
+            temp[pred_horizon_col] = h
+            temp_list.append(temp)
+        result_summary[metric_name] = pd.concat(temp_list)
+
+    return result_summary
+
+
+def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon', metric_col='smape',
+                           bar_width=0.1, path=None):
+    plt.rcParams['figure.figsize'] = [20, 6]
+    models = df[model_col].unique()
+    metric_horizons = df[pred_horizon_col].unique()
+    n_models = len(models)
+    palette = sns.color_palette("colorblind", n_models)
+
+    # set height of bar
+    bars = list()
+    for m in models:
+        bars.append(list(df[df[model_col] == m][metric_col]))
+
+    # set position of bar on X axis
+    r = list()
+    r.append(np.arange(len(bars[0])))
+    for idx in range(n_models - 1):
+        r.append([x + bar_width for x in r[idx]])
+
+    # make the plot
+    for idx in range(n_models):
+        plt.bar(r[idx], bars[idx], color=palette[idx], width=bar_width, edgecolor='white',
+                label=models[idx])
+
+    # add xticks on the middle of the group bars
+    plt.xlabel('predict-horizon', fontweight='bold')
+    plt.xticks([x + bar_width for x in range(len(bars[0]))], metric_horizons)
+
+    # create legend & show graphic
+    plt.legend()
+    plt.title("Model Comparison with {}".format(metric_col))
+
+    if path:
+        plt.savefig(path)
