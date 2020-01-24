@@ -1,16 +1,4 @@
 import pandas as pd
-import numpy as np
-import tqdm
-import pickle
-import os
-import datetime as dt
-import time
-
-from copy import copy
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 from orbit.utils.metrics import (
     smape,
     wmape
@@ -21,7 +9,6 @@ from orbit.utils.constants import (
     BacktestFitColumnNames,
     BacktestAnalyzeKeys
 )
-from orbit.utils.utils import is_ordered_datetime
 
 
 class Backtest(object):
@@ -102,7 +89,7 @@ class Backtest(object):
         # if n_splits is specified, set min_train_len internally
         if self.n_splits:
             self.min_train_len = \
-                self._df_length - self.forecast_len - (self.n_splits - 1) * self.incremental_len
+                self._df_length - self.forecast_len - (self.n_splits - 1) * self.incremental_len + 1
 
     def _set_split_idx(self):
         scheme = self.scheme
@@ -216,8 +203,8 @@ class Backtest(object):
 
         self._score_df = score_dict
 
-    def _fit_batch(self, models, model_callbacks=None, fit_callbacks=None, predict_callbacks=None,
-                   fit_args=None):
+    def _fit_batch(self, models, model_names=None, model_callbacks=None, fit_callbacks=None,
+                   predict_callbacks=None, fit_args=None):
         """Runs `_fit()` on a batch of models
 
         Parameters
@@ -264,22 +251,21 @@ class Backtest(object):
 
             # some model types raise errors if not converted to string here
             # e.g. models with `len()` over-ridden
-            each_predicted_df['model'] = model.__class__.__name__
+            if model_names:
+                each_predicted_df['model'] = model_names[idx]
+            else:
+                each_predicted_df['model'] = model.__class__.__name__
 
             predicted_df = pd.concat((predicted_df, each_predicted_df), axis=0, ignore_index=True)
 
         self._predicted_df = predicted_df.reset_index(drop=True)
 
-    def _score_batch(self, response_col, predicted_col='prediction',
-                     metrics=None):
+    def _score_batch(self, response_col, predicted_col='prediction', metrics=None):
 
         # default values should not be mutable
         # If none, set to defaults here
         if metrics is None:
-            metrics = {
-                'wmape': wmape,
-                'smape': smape
-            }
+            metrics = {'wmape': wmape, 'smape': smape}
 
         predicted_df = self.get_predictions()
         # predicted_df['model_str'] = predicted_df['model'].apply(str)
@@ -309,10 +295,11 @@ class Backtest(object):
         self._score(response_col=response_col, predicted_col=predicted_col, metrics=metrics)
 
     def fit_score_batch(self, models, response_col, predicted_col='prediction', metrics=None,
-                        model_callbacks=None, fit_callbacks=None, predict_callbacks=None,
-                        fit_args=None):
+                        model_names=None, model_callbacks=None, fit_callbacks=None,
+                        predict_callbacks=None, fit_args=None):
         self._fit_batch(
             models=models,
+            model_names=model_names,
             model_callbacks=model_callbacks,
             fit_callbacks=fit_callbacks,
             predict_callbacks=predict_callbacks,
