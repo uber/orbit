@@ -160,6 +160,7 @@ transformed parameters {
     } else {
         s_t = 0.0;
     }
+    
     lt_sum[t] = l[t-1] + damped_factor_dummy * b[t-1];
     gt_sum[t] = gt_sum[t-1] + gb;
     yhat[t] = gt_sum[t] + lt_sum[t] + s_t + r[t];
