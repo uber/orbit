@@ -1,5 +1,6 @@
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
+from fbprophet import Prophet
 
 from orbit.backtest.backtest import Backtest
 from orbit.lgt import LGT
@@ -84,6 +85,58 @@ def test_single_model_score_with_callback(iclaims_training_data):
     assert True
 
 
+def test_single_model_with_prophet_callback(iclaims_training_data):
+    bt = Backtest(
+        iclaims_training_data,
+        min_train_len=150,
+        incremental_len=13,
+        forecast_len=13,
+        n_splits=4
+    )
+
+    prophet = Prophet()
+
+    def fit_callbacks_prophet(model, train_df, date_col, response_col, regressor_col):
+        train_df = train_df.rename(columns={date_col: "ds", response_col: "y"})
+        if regressor_col is not None:
+            for regressor in regressor_col:
+                model.add_regressor(regressor)
+        model.fit(train_df)
+
+        return
+
+    def pred_callbacks_prophet(model, test_df, date_col, response_col, regressor_col):
+        test_df = test_df.rename(columns={date_col: "ds", response_col: "y"})
+
+        return model.predict(test_df)
+
+    def model_callback_prophet(model, **kwargs):
+        object_type = type(model)
+        new_instance = object_type(**kwargs)
+
+        return new_instance
+
+    fit_args = {
+        'response_col': 'claims',
+        'date_col': 'week',
+        'regressor_col': ['trend.unemploy', 'trend.filling', 'trend.job']
+    }
+
+    bt.fit_score(
+        prophet,
+        response_col='claims',
+        predicted_col='yhat',
+        fit_callback=fit_callbacks_prophet,
+        predict_callback=pred_callbacks_prophet,
+        model_callback=model_callback_prophet,
+        fit_args=fit_args
+    )
+
+    bt.get_predictions()
+
+    assert True
+
+
 def test_batch_model_score(iclaims_training_data):
     bt = Backtest(
         iclaims_training_data,
@@ -157,12 +210,6 @@ def test_batch_model_score_with_callback(iclaims_training_data):
 
         return pd.DataFrame(pred, columns=['prediction'])
 
-    def predict_callback_lgt(model, test_df):
-        pred = model.predict(test_df)
-        pred.drop(columns=['week'], inplace=True)
-
-        return pred
-
     fit_args = {
         'response_col': 'claims',
         'regressor_col': ['trend.unemploy', 'trend.filling', 'trend.job']
@@ -174,7 +221,7 @@ def test_batch_model_score_with_callback(iclaims_training_data):
         response_col='claims',
         predicted_col='prediction',
         fit_callbacks=[None, fit_callback_sklearn],
-        predict_callbacks=[predict_callback_lgt, predict_callback_sklearn],
+        predict_callbacks=[None, predict_callback_sklearn],
         fit_args=[{}, fit_args]
     )
 

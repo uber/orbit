@@ -6,6 +6,8 @@ import os
 import datetime as dt
 import time
 
+from copy import copy
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -146,10 +148,6 @@ class Backtest(object):
         df = self.df
         bt_meta = self._bt_meta
 
-        # if we need to extend model to work with backtest
-        if model_callback is not None:
-            model = model_callback(model)
-
         # todo: kwargs need to be parsed to know
         #   which callbacks they belong to
         #   alternatively, dict for each callback so we know clearly
@@ -157,6 +155,10 @@ class Backtest(object):
         predicted_df = pd.DataFrame({})
 
         for meta_key, meta_value in bt_meta.items():
+            # if we need to extend model to work with backtest
+            if model_callback is not None:
+                model = model_callback(model)
+
             train_df = df.iloc[meta_value[BacktestMetaKeys.TRAIN_IDX.value], :]\
                 .reset_index(drop=True)
             test_df = df.iloc[meta_value[BacktestMetaKeys.TEST_IDX.value], :]\
@@ -180,6 +182,9 @@ class Backtest(object):
 
             results = pd.concat(
                 (test_df, predicted_out), axis=1)
+
+            # drop duplicate columns
+            results = results.loc[:, ~results.columns.duplicated()]
 
             results['split_key'] = meta_key
 
