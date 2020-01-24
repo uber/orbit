@@ -65,6 +65,7 @@ class Backtest(object):
 
         # batch model objects
         self._models = None
+        self._model_names = None
 
     def _validate_params(self):
         if self.scheme not in ['expanding', 'rolling']:
@@ -178,30 +179,52 @@ class Backtest(object):
             predicted_df = pd.concat(
                 (predicted_df, results), axis=0)
 
-        self._predicted_df = predicted_df.reset_index(drop=True)
+        predicted_df = predicted_df.reset_index()
+        predicted_df = predicted_df.rename(columns={'index': 'steps'})
+        predicted_df['steps'] += 1
+        self._predicted_df = predicted_df
 
         return self._predicted_df
 
-    def _score(self, response_col, predicted_col='prediction',
-               metrics=None):
-
-        # default values should not be mutable
-        # If none, set to defaults here
+    def _score_by(self, response_col, groupby, predicted_col='prediction', metrics=None):
         if metrics is None:
-            metrics = {
-                'wmape': wmape,
-                'smape': smape
-            }
+            metrics = {'wmape': wmape, 'smape': smape}
 
         predicted_df = self.get_predictions()
 
-        score_dict = {}
+        score_df = pd.DataFrame({})
 
-        for metric_name, metric_fun in metrics.items():
-            score_dict[metric_name] = metric_fun(predicted_df[response_col],
-                                                 predicted_df[predicted_col])
+        # multiple models or step segmentation
+        if groupby is not None:
+            for metric_name, metric_fun in metrics.items():
+                score_df[metric_name] = predicted_df \
+                    .groupby(by=groupby) \
+                    .apply(lambda x: metric_fun(x[response_col], x[predicted_col]))
+            score_df = score_df.reset_index()
 
-        self._score_df = score_dict
+        # aggregate without groups
+        else:
+            for metric_name, metric_fun in metrics.items():
+                score_df[metric_name] = pd.Series(
+                    metric_fun(predicted_df[response_col], predicted_df[predicted_col])
+                )
+            score_df = score_df.reset_index(drop=True)
+
+        return score_df
+
+    def _set_score(self, response_col, predicted_col='prediction',
+                   metrics=None, include_steps=False):
+
+        groupby = ['steps'] if include_steps else None
+
+        score_df = self._score_by(
+            response_col=response_col,
+            groupby=groupby,
+            predicted_col=predicted_col,
+            metrics=metrics
+        )
+
+        self._score_df = score_df
 
     def _fit_batch(self, models, model_names=None, model_callbacks=None, fit_callbacks=None,
                    predict_callbacks=None, fit_args=None):
@@ -221,6 +244,7 @@ class Backtest(object):
         """
         # store model object if we need to retrieve later
         self._models = models
+        self._model_names = model_names
 
         batch_size = len(models)
 
@@ -260,27 +284,26 @@ class Backtest(object):
 
         self._predicted_df = predicted_df.reset_index(drop=True)
 
-    def _score_batch(self, response_col, predicted_col='prediction', metrics=None):
+    def _set_score_batch(self, response_col, predicted_col='prediction',
+                         metrics=None, include_steps=True):
 
-        # default values should not be mutable
-        # If none, set to defaults here
-        if metrics is None:
-            metrics = {'wmape': wmape, 'smape': smape}
+        # groupby determined by `include_steps` bool
+        groupby = ['model_idx', 'model', 'steps'] \
+            if include_steps \
+            else ['model_idx', 'model']
 
-        predicted_df = self.get_predictions()
-        # predicted_df['model_str'] = predicted_df['model'].apply(str)
+        score_df = self._score_by(
+            response_col=response_col,
+            groupby=groupby,
+            predicted_col=predicted_col,
+            metrics=metrics
+        )
 
-        score_df = pd.DataFrame({})
-
-        for metric_name, metric_fun in metrics.items():
-            score_df[metric_name] = predicted_df\
-                .groupby(by=['model_idx', 'model'])\
-                .apply(lambda x: metric_fun(x[response_col], x[predicted_col]))
-
-        self._score_df = score_df.reset_index()
+        self._score_df = score_df
 
     def fit_score(self, model, response_col, predicted_col='prediction', metrics=None,
-                  model_callback=None, fit_callback=None, predict_callback=None, fit_args=None):
+                  include_steps=False, model_callback=None, fit_callback=None,
+                  predict_callback=None, fit_args=None):
         if fit_args is None:
             fit_args = {}
 
@@ -292,11 +315,12 @@ class Backtest(object):
             fit_args=fit_args
         )
 
-        self._score(response_col=response_col, predicted_col=predicted_col, metrics=metrics)
+        self._set_score(response_col=response_col, predicted_col=predicted_col,
+                        metrics=metrics, include_steps=include_steps)
 
     def fit_score_batch(self, models, response_col, predicted_col='prediction', metrics=None,
-                        model_names=None, model_callbacks=None, fit_callbacks=None,
-                        predict_callbacks=None, fit_args=None):
+                        model_names=None, include_steps=False, model_callbacks=None,
+                        fit_callbacks=None, predict_callbacks=None, fit_args=None):
         self._fit_batch(
             models=models,
             model_names=model_names,
@@ -306,10 +330,19 @@ class Backtest(object):
             fit_args=fit_args
         )
 
-        self._score_batch(response_col=response_col, predicted_col=predicted_col, metrics=metrics)
+        self._set_score_batch(response_col=response_col,
+                              predicted_col=predicted_col,
+                              metrics=metrics,
+                              include_steps=include_steps)
 
-    def get_scores(self):
+    def _append_split_meta(self):
+        pass
+
+    def _append_model_meta(self):
+        pass
+
+    def get_scores(self, include_model_meta=False):
         return self._score_df
 
-    def get_predictions(self):
+    def get_predictions(self, include_split_meta=False):
         return self._predicted_df

@@ -34,8 +34,16 @@ def test_single_model_score(iclaims_training_data):
     # retrieve scores
     scores_df = bt.get_scores()
 
-    # todo: unit test assertions
-    assert True
+    expected_predict_df_columns = ['steps', 'week', 'claims','trend.unemploy',
+                                   'trend.filling', 'trend.job', 'prediction', 'split_key']
+    expected_predict_df_shapes = (39, 8)
+    expected_scores_df_shape = (1, 2)
+
+    assert list(predictions_df.columns) == expected_predict_df_columns
+    assert predictions_df.shape == expected_predict_df_shapes
+    assert scores_df.shape == expected_scores_df_shape
+
+    # todo: unit tests with real values
 
 
 def test_single_model_score_with_callback(iclaims_training_data):
@@ -81,8 +89,16 @@ def test_single_model_score_with_callback(iclaims_training_data):
     predictions_df = bt.get_predictions()
     scores_df = bt.get_scores()
 
-    # todo: write assertions
-    assert True
+    expected_predict_df_columns = ['steps', 'week', 'claims', 'trend.unemploy',
+                                   'trend.filling', 'trend.job', 'prediction', 'split_key']
+    expected_predict_df_shapes = (39, 8)
+    expected_scores_df_shape = (1, 2)
+
+    assert list(predictions_df.columns) == expected_predict_df_columns
+    assert predictions_df.shape == expected_predict_df_shapes
+    assert scores_df.shape == expected_scores_df_shape
+
+    # todo: unit tests with real values
 
 
 def test_single_model_with_prophet_callback(iclaims_training_data):
@@ -172,8 +188,19 @@ def test_batch_model_score(iclaims_training_data):
     predictions_df = bt.get_predictions()
     scores_df = bt.get_scores()
 
-    # todo: write assertions
-    assert True
+    expected_predict_df_columns = ['steps', 'week', 'claims', 'trend.unemploy',
+                                   'trend.filling', 'trend.job', 'prediction', 'split_key',
+                                   'model_idx', 'model']
+    expected_predict_df_shapes = (78, 10)
+    expected_scores_df_shape = (2, 4)
+    expected_number_of_models = 2
+
+    assert list(predictions_df.columns) == expected_predict_df_columns
+    assert predictions_df.shape == expected_predict_df_shapes
+    assert scores_df.shape == expected_scores_df_shape
+    assert len(predictions_df['model_idx'].unique()) == expected_number_of_models
+
+    # todo: write with real values
 
 
 def test_batch_model_score_with_callback(iclaims_training_data):
@@ -232,3 +259,42 @@ def test_batch_model_score_with_callback(iclaims_training_data):
 
     # todo: write assertions
     assert True
+
+
+def test_single_model_score_with_steps(iclaims_training_data):
+    bt = Backtest(
+        iclaims_training_data,
+        min_train_len=150,
+        incremental_len=13,
+        forecast_len=13,
+        n_splits=4
+    )
+
+    lgt = LGT(
+        response_col='claims',
+        date_col='week',
+        predict_method='mean',
+        sample_method='vi',
+        seasonality=52,
+        chains=4,
+    )
+
+    # fit and score the model
+    bt.fit_score(lgt, response_col='claims', predicted_col='prediction', include_steps=True)
+
+    # retrieve predictions
+    predictions_df = bt.get_predictions()
+
+    # retrieve scores
+    scores_df = bt.get_scores()
+
+    expected_predict_df_columns = ['steps', 'week', 'claims','trend.unemploy',
+                                   'trend.filling', 'trend.job', 'prediction', 'split_key']
+    expected_predict_df_shapes = (39, 8)
+    expected_scores_df_shape = (13, 3)
+
+    assert list(predictions_df.columns) == expected_predict_df_columns
+    assert predictions_df.shape == expected_predict_df_shapes
+    assert scores_df.shape == expected_scores_df_shape
+
+    # todo: write with more real prediction values
