@@ -6,6 +6,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 
 from collections import OrderedDict
 
@@ -176,3 +177,39 @@ def vb_extract(results):
         params[name][(..., ) + tuple(idxs)] = param_samples
 
     return params
+
+
+def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon',
+                           metric_col='smape', bar_width=0.1, path=None):
+    plt.rcParams['figure.figsize'] = [20, 6]
+    models = df[model_col].unique()
+    metric_horizons = df[pred_horizon_col].unique()
+    n_models = len(models)
+    palette = sns.color_palette("colorblind", n_models)
+
+    # set height of bar
+    bars = list()
+    for m in models:
+        bars.append(list(df[df[model_col] == m][metric_col]))
+
+    # set position of bar on X axis
+    r = list()
+    r.append(np.arange(len(bars[0])))
+    for idx in range(n_models - 1):
+        r.append([x + bar_width for x in r[idx]])
+
+    # make the plot
+    for idx in range(n_models):
+        plt.bar(r[idx], bars[idx], color=palette[idx], width=bar_width, edgecolor='white',
+                label=models[idx])
+
+    # add xticks on the middle of the group bars
+    plt.xlabel('predict-horizon', fontweight='bold')
+    plt.xticks([x + bar_width for x in range(len(bars[0]))], metric_horizons)
+
+    # create legend & show graphic
+    plt.legend()
+    plt.title("Model Comparison with {}".format(metric_col))
+
+    if path:
+        plt.savefig(path)

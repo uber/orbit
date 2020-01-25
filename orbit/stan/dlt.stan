@@ -59,13 +59,13 @@ data {
   real<lower=-1,upper=1> SEA_MIN;
   real<lower=-1,upper=1> SEA_MAX;
   real<lower=0,upper=1> SEA_SM_MIN;
-  real<lower=0,upper=1> SEA_SM_MAX;
+  // real<lower=0,upper=1> SEA_SM_MAX;
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
 }
 transformed data {
   int IS_SEASONAL;
   int DAMPED_FACTOR_SIZE;
-
+  
   DAMPED_FACTOR_SIZE = 1;
   IS_SEASONAL = 0;
   if (SEASONALITY > 1) IS_SEASONAL = 1;
@@ -93,7 +93,7 @@ parameters {
 
   // seasonal parameters
   //seasonality smoothing parameter
-  real<lower=SEA_SM_MIN,upper=SEA_SM_MAX> sea_sm[IS_SEASONAL ? 1:0];
+  real<lower=SEA_SM_MIN,upper=(1-lev_sm)> sea_sm[IS_SEASONAL ? 1:0];
   //initial seasonality
   vector<lower=SEA_MIN,upper=SEA_MAX>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
 
@@ -160,6 +160,7 @@ transformed parameters {
     } else {
         s_t = 0.0;
     }
+    
     lt_sum[t] = l[t-1] + damped_factor_dummy * b[t-1];
     gt_sum[t] = gt_sum[t-1] + gb;
     yhat[t] = gt_sum[t] + lt_sum[t] + s_t + r[t];
@@ -167,10 +168,10 @@ transformed parameters {
     l[t] = lev_sm * (RESPONSE[t] - gt_sum[t] - s_t - r[t]) + (1 - lev_sm) * lt_sum[t];
     b[t] = slp_sm * (l[t] - l[t-1]) + (1 - slp_sm) * damped_factor_dummy * b[t-1];
     // with parameterization as mentioned in 7.3 "Forecasting: Principles and Practice"
-    // we can safely use "l[t]" instead of "l[t-1] + b[t-1]" where 0 < sea_sm < 1
+    // we can safely use "l[t]" instead of "l[t-1] + damped_factor_dummy * b[t-1]" where 0 < sea_sm < 1
     // otherwise with original one, use 0 < sea_sm < 1 - lev_sm
     if (IS_SEASONAL)
-        s[t + SEASONALITY] = sea_sm[1] * (RESPONSE[t] - gt_sum[t] - l[t] - r[t]) + (1 - sea_sm[1]) * s_t;
+        s[t + SEASONALITY] = sea_sm[1] * (RESPONSE[t] - gt_sum[t] - lt_sum[t]  - r[t]) + (1 - sea_sm[1]) * s_t;
   }
 
   obs_sigma = CAUCHY_SD * tan(obs_sigma_unif_dummy); // obs_sigma ~ cauchy(0, CAUCHY_SD);

@@ -55,7 +55,7 @@ data {
   real<lower=-1,upper=1> SEA_MIN;
   real<lower=-1,upper=1> SEA_MAX;
   real<lower=0,upper=1> SEA_SM_MIN;
-  real<lower=0,upper=1> SEA_SM_MAX;
+  // real<lower=0,upper=1> SEA_SM_MAX;
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
 }
 transformed data {
@@ -74,7 +74,8 @@ parameters {
   real<lower=SLP_SM_MIN,upper=SLP_SM_MAX> slp_sm; //slope smoothing parameter
 
   // residual tuning parameters
-  real<lower=0> obs_sigma;
+  // real<lower=0> obs_sigma;
+  real<lower=0, upper=pi()/2> obs_sigma_unif_dummy;
   real<lower=MIN_NU,upper=MAX_NU> nu;
 
   // trend parameters
@@ -84,12 +85,13 @@ parameters {
 
   // seasonal parameters
   //seasonality smoothing parameter
-  real<lower=SEA_SM_MIN,upper=SEA_SM_MAX> sea_sm[IS_SEASONAL ? 1:0];
+  real<lower=SEA_SM_MIN,upper=(1-lev_sm)> sea_sm[IS_SEASONAL ? 1:0];
   //initial seasonality
   vector<lower=SEA_MIN,upper=SEA_MAX>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
 }
 transformed parameters {
   // level; we don't have lower bound for damped trend but 0 for lgt
+  real<lower=0> obs_sigma;
   vector<lower=0>[NUM_OF_OBS] l;
   vector[NUM_OF_OBS] b; // slope
   vector[NUM_OF_OBS] pr; //positive regression component
@@ -138,7 +140,10 @@ transformed parameters {
     } else {
         s_t = 0.0;
     }
+    
     lgt_sum[t] = l[t-1] + gt_coef * fabs(l[t-1]) ^ gt_pow + lt_coef * b[t-1];
+    yhat[t] = lgt_sum[t] + s_t + r[t];
+    
     // l[t] update equation with l[t-1] ONLY by excluding b[t-1];
     // It is intentionally different from the Holt-Winter form
     // The change is suggested from Slawek's original SLGT model
@@ -149,12 +154,13 @@ transformed parameters {
     // otherwise with original one, use 0 < sea_sm < 1 - lev_sm
     if (IS_SEASONAL)
       s[t + SEASONALITY] = sea_sm[1] * (RESPONSE[t] - l[t] - r[t]) + (1 - sea_sm[1]) * s_t;
-    yhat[t] = lgt_sum[t] + s_t + r[t];
+
   }
+  obs_sigma = CAUCHY_SD * tan(obs_sigma_unif_dummy); // obs_sigma ~ cauchy(0, CAUCHY_SD);
 }
 model {
   //prior for residuals
-  obs_sigma ~ cauchy(0, CAUCHY_SD) T[0,];
+  // obs_sigma ~ cauchy(0, CAUCHY_SD) T[0,];
   if (NUM_OF_PR > 0) {
     if (FIX_REG_COEF_SD == 0) {
       //weak prior for sigma
