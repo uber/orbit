@@ -151,7 +151,7 @@ class DLT(LGT):
     def __init__(
             self, regressor_col=None, regressor_sign=None,
             regressor_beta_prior=None, regressor_sigma_prior=None,
-            cauchy_sd=None, min_nu=5, max_nu=40,
+            is_multiplicative=True, cauchy_sd=None, min_nu=5, max_nu=40,
             seasonality=0, seasonality_min=-1.0, seasonality_max=1.0,
             seasonality_smoothing_min=0, seasonality_smoothing_max=1,
             level_smoothing_min=0, level_smoothing_max=1,
@@ -166,7 +166,7 @@ class DLT(LGT):
         kw_params = locals()['kwargs']
 
         self.set_params(**local_params)
-        super(LGT, self).__init__(**kwargs)
+        super(LGT, self).__init__(**kwargs)  # note this is the base class
 
         # associates with the *.stan model resource
         self.stan_model_name = "dlt"
@@ -256,6 +256,10 @@ class DLT(LGT):
 
         # get training df meta
         training_df_meta = self.training_df_meta
+
+        # for multiplicative model
+        if self.is_multiplicative:
+            self._log_transform_df()
 
         # get prediction df meta
         prediction_df_meta = {
@@ -401,6 +405,13 @@ class DLT(LGT):
 
         # sum components
         pred_array = trend_component + seasonality_component + regressor_component
+
+        # for the multiplicative case
+        if self.is_multiplicative:
+            pred_array = torch.exp(pred_array)
+            trend_component = pred_array * trend_component
+            seasonality_component = pred_array * seasonality_component
+            regressor_component = pred_array * regressor_component
 
         # if decompose output dictionary of components
         if decompose:

@@ -151,7 +151,7 @@ class LGT(Estimator):
     def __init__(
             self, regressor_col=None, regressor_sign=None,
             regressor_beta_prior=None, regressor_sigma_prior=None,
-            cauchy_sd=None, min_nu=5, max_nu=40,
+            is_multiplicative=True, cauchy_sd=None, min_nu=5, max_nu=40,
             seasonality=0, seasonality_min=-1.0, seasonality_max=1.0,
             seasonality_smoothing_min=0, seasonality_smoothing_max=1,
             global_trend_coef_min=-0.5, global_trend_coef_max=0.5,
@@ -228,7 +228,26 @@ class LGT(Estimator):
                 self.regular_regressor_beta_prior.append(self.regressor_beta_prior[index])
                 self.regular_regressor_sigma_prior.append(self.regressor_sigma_prior[index])
 
+    def _log_transform_df(self):
+        df = self.df
+
+        data_cols = [self.response_col] + self.regressor_col \
+            if self.regressor_col is not None \
+            else [self.response_col]
+
+        # make sure values are >= 0
+        if np.any(df[data_cols] <= 0):
+            raise IllegalArgument('Response and Features must be a positive number')
+
+        # log transform the response column
+        df[self.response_col] = df[self.response_col].apply(np.log)
+        # log transform the regressor columns if exist
+        if self.regressor_col is not None:
+            df[self.regressor_col] = df[self.regressor_col].apply(np.log)
+
     def _set_dynamic_inputs(self):
+        if self.is_multiplicative:
+            self._log_transform_df()
 
         # a few of the following are related with training data.
         self.response = self.df[self.response_col].values
@@ -347,6 +366,10 @@ class LGT(Estimator):
 
         # get training df meta
         training_df_meta = self.training_df_meta
+
+        # for multiplicative model
+        if self.is_multiplicative:
+            self._log_transform_df()
 
         # get prediction df meta
         prediction_df_meta = {
@@ -496,6 +519,13 @@ class LGT(Estimator):
 
         # sum components
         pred_array = trend_component + seasonality_component + regressor_component
+
+        # for the multiplicative case
+        if self.is_multiplicative:
+            pred_array = torch.exp(pred_array)
+            trend_component = pred_array * trend_component
+            seasonality_component = pred_array * seasonality_component
+            regressor_component = pred_array * regressor_component
 
         # if decompose output dictionary of components
         if decompose:
