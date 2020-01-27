@@ -18,9 +18,12 @@ from orbit.exceptions import (
 from orbit.utils.utils import is_ordered_datetime
 
 import pandas as pd
+import numpy as np
+import math
 from scipy.stats import nct
 import torch
 from copy import deepcopy
+from sklearn.preprocessing import MinMaxScaler
 
 
 class DLT(LGT):
@@ -151,7 +154,7 @@ class DLT(LGT):
     def __init__(
             self, regressor_col=None, regressor_sign=None,
             regressor_beta_prior=None, regressor_sigma_prior=None,
-            is_multiplicative=True, cauchy_sd=None, min_nu=5, max_nu=40,
+            is_multiplicative=True, is_rescale=True, cauchy_sd=None, min_nu=5, max_nu=40,
             seasonality=0, seasonality_min=-1.0, seasonality_max=1.0,
             seasonality_smoothing_min=0, seasonality_smoothing_max=1,
             level_smoothing_min=0, level_smoothing_max=1,
@@ -258,8 +261,10 @@ class DLT(LGT):
         training_df_meta = self.training_df_meta
 
         # for multiplicative model
+        if self.is_rescale:
+            self.df = self._rescale_df(self.df, do_fit=True)
         if self.is_multiplicative:
-            self._log_transform_df()
+            self.df = self._transform_df(self.df, do_fit=True)
 
         # get prediction df meta
         prediction_df_meta = {
@@ -382,8 +387,7 @@ class DLT(LGT):
                     + (1 - level_smoothing_factor) * curr_local_trend
                 last_local_trend_slope = \
                     slope_smoothing_factor * (new_local_trend_level - last_local_trend_level) \
-                    + (
-                            1 - slope_smoothing_factor) * damped_factor.flatten() * last_local_trend_slope
+                    + (1 - slope_smoothing_factor) * damped_factor.flatten() * last_local_trend_slope
 
                 if self.seasonality > 1 and idx + self.seasonality < full_len:
                     seasonality_component[:, idx + self.seasonality] = \
@@ -408,22 +412,38 @@ class DLT(LGT):
 
         # for the multiplicative case
         if self.is_multiplicative:
-            pred_array = torch.exp(pred_array)
-            trend_component = pred_array * trend_component
-            seasonality_component = pred_array * seasonality_component
-            regressor_component = pred_array * regressor_component
+            pred_array = (torch.exp(pred_array)).numpy()
+            trend_component = (torch.exp(trend_component)).numpy()
+            seasonality_component = (torch.exp(seasonality_component)).numpy()
+            regressor_component = (torch.exp(regressor_component)).numpy()
+        else:
+            pred_array = pred_array.numpy()
+            trend_component = trend_component.numpy()
+            seasonality_component = seasonality_component.numpy()
+            regressor_component = regressor_component.numpy()
+
+        if self.is_rescale:
+            # work around response_min_max_scaler initial shape
+            init_shape = pred_array.shape
+            # enfroce a 2D array
+            pred_array = np.reshape(pred_array, (-1, 1))
+            pred_array = self.response_min_max_scaler.inverse_transform(pred_array)
+            pred_array = pred_array.reshape(init_shape)
+            # we assume the unit is based on trend component while others are multipliers
+            trend_component = self.response_min_max_scaler.inverse_transform(trend_component)
 
         # if decompose output dictionary of components
         if decompose:
             decomp_dict = {
-                'prediction': pred_array.numpy(),
-                'trend': trend_component.numpy(),
-                'seasonality': seasonality_component.numpy(),
-                'regression': regressor_component.numpy()
+                'prediction': pred_array,
+                'trend': trend_component,
+                'seasonality': seasonality_component,
+                'regression': regressor_component
             }
+
             return decomp_dict
 
-        return {'prediction': pred_array.numpy()}
+        return {'prediction': pred_array}
 
     def _validate_params(self):
         pass

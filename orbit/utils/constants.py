@@ -52,16 +52,6 @@ class StanInputMapper(Enum):
     REGULAR_REGRESSOR_MATRIX = 'RR_MAT'
     REGULAR_REGRESSOR_BETA_PRIOR = 'RR_BETA_PRIOR'
     REGULAR_REGRESSOR_SIGMA_PRIOR = 'RR_SIGMA_PRIOR'
-    # Adstock
-    # NUM_OF_ADSTOCKS = 'num_of_adstocks'
-    # ADSTOCK_TRANSFORMATION_SCALARS = 'adstock_transformation_scalars'
-    # ADSTOCK_COLUMN_POSITIONS = 'adstock_column_positions'
-    # LENGTH_OF_ADSTOCK_WEIGHTS = 'length_of_adstock_weights'
-    # MAX_LENGTH_OF_ADSTOCK_WEIGHTS = 'max_length_of_adstock_weights'
-    # MIN_SPIKE = 'min_spike'
-    # MAX_SPIKE = 'max_spike'
-    # MIN_AMPLITUDE = 'min_amplitude'
-    # MAX_AMPLITUDE = 'max_amplitude'
 
 
 class LocalTrendStanSamplingParameters(Enum):
