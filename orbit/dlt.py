@@ -154,7 +154,7 @@ class DLT(LGT):
     def __init__(
             self, regressor_col=None, regressor_sign=None,
             regressor_beta_prior=None, regressor_sigma_prior=None,
-            is_multiplicative=True, is_rescale=True, cauchy_sd=None, min_nu=5, max_nu=40,
+            is_multiplicative=True, auto_scale=False, cauchy_sd=None, min_nu=5, max_nu=40,
             seasonality=0, seasonality_min=-1.0, seasonality_max=1.0,
             seasonality_smoothing_min=0, seasonality_smoothing_max=1,
             level_smoothing_min=0, level_smoothing_max=1,
@@ -261,8 +261,8 @@ class DLT(LGT):
         training_df_meta = self.training_df_meta
 
         # for multiplicative model
-        if self.is_rescale:
-            self.df = self._rescale_df(self.df, do_fit=True)
+        if self.auto_scale:
+            self.df = self._scale_df(self.df, do_fit=True)
         if self.is_multiplicative:
             self.df = self._transform_df(self.df, do_fit=True)
 
@@ -422,7 +422,7 @@ class DLT(LGT):
             seasonality_component = seasonality_component.numpy()
             regressor_component = regressor_component.numpy()
 
-        if self.is_rescale:
+        if self.auto_scale:
             # work around response_min_max_scaler initial shape
             init_shape = pred_array.shape
             # enfroce a 2D array

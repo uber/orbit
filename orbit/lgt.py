@@ -152,7 +152,7 @@ class LGT(Estimator):
     def __init__(
             self, regressor_col=None, regressor_sign=None,
             regressor_beta_prior=None, regressor_sigma_prior=None,
-            is_multiplicative=True, is_rescale=True, cauchy_sd=None, min_nu=5, max_nu=40,
+            is_multiplicative=True, auto_scale=True, cauchy_sd=None, min_nu=5, max_nu=40,
             seasonality=0, seasonality_min=-1.0, seasonality_max=1.0,
             seasonality_smoothing_min=0, seasonality_smoothing_max=1.0,
             global_trend_coef_min=-0.5, global_trend_coef_max=0.5,
@@ -233,7 +233,7 @@ class LGT(Estimator):
                 self.regular_regressor_beta_prior.append(self.regressor_beta_prior[index])
                 self.regular_regressor_sigma_prior.append(self.regressor_sigma_prior[index])
 
-    def _rescale_df(self, df, do_fit=False):
+    def _scale_df(self, df, do_fit=False):
         n = df.shape[0]
         x = df[self.response_col].astype(np.float64).values.reshape(n, 1)
 
@@ -275,8 +275,8 @@ class LGT(Estimator):
         return df
 
     def _set_dynamic_inputs(self):
-        if self.is_rescale:
-            self.df = self._rescale_df(self.df, do_fit=True)
+        if self.auto_scale:
+            self.df = self._scale_df(self.df, do_fit=True)
         if self.is_multiplicative:
             self.df = self._transform_df(self.df, do_fit=True)
 
@@ -399,8 +399,8 @@ class LGT(Estimator):
         training_df_meta = self.training_df_meta
         # remove reference from original input
         df = df.copy()
-        if self.is_rescale:
-            self._rescale_df(df, do_fit=False)
+        if self.auto_scale:
+            self._scale_df(df, do_fit=False)
         # for multiplicative model
         if self.is_multiplicative:
             self._transform_df(df, do_fit=False)
@@ -566,7 +566,7 @@ class LGT(Estimator):
             seasonality_component = seasonality_component.numpy()
             regressor_component = regressor_component.numpy()
 
-        if self.is_rescale:
+        if self.auto_scale:
             # work around response_min_max_scaler initial shape
             init_shape = pred_array.shape
             # enfroce a 2D array
