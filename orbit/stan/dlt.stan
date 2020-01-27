@@ -88,14 +88,13 @@ parameters {
 
   // trend parameters
   real gl; // global level
-  real gb;
-  // real<lower=-1,upper=1> gb; // global slope
+  real gb; // global slope
   real<lower=DAMPED_FACTOR_MIN,upper=DAMPED_FACTOR_MAX> damped_factor[DAMPED_FACTOR_SIZE];
 
   // seasonal parameters
   //seasonality smoothing parameter
   real<lower=SEA_SM_MIN,upper=SEA_SM_MAX> sea_sm[IS_SEASONAL ? 1:0];
-  //initial seasonality
+  // initial seasonality
   vector<lower=SEA_MIN,upper=SEA_MAX>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
 
 }
@@ -109,7 +108,7 @@ transformed parameters {
   vector[NUM_OF_OBS] gt_sum; // sum of global trend
   vector[NUM_OF_OBS] lt_sum; // sum of local trend
   vector[NUM_OF_OBS] yhat; // response prediction
-  //seasonality vector with 1-cycle upfront as the initial condition
+  // seasonality vector with 1-cycle upfront as the initial condition
   vector[(NUM_OF_OBS + SEASONALITY) * IS_SEASONAL] s;
   real damped_factor_dummy;
 
@@ -211,6 +210,7 @@ model {
   for (t in 2:NUM_OF_OBS) {
     RESPONSE[t] ~ student_t(nu, yhat[t], obs_sigma);
   }
+  // global trend prior
   gl ~ normal(0, 10);
   gb ~ normal(0, 1);
 }

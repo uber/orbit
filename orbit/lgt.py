@@ -239,7 +239,8 @@ class LGT(Estimator):
 
         if do_fit:
             upper = max(10, np.max(x))
-            self.response_min_max_scaler = MinMaxScaler((2.8, upper))
+            lower = max(2.8, np.min(x))
+            self.response_min_max_scaler = MinMaxScaler((lower, upper))
             df[self.response_col] = self.response_min_max_scaler.fit_transform(x).flatten()
         # else:
         #     df[self.response_col] = self.response_min_max_scaler.transform(x).flatten()
@@ -248,7 +249,7 @@ class LGT(Estimator):
             num_of_regressor = len(self.regressor_col)
             if do_fit:
                 self.regressor_min_max_scaler = \
-                    MinMaxScaler((2.8 / num_of_regressor / 2, upper / num_of_regressor / 2))
+                    MinMaxScaler((lower / num_of_regressor / 2, upper / num_of_regressor / 2))
                 df[self.regressor_col] = \
                     self.regressor_min_max_scaler.fit_transform(df[self.regressor_col])
             else:
@@ -257,20 +258,22 @@ class LGT(Estimator):
         return df
 
     def _transform_df(self, df, do_fit=False):
-        # data_cols = [self.response_col] + self.regressor_col \
-        #     if self.regressor_col is not None \
-        #     else [self.response_col]
-        #
-        # # make sure values are >= 0
-        # if np.any(df[data_cols] <= 0):
-        #     raise IllegalArgument('Response and Features must be a positive number')
-
         # transform the response column
         if do_fit:
+            data_cols = [self.response_col] + self.regressor_col \
+                if self.regressor_col is not None \
+                else [self.response_col]
+
+            # make sure values are >= 0
+            if np.any(df[data_cols] <= 0):
+                raise IllegalArgument('Response and Features must be a positive number')
             df[self.response_col] = df[self.response_col].apply(np.log)
 
         # transform the regressor columns if exist
         if self.regressor_col is not None:
+            # make sure values are >= 0
+            if np.any(df[self.regressor_col] <= 0):
+                raise IllegalArgument('Features must be a positive number')
             df[self.regressor_col] = df[self.regressor_col].apply(np.log)
         return df
 
