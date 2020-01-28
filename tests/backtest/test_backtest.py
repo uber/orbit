@@ -35,7 +35,7 @@ def test_single_model_score(iclaims_training_data):
 
     expected_predict_df_columns = ['steps', 'week', 'claims','trend.unemploy',
                                    'trend.filling', 'trend.job', 'prediction', 'split_key']
-    expected_predict_df_shapes = (39, 8)
+    expected_predict_df_shapes = (52, 8)
     expected_scores_df_shape = (1, 2)
 
     assert list(predictions_df.columns) == expected_predict_df_columns
@@ -90,7 +90,7 @@ def test_single_model_score_with_callback(iclaims_training_data):
 
     expected_predict_df_columns = ['steps', 'week', 'claims', 'trend.unemploy',
                                    'trend.filling', 'trend.job', 'prediction', 'split_key']
-    expected_predict_df_shapes = (39, 8)
+    expected_predict_df_shapes = (52, 8)
     expected_scores_df_shape = (1, 2)
 
     assert list(predictions_df.columns) == expected_predict_df_columns
@@ -138,7 +138,7 @@ def test_batch_model_score(iclaims_training_data):
     expected_predict_df_columns = ['steps', 'week', 'claims', 'trend.unemploy',
                                    'trend.filling', 'trend.job', 'prediction', 'split_key',
                                    'model_idx', 'model']
-    expected_predict_df_shapes = (78, 10)
+    expected_predict_df_shapes = (104, 10)
     expected_scores_df_shape = (2, 4)
     expected_number_of_models = 2
 
@@ -237,7 +237,7 @@ def test_single_model_score_with_steps(iclaims_training_data):
 
     expected_predict_df_columns = ['steps', 'week', 'claims','trend.unemploy',
                                    'trend.filling', 'trend.job', 'prediction', 'split_key']
-    expected_predict_df_shapes = (39, 8)
+    expected_predict_df_shapes = (52, 8)
     expected_scores_df_shape = (13, 3)
 
     assert list(predictions_df.columns) == expected_predict_df_columns

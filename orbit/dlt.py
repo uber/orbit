@@ -78,6 +78,13 @@ class DLT(LGT):
     regressor_sigma_prior : list
         prior values for regressors standard deviation. The length of `regressor_sigma_prior` must
         be the same as `regressor_col`
+    is_multiplicative : bool
+        if True, response and regressor values are log transformed such that the model is
+        multiplicative. If False, no transformations are applied. Default True.
+    auto_scale : bool
+        **EXPERIMENTAL AND UNSTABLE** if True, response and regressor values are transformed
+        with a `MinMaxScaler` such that the min value is `e` and max value is
+        the max value in the data
     cauchy_sd : float
         scale parameter of prior of observation residuals scale parameter `C_scale`
     seasonality : int
@@ -264,7 +271,7 @@ class DLT(LGT):
         if self.auto_scale:
             self.df = self._scale_df(self.df, do_fit=True)
         if self.is_multiplicative:
-            self.df = self._transform_df(self.df, do_fit=True)
+            self.df = self._log_transform_df(self.df, do_fit=True)
 
         # get prediction df meta
         prediction_df_meta = {
