@@ -161,7 +161,7 @@ class DLT(LGT):
             slope_smoothing_min=0, slope_smoothing_max=1,
             use_damped_trend=0, damped_factor_min=0.8, damped_factor_max=0.999,
             regression_coef_max=1.0, fix_regression_coef_sd=1, regressor_sigma_sd=1.0,
-            damped_factor_fixed=0.9, **kwargs
+            damped_factor_fixed=0.8, **kwargs
     ):
 
         # get all init args and values and set

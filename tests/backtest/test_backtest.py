@@ -11,8 +11,8 @@ def test_single_model_score(iclaims_training_data):
     bt = Backtest(
         iclaims_training_data,
         min_train_len=150,
-        incremental_len=13,
-        forecast_len=13,
+        incremental_len=12,
+        forecast_len=8,
         n_splits=4
     )
 
@@ -38,6 +38,11 @@ def test_single_model_score(iclaims_training_data):
                                    'trend.filling', 'trend.job', 'prediction', 'split_key']
     expected_predict_df_shapes = (39, 8)
     expected_scores_df_shape = (1, 2)
+    expected_splits = 4
+    expected_last_train_idx = range(0, 435)
+    expected_last_test_idx = range(435, 443)
+    expected_first_train_idx = range(0, 430)
+    expected_first_test_idx = range(0, 430)
 
     assert list(predictions_df.columns) == expected_predict_df_columns
     assert predictions_df.shape == expected_predict_df_shapes

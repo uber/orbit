@@ -152,7 +152,7 @@ class LGT(Estimator):
     def __init__(
             self, regressor_col=None, regressor_sign=None,
             regressor_beta_prior=None, regressor_sigma_prior=None,
-            is_multiplicative=True, auto_scale=True, cauchy_sd=None, min_nu=5, max_nu=40,
+            is_multiplicative=True, auto_scale=False, cauchy_sd=None, min_nu=5, max_nu=40,
             seasonality=0, seasonality_min=-1.0, seasonality_max=1.0,
             seasonality_smoothing_min=0, seasonality_smoothing_max=1.0,
             global_trend_coef_min=-0.5, global_trend_coef_max=0.5,

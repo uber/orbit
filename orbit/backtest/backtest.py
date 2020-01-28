@@ -191,7 +191,6 @@ class Backtest(object):
             metrics = {'wmape': wmape, 'smape': smape}
 
         predicted_df = self.get_predictions()
-
         score_df = pd.DataFrame({})
 
         # multiple models or step segmentation
@@ -255,7 +254,7 @@ class Backtest(object):
         if predict_callbacks is None:
             predict_callbacks = [None] * batch_size
         if fit_args is None:
-            fit_args = [None] * batch_size
+            fit_args = [{}] * batch_size
 
         # todo: validate that all the lengths of args align
 
@@ -321,6 +320,7 @@ class Backtest(object):
     def fit_score_batch(self, models, response_col, predicted_col='prediction', metrics=None,
                         model_names=None, include_steps=False, model_callbacks=None,
                         fit_callbacks=None, predict_callbacks=None, fit_args=None):
+
         self._fit_batch(
             models=models,
             model_names=model_names,
