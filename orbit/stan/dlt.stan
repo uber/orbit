@@ -22,7 +22,7 @@ data {
   // Data Input
   // Response Data
   int<lower=1> NUM_OF_OBS; // number of observations
-  vector<lower=0>[NUM_OF_OBS] RESPONSE;
+  vector[NUM_OF_OBS] RESPONSE;
   // Regression Data
   int<lower=0> NUM_OF_PR; // number of positive regressors
   matrix[NUM_OF_OBS, NUM_OF_PR] PR_MAT; // positive coef regressors, less volatile range
@@ -59,7 +59,7 @@ data {
   real<lower=-1,upper=1> SEA_MIN;
   real<lower=-1,upper=1> SEA_MAX;
   real<lower=0,upper=1> SEA_SM_MIN;
-  // real<lower=0,upper=1> SEA_SM_MAX;
+  real<lower=0,upper=1> SEA_SM_MAX;
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
 }
 transformed data {
@@ -82,24 +82,24 @@ parameters {
   real<lower=SLP_SM_MIN,upper=SLP_SM_MAX> slp_sm; //slope smoothing parameter
 
   // residual tuning parameters
-  // real<lower=0> obs_sigma;
-  real<lower=0, upper=pi()/2> obs_sigma_unif_dummy;
+  real<lower=0> obs_sigma;
+  // real<lower=0, upper=pi()/2> obs_sigma_unif_dummy;
   real<lower=MIN_NU,upper=MAX_NU> nu;
 
   // trend parameters
   real gl; // global level
-  real<lower=-1,upper=1> gb; // global slope
+  real gb; // global slope
   real<lower=DAMPED_FACTOR_MIN,upper=DAMPED_FACTOR_MAX> damped_factor[DAMPED_FACTOR_SIZE];
 
   // seasonal parameters
   //seasonality smoothing parameter
-  real<lower=SEA_SM_MIN,upper=(1-lev_sm)> sea_sm[IS_SEASONAL ? 1:0];
-  //initial seasonality
+  real<lower=SEA_SM_MIN,upper=SEA_SM_MAX> sea_sm[IS_SEASONAL ? 1:0];
+  // initial seasonality
   vector<lower=SEA_MIN,upper=SEA_MAX>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
 
 }
 transformed parameters {
-  real<lower=0> obs_sigma;
+  // real<lower=0> obs_sigma;
   vector[NUM_OF_OBS] l; // local level
   vector[NUM_OF_OBS] b; // local slope
   vector[NUM_OF_OBS] pr; //positive regression component
@@ -108,7 +108,7 @@ transformed parameters {
   vector[NUM_OF_OBS] gt_sum; // sum of global trend
   vector[NUM_OF_OBS] lt_sum; // sum of local trend
   vector[NUM_OF_OBS] yhat; // response prediction
-  //seasonality vector with 1-cycle upfront as the initial condition
+  // seasonality vector with 1-cycle upfront as the initial condition
   vector[(NUM_OF_OBS + SEASONALITY) * IS_SEASONAL] s;
   real damped_factor_dummy;
 
@@ -171,14 +171,14 @@ transformed parameters {
     // we can safely use "l[t]" instead of "l[t-1] + damped_factor_dummy * b[t-1]" where 0 < sea_sm < 1
     // otherwise with original one, use 0 < sea_sm < 1 - lev_sm
     if (IS_SEASONAL)
-        s[t + SEASONALITY] = sea_sm[1] * (RESPONSE[t] - gt_sum[t] - lt_sum[t]  - r[t]) + (1 - sea_sm[1]) * s_t;
+        s[t + SEASONALITY] = sea_sm[1] * (RESPONSE[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm[1]) * s_t;
   }
 
-  obs_sigma = CAUCHY_SD * tan(obs_sigma_unif_dummy); // obs_sigma ~ cauchy(0, CAUCHY_SD);
+  // obs_sigma = CAUCHY_SD * tan(obs_sigma_unif_dummy); // obs_sigma ~ cauchy(0, CAUCHY_SD);
 }
 model {
   // prior for residuals
-  // obs_sigma ~ cauchy(0, CAUCHY_SD) T[0,];
+  obs_sigma ~ cauchy(0, CAUCHY_SD) T[0,];
   if (NUM_OF_PR > 0) {
     if (FIX_REG_COEF_SD == 0) {
       //weak prior for sigma
@@ -210,4 +210,7 @@ model {
   for (t in 2:NUM_OF_OBS) {
     RESPONSE[t] ~ student_t(nu, yhat[t], obs_sigma);
   }
+  // global trend prior
+  gl ~ normal(0, 10);
+  gb ~ normal(0, 1);
 }

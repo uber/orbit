@@ -605,6 +605,8 @@ class Estimator(object):
 
     def _convert_to_stan_inputs(self):
         """Collects stan attributes into a dict for `StanModel.sampling`"""
+        # todo: this should probably not be in the base class
+        #   and constants StanInputMapper should be model specific
         stan_input_set = set([each.name for each in StanInputMapper])
         stan_inputs = {}
         for key, value in self.__dict__.items():

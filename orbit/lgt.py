@@ -21,6 +21,7 @@ import pandas as pd
 from scipy.stats import nct
 import torch
 from copy import deepcopy
+from sklearn.preprocessing import MinMaxScaler
 
 
 class LGT(Estimator):
@@ -75,6 +76,13 @@ class LGT(Estimator):
     regressor_sigma_prior : list
         prior values for regressors standard deviation. The length of `regressor_sigma_prior` must
         be the same as `regressor_col`
+    is_multiplicative : bool
+        if True, response and regressor values are log transformed such that the model is
+        multiplicative. If False, no transformations are applied. Default True.
+    auto_scale : bool
+        **EXPERIMENTAL AND UNSTABLE** if True, response and regressor values are transformed
+        with a `MinMaxScaler` such that the min value is `e` and max value is
+        the max value in the data
     cauchy_sd : float
         scale parameter of prior of observation residuals scale parameter `C_scale`
     seasonality : int
@@ -151,9 +159,9 @@ class LGT(Estimator):
     def __init__(
             self, regressor_col=None, regressor_sign=None,
             regressor_beta_prior=None, regressor_sigma_prior=None,
-            cauchy_sd=None, min_nu=5, max_nu=40,
+            is_multiplicative=True, auto_scale=False, cauchy_sd=None, min_nu=5, max_nu=40,
             seasonality=0, seasonality_min=-1.0, seasonality_max=1.0,
-            seasonality_smoothing_min=0, seasonality_smoothing_max=1,
+            seasonality_smoothing_min=0, seasonality_smoothing_max=1.0,
             global_trend_coef_min=-0.5, global_trend_coef_max=0.5,
             global_trend_pow_min=0, global_trend_pow_max=1,
             local_trend_coef_min=0, local_trend_coef_max=1,
@@ -172,6 +180,10 @@ class LGT(Estimator):
 
         # associates with the *.stan model resource
         self.stan_model_name = "lgt"
+        # rescale depends on max of response
+        self.response_min_max_scaler = None
+        # rescale depends on num of regressors
+        self.regressor_min_max_scaler = None
 
     def _set_computed_params(self):
         self._setup_computed_regression_params()
@@ -228,7 +240,69 @@ class LGT(Estimator):
                 self.regular_regressor_beta_prior.append(self.regressor_beta_prior[index])
                 self.regular_regressor_sigma_prior.append(self.regressor_sigma_prior[index])
 
+    def _scale_df(self, df, do_fit=False):
+        n = df.shape[0]
+        x = df[self.response_col].astype(np.float64).values.reshape(n, 1)
+
+        if do_fit:
+            upper = max(10, np.max(x))
+            lower = max(2.8, np.min(x))
+            self.response_min_max_scaler = MinMaxScaler((lower, upper))
+            df[self.response_col] = self.response_min_max_scaler.fit_transform(x).flatten()
+        # else:
+        #     df[self.response_col] = self.response_min_max_scaler.transform(x).flatten()
+
+        if self.regressor_col is not None:
+            num_of_regressor = len(self.regressor_col)
+            if do_fit:
+                self.regressor_min_max_scaler = \
+                    MinMaxScaler((lower / num_of_regressor / 2, upper / num_of_regressor / 2))
+                df[self.regressor_col] = \
+                    self.regressor_min_max_scaler.fit_transform(df[self.regressor_col])
+            else:
+                df[self.regressor_col] = \
+                    self.regressor_min_max_scaler.transform(df[self.regressor_col])
+        return df
+
+    def _log_transform_df(self, df, do_fit=False):
+        # transform the response column
+        if do_fit:
+            data_cols = [self.response_col] + self.regressor_col \
+                if self.regressor_col is not None \
+                else [self.response_col]
+
+            # make sure values are > 0
+            if np.any(df[data_cols] <= 0):
+                raise IllegalArgument('Response and Features must be a positive number')
+
+            df[self.response_col] = df[self.response_col].apply(np.log)
+
+        # transform the regressor columns if exist
+        if self.regressor_col is not None:
+            # make sure values are > 0
+            if np.any(df[self.regressor_col] <= 0):
+                raise IllegalArgument('Features must be a positive number')
+
+            df[self.regressor_col] = df[self.regressor_col].apply(np.log)
+
+        return df
+
     def _set_dynamic_inputs(self):
+
+        # validate regression columns
+        def _validate_regression_columns():
+            if self.regressor_col is not None and \
+                    not set(self.regressor_col).issubset(self.df.columns):
+                raise IllegalArgument(
+                    "DataFrame does not contain specified regressor colummn(s)."
+                )
+
+        _validate_regression_columns()
+
+        if self.auto_scale:
+            self.df = self._scale_df(self.df, do_fit=True)
+        if self.is_multiplicative:
+            self.df = self._log_transform_df(self.df, do_fit=True)
 
         # a few of the following are related with training data.
         self.response = self.df[self.response_col].values
@@ -256,15 +330,6 @@ class LGT(Estimator):
                 self.stan_init.append(temp_init)
 
     def _setup_regressor_inputs(self):
-
-        def _validate():
-            if self.regressor_col is not None and \
-                    not set(self.regressor_col).issubset(self.df.columns):
-                raise IllegalArgument(
-                    "DataFrame does not contain specified regressor colummn(s)."
-                )
-
-        _validate()
 
         self.positive_regressor_matrix = np.zeros((self.num_of_observations, 0))
         self.regular_regressor_matrix = np.zeros((self.num_of_observations, 0))
@@ -347,6 +412,13 @@ class LGT(Estimator):
 
         # get training df meta
         training_df_meta = self.training_df_meta
+        # remove reference from original input
+        df = df.copy()
+        if self.auto_scale:
+            df = self._scale_df(df, do_fit=False)
+        # for multiplicative model
+        if self.is_multiplicative:
+            df = self._log_transform_df(df, do_fit=False)
 
         # get prediction df meta
         prediction_df_meta = {
@@ -497,18 +569,40 @@ class LGT(Estimator):
         # sum components
         pred_array = trend_component + seasonality_component + regressor_component
 
+        # for the multiplicative case
+        if self.is_multiplicative:
+            pred_array = (torch.exp(pred_array)).numpy()
+            trend_component = (torch.exp(trend_component)).numpy()
+            seasonality_component = (torch.exp(seasonality_component)).numpy()
+            regressor_component = (torch.exp(regressor_component)).numpy()
+        else:
+            pred_array = pred_array.numpy()
+            trend_component = trend_component.numpy()
+            seasonality_component = seasonality_component.numpy()
+            regressor_component = regressor_component.numpy()
+
+        if self.auto_scale:
+            # work around response_min_max_scaler initial shape
+            init_shape = pred_array.shape
+            # enfroce a 2D array
+            pred_array = np.reshape(pred_array, (-1, 1))
+            pred_array = self.response_min_max_scaler.inverse_transform(pred_array)
+            pred_array = pred_array.reshape(init_shape)
+            # we assume the unit is based on trend component while others are multipliers
+            trend_component = self.response_min_max_scaler.inverse_transform(trend_component)
+
         # if decompose output dictionary of components
         if decompose:
             decomp_dict = {
-                'prediction': pred_array.numpy(),
-                'trend': trend_component.numpy(),
-                'seasonality': seasonality_component.numpy(),
-                'regression': regressor_component.numpy()
+                'prediction': pred_array,
+                'trend': trend_component,
+                'seasonality': seasonality_component,
+                'regression': regressor_component
             }
 
             return decomp_dict
 
-        return {'prediction': pred_array.numpy()}
+        return {'prediction': pred_array}
 
     def _validate_params(self):
         pass

@@ -10,7 +10,7 @@ def run_multi_series_backtest(data, response_col, key_col, models,
                               model_callbacks=None, fit_callbacks=None, pred_callbacks=None,
                               fit_args=None, scheme='expanding'):
     # store result per series key
-    metric_dict = {}
+    # data = data.copy()
     unique_keys = data[key_col].unique()
     all_result = []
     all_scores = []
@@ -26,7 +26,9 @@ def run_multi_series_backtest(data, response_col, key_col, models,
                            fit_args=fit_args)
 
         all_result.append(bt.get_predictions())
-        all_scores.append(bt.get_scores())
+        scores_df = bt.get_scores()
+        scores_df[key_col] = key
+        all_scores.append(scores_df)
 
     all_result = pd.concat(all_result, axis=0, ignore_index=True)
     all_scores = pd.concat(all_scores, axis=0, ignore_index=True)

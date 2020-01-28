@@ -90,7 +90,7 @@ class Backtest(object):
         # if n_splits is specified, set min_train_len internally
         if self.n_splits:
             self.min_train_len = \
-                self._df_length - self.forecast_len - (self.n_splits - 1) * self.incremental_len + 1
+                self._df_length - self.forecast_len - (self.n_splits - 1) * self.incremental_len
 
     def _set_split_idx(self):
         scheme = self.scheme
