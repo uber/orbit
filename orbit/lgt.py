@@ -415,10 +415,10 @@ class LGT(Estimator):
         # remove reference from original input
         df = df.copy()
         if self.auto_scale:
-            self._scale_df(df, do_fit=False)
+            df = self._scale_df(df, do_fit=False)
         # for multiplicative model
         if self.is_multiplicative:
-            self._log_transform_df(df, do_fit=False)
+            df = self._log_transform_df(df, do_fit=False)
 
         # get prediction df meta
         prediction_df_meta = {
