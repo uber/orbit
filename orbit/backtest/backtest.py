@@ -346,3 +346,6 @@ class Backtest(object):
 
     def get_predictions(self, include_split_meta=False):
         return self._predicted_df
+
+    def get_meta(self):
+        return self._bt_meta
