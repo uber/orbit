@@ -191,7 +191,6 @@ class Backtest(object):
             metrics = {'wmape': wmape, 'smape': smape}
 
         predicted_df = self.get_predictions()
-
         score_df = pd.DataFrame({})
 
         # multiple models or step segmentation
@@ -321,6 +320,7 @@ class Backtest(object):
     def fit_score_batch(self, models, response_col, predicted_col='prediction', metrics=None,
                         model_names=None, include_steps=False, model_callbacks=None,
                         fit_callbacks=None, predict_callbacks=None, fit_args=None):
+
         self._fit_batch(
             models=models,
             model_names=model_names,
@@ -346,3 +346,6 @@ class Backtest(object):
 
     def get_predictions(self, include_split_meta=False):
         return self._predicted_df
+
+    def get_meta(self):
+        return self._bt_meta

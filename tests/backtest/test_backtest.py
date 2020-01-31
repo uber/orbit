@@ -10,8 +10,8 @@ def test_single_model_score(iclaims_training_data):
     bt = Backtest(
         iclaims_training_data,
         min_train_len=150,
-        incremental_len=13,
-        forecast_len=13,
+        incremental_len=12,
+        forecast_len=8,
         n_splits=4
     )
 
@@ -24,6 +24,12 @@ def test_single_model_score(iclaims_training_data):
         chains=4,
     )
 
+    # check meta data
+    meta_dict = bt.get_meta()
+
+    first_run = meta_dict.get(0)
+    last_run = meta_dict.get(3)
+
     # fit and score the model
     bt.fit_score(lgt, response_col='claims', predicted_col='prediction')
 
@@ -35,10 +41,20 @@ def test_single_model_score(iclaims_training_data):
 
     expected_predict_df_columns = ['steps', 'week', 'claims','trend.unemploy',
                                    'trend.filling', 'trend.job', 'prediction', 'split_key']
-    expected_predict_df_shapes = (52, 8)
+    expected_predict_df_shapes = (32, 8)
     expected_scores_df_shape = (1, 2)
+    expected_splits = 4
+    expected_first_train_idx = range(0, 399)
+    expected_first_test_idx = range(399, 407)
+    expected_last_train_idx = range(0, 435)
+    expected_last_test_idx = range(435, 443)
 
     assert list(predictions_df.columns) == expected_predict_df_columns
+    assert len(meta_dict) == expected_splits
+    assert first_run.get('train_idx') == expected_first_train_idx
+    assert first_run.get('test_idx') == expected_first_test_idx
+    assert last_run.get('train_idx') == expected_last_train_idx
+    assert last_run.get('test_idx') == expected_last_test_idx
     assert predictions_df.shape == expected_predict_df_shapes
     assert scores_df.shape == expected_scores_df_shape
 

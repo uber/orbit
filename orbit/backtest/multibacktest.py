@@ -14,7 +14,9 @@ def run_multi_series_backtest(data, response_col, key_col, models,
     unique_keys = data[key_col].unique()
     all_result = []
     all_scores = []
+
     for key in tqdm.tqdm(unique_keys):
+
         df = data[data[key_col] == key]
         bt = Backtest(df=df, min_train_len=min_train_len, incremental_len=incremental_len,
                       forecast_len=forecast_len, n_splits=n_splits, scheme=scheme

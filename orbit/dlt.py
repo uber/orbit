@@ -168,7 +168,7 @@ class DLT(LGT):
             slope_smoothing_min=0, slope_smoothing_max=1,
             use_damped_trend=0, damped_factor_min=0.8, damped_factor_max=0.999,
             regression_coef_max=1.0, fix_regression_coef_sd=1, regressor_sigma_sd=1.0,
-            damped_factor_fixed=0.9, **kwargs
+            damped_factor_fixed=0.8, **kwargs
     ):
 
         # get all init args and values and set
@@ -266,12 +266,13 @@ class DLT(LGT):
 
         # get training df meta
         training_df_meta = self.training_df_meta
-
-        # for multiplicative model
+        # remove reference from original input
+        df = df.copy()
         if self.auto_scale:
-            self.df = self._scale_df(self.df, do_fit=True)
+            df = self._scale_df(df, do_fit=False)
+        # for multiplicative model
         if self.is_multiplicative:
-            self.df = self._log_transform_df(self.df, do_fit=True)
+            df = self._log_transform_df(df, do_fit=False)
 
         # get prediction df meta
         prediction_df_meta = {
