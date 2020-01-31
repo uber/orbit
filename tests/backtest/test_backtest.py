@@ -41,10 +41,10 @@ def test_single_model_score(iclaims_training_data):
 
     expected_predict_df_columns = ['steps', 'week', 'claims','trend.unemploy',
                                    'trend.filling', 'trend.job', 'prediction', 'split_key']
-    expected_predict_df_shapes = (52, 8)
+    expected_predict_df_shapes = (32, 8)
     expected_scores_df_shape = (1, 2)
     expected_splits = 4
-    expected_first_train_idx = range(0, 430)
+    expected_first_train_idx = range(0, 399)
     expected_first_test_idx = range(399, 407)
     expected_last_train_idx = range(0, 435)
     expected_last_test_idx = range(435, 443)
@@ -52,9 +52,9 @@ def test_single_model_score(iclaims_training_data):
     assert list(predictions_df.columns) == expected_predict_df_columns
     assert len(meta_dict) == expected_splits
     assert first_run.get('train_idx') == expected_first_train_idx
-    assert first_run.get('train_idx') == expected_first_test_idx
+    assert first_run.get('test_idx') == expected_first_test_idx
     assert last_run.get('train_idx') == expected_last_train_idx
-    assert last_run.get('train_idx') == expected_last_test_idx
+    assert last_run.get('test_idx') == expected_last_test_idx
     assert predictions_df.shape == expected_predict_df_shapes
     assert scores_df.shape == expected_scores_df_shape
 
