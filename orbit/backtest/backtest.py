@@ -254,7 +254,7 @@ class Backtest(object):
         if predict_callbacks is None:
             predict_callbacks = [None] * batch_size
         if fit_args is None:
-            fit_args = [{}] * batch_size
+            fit_args = [None] * batch_size
 
         # todo: validate that all the lengths of args align
 
