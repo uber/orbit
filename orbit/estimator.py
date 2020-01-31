@@ -292,12 +292,21 @@ class Estimator(object):
             compiled_stan_file = get_compiled_stan_model(self.stan_model_name)
 
             if self.predict_method == PredictMethod.MAP.value:
-                stan_extract = compiled_stan_file.optimizing(
-                    data=self.stan_inputs,
-                    init=self.stan_init,
-                    seed=self.seed,
-                    algorithm=self.algorithm
-                )
+                try:
+                    stan_extract = compiled_stan_file.optimizing(
+                        data=self.stan_inputs,
+                        init=self.stan_init,
+                        seed=self.seed,
+                        algorithm=self.algorithm
+                    )
+                except RuntimeError:
+                    self.algorithm = 'Newton'
+                    stan_extract = compiled_stan_file.optimizing(
+                        data=self.stan_inputs,
+                        init=self.stan_init,
+                        seed=self.seed,
+                        algorithm=self.algorithm
+                    )
                 self._set_map_posterior(stan_extract=stan_extract)
             elif self.sample_method == SampleMethod.VARIATIONAL_INFERENCE.value:
                 stan_extract = vb_extract(compiled_stan_file.vb(
