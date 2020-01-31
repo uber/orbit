@@ -270,7 +270,6 @@ class LGT(Estimator):
             data_cols = [self.response_col] + self.regressor_col \
                 if self.regressor_col is not None \
                 else [self.response_col]
-
             # make sure values are > 0
             if np.any(df[data_cols] <= 0):
                 raise IllegalArgument('Response and Features must be a positive number')

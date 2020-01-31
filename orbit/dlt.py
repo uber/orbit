@@ -266,12 +266,13 @@ class DLT(LGT):
 
         # get training df meta
         training_df_meta = self.training_df_meta
-
-        # for multiplicative model
+        # remove reference from original input
+        df = df.copy()
         if self.auto_scale:
-            self.df = self._scale_df(self.df, do_fit=True)
+            df = self._scale_df(df, do_fit=False)
+        # for multiplicative model
         if self.is_multiplicative:
-            self.df = self._log_transform_df(self.df, do_fit=True)
+            df = self._log_transform_df(df, do_fit=False)
 
         # get prediction df meta
         prediction_df_meta = {
