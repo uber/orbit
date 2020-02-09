@@ -127,6 +127,7 @@ class SampleMethod(Enum):
     MARKOV_CHAIN_MONTE_CARLO = 'mcmc'
 
 
+# TODO: consider combining this with PredictedComponents
 class PredictionColumnNames(Enum):
     """
     In the output of SLGTModel.transform() and SLGT.predict(), the column names if
@@ -191,6 +192,14 @@ class BacktestFitColumnNames(Enum):
     ACTUAL = 'actual'
     PRED = 'pred'
     PRED_HORIZON = 'pred_horizon'
+
+
+class PredictedComponents(Enum):
+    """ column names for the data frame of predicted result with decomposed components
+    """
+    TREND = 'trend'
+    SEASONALITY = 'seasonality'
+    REGRESSION = 'regression'
 
 
 class BacktestAnalyzeKeys(Enum):
