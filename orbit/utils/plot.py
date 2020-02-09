@@ -5,7 +5,11 @@ import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+<<<<<<< HEAD
 from orbit.utils.constants import PredictedComponents
+=======
+from orbit.constants.constants import PredictedComponents
+>>>>>>> first version
 from orbit.utils.utils import is_empty_dataframe
 import pandas as pd
 import numpy as np
