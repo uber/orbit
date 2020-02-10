@@ -256,6 +256,8 @@ class DLT(LGT):
         pr_beta = model.get(RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
         rr_beta = model.get(RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
         if pr_beta is not None and rr_beta is not None:
+            pr_beta = pr_beta if len(pr_beta.shape) == 2 else pr_beta.reshape(1, -1)
+            rr_beta = rr_beta if len(rr_beta.shape) == 2 else rr_beta.reshape(1, -1)
             regressor_beta = torch.cat((pr_beta, rr_beta), dim=1)
         else:
             regressor_beta = pr_beta or rr_beta
