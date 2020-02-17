@@ -55,7 +55,7 @@ def test_lgt_fit_and_mcmc_predict(iclaims_training_data):
 
     predicted_out = lgt.predict(df=iclaims_training_data)
 
-    expected_columns = ['week', 5, 30, 50, 95]
+    expected_columns = ['week', 5, 30, 'prediction', 95]
     expected_shape = (443, len(expected_columns))
 
     assert predicted_out.shape == expected_shape
@@ -245,7 +245,7 @@ def test_lgt_with_regressors_and_forecast(iclaims_training_data):
 
     predicted_df = lgt.predict(df=forecast_df, decompose=False)
 
-    expected_columns = ['week', 5, 30, 50, 95]
+    expected_columns = ['week', 5, 30, 'prediction', 95]
     expected_shape = (443, len(expected_columns))
 
     assert predicted_df.shape == expected_shape
