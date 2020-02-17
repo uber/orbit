@@ -498,11 +498,10 @@ class Estimator(object):
         percentiles += [50]  # always find median
         percentiles.sort()
 
-        # mean_prediction = np.mean(predictions_array, axis=0)
         percentiles_prediction = np.percentile(predictions_array, percentiles, axis=0)
 
         aggregate_df = pd.DataFrame(percentiles_prediction.T, columns=percentiles)
-        # aggregate_df['mean'] = mean_prediction
+        aggregate_df = aggregate_df.rename({50: 'prediction'}, axis=1)
 
         return aggregate_df
 

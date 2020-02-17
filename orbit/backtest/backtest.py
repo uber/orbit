@@ -1,14 +1,9 @@
 import pandas as pd
-from orbit.utils.metrics import (
-    smape,
-    wmape
-)
+from copy import deepcopy
+
+from orbit.utils.metrics import smape, wmape
 from orbit.exceptions import BacktestException
-from orbit.utils.constants import (
-    BacktestMetaKeys,
-    BacktestFitColumnNames,
-    BacktestAnalyzeKeys
-)
+from orbit.utils.constants import BacktestMetaKeys
 
 
 class Backtest(object):
@@ -103,7 +98,8 @@ class Backtest(object):
             bt_meta[i] = {}
             train_start_idx = train_end_idx - self.min_train_len + 1 \
                 if scheme == 'rolling' else 0
-            bt_meta[i][BacktestMetaKeys.TRAIN_IDX.value] = range(train_start_idx, train_end_idx + 1)
+            bt_meta[i][BacktestMetaKeys.TRAIN_IDX.value] = range(
+                train_start_idx, train_end_idx + 1)
             bt_meta[i][BacktestMetaKeys.TEST_IDX.value] = range(
                 train_end_idx + 1, train_end_idx + self.forecast_len + 1)
 
@@ -143,6 +139,10 @@ class Backtest(object):
         predicted_df = pd.DataFrame({})
 
         for meta_key, meta_value in bt_meta.items():
+            # TODO: any better way to deference object?
+            # dereference new model object from object input as prototype
+            model = deepcopy(model)
+
             # if we need to extend model to work with backtest
             if model_callback is not None:
                 model = model_callback(model)
