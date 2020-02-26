@@ -1,22 +1,20 @@
 from abc import ABCMeta, abstractmethod
 import copy
-from copy import deepcopy
 import inspect
 import pickle
 import numpy as np
 import pandas as pd
 import multiprocessing
+
 from orbit.models import get_compiled_stan_model
 from orbit.exceptions import (
     IllegalArgument
 )
 from orbit.pyro.wrapper import pyro_map, pyro_svi
-from orbit.utils.constants import (
+from orbit.utils.constants.constants import (
     PredictMethod,
     SampleMethod,
-    StanInputMapper
 )
-
 from orbit.utils.utils import vb_extract, is_ordered_datetime
 
 
@@ -88,6 +86,8 @@ class Estimator(object):
 
     """
     __metaclass__ = ABCMeta
+    # this must be defined in child class
+    _stan_input_mapper = {}
 
     def __init__(
             self, response_col='y', date_col='ds',
@@ -614,17 +614,20 @@ class Estimator(object):
 
     def _convert_to_stan_inputs(self):
         """Collects stan attributes into a dict for `StanModel.sampling`"""
-        # todo: this should probably not be in the base class
-        #   and constants StanInputMapper should be model specific
-        stan_input_set = set([each.name for each in StanInputMapper])
-        stan_inputs = {}
-        for key, value in self.__dict__.items():
-            key = key.upper()
-            if key not in stan_input_set:
-                continue
-                # TODO: constants for attributes not meant to be in stan input explicit exceptions
-                # raise Exception('')
-            stan_inputs[StanInputMapper[key].value] = value
+        if self._stan_input_mapper:
+            stan_input_set = set([each.name for each in self._stan_input_mapper])
+            stan_inputs = {}
+            for key, value in self.__dict__.items():
+                key = key.upper()
+                if key not in stan_input_set:
+                    continue
+                    # TODO: constants for attributes not meant to be in stan input explicit exceptions
+                    # raise Exception('')
+                stan_inputs[self._stan_input_mapper[key].value] = value
+        else:
+            raise NotImplementedError(
+                '_stan_input_mapper found empty. It must be implemented in the child class'
+            )
         self.stan_inputs = stan_inputs
 
     @abstractmethod
