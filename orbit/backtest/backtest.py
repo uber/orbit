@@ -4,10 +4,8 @@ from orbit.utils.metrics import (
     wmape
 )
 from orbit.exceptions import BacktestException
-from orbit.utils.constants import (
-    BacktestMetaKeys,
-    BacktestFitColumnNames,
-    BacktestAnalyzeKeys
+from orbit.utils.constants.constants import (
+    BacktestMetaKeys
 )
 
 

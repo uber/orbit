@@ -131,3 +131,31 @@ class LGTModel:
                         obs=response[1:])
 
         return {'b': b, 'l': l, 's': s, 'lgt_sum': lgt_sum}
+
+
+if __name__ == '__main__':
+    import pandas as pd
+    import numpy as np
+    import os
+    from orbit.lgt import LGT
+    from orbit.utils.plot import plot_predicted_data
+    from orbit.utils.plot import plot_predicted_components
+
+    DATA_FILE = "../../examples/data/iclaims.example.csv"
+    raw_df = pd.read_csv(DATA_FILE, parse_dates=['week'])
+    df = raw_df.copy()
+    test_size = 52
+    train_df = df[:-test_size]
+    test_df = df[-test_size:]
+    lgt_map = LGT(
+        response_col="claims",
+        date_col="week",
+        seasonality=52,
+        seed=8888,
+        inference_engine='stan',
+        predict_method='map',
+        auto_scale=False,
+        is_multiplicative=True
+    )
+    lgt_map.fit(df=train_df)
+    predicted_df = lgt_map.predict(df=test_df)
