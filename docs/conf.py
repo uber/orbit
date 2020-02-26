@@ -37,6 +37,10 @@ extensions = [
     'sphinx.ext.napoleon'
 ]
 
+autodoc_mock_imports = [
+    'pandas', 'torch', 'pystan', 'tqdm', 'matplotlib.pyplot'
+    'pyro', 'matplotlib', 'seaborn', 'scipy', 'sklearn']
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
