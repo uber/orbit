@@ -1,22 +1,20 @@
 from abc import ABCMeta, abstractmethod
 import copy
-from copy import deepcopy
 import inspect
 import pickle
 import numpy as np
 import pandas as pd
 import multiprocessing
+
 from orbit.models import get_compiled_stan_model
 from orbit.exceptions import (
     IllegalArgument
 )
 from orbit.pyro.wrapper import pyro_map, pyro_svi
-from orbit.utils.constants import (
+from orbit.constants.constants import (
     PredictMethod,
     SampleMethod,
-    StanInputMapper
 )
-
 from orbit.utils.utils import vb_extract, is_ordered_datetime
 
 
@@ -88,6 +86,8 @@ class Estimator(object):
 
     """
     __metaclass__ = ABCMeta
+    # this must be defined in child class
+    _stan_input_mapper = {}
 
     def __init__(
             self, response_col='y', date_col='ds',
@@ -614,9 +614,12 @@ class Estimator(object):
 
     def _convert_to_stan_inputs(self):
         """Collects stan attributes into a dict for `StanModel.sampling`"""
-        # todo: this should probably not be in the base class
-        #   and constants StanInputMapper should be model specific
-        stan_input_set = set([each.name for each in StanInputMapper])
+        if not self._stan_input_mapper:
+            raise NotImplementedError(
+                '_stan_input_mapper found empty. It must be implemented in the child class'
+            )
+
+        stan_input_set = set([each.name for each in self._stan_input_mapper])
         stan_inputs = {}
         for key, value in self.__dict__.items():
             key = key.upper()
@@ -624,8 +627,18 @@ class Estimator(object):
                 continue
                 # TODO: constants for attributes not meant to be in stan input explicit exceptions
                 # raise Exception('')
-            stan_inputs[StanInputMapper[key].value] = value
+            stan_inputs[self._stan_input_mapper[key].value] = value
         self.stan_inputs = stan_inputs
+        # stan_inputs = {}
+        # for key in self._stan_input_mapper.__members__.keys():
+        #     # mapper keys in upper case; inputs in lower case
+        #     key_lower = key.lower()
+        #     input_value = getattr(self, key.lower(), None)
+        #     if not input_value:
+        #         raise IllegalArgument('Argument {} is not found in inputs'.format(key_lower))
+        #     stan_inputs[self._stan_input_mapper[key].value] = input_value
+        #
+        # self.stan_inputs = stan_inputs
 
     @abstractmethod
     def _set_model_param_names(self):

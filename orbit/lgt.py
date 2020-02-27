@@ -1,27 +1,22 @@
-from orbit.estimator import Estimator
-from orbit.utils.constants import (
-    LocalTrendStanSamplingParameters,
-    GlobalTrendStanSamplingParameters,
-    SeasonalityStanSamplingParameters,
-    RegressionStanSamplingParameters,
-    DEFAULT_REGRESSOR_SIGN,
-    DEFAULT_REGRESSOR_BETA,
-    DEFAULT_REGRESSOR_SIGMA
-)
-
-from orbit.exceptions import (
-    PredictionException,
-    IllegalArgument
-)
-
-from orbit.utils.utils import is_ordered_datetime
-
 import numpy as np
 import pandas as pd
 from scipy.stats import nct
 import torch
 from copy import deepcopy
 from sklearn.preprocessing import MinMaxScaler
+
+from orbit.estimator import Estimator
+from orbit.constants import lgt
+from orbit.constants.constants import (
+    DEFAULT_REGRESSOR_SIGN,
+    DEFAULT_REGRESSOR_BETA,
+    DEFAULT_REGRESSOR_SIGMA
+)
+from orbit.exceptions import (
+    PredictionException,
+    IllegalArgument
+)
+from orbit.utils.utils import is_ordered_datetime
 
 
 class LGT(Estimator):
@@ -155,6 +150,8 @@ class LGT(Estimator):
     prediction (predict()) such that the `l(t)` is updated with levels only l(t-1) rather than
     the integrated trend (like l(t-1) + b(t-1) in traditional exp. smoothing models).
     """
+    # this must be defined in child class
+    _stan_input_mapper = lgt.StanInputMapper
 
     def __init__(
             self, regressor_col=None, regressor_sign=None,
@@ -343,22 +340,21 @@ class LGT(Estimator):
                 items=self.regular_regressor_col,).values
 
     def _set_model_param_names(self):
-        self.model_param_names += [param.value for param in LocalTrendStanSamplingParameters]
+        self.model_param_names += [param.value for param in lgt.BaseStanSamplingParameters]
 
         # append seasonality param names
         if self.seasonality > 1:
-            self.model_param_names += [param.value for param in SeasonalityStanSamplingParameters]
-
-        # append trend param names
-        self.model_param_names += [param.value for param in GlobalTrendStanSamplingParameters]
+            self.model_param_names += [param.value for param in lgt.SeasonalityStanSamplingParameters]
 
         # append positive regressors if any
         if self.num_of_positive_regressors > 0:
-            self.model_param_names += [RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
+            self.model_param_names += [
+                lgt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
 
         # append regular regressors if any
         if self.num_of_regular_regressors > 0:
-            self.model_param_names += [RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value]
+            self.model_param_names += [
+                lgt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value]
 
     def _predict(self, df=None, include_error=False, decompose=False):
         """Vectorized version of prediction math"""
@@ -379,27 +375,32 @@ class LGT(Estimator):
         num_sample = arbitrary_posterior_value.shape[0]
 
         # seasonality components
-        seasonality_levels = model.get(SeasonalityStanSamplingParameters.SEASONALITY_LEVELS.value)
+        seasonality_levels = model.get(
+            lgt.SeasonalityStanSamplingParameters.SEASONALITY_LEVELS.value)
         seasonality_smoothing_factor = model.get(
-            SeasonalityStanSamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
+            lgt.SeasonalityStanSamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
         )
 
         # trend components
-        slope_smoothing_factor = model.get(LocalTrendStanSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
-        level_smoothing_factor = model.get(LocalTrendStanSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
-        local_trend_levels = model.get(LocalTrendStanSamplingParameters.LOCAL_TREND_LEVELS.value)
-        local_trend_slopes = model.get(LocalTrendStanSamplingParameters.LOCAL_TREND_SLOPES.value)
-        residual_degree_of_freedom = model.get(LocalTrendStanSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
-        residual_sigma = model.get(LocalTrendStanSamplingParameters.RESIDUAL_SIGMA.value)
+        slope_smoothing_factor = model.get(
+            lgt.BaseStanSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
+        level_smoothing_factor = model.get(
+            lgt.BaseStanSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
+        local_trend_levels = model.get(lgt.BaseStanSamplingParameters.LOCAL_TREND_LEVELS.value)
+        local_trend_slopes = model.get(lgt.BaseStanSamplingParameters.LOCAL_TREND_SLOPES.value)
+        residual_degree_of_freedom = model.get(
+            lgt.BaseStanSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
+        residual_sigma = model.get(lgt.BaseStanSamplingParameters.RESIDUAL_SIGMA.value)
 
-        local_trend_coef = model.get(GlobalTrendStanSamplingParameters.LOCAL_TREND_COEF.value)
-        global_trend_power = model.get(GlobalTrendStanSamplingParameters.GLOBAL_TREND_POWER.value)
-        global_trend_coef = model.get(GlobalTrendStanSamplingParameters.GLOBAL_TREND_COEF.value)
-        local_global_trend_sums = model.get(GlobalTrendStanSamplingParameters.LOCAL_GLOBAL_TREND_SUMS.value)
+        local_trend_coef = model.get(lgt.BaseStanSamplingParameters.LOCAL_TREND_COEF.value)
+        global_trend_power = model.get(lgt.BaseStanSamplingParameters.GLOBAL_TREND_POWER.value)
+        global_trend_coef = model.get(lgt.BaseStanSamplingParameters.GLOBAL_TREND_COEF.value)
+        local_global_trend_sums = model.get(
+            lgt.BaseStanSamplingParameters.LOCAL_GLOBAL_TREND_SUMS.value)
 
         # regression components
-        pr_beta = model.get(RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
-        rr_beta = model.get(RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+        pr_beta = model.get(lgt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+        rr_beta = model.get(lgt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
         if pr_beta is not None and rr_beta is not None:
             pr_beta = pr_beta if len(pr_beta.shape) == 2 else pr_beta.reshape(1, -1)
             rr_beta = rr_beta if len(rr_beta.shape) == 2 else rr_beta.reshape(1, -1)

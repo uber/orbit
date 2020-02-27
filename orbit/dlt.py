@@ -1,29 +1,16 @@
-from orbit.lgt import LGT
-from orbit.utils.constants import (
-    LocalTrendStanSamplingParameters,
-    SeasonalityStanSamplingParameters,
-    DampedTrendStanSamplingParameters,
-    DampedTrendDynamicStanSamplingParameters,
-    RegressionStanSamplingParameters,
-    DEFAULT_REGRESSOR_SIGN,
-    DEFAULT_REGRESSOR_BETA,
-    DEFAULT_REGRESSOR_SIGMA
-)
+import pandas as pd
+import numpy as np
+from scipy.stats import nct
+import torch
+from copy import deepcopy
 
+from orbit.lgt import LGT
+from orbit.constants import dlt
 from orbit.exceptions import (
     PredictionException,
     IllegalArgument
 )
-
 from orbit.utils.utils import is_ordered_datetime
-
-import pandas as pd
-import numpy as np
-import math
-from scipy.stats import nct
-import torch
-from copy import deepcopy
-from sklearn.preprocessing import MinMaxScaler
 
 
 class DLT(LGT):
@@ -157,6 +144,8 @@ class DLT(LGT):
     prediction (predict()) such that the `l(t)` is updated with levels only l(t-1) rather than
     the integrated trend (like l(t-1) + b(t-1) in traditional exp. smoothing models).
     """
+    # this must be defined in child class
+    _stan_input_mapper = dlt.StanInputMapper
 
     def __init__(
             self, regressor_col=None, regressor_sign=None,
@@ -182,27 +171,26 @@ class DLT(LGT):
         self.stan_model_name = "dlt"
 
     def _set_model_param_names(self):
-        self.model_param_names += [param.value for param in LocalTrendStanSamplingParameters]
-        self.model_param_names += [param.value for param in DampedTrendStanSamplingParameters]
+        self.model_param_names += [param.value for param in dlt.BaseStanSamplingParameters]
 
         # append seasonality param names
         if self.seasonality > 1:
-            self.model_param_names += [param.value for param in SeasonalityStanSamplingParameters]
+            self.model_param_names += [param.value for param in dlt.SeasonalityStanSamplingParameters]
 
         # append damped trend param names
         if self.damped_factor_fixed < 0:
             self.model_param_names += [param.value for param in
-                                       DampedTrendDynamicStanSamplingParameters]
+                                       dlt.DampedTrendStanSamplingParameters]
 
         # append positive regressors if any
         if self.num_of_positive_regressors > 0:
             self.model_param_names += [
-                RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
+                dlt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
 
         # append regular regressors if any
         if self.num_of_regular_regressors > 0:
             self.model_param_names += [
-                RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value]
+                dlt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value]
 
     def _predict(self, df=None, include_error=False, decompose=False):
 
@@ -224,22 +212,23 @@ class DLT(LGT):
         num_sample = arbitrary_posterior_value.shape[0]
 
         # seasonality components
-        seasonality_levels = model.get(SeasonalityStanSamplingParameters.SEASONALITY_LEVELS.value)
+        seasonality_levels = model.get(
+            dlt.SeasonalityStanSamplingParameters.SEASONALITY_LEVELS.value)
         seasonality_smoothing_factor = model.get(
-            SeasonalityStanSamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
+            dlt.SeasonalityStanSamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
         )
 
         # trend components
         slope_smoothing_factor = model.get(
-            LocalTrendStanSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
+            dlt.BaseStanSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
         level_smoothing_factor = model.get(
-            LocalTrendStanSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
-        local_trend_levels = model.get(LocalTrendStanSamplingParameters.LOCAL_TREND_LEVELS.value)
-        local_trend_slopes = model.get(LocalTrendStanSamplingParameters.LOCAL_TREND_SLOPES.value)
-        local_trend = model.get(DampedTrendStanSamplingParameters.LOCAL_TREND.value)
+            dlt.BaseStanSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
+        local_trend_levels = model.get(dlt.BaseStanSamplingParameters.LOCAL_TREND_LEVELS.value)
+        local_trend_slopes = model.get(dlt.BaseStanSamplingParameters.LOCAL_TREND_SLOPES.value)
+        local_trend = model.get(dlt.BaseStanSamplingParameters.LOCAL_TREND.value)
         residual_degree_of_freedom = model.get(
-            LocalTrendStanSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
-        residual_sigma = model.get(LocalTrendStanSamplingParameters.RESIDUAL_SIGMA.value)
+            dlt.BaseStanSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
+        residual_sigma = model.get(dlt.BaseStanSamplingParameters.RESIDUAL_SIGMA.value)
 
         # set an additional attribute for damped factor when it is fixed
         # get it through user input field
@@ -247,14 +236,14 @@ class DLT(LGT):
             damped_factor = torch.empty(num_sample, dtype=torch.double)
             damped_factor.fill_(self.damped_factor_fixed)
         else:
-            damped_factor = model.get(DampedTrendDynamicStanSamplingParameters.DAMPED_FACTOR.value)
+            damped_factor = model.get(dlt.DampedTrendStanSamplingParameters.DAMPED_FACTOR.value)
 
-        global_trend_slope = model.get(DampedTrendStanSamplingParameters.GLOBAL_TREND_SLOPE.value)
-        global_trend = model.get(DampedTrendStanSamplingParameters.GLOBAL_TREND.value)
+        global_trend_slope = model.get(dlt.BaseStanSamplingParameters.GLOBAL_TREND_SLOPE.value)
+        global_trend = model.get(dlt.BaseStanSamplingParameters.GLOBAL_TREND.value)
 
         # regression components
-        pr_beta = model.get(RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
-        rr_beta = model.get(RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+        pr_beta = model.get(dlt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+        rr_beta = model.get(dlt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
         if pr_beta is not None and rr_beta is not None:
             pr_beta = pr_beta if len(pr_beta.shape) == 2 else pr_beta.reshape(1, -1)
             rr_beta = rr_beta if len(rr_beta.shape) == 2 else rr_beta.reshape(1, -1)
