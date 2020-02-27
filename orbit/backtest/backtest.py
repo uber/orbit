@@ -4,7 +4,7 @@ from orbit.utils.metrics import (
     wmape
 )
 from orbit.exceptions import BacktestException
-from orbit.utils.constants.constants import (
+from orbit.constants.constants import (
     BacktestMetaKeys
 )
 
