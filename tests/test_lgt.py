@@ -1,3 +1,4 @@
+from enum import Enum
 import numpy as np
 import pandas as pd
 import pytest
@@ -18,6 +19,23 @@ def test_lgt_fit(iclaims_training_data):
     expected_posterior_parameters = 13
 
     assert len(lgt.posterior_samples) == expected_posterior_parameters
+
+
+def test_lgt_fit_with_missing_input(iclaims_training_data):
+    class MockInputMapper(Enum):
+        SOME_STAN_INPUT = 'some_stan_input'
+
+    LGT._stan_input_mapper = MockInputMapper
+
+    lgt = LGT(
+            response_col='claims',
+            date_col='week',
+            seasonality=52,
+            chains=4,
+        )
+
+    with pytest.raises(IllegalArgument):
+        lgt.fit(df=iclaims_training_data)
 
 
 def test_lgt_fit_and_mean_predict(iclaims_training_data):

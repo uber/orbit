@@ -619,26 +619,16 @@ class Estimator(object):
                 '_stan_input_mapper found empty. It must be implemented in the child class'
             )
 
-        stan_input_set = set([each.name for each in self._stan_input_mapper])
         stan_inputs = {}
-        for key, value in self.__dict__.items():
-            key = key.upper()
-            if key not in stan_input_set:
-                continue
-                # TODO: constants for attributes not meant to be in stan input explicit exceptions
-                # raise Exception('')
-            stan_inputs[self._stan_input_mapper[key].value] = value
+        for key in self._stan_input_mapper:
+            # mapper keys in upper case; inputs in lower case
+            key_lower = key.name.lower()
+            input_value = getattr(self, key_lower, None)
+            if input_value is None:
+                raise IllegalArgument('{} is missing from stan input'.format(key_lower))
+            stan_inputs[key.value] = input_value
+
         self.stan_inputs = stan_inputs
-        # stan_inputs = {}
-        # for key in self._stan_input_mapper.__members__.keys():
-        #     # mapper keys in upper case; inputs in lower case
-        #     key_lower = key.lower()
-        #     input_value = getattr(self, key.lower(), None)
-        #     if not input_value:
-        #         raise IllegalArgument('Argument {} is not found in inputs'.format(key_lower))
-        #     stan_inputs[self._stan_input_mapper[key].value] = input_value
-        #
-        # self.stan_inputs = stan_inputs
 
     @abstractmethod
     def _set_model_param_names(self):
