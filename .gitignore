@@ -88,6 +88,8 @@ orbit.egg-info/
 orbit/stan_model/
 env_docs/
 docs/_build/
+docs/_static
+docs/_templates
 *.pyc
 
 .*

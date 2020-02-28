@@ -1,0 +1,4 @@
+sphinx
+sphinxcontrib-napoleon
+sphinx-rtd-theme
+matplotlib
