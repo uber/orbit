@@ -1,25 +1,22 @@
-from orbit.estimator import Estimator
-from orbit.utils.constants import lgt
-
-from orbit.utils.constants.constants import (
-    DEFAULT_REGRESSOR_SIGN,
-    DEFAULT_REGRESSOR_BETA,
-    DEFAULT_REGRESSOR_SIGMA
-)
-
-from orbit.exceptions import (
-    PredictionException,
-    IllegalArgument
-)
-
-from orbit.utils.utils import is_ordered_datetime
-
 import numpy as np
 import pandas as pd
 from scipy.stats import nct
 import torch
 from copy import deepcopy
 from sklearn.preprocessing import MinMaxScaler
+
+from orbit.estimator import Estimator
+from orbit.constants import lgt
+from orbit.constants.constants import (
+    DEFAULT_REGRESSOR_SIGN,
+    DEFAULT_REGRESSOR_BETA,
+    DEFAULT_REGRESSOR_SIGMA
+)
+from orbit.exceptions import (
+    PredictionException,
+    IllegalArgument
+)
+from orbit.utils.utils import is_ordered_datetime
 
 
 class LGT(Estimator):
@@ -351,11 +348,13 @@ class LGT(Estimator):
 
         # append positive regressors if any
         if self.num_of_positive_regressors > 0:
-            self.model_param_names += [lgt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
+            self.model_param_names += [
+                lgt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
 
         # append regular regressors if any
         if self.num_of_regular_regressors > 0:
-            self.model_param_names += [lgt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value]
+            self.model_param_names += [
+                lgt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value]
 
     def _predict(self, df=None, include_error=False, decompose=False):
         """Vectorized version of prediction math"""
@@ -376,23 +375,28 @@ class LGT(Estimator):
         num_sample = arbitrary_posterior_value.shape[0]
 
         # seasonality components
-        seasonality_levels = model.get(lgt.SeasonalityStanSamplingParameters.SEASONALITY_LEVELS.value)
+        seasonality_levels = model.get(
+            lgt.SeasonalityStanSamplingParameters.SEASONALITY_LEVELS.value)
         seasonality_smoothing_factor = model.get(
             lgt.SeasonalityStanSamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
         )
 
         # trend components
-        slope_smoothing_factor = model.get(lgt.BaseStanSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
-        level_smoothing_factor = model.get(lgt.BaseStanSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
+        slope_smoothing_factor = model.get(
+            lgt.BaseStanSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
+        level_smoothing_factor = model.get(
+            lgt.BaseStanSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
         local_trend_levels = model.get(lgt.BaseStanSamplingParameters.LOCAL_TREND_LEVELS.value)
         local_trend_slopes = model.get(lgt.BaseStanSamplingParameters.LOCAL_TREND_SLOPES.value)
-        residual_degree_of_freedom = model.get(lgt.BaseStanSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
+        residual_degree_of_freedom = model.get(
+            lgt.BaseStanSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
         residual_sigma = model.get(lgt.BaseStanSamplingParameters.RESIDUAL_SIGMA.value)
 
         local_trend_coef = model.get(lgt.BaseStanSamplingParameters.LOCAL_TREND_COEF.value)
         global_trend_power = model.get(lgt.BaseStanSamplingParameters.GLOBAL_TREND_POWER.value)
         global_trend_coef = model.get(lgt.BaseStanSamplingParameters.GLOBAL_TREND_COEF.value)
-        local_global_trend_sums = model.get(lgt.BaseStanSamplingParameters.LOCAL_GLOBAL_TREND_SUMS.value)
+        local_global_trend_sums = model.get(
+            lgt.BaseStanSamplingParameters.LOCAL_GLOBAL_TREND_SUMS.value)
 
         # regression components
         pr_beta = model.get(lgt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)

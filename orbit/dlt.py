@@ -1,18 +1,16 @@
-from orbit.lgt import LGT
-from orbit.utils.constants import dlt
-
-from orbit.exceptions import (
-    PredictionException,
-    IllegalArgument
-)
-
-from orbit.utils.utils import is_ordered_datetime
-
 import pandas as pd
 import numpy as np
 from scipy.stats import nct
 import torch
 from copy import deepcopy
+
+from orbit.lgt import LGT
+from orbit.constants import dlt
+from orbit.exceptions import (
+    PredictionException,
+    IllegalArgument
+)
+from orbit.utils.utils import is_ordered_datetime
 
 
 class DLT(LGT):
@@ -214,7 +212,8 @@ class DLT(LGT):
         num_sample = arbitrary_posterior_value.shape[0]
 
         # seasonality components
-        seasonality_levels = model.get(dlt.SeasonalityStanSamplingParameters.SEASONALITY_LEVELS.value)
+        seasonality_levels = model.get(
+            dlt.SeasonalityStanSamplingParameters.SEASONALITY_LEVELS.value)
         seasonality_smoothing_factor = model.get(
             dlt.SeasonalityStanSamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
         )
