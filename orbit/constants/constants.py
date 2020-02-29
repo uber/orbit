@@ -21,6 +21,7 @@ class SampleMethod(Enum):
     VARIATIONAL_INFERENCE = 'vi'
     MARKOV_CHAIN_MONTE_CARLO = 'mcmc'
 
+
 # TODO: consider combining this with PredictedComponents
 class PredictionColumnNames(Enum):
     """
