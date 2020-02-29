@@ -22,6 +22,7 @@ class SampleMethod(Enum):
     MARKOV_CHAIN_MONTE_CARLO = 'mcmc'
 
 
+# TODO: consider combining this with PredictedComponents
 class PredictionColumnNames(Enum):
     """
     In the output of SLGTModel.transform() and SLGT.predict(), the column names if
@@ -32,6 +33,14 @@ class PredictionColumnNames(Enum):
     SEASONALITY = 'seasonality'
     REGRESSOR = 'regressor'
     ACTUAL_RESPONSE = 'actual'
+
+
+class PredictedComponents(Enum):
+    """ column names for the data frame of predicted result with decomposed components
+    """
+    TREND = 'trend'
+    SEASONALITY = 'seasonality'
+    REGRESSION = 'regression'
 
 
 class PlotLabels(Enum):
