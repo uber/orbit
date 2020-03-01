@@ -355,7 +355,7 @@ class Estimator(object):
                 )
                 self._set_map_posterior(stan_extract=pyro_extract)
 
-            elif self.predict_method in ['svi', 'mean', 'median']:
+            elif self.predict_method in ['full', 'mean', 'median']:
                 pyro_extract = pyro_svi(
                     model_name="orbit.pyro.lgt.LGTModel",
                     data=self.stan_inputs,
