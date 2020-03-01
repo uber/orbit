@@ -4,6 +4,8 @@ import torch
 import pyro
 import pyro.distributions as dist
 
+torch.set_default_tensor_type('torch.DoubleTensor')
+
 
 class LGTModel:
     max_plate_nesting = 1  # max number of plates nested in model

@@ -177,6 +177,7 @@ class LGT(Estimator):
 
         # associates with the *.stan model resource
         self.stan_model_name = "lgt"
+        self.pyro_model_name = "orbit.pyro.lgt.LGTModel"
         # rescale depends on max of response
         self.response_min_max_scaler = None
         # rescale depends on num of regressors
