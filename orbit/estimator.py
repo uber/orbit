@@ -143,6 +143,8 @@ class Estimator(object):
 
         # stan model name
         self.stan_model_name = ''
+        # pyro model name
+        self.pyro_model_name = ''
 
         # stan model parameters names
         self.model_param_names = []
@@ -347,17 +349,21 @@ class Estimator(object):
             self.posterior_samples = stan_extract
 
         elif self.inference_engine == 'pyro':
-            if self.predict_method == 'map':
+            if self.predict_method == PredictMethod.MAP.value:
                 pyro_extract = pyro_map(
-                    model_name="orbit.pyro.lgt.LGTModel",
+                    model_name=self.pyro_model_name,
                     data=self.stan_inputs,
                     seed=self.seed,
                 )
                 self._set_map_posterior(stan_extract=pyro_extract)
-
-            elif self.predict_method in ['full', 'mean', 'median']:
+            elif self.predict_method in [
+                PredictMethod.FULL_SAMPLING.value,
+                PredictMethod.MEAN.value,
+                PredictMethod.MEDIAN.value
+            ]:
                 pyro_extract = pyro_svi(
-                    model_name="orbit.pyro.lgt.LGTModel",
+                    # model_name="",
+                    model_name=self.pyro_model_name,
                     data=self.stan_inputs,
                     seed=self.seed,
                     num_samples=self.num_sample,
