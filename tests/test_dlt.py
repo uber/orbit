@@ -263,3 +263,24 @@ def test_dlt_with_regressors_and_forecast(iclaims_training_data):
 
     assert predicted_df.shape == expected_shape
     assert list(predicted_df.columns) == expected_columns
+
+
+def test_dlt_multiple_fits(m3_monthly_data):
+
+    dlt = DLT(response_col='value',
+              date_col='date',
+              seasonality=12,
+              sample_method='mcmc',
+              predict_method='full')
+
+    # multiple fits should not raise exceptions
+    dlt.fit(df=m3_monthly_data)
+    dlt.fit(df=m3_monthly_data)
+
+    predicted_df = dlt.predict(df=m3_monthly_data)
+
+    expected_columns = ['date', 5, 50, 95]
+    expected_shape = (68, len(expected_columns))
+
+    assert predicted_df.shape == expected_shape
+    assert list(predicted_df.columns) == expected_columns
