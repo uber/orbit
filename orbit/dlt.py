@@ -171,6 +171,7 @@ class DLT(LGT):
         self.stan_model_name = "dlt"
 
     def _set_model_param_names(self):
+        self.model_param_names = []
         self.model_param_names += [param.value for param in dlt.BaseStanSamplingParameters]
 
         # append seasonality param names
