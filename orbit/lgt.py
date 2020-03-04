@@ -341,6 +341,7 @@ class LGT(Estimator):
                 items=self.regular_regressor_col,).values
 
     def _set_model_param_names(self):
+        self.model_param_names = []
         self.model_param_names += [param.value for param in lgt.BaseStanSamplingParameters]
 
         # append seasonality param names
