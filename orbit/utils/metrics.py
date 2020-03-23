@@ -39,7 +39,9 @@ def mape(actual, predicted):
     float
         mape value
     '''
-    actual = actual[np.abs(actual) > EPS]
+    filtered = np.abs(actual) > EPS
+    actual = actual[filtered]
+    predicted = predicted[filtered]
     return np.mean(np.abs((actual - predicted) / actual))
 
 
@@ -58,7 +60,9 @@ def wmape(actual, predicted):
     float
         wmape value
     '''
-    actual = actual[np.abs(actual) > EPS]
+    filtered = np.abs(actual) > EPS
+    actual = actual[filtered]
+    predicted = predicted[filtered]
     weights = np.abs(actual) / np.sum(np.abs(actual))
     return np.sum(weights * np.abs((actual - predicted) / actual))
 
