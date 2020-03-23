@@ -18,8 +18,9 @@ def smape(actual, predicted):
     float
         symmetric mape value
     '''
-    actual = actual[np.abs(actual) > EPS]
-    predicted = predicted[np.abs(predicted) > EPS]
+    filtered = (np.abs(actual) > EPS) & (np.abs(predicted) > EPS)
+    actual = actual[filtered]
+    predicted = predicted[filtered]
     return 2 * np.mean(np.abs(actual - predicted) / (np.abs(actual) + np.abs(predicted)))
 
 
