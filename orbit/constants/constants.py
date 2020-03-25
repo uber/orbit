@@ -75,7 +75,7 @@ class DateInfo(Enum):
     DATE_INTERVAL = 'date_interval'
 
 
-class BacktestMetaKeys(Enum):
+class TimeSeriesSplitSchemeNames(Enum):
     """ hash table keys for the dictionary of back-test meta data
     """
     MODEL = 'model'
@@ -83,7 +83,6 @@ class BacktestMetaKeys(Enum):
     TRAIN_END_DATE = 'train_end_date'
     TRAIN_IDX = 'train_idx'
     TEST_IDX = 'test_idx'
-    FORECAST_DATES = 'forecast_dates'
 
 
 class BacktestFitColumnNames(Enum):
