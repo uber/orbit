@@ -306,7 +306,6 @@ class Backtest(object):
 
             # drop duplicate columns
             results = results.loc[:, ~results.columns.duplicated()]
-            # TODO:  is this just the index?
             results['split_key'] = split_key
 
             predicted_df = pd.concat((predicted_df, results), axis=0)
@@ -395,6 +394,19 @@ class Backtest(object):
 
         return score_df
 
+    def _append_split_meta(self):
+        pass
+
+    def _append_model_meta(self):
+        pass
+
+    def get_predictions(self, include_split_meta=False):
+        # TODO: implement include_split_meta
+        return self._predicted_df
+
+    def get_scores(self, include_model_meta=False):
+        # TODO: implement include_split_meta
+        return self._score_df
 
     # def _fit_batch(self, models, model_names=None, model_callbacks=None, fit_callbacks=None,
     #                predict_callbacks=None, fit_args=None):
@@ -488,17 +500,3 @@ class Backtest(object):
     #                           predicted_col=predicted_col,
     #                           metrics=metrics,
     #                           include_steps=include_steps)
-
-    def _append_split_meta(self):
-        pass
-
-    def _append_model_meta(self):
-        pass
-
-    def get_predictions(self, include_split_meta=False):
-        # TODO: implement include_split_meta
-        return self._predicted_df
-
-    def get_scores(self, include_model_meta=False):
-        # TODO: implement include_split_meta
-        return self._score_df
