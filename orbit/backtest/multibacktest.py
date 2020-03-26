@@ -16,7 +16,6 @@ def run_multi_series_backtest(data, response_col, key_col, model,
     all_scores = []
 
     for key in tqdm.tqdm(unique_keys):
-
         df = data[data[key_col] == key]
         splitter = TimeSeriesSplitter(
             df=df, min_train_len=min_train_len, incremental_len=incremental_len,
