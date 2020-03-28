@@ -153,7 +153,7 @@ class DLT(LGT):
             level_smoothing_min=0, level_smoothing_max=1,
             slope_smoothing_min=0, slope_smoothing_max=1,
             damped_factor_min=0.8, damped_factor_max=0.999,
-            use_log_global_trend=True,
+            global_trend_option='linear',
             regression_coef_max=1.0, fix_regression_coef_sd=1, regressor_sigma_sd=1.0,
             damped_factor_fixed=0.8, **kwargs
     ):
@@ -168,6 +168,15 @@ class DLT(LGT):
         # associates with the *.stan model resource
         self.stan_model_name = "dlt"
         # self.pyro_model_name = "orbit.pyro.dlt.DLTModel--WIP"
+        if global_trend_option == 'linear':
+            self.global_trend_option_ = 0
+        elif global_trend_option == 'log-linear':
+            self.global_trend_option_ = 1
+        elif global_trend_option == 'logistic':
+            self.global_trend_option_ = 2
+        else:
+            raise IllegalArgument(
+                "global_trend_option must be one of these ['linear','log-linear','logistic']")
 
     def _set_model_param_names(self):
         self.model_param_names = []
@@ -181,11 +190,6 @@ class DLT(LGT):
         if self.damped_factor_fixed < 0:
             self.model_param_names += [
                 param.value for param in dlt.DampedTrendStanSamplingParameters]
-
-        # append log global trend param names
-        # if self.use_log_global_trend:
-        #     self.model_param_names += [
-        #         param.value for param in dlt.LogGlobalTrendSamplingParameters]
 
         # append positive regressors if any
         if self.num_of_positive_regressors > 0:
@@ -367,13 +371,16 @@ class DLT(LGT):
                 curr_local_trend = \
                     last_local_trend_level + damped_factor.flatten() * last_local_trend_slope
                 full_local_trend[:, idx] = curr_local_trend
-                if self.use_log_global_trend:
-                    # note that we use `idx` directly for log-linear trend vs. `idx - 1` for linear
-                    full_global_trend[:, idx] = \
-                        global_trend_level + torch.log(1 + global_trend_slope * idx)
-                else:
+                if self.global_trend_option == 'linear':
                     full_global_trend[:, idx] = \
                         global_trend_level + global_trend_slope * (idx - 1)
+                elif self.global_trend_option == 'log-linear':
+                    # note that we use `idx` directly for log-linear trend vs. `idx - 1` for linear
+                    full_global_trend[:, idx] = \
+                        global_trend_level + torch.log(1 + global_trend_slope * (idx -1))
+                elif self.global_trend_option == 'logistic':
+                    full_global_trend[:, idx] = global_trend_level / (
+                            1 + torch.exp(-1 * global_trend_slope * (idx - 1)))
 
                 if include_error:
                     error_value = nct.rvs(
