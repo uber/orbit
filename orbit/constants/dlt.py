@@ -64,10 +64,6 @@ class BaseStanSamplingParameters(Enum):
     GLOBAL_TREND_LEVEL = 'gl'
 
 
-# class LogGlobalTrendSamplingParameters(Enum):
-#     GLOBAL_TREND_SHAPE = 'gs'
-
-
 class DampedTrendStanSamplingParameters(Enum):
     """
     The optional stan output sampling parameters applied when damped factor optimization required.

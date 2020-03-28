@@ -245,9 +245,6 @@ class DLT(LGT):
 
         global_trend_level = model.get(dlt.BaseStanSamplingParameters.GLOBAL_TREND_LEVEL.value)
         global_trend_slope = model.get(dlt.BaseStanSamplingParameters.GLOBAL_TREND_SLOPE.value)
-        # if self.use_log_global_trend:
-        #     global_trend_shape = model.get(
-        #         dlt.LogGlobalTrendSamplingParameters.GLOBAL_TREND_SHAPE.value)
         global_trend = model.get(dlt.BaseStanSamplingParameters.GLOBAL_TREND.value)
 
         # regression components
@@ -370,12 +367,8 @@ class DLT(LGT):
                 curr_local_trend = \
                     last_local_trend_level + damped_factor.flatten() * last_local_trend_slope
                 full_local_trend[:, idx] = curr_local_trend
-                # full_global_trend[:, idx] = full_global_trend[:, idx - 1] + global_trend_slope
-                # if self.use_log_global_trend:
-                #     full_global_trend[:, idx] = \
-                #         global_trend_level + global_trend_slope * torch.log(
-                #             1 + global_trend_shape * (idx - 1))
                 if self.use_log_global_trend:
+                    # note that we use `idx` directly for log-linear trend vs. `idx - 1` for linear
                     full_global_trend[:, idx] = \
                         global_trend_level + torch.log(1 + global_trend_slope * idx)
                 else:
