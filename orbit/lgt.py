@@ -182,6 +182,9 @@ class LGT(Estimator):
         self.response_min_max_scaler = None
         # rescale depends on num of regressors
         self.regressor_min_max_scaler = None
+        if auto_scale and not is_multiplicative:
+            print("Auto-scale is not supported for additive model. Turning off auto-scale.")
+            self.auto_scale = False
 
     def _set_computed_params(self):
         self._setup_computed_regression_params()
@@ -239,27 +242,32 @@ class LGT(Estimator):
                 self.regular_regressor_sigma_prior.append(self.regressor_sigma_prior[index])
 
     def _scale_df(self, df, do_fit=False):
-        n = df.shape[0]
-        x = df[self.response_col].astype(np.float64).values.reshape(n, 1)
-
-        if do_fit:
-            upper = max(10, np.max(x))
-            lower = max(2.8, np.min(x))
-            self.response_min_max_scaler = MinMaxScaler((lower, upper))
-            df[self.response_col] = self.response_min_max_scaler.fit_transform(x).flatten()
-        # else:
-        #     df[self.response_col] = self.response_min_max_scaler.transform(x).flatten()
-
+        regression_sigma_sum = 0.0
+        # scale regressors if avaliable
         if self.regressor_col is not None:
-            num_of_regressor = len(self.regressor_col)
+            regression_sigma_sum = np.sum(self.regressor_sigma_prior)
+            # fit regerssor scaler in fitting
             if do_fit:
-                self.regressor_min_max_scaler = \
-                    MinMaxScaler((lower / num_of_regressor / 2, upper / num_of_regressor / 2))
+                self.regressor_min_max_scaler = MinMaxScaler(1, 2.719)
                 df[self.regressor_col] = \
                     self.regressor_min_max_scaler.fit_transform(df[self.regressor_col])
+            # transfrom regressors
             else:
                 df[self.regressor_col] = \
                     self.regressor_min_max_scaler.transform(df[self.regressor_col])
+
+        # fit response scaler in fitting
+        if do_fit:
+            n = df.shape[0]
+            x = df[self.response_col].astype(np.float64).values.reshape(n, 1)
+            # bounded by chance of seasoanlity and sum of regression causing negative
+            # it won't completely get rid of chacne but should catch most of the cases
+            lower = max(1.001 +
+                        max(-1 * self.seasonality_min, 0) +
+                        2 * regression_sigma_sum, np.min(x))
+            upper = min(lower + 10, np.max(x))
+            self.response_min_max_scaler = MinMaxScaler((lower, upper))
+            df[self.response_col] = self.response_min_max_scaler.fit_transform(x).flatten()
         return df
 
     def _log_transform_df(self, df, do_fit=False):

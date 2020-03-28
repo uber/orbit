@@ -632,6 +632,9 @@ class Estimator(object):
             input_value = getattr(self, key_lower, None)
             if input_value is None:
                 raise IllegalArgument('{} is missing from stan input'.format(key_lower))
+            if isinstance(input_value, bool):
+                # stan accepts bool as int only
+                input_value = int(input_value)
             stan_inputs[key.value] = input_value
 
         self.stan_inputs = stan_inputs

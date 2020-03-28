@@ -105,8 +105,6 @@ class DLT(LGT):
         minimum value allowed for local slope smoothing coefficient samples
     slope_smoothing_max : float
         maximum value allowed for local slope smoothing coefficient samples
-    use_damped_trend : int
-        binary input 0 for using LGT Model; 1 for using Damped Trend Model
     fix_regression_coef_sd : int
         binary input 0 for using point prior of regressors sigma; 1 for using Cauchy prior for regressor
         sigma
@@ -115,7 +113,6 @@ class DLT(LGT):
         Ignored when `fix_regression_coef_sd` is 1.
     damped_factor_fixed : float
         input between 0 and 1 which specify damped effect of local slope per period.
-        Ignored when `use_damped_trend` is 0.
     damped_factor_min : float
          minimum value allowed for damped factor samples. Ignored when `damped_factor_fixed` > 0
     damped_factor_max : float
@@ -155,7 +152,8 @@ class DLT(LGT):
             seasonality_smoothing_min=0, seasonality_smoothing_max=1,
             level_smoothing_min=0, level_smoothing_max=1,
             slope_smoothing_min=0, slope_smoothing_max=1,
-            use_damped_trend=0, damped_factor_min=0.8, damped_factor_max=0.999,
+            damped_factor_min=0.8, damped_factor_max=0.999,
+            use_log_global_trend=True,
             regression_coef_max=1.0, fix_regression_coef_sd=1, regressor_sigma_sd=1.0,
             damped_factor_fixed=0.8, **kwargs
     ):
@@ -169,6 +167,7 @@ class DLT(LGT):
 
         # associates with the *.stan model resource
         self.stan_model_name = "dlt"
+        # self.pyro_model_name = "orbit.pyro.dlt.DLTModel--WIP"
 
     def _set_model_param_names(self):
         self.model_param_names = []
@@ -180,8 +179,13 @@ class DLT(LGT):
 
         # append damped trend param names
         if self.damped_factor_fixed < 0:
-            self.model_param_names += [param.value for param in
-                                       dlt.DampedTrendStanSamplingParameters]
+            self.model_param_names += [
+                param.value for param in dlt.DampedTrendStanSamplingParameters]
+
+        # append log global trend param names
+        # if self.use_log_global_trend:
+        #     self.model_param_names += [
+        #         param.value for param in dlt.LogGlobalTrendSamplingParameters]
 
         # append positive regressors if any
         if self.num_of_positive_regressors > 0:
@@ -239,7 +243,11 @@ class DLT(LGT):
         else:
             damped_factor = model.get(dlt.DampedTrendStanSamplingParameters.DAMPED_FACTOR.value)
 
+        global_trend_level = model.get(dlt.BaseStanSamplingParameters.GLOBAL_TREND_LEVEL.value)
         global_trend_slope = model.get(dlt.BaseStanSamplingParameters.GLOBAL_TREND_SLOPE.value)
+        # if self.use_log_global_trend:
+        #     global_trend_shape = model.get(
+        #         dlt.LogGlobalTrendSamplingParameters.GLOBAL_TREND_SHAPE.value)
         global_trend = model.get(dlt.BaseStanSamplingParameters.GLOBAL_TREND.value)
 
         # regression components
@@ -332,8 +340,8 @@ class DLT(LGT):
                 seasonality_component = seasonality_levels[:, :full_len]
             else:
                 seasonality_forecast_length = full_len - seasonality_levels.shape[1]
-                seasonality_forecast_matrix \
-                    = torch.zeros((num_sample, seasonality_forecast_length), dtype=torch.double)
+                seasonality_forecast_matrix = \
+                    torch.zeros((num_sample, seasonality_forecast_length), dtype=torch.double)
                 seasonality_component = torch.cat(
                     (seasonality_levels, seasonality_forecast_matrix), dim=1)
         else:
@@ -350,12 +358,10 @@ class DLT(LGT):
             full_global_trend = global_trend[:, :full_len]
         else:
             trend_forecast_length = full_len - trained_len
-            trend_forecast_matrix \
-                = torch.zeros((num_sample, trend_forecast_length), dtype=torch.double)
-            full_local_trend = torch.cat((local_trend[:, :full_len], trend_forecast_matrix), dim=1)
-            full_global_trend = torch.cat((global_trend[:, :full_len], trend_forecast_matrix),
-                                          dim=1)
-
+            trend_forecast_init = \
+                torch.zeros((num_sample, trend_forecast_length), dtype=torch.double)
+            full_local_trend = torch.cat((local_trend[:, :full_len], trend_forecast_init), dim=1)
+            full_global_trend = torch.cat((global_trend[:, :full_len], trend_forecast_init), dim=1)
             last_local_trend_level = local_trend_levels[:, -1]
             last_local_trend_slope = local_trend_slopes[:, -1]
 
@@ -364,7 +370,17 @@ class DLT(LGT):
                 curr_local_trend = \
                     last_local_trend_level + damped_factor.flatten() * last_local_trend_slope
                 full_local_trend[:, idx] = curr_local_trend
-                full_global_trend[:, idx] = full_global_trend[:, idx - 1] + global_trend_slope
+                # full_global_trend[:, idx] = full_global_trend[:, idx - 1] + global_trend_slope
+                # if self.use_log_global_trend:
+                #     full_global_trend[:, idx] = \
+                #         global_trend_level + global_trend_slope * torch.log(
+                #             1 + global_trend_shape * (idx - 1))
+                if self.use_log_global_trend:
+                    full_global_trend[:, idx] = \
+                        global_trend_level + torch.log(1 + global_trend_slope * idx)
+                else:
+                    full_global_trend[:, idx] = \
+                        global_trend_level + global_trend_slope * (idx - 1)
 
                 if include_error:
                     error_value = nct.rvs(

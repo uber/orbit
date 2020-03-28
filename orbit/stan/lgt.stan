@@ -141,9 +141,11 @@ transformed parameters {
         s_t = 0.0;
     }
     
+    // forecast process
     lgt_sum[t] = l[t-1] + gt_coef * fabs(l[t-1]) ^ gt_pow + lt_coef * b[t-1];
     yhat[t] = lgt_sum[t] + s_t + r[t];
     
+    // update process
     // l[t] update equation with l[t-1] ONLY by excluding b[t-1];
     // It is intentionally different from the Holt-Winter form
     // The change is suggested from Slawek's original SLGT model

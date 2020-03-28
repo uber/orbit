@@ -21,8 +21,9 @@ class StanInputMapper(Enum):
     LEVEL_SMOOTHING_MAX = 'LEV_SM_MAX'
     SLOPE_SMOOTHING_MIN = 'SLP_SM_MIN'
     SLOPE_SMOOTHING_MAX = 'SLP_SM_MAX'
+    # ---------- Global Trend ---------- #
+    USE_LOG_GLOBAL_TREND = 'USE_LOG_G_TREND'
     # ---------- Damped Trend ---------- #
-    USE_DAMPED_TREND = 'USE_DAMPED_TREND'
     DAMPED_FACTOR_MIN = 'DAMPED_FACTOR_MIN'
     DAMPED_FACTOR_MAX = 'DAMPED_FACTOR_MAX'
     DAMPED_FACTOR_FIXED = 'DAMPED_FACTOR_FIXED'
@@ -61,6 +62,10 @@ class BaseStanSamplingParameters(Enum):
     GLOBAL_TREND = 'gt_sum'
     GLOBAL_TREND_SLOPE = 'gb'
     GLOBAL_TREND_LEVEL = 'gl'
+
+
+# class LogGlobalTrendSamplingParameters(Enum):
+#     GLOBAL_TREND_SHAPE = 'gs'
 
 
 class DampedTrendStanSamplingParameters(Enum):
