@@ -16,40 +16,59 @@ from orbit.utils.utils import is_ordered_datetime
 class DLT(LGT):
     """Implementation of Damped-Local-Trend (LGT) model with seasonality.
 
+    **Evaluation Process & Likelihood**
 
-    Prediction
-
-    LGT follows state space decomposition such that predictions are sum of the three states--
-    trend, seasonality and externality (regression). In math, we have
+    DLT follows state space decomposition such that predictions are sum of the three states--
+    trend, seasonality and externality (regression).
 
     .. math::
         \hat{y}_t=\mu_t+s_t+r_t
 
-    Update Process
+        y - \hat{y} \sim \\text{Student-T}(\\nu, 0,\sigma)
 
-    Except externality, states are updated in a sequential manner.  In math, we have
+        \sigma \sim \\text{Half-Cauchy}(0, \gamma)
+
+    **Update Process**
+
+    States are updated in a sequential manner except externality and global trend.
 
     .. math::
         r_t=\{X\\beta\}_t
 
-        \mu_t=l_{t-1}+\\theta_{loc}{b_{t-1}}+\\theta_{glb}{|l_{t-1}|^{\lambda}}
+        \mu_t=g_{t} + l_{t-1} + \\delta{b_{t-1}}
 
-        l_t=\\alpha_{lev}(y_t-s_t-r_t)+(1-\\alpha_{lev})l_{t-1}
+        l_t=\\rho_{l}(y_t-s_t-r_t)+(1-\\rho_{l})l_{t-1}
 
-        b_t=\\alpha_{slp}(l_t-l_{t-1})+(1-\\alpha_{slp})b_{t-1}
+        b_t=\\rho_{b}(l_t-l_{t-1})+(1-\\rho_{b})\\delta{b_{t-1}}
 
-        s_t=\\alpha_{sea}(y_t-l_t-r_t)+(1-\\alpha_{sea})s_{t-1}
+        s_t=\\rho_{s}(y_t-l_t-r_t)+(1-\\rho_{s})s_{t-1}
 
-
-    Likelihood & Prior
+    **Priors**
 
     .. math::
-        y_t\sim{Stt(\hat{y},v,\sigma_{obs})}
-
         \\beta\sim{N(0,\sigma_{\\beta})}
 
-        \sigma_{obs}\sim Cauchy(0, C_{scale})
+        \\rho_{l},\\rho_{b},\\rho_{s} \sim \\text{Uniform}(0,1)
 
+
+    **Notes**
+
+    *Global Trend*
+
+    .. math::
+       g_t \\text{ is modeled as deterministic trend with three options:}
+
+    1. linear
+    2. log-linear
+    3. logistic
+
+    *Damped Factor*
+
+    .. math::
+        \\delta \\text{ is capture damped effect of the local trend.}
+
+    As default, it is an input from user. There is an option for user to model it as
+    a parameter in a uniform range.
 
     Parameters
     ----------
@@ -73,7 +92,7 @@ class DLT(LGT):
         with a `MinMaxScaler` such that the min value is `e` and max value is
         the max value in the data
     cauchy_sd : float
-        scale parameter of prior of observation residuals scale parameter `C_scale`
+        a hyperprior for residuals scale parameter
     seasonality : int
         The length of the seasonality period. For example, if dataframe contains weekly data
         points, `52` would indicate a yearly seasonality.
@@ -106,11 +125,11 @@ class DLT(LGT):
     slope_smoothing_max : float
         maximum value allowed for local slope smoothing coefficient samples
     fix_regression_coef_sd : int
-        binary input 0 for using point prior of regressors sigma; 1 for using Cauchy prior for regressor
-        sigma
+        binary input 0 for using point prior of regressors sigma; 1 for using Cauchy hyperprior for
+        regressor sigma
     regressor_sigma_sd : float
-        scale parameter of prior of regressor coefficient scale parameter.
-        Ignored when `fix_regression_coef_sd` is 1.
+        hyperprior for regressor coefficient scale parameter. Ignored when `fix_regression_coef_sd`
+        is 1.
     damped_factor_fixed : float
         input between 0 and 1 which specify damped effect of local slope per period.
     damped_factor_min : float
@@ -123,23 +142,9 @@ class DLT(LGT):
 
     Notes
     -----
-    LGT model is an extensions of traditional exponential smoothing models. For details, see
-    https://otexts.com/fpp2/holt-winters.html.
-    In short, the model follows state space decomposition such that predictions are the
-    sum of the three states--trend, seasonality and externality (regression).  The states updates
-    sequentially with smoothing, scale and other parameters.
-
-    The original model was created by Slawek Smyl, Christoph Bergmeir, Erwin Wibowo,
-    To Wang(Edwin) Ng. For details, see https://cran.r-project.org/web/packages/Rlgt/index.html
-
-    We re-parameterized the model to reduce complexity and to be in additive form so that user has
-    an option to transform the model back to multiplicative form through logarithm
-    transformation.  These changes enhance  speed and stability of sampling. The model also provides
-    more support on external regressors.
-
-    One may note that there is a small but critical difference of the formula in both training (*.stan file) and
-    prediction (predict()) such that the `l(t)` is updated with levels only l(t-1) rather than
-    the integrated trend (like l(t-1) + b(t-1) in traditional exp. smoothing models).
+    DLT provides another option for exponential smoothing models. Unlike LGT, the additive model
+    allows any real value of response while the multiplicative version requires non-negative
+    value.  Moreover, it provides damped trend for user to perform long-term forecast.
     """
     # this must be defined in child class
     _stan_input_mapper = dlt.StanInputMapper
@@ -152,7 +157,7 @@ class DLT(LGT):
             seasonality_smoothing_min=0, seasonality_smoothing_max=1,
             level_smoothing_min=0, level_smoothing_max=1,
             slope_smoothing_min=0, slope_smoothing_max=1,
-            damped_factor_min=0.8, damped_factor_max=0.999,
+            damped_factor_min=0.8, damped_factor_max=1,
             global_trend_option='linear',
             regression_coef_max=1.0, fix_regression_coef_sd=1, regressor_sigma_sd=1.0,
             damped_factor_fixed=0.8, **kwargs

@@ -22,40 +22,44 @@ from orbit.utils.utils import is_ordered_datetime
 class LGT(Estimator):
     """Implementation of Local-Global-Trend (LGT) model with seasonality.
 
-
-    Prediction
+    **Evaluation Process & Likelihood**
 
     LGT follows state space decomposition such that predictions are sum of the three states--
-    trend, seasonality and externality (regression). In math, we have
+    trend, seasonality and externality (regression).
 
     .. math::
         \hat{y}_t=\mu_t+s_t+r_t
 
-    Update Process
+        y - \hat{y} \sim \\text{Student-T}(\\nu, 0,\sigma)
 
-    Except externality, states are updated in a sequential manner.  In math, we have
+        \sigma \sim \\text{Half-Cauchy}(0, \gamma)
+
+    **Update Process**
+
+    States are updated in a sequential manner except externality.
 
     .. math::
         r_t=\{X\\beta\}_t
 
         \mu_t=l_{t-1}+\\theta_{loc}{b_{t-1}}+\\theta_{glb}{|l_{t-1}|^{\lambda}}
 
-        l_t=\\alpha_{lev}(y_t-s_t-r_t)+(1-\\alpha_{lev})l_{t-1}
+        l_t=\\rho_{l}(y_t-s_t-r_t)+(1-\\rho_{l})l_{t-1}
 
-        b_t=\\alpha_{slp}(l_t-l_{t-1})+(1-\\alpha_{slp})b_{t-1}
+        b_t=\\rho_{b}(l_t-l_{t-1})+(1-\\rho_{b}){b_{t-1}}
 
-        s_t=\\alpha_{sea}(y_t-l_t-r_t)+(1-\\alpha_{sea})s_{t-1}
+        s_t=\\rho_{s}(y_t-l_t-r_t)+(1-\\rho_{s})s_{t-1}
 
 
-    Likelihood & Prior
+    **Priors**
 
     .. math::
-        y_t\sim{Stt(\hat{y},v,\sigma_{obs})}
-
         \\beta\sim{N(0,\sigma_{\\beta})}
 
-        \sigma_{obs}\sim Cauchy(0, C_{scale})
+        \\rho_{l},\\rho_{b},\\rho_{s} \sim \\text{Uniform}(0,1)
 
+        \\theta_{loc}, \\theta_{glb}, \lambda, \\nu \\text{ also follow uniform priors with}
+
+    different bounds.
 
     Parameters
     ----------
@@ -79,7 +83,7 @@ class LGT(Estimator):
         with a `MinMaxScaler` such that the min value is `e` and max value is
         the max value in the data
     cauchy_sd : float
-        scale parameter of prior of observation residuals scale parameter `C_scale`
+        a hyperprior for residuals scale parameter
     seasonality : int
         The length of the seasonality period. For example, if dataframe contains weekly data
         points, `52` would indicate a yearly seasonality.
@@ -111,21 +115,12 @@ class LGT(Estimator):
         minimum value allowed for local slope smoothing coefficient samples
     slope_smoothing_max : float
         maximum value allowed for local slope smoothing coefficient samples
-    use_damped_trend : int
-        binary input 0 for using LGT Model; 1 for using Damped Trend Model
     fix_regression_coef_sd : int
-        binary input 0 for using point prior of regressors sigma; 1 for using Cauchy prior for regressor
-        sigma
+        binary input 0 for using point prior of regressors sigma; 1 for using Cauchy hyperprior for
+        regressor sigma
     regressor_sigma_sd : float
-        scale parameter of prior of regressor coefficient scale parameter.
-        Ignored when `fix_regression_coef_sd` is 1.
-    damped_factor_fixed : float
-        input between 0 and 1 which specify damped effect of local slope per period.
-        Ignored when `use_damped_trend` is 0.
-    damped_factor_min : float
-         minimum value allowed for damped factor samples. Ignored when `damped_factor_fixed` > 0
-    damped_factor_max : float
-         maximum value allowed for damped factor  samples. Ignored when `damped_factor_fixed` > 0
+        hyperprior for regressor coefficient scale parameter. Ignored when `fix_regression_coef_sd`
+        is 1.
     regression_coef_max : float
         Maximum absolute value allowed for regression coefficient samples
 
