@@ -178,8 +178,9 @@ class LGT(Estimator):
         # rescale depends on num of regressors
         self.regressor_min_max_scaler = None
         if auto_scale and not is_multiplicative:
-            raise IllegalArgument('Auto-scale is not supported for additive model. Turning off auto-scale.')
-            self.auto_scale = False
+            raise IllegalArgument(
+                'Auto-scale is not supported for additive model. Please turn off auto-scale.'
+            )
 
     def _set_computed_params(self):
         self._setup_computed_regression_params()
