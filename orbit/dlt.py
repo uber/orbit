@@ -174,11 +174,11 @@ class DLT(LGT):
         self.stan_model_name = "dlt"
         # self.pyro_model_name = "orbit.pyro.dlt.DLTModel--WIP"
         if global_trend_option == 'linear':
-            self.global_trend_option_ = 0
+            self._global_trend_option = 0
         elif global_trend_option == 'log-linear':
-            self.global_trend_option_ = 1
+            self._global_trend_option = 1
         elif global_trend_option == 'logistic':
-            self.global_trend_option_ = 2
+            self._global_trend_option = 2
         else:
             raise IllegalArgument(
                 "global_trend_option must be one of these ['linear','log-linear','logistic']")
@@ -380,7 +380,6 @@ class DLT(LGT):
                     full_global_trend[:, idx] = \
                         global_trend_level + global_trend_slope * (idx - 1)
                 elif self.global_trend_option == 'log-linear':
-                    # note that we use `idx` directly for log-linear trend vs. `idx - 1` for linear
                     full_global_trend[:, idx] = \
                         global_trend_level + torch.log(1 + global_trend_slope * (idx -1))
                 elif self.global_trend_option == 'logistic':

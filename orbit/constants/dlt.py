@@ -22,7 +22,7 @@ class StanInputMapper(Enum):
     SLOPE_SMOOTHING_MIN = 'SLP_SM_MIN'
     SLOPE_SMOOTHING_MAX = 'SLP_SM_MAX'
     # ---------- Global Trend ---------- #
-    GLOBAL_TREND_OPTION_ = 'GLOBAL_TREND_OPTION'
+    _GLOBAL_TREND_OPTION = 'GLOBAL_TREND_OPTION'
     # ---------- Damped Trend ---------- #
     DAMPED_FACTOR_MIN = 'DAMPED_FACTOR_MIN'
     DAMPED_FACTOR_MAX = 'DAMPED_FACTOR_MAX'
