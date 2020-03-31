@@ -135,7 +135,7 @@ class TimeSeriesSplitter(object):
                 message += f"Test start date: {tt_start_date} Test end date: {tt_end_date}\n"
         return message
 
-    def plot(self, lw=20, fig_width=20, cm=plt.cm.coolwarm):
+    def plot(self, lw=20, fig_width=20):
         _, ax = plt.subplots(figsize=(fig_width, self.n_splits))
         # visualize the train/test windows for each split
         for idx, scheme in self._split_scheme.items():
@@ -153,6 +153,7 @@ class TimeSeriesSplitter(object):
                 [idx + 0.5] * len(indices),
                 # s=5.0, # not useful
                 c=tr_color + tt_color,
+                # TODO: consider 's' square marker and other edgecolors
                 marker="_",
                 lw=lw,
                 vmin=-0.2,

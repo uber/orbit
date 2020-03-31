@@ -21,8 +21,9 @@ class StanInputMapper(Enum):
     LEVEL_SMOOTHING_MAX = 'LEV_SM_MAX'
     SLOPE_SMOOTHING_MIN = 'SLP_SM_MIN'
     SLOPE_SMOOTHING_MAX = 'SLP_SM_MAX'
+    # ---------- Global Trend ---------- #
+    _GLOBAL_TREND_OPTION = 'GLOBAL_TREND_OPTION'
     # ---------- Damped Trend ---------- #
-    USE_DAMPED_TREND = 'USE_DAMPED_TREND'
     DAMPED_FACTOR_MIN = 'DAMPED_FACTOR_MIN'
     DAMPED_FACTOR_MAX = 'DAMPED_FACTOR_MAX'
     DAMPED_FACTOR_FIXED = 'DAMPED_FACTOR_FIXED'
@@ -42,6 +43,12 @@ class StanInputMapper(Enum):
     REGULAR_REGRESSOR_MATRIX = 'RR_MAT'
     REGULAR_REGRESSOR_BETA_PRIOR = 'RR_BETA_PRIOR'
     REGULAR_REGRESSOR_SIGMA_PRIOR = 'RR_SIGMA_PRIOR'
+
+
+class GlobalTrendOption(Enum):
+    linear = 0
+    loglinear = 1
+    logistic = 2
 
 
 class BaseStanSamplingParameters(Enum):

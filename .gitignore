@@ -15,6 +15,7 @@ shiny.Rproj
 .rda
 .rdata
 .Rapp.history
+*.Rproj
 
 # Compiled source #
 ###################

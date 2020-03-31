@@ -6,7 +6,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
+from datetime import datetime
 
 from collections import OrderedDict
 
@@ -177,5 +177,3 @@ def vb_extract(results):
         params[name][(..., ) + tuple(idxs)] = param_samples
 
     return params
-
-

@@ -16,40 +16,59 @@ from orbit.utils.utils import is_ordered_datetime
 class DLT(LGT):
     """Implementation of Damped-Local-Trend (LGT) model with seasonality.
 
+    **Evaluation Process & Likelihood**
 
-    Prediction
-
-    LGT follows state space decomposition such that predictions are sum of the three states--
-    trend, seasonality and externality (regression). In math, we have
+    DLT follows state space decomposition such that predictions are sum of the three states--
+    trend, seasonality and externality (regression).
 
     .. math::
         \hat{y}_t=\mu_t+s_t+r_t
 
-    Update Process
+        y - \hat{y} \sim \\text{Student-T}(\\nu, 0,\sigma)
 
-    Except externality, states are updated in a sequential manner.  In math, we have
+        \sigma \sim \\text{Half-Cauchy}(0, \gamma)
+
+    **Update Process**
+
+    States are updated in a sequential manner except externality and global trend.
 
     .. math::
         r_t=\{X\\beta\}_t
 
-        \mu_t=l_{t-1}+\\theta_{loc}{b_{t-1}}+\\theta_{glb}{|l_{t-1}|^{\lambda}}
+        \mu_t=g_{t} + l_{t-1} + \\delta{b_{t-1}}
 
-        l_t=\\alpha_{lev}(y_t-s_t-r_t)+(1-\\alpha_{lev})l_{t-1}
+        l_t=\\rho_{l}(y_t-s_t-r_t)+(1-\\rho_{l})l_{t-1}
 
-        b_t=\\alpha_{slp}(l_t-l_{t-1})+(1-\\alpha_{slp})b_{t-1}
+        b_t=\\rho_{b}(l_t-l_{t-1})+(1-\\rho_{b})\\delta{b_{t-1}}
 
-        s_t=\\alpha_{sea}(y_t-l_t-r_t)+(1-\\alpha_{sea})s_{t-1}
+        s_t=\\rho_{s}(y_t-l_t-r_t)+(1-\\rho_{s})s_{t-1}
 
-
-    Likelihood & Prior
+    **Priors**
 
     .. math::
-        y_t\sim{Stt(\hat{y},v,\sigma_{obs})}
-
         \\beta\sim{N(0,\sigma_{\\beta})}
 
-        \sigma_{obs}\sim Cauchy(0, C_{scale})
+        \\rho_{l},\\rho_{b},\\rho_{s} \sim \\text{Uniform}(0,1)
 
+
+    **Notes**
+
+    *Global Trend*
+
+    .. math::
+       g_t \\text{ is modeled as deterministic trend with three options:}
+
+    1. linear
+    2. log-linear
+    3. logistic
+
+    *Damped Factor*
+
+    .. math::
+        \\delta \\text{ is capture damped effect of the local trend.}
+
+    As default, it is an input from user. There is an option for user to model it as
+    a parameter in a uniform range.
 
     Parameters
     ----------
@@ -73,7 +92,7 @@ class DLT(LGT):
         with a `MinMaxScaler` such that the min value is `e` and max value is
         the max value in the data
     cauchy_sd : float
-        scale parameter of prior of observation residuals scale parameter `C_scale`
+        a hyperprior for residuals scale parameter
     seasonality : int
         The length of the seasonality period. For example, if dataframe contains weekly data
         points, `52` would indicate a yearly seasonality.
@@ -105,17 +124,14 @@ class DLT(LGT):
         minimum value allowed for local slope smoothing coefficient samples
     slope_smoothing_max : float
         maximum value allowed for local slope smoothing coefficient samples
-    use_damped_trend : int
-        binary input 0 for using LGT Model; 1 for using Damped Trend Model
     fix_regression_coef_sd : int
-        binary input 0 for using point prior of regressors sigma; 1 for using Cauchy prior for regressor
-        sigma
+        binary input 0 for using point prior of regressors sigma; 1 for using Cauchy hyperprior for
+        regressor sigma
     regressor_sigma_sd : float
-        scale parameter of prior of regressor coefficient scale parameter.
-        Ignored when `fix_regression_coef_sd` is 1.
+        hyperprior for regressor coefficient scale parameter. Ignored when `fix_regression_coef_sd`
+        is 1.
     damped_factor_fixed : float
         input between 0 and 1 which specify damped effect of local slope per period.
-        Ignored when `use_damped_trend` is 0.
     damped_factor_min : float
          minimum value allowed for damped factor samples. Ignored when `damped_factor_fixed` > 0
     damped_factor_max : float
@@ -126,23 +142,9 @@ class DLT(LGT):
 
     Notes
     -----
-    LGT model is an extensions of traditional exponential smoothing models. For details, see
-    https://otexts.com/fpp2/holt-winters.html.
-    In short, the model follows state space decomposition such that predictions are the
-    sum of the three states--trend, seasonality and externality (regression).  The states updates
-    sequentially with smoothing, scale and other parameters.
-
-    The original model was created by Slawek Smyl, Christoph Bergmeir, Erwin Wibowo,
-    To Wang(Edwin) Ng. For details, see https://cran.r-project.org/web/packages/Rlgt/index.html
-
-    We re-parameterized the model to reduce complexity and to be in additive form so that user has
-    an option to transform the model back to multiplicative form through logarithm
-    transformation.  These changes enhance  speed and stability of sampling. The model also provides
-    more support on external regressors.
-
-    One may note that there is a small but critical difference of the formula in both training (*.stan file) and
-    prediction (predict()) such that the `l(t)` is updated with levels only l(t-1) rather than
-    the integrated trend (like l(t-1) + b(t-1) in traditional exp. smoothing models).
+    DLT provides another option for exponential smoothing models. Unlike LGT, the additive model
+    allows any real value of response while the multiplicative version requires non-negative
+    value.  Moreover, it provides damped trend for user to perform long-term forecast.
     """
     # this must be defined in child class
     _stan_input_mapper = dlt.StanInputMapper
@@ -155,7 +157,8 @@ class DLT(LGT):
             seasonality_smoothing_min=0, seasonality_smoothing_max=1,
             level_smoothing_min=0, level_smoothing_max=1,
             slope_smoothing_min=0, slope_smoothing_max=1,
-            use_damped_trend=0, damped_factor_min=0.8, damped_factor_max=0.999,
+            damped_factor_min=0.8, damped_factor_max=1,
+            global_trend_option='linear',
             regression_coef_max=1.0, fix_regression_coef_sd=1, regressor_sigma_sd=1.0,
             damped_factor_fixed=0.8, **kwargs
     ):
@@ -169,6 +172,14 @@ class DLT(LGT):
 
         # associates with the *.stan model resource
         self.stan_model_name = "dlt"
+        # self.pyro_model_name = "orbit.pyro.dlt.DLTModel--WIP"
+        if not hasattr(dlt.GlobalTrendOption, global_trend_option):
+            gt_options = [e.name for e in dlt.GlobalTrendOption]
+            raise IllegalArgument(
+                "global_trend_option must be one of these {}".format(gt_options)
+            )
+
+        self._global_trend_option = getattr(dlt.GlobalTrendOption, global_trend_option).value
 
     def _set_model_param_names(self):
         self.model_param_names = []
@@ -180,8 +191,8 @@ class DLT(LGT):
 
         # append damped trend param names
         if self.damped_factor_fixed < 0:
-            self.model_param_names += [param.value for param in
-                                       dlt.DampedTrendStanSamplingParameters]
+            self.model_param_names += [
+                param.value for param in dlt.DampedTrendStanSamplingParameters]
 
         # append positive regressors if any
         if self.num_of_positive_regressors > 0:
@@ -239,6 +250,7 @@ class DLT(LGT):
         else:
             damped_factor = model.get(dlt.DampedTrendStanSamplingParameters.DAMPED_FACTOR.value)
 
+        global_trend_level = model.get(dlt.BaseStanSamplingParameters.GLOBAL_TREND_LEVEL.value)
         global_trend_slope = model.get(dlt.BaseStanSamplingParameters.GLOBAL_TREND_SLOPE.value)
         global_trend = model.get(dlt.BaseStanSamplingParameters.GLOBAL_TREND.value)
 
@@ -332,8 +344,8 @@ class DLT(LGT):
                 seasonality_component = seasonality_levels[:, :full_len]
             else:
                 seasonality_forecast_length = full_len - seasonality_levels.shape[1]
-                seasonality_forecast_matrix \
-                    = torch.zeros((num_sample, seasonality_forecast_length), dtype=torch.double)
+                seasonality_forecast_matrix = \
+                    torch.zeros((num_sample, seasonality_forecast_length), dtype=torch.double)
                 seasonality_component = torch.cat(
                     (seasonality_levels, seasonality_forecast_matrix), dim=1)
         else:
@@ -350,12 +362,10 @@ class DLT(LGT):
             full_global_trend = global_trend[:, :full_len]
         else:
             trend_forecast_length = full_len - trained_len
-            trend_forecast_matrix \
-                = torch.zeros((num_sample, trend_forecast_length), dtype=torch.double)
-            full_local_trend = torch.cat((local_trend[:, :full_len], trend_forecast_matrix), dim=1)
-            full_global_trend = torch.cat((global_trend[:, :full_len], trend_forecast_matrix),
-                                          dim=1)
-
+            trend_forecast_init = \
+                torch.zeros((num_sample, trend_forecast_length), dtype=torch.double)
+            full_local_trend = torch.cat((local_trend[:, :full_len], trend_forecast_init), dim=1)
+            full_global_trend = torch.cat((global_trend[:, :full_len], trend_forecast_init), dim=1)
             last_local_trend_level = local_trend_levels[:, -1]
             last_local_trend_slope = local_trend_slopes[:, -1]
 
@@ -364,7 +374,15 @@ class DLT(LGT):
                 curr_local_trend = \
                     last_local_trend_level + damped_factor.flatten() * last_local_trend_slope
                 full_local_trend[:, idx] = curr_local_trend
-                full_global_trend[:, idx] = full_global_trend[:, idx - 1] + global_trend_slope
+                if self.global_trend_option == dlt.GlobalTrendOption.linear.name:
+                    full_global_trend[:, idx] = \
+                        global_trend_level + global_trend_slope * (idx - 1)
+                elif self.global_trend_option == dlt.GlobalTrendOption.loglinear.name:
+                    full_global_trend[:, idx] = \
+                        global_trend_level + torch.log(1 + global_trend_slope * (idx -1))
+                elif self.global_trend_option == dlt.GlobalTrendOption.logistic.name:
+                    full_global_trend[:, idx] = global_trend_level / (
+                            1 + torch.exp(-1 * global_trend_slope * (idx - 1)))
 
                 if include_error:
                     error_value = nct.rvs(
