@@ -173,15 +173,13 @@ class DLT(LGT):
         # associates with the *.stan model resource
         self.stan_model_name = "dlt"
         # self.pyro_model_name = "orbit.pyro.dlt.DLTModel--WIP"
-        if global_trend_option == 'linear':
-            self._global_trend_option = 0
-        elif global_trend_option == 'log-linear':
-            self._global_trend_option = 1
-        elif global_trend_option == 'logistic':
-            self._global_trend_option = 2
-        else:
+        if not hasattr(dlt.GlobalTrendOption, global_trend_option):
+            gt_options = [e.name for e in dlt.GlobalTrendOption]
             raise IllegalArgument(
-                "global_trend_option must be one of these ['linear','log-linear','logistic']")
+                "global_trend_option must be one of these {}".format(gt_options)
+            )
+
+        self._global_trend_option = getattr(dlt.GlobalTrendOption, global_trend_option).value
 
     def _set_model_param_names(self):
         self.model_param_names = []
@@ -376,13 +374,13 @@ class DLT(LGT):
                 curr_local_trend = \
                     last_local_trend_level + damped_factor.flatten() * last_local_trend_slope
                 full_local_trend[:, idx] = curr_local_trend
-                if self.global_trend_option == 'linear':
+                if self.global_trend_option == dlt.GlobalTrendOption.linear.name:
                     full_global_trend[:, idx] = \
                         global_trend_level + global_trend_slope * (idx - 1)
-                elif self.global_trend_option == 'log-linear':
+                elif self.global_trend_option == dlt.GlobalTrendOption.loglinear.name:
                     full_global_trend[:, idx] = \
                         global_trend_level + torch.log(1 + global_trend_slope * (idx -1))
-                elif self.global_trend_option == 'logistic':
+                elif self.global_trend_option == dlt.GlobalTrendOption.logistic.name:
                     full_global_trend[:, idx] = global_trend_level / (
                             1 + torch.exp(-1 * global_trend_slope * (idx - 1)))
 

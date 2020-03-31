@@ -45,6 +45,12 @@ class StanInputMapper(Enum):
     REGULAR_REGRESSOR_SIGMA_PRIOR = 'RR_SIGMA_PRIOR'
 
 
+class GlobalTrendOption(Enum):
+    linear = 0
+    loglinear = 1
+    logistic = 2
+
+
 class BaseStanSamplingParameters(Enum):
     """
     The stan output sampling parameters related with DLT base model.
