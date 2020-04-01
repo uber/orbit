@@ -116,7 +116,7 @@ class LGT(Estimator):
     slope_smoothing_max : float
         maximum value allowed for local slope smoothing coefficient samples
     fix_regression_coef_sd : int
-        binary input 0 for using point prior of regressors sigma; 1 for using Cauchy hyperprior for
+        binary input 1 for using point prior of regressors sigma; 0 for using Cauchy hyperprior for
         regressor sigma
     regressor_sigma_sd : float
         hyperprior for regressor coefficient scale parameter. Ignored when `fix_regression_coef_sd`
