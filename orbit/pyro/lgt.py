@@ -14,7 +14,7 @@ class LGTModel:
         for key, value in data.items():
             key = key.lower()
             if isinstance(value, (list, np.ndarray)):
-                value = torch.tensor(value, dtype=torch.float)
+                value = torch.tensor(value, dtype=torch.double)
             self.__dict__[key] = value
 
         # transformed data
@@ -43,7 +43,7 @@ class LGTModel:
                 else:
                     # weak prior for sigma
                     pr_sigma = pyro.sample("pr_sigma",
-                                           dist.FoldedDistribution(dist.Cauchy(
+                                           dist.FoldedDistribution(dist.HalfCauchy(
                                                self.pr_sigma_prior, self.reg_sigma_sd)))
                 # weak prior for betas
                 # FIXME this should be constrained to [0, self.beta_max]
@@ -62,8 +62,8 @@ class LGTModel:
                     # weak prior for sigma
                     rr_sigma = pyro.sample("rr_sigma",
                                            dist.FoldedDistribution(
-                                               dist.Cauchy(self.rr_sigma_prior,
-                                                           self.reg_sigma_sd)))
+                                               dist.HalfCauchy(self.rr_sigma_prior,
+                                                               self.reg_sigma_sd)))
                 # weak prior for betas
                 # FIXME this should be constrained to [-self.beta_min, self.beta_max]
                 rr_beta = pyro.sample("rr_beta", dist.Normal(self.rr_beta_prior, rr_sigma))
@@ -109,6 +109,7 @@ class LGTModel:
         b[0] = torch.zeros_like(slp_sm)
         l[0] = (response[0] - r[0]).expand_as(b[0])
 
+        # update process
         for t in range(1, num_of_obs):
             # this update equation with l[t-1] ONLY.
             # intentionally different from the Holt-Winter form
@@ -119,6 +120,7 @@ class LGTModel:
                 s[t + self.seasonality] = \
                     sea_sm * (response[t] - l[t] - r[t]) + (1 - sea_sm) * s[t]
 
+        # evaluation process
         # vectorize as much math as possible
         b = torch.stack(b, dim=-1).reshape(b[0].shape[:-1] + (-1,))
         l = torch.stack(l, dim=-1).reshape(l[0].shape[:-1] + (-1,))
