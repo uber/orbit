@@ -16,6 +16,10 @@ if os.environ.get('DISPLAY', '') == '':
     matplotlib.use('Agg')
 
 
+def validate_option(input, options):
+    result = any(checkIfMatch for elem in options)
+
+
 def is_ordered_datetime(array):
     """Returns True if array is ordered and non-repetitive"""
     return np.all(np.diff(array).astype(float) > 0)

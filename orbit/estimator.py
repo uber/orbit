@@ -17,6 +17,14 @@ from orbit.constants.constants import (
 )
 from orbit.utils.utils import vb_extract, is_ordered_datetime
 
+from orbit.exceptions import EstimatorException
+
+
+SAMPLE_OPTIONS = {'stan': ['map','vi','mcmc'], 'pyro': ['map','vi']}
+PREDICT_OPTIONS = {'map': ['map'],
+                   'vi': ['mean','median','full'],
+                   'mcmc': ['mean','median','full']}
+
 
 class Estimator(object):
     """The abstract base mix-in class for stan Bayesian time series models.
@@ -31,26 +39,44 @@ class Estimator(object):
     date_col : st
         Name of the date index column
     num_warmup : int
-        Number of warm up iterations for MCMC sampler
+        Number of warm up iterations for MCMC sampler [only used when mcmc algo in stan is called]
     num_sample : int
-        Number of samples to extract for MCMC sampler
+        Number of samples to extract for MCMC sampler [only used when mcmc algo in stan is called]
     chains : int
-        Number of MCMC chains
+        Number of sampling chains [only used when mcmc algo in stan is called]
     cores : int
         Number of cores. If cores is set higher than the CPU count of the system
-        the lower of the two numbers will be used.
-    stan_control : dict
-        Dictionary contains additional settings to call pystan
+        the lower of the two numbers will be used. [only used when mcmc algo in stan is called]
     seed : int
         Used to set the seed of the random init
+    inference_engine : {'stan', 'pyro'}
+        For `pyro` only supported with sample_method {'map, 'vi'}
+    sample_method : {'map',''}
+        Determines which stan interface to use during fit (e.g. sampling / optimizing)
+        and how to aggregate and return predicted values.
     predict_method : {'mean', 'median', 'full', 'map'}
         Determines which stan interface to use during fit (e.g. sampling / optimizing)
         and how to aggregate and return predicted values.
     n_boostrap_draws : int, default -1
-        Number of bootstrap samples to draw from `posterior_samples`
+        Number of bootstrap samples to draw from `posterior_samples`. Applied only when
+        `predict_method` == `full`.
     prediction_percentiles : list
         Prediction percentiles which should be returned in addition to predicted values.
         This is only valid when `predict_method` is 'full'
+    stan_mcmc_control : dict
+        Dictionary contains additional mcmc settings to call `pystan.StanModel.sampling()`. See
+        `control` argument from
+        https://pystan.readthedocs.io/en/latest/api.html or
+        https://mc-stan.org/rstan/reference/stan.html for details.
+    stan_vi_args : dict
+        Dictionary contains all general settings to call `pystan.StanModel.vb()` See
+        https://pystan.readthedocs.io/en/latest/api.html or
+        https://mc-stan.org/rstan/reference/stanmodel-method-vb.html for details
+    pyro_vi_args : dict
+        Dictionary contains all general settings to call `orbit.pyro.svi()`
+    algorithm : str
+        options shared by multiple sampling methods. See
+        https://pystan.readthedocs.io/en/latest/api.html for available choices.
     verbose : bool
         Print verbose.
 
@@ -91,13 +117,11 @@ class Estimator(object):
 
     def __init__(
             self, response_col='y', date_col='ds',
-            num_warmup=900, num_sample=100, chains=4, cores=8, stan_control=None, seed=8888,
-            predict_method="full", sample_method="mcmc", n_bootstrap_draws=-1,
-            prediction_percentiles=[5, 95], algorithm=None,
-            # vi additional parameters
-            max_iter=10000, grad_samples=1, elbo_samples=100, adapt_engaged=True,
-            tol_rel_obj=0.01, eval_elbo=100, adapt_iter=50,
-            inference_engine='stan', verbose=False, **kwargs
+            num_warmup=900, num_sample=100, chains=4, cores=8, seed=8888,
+            inference_engine='stan', sample_method="mcmc", predict_method="full",
+            n_bootstrap_draws=-1, prediction_percentiles=[5, 95],
+            stan_mcmc_control=None, stan_vb_args=None, pyro_vi_args=None, algorithm=None,
+            verbose=False, **kwargs
     ):
 
         # TODO: mutable defaults are dangerous. Use sentinel value
@@ -238,6 +262,39 @@ class Estimator(object):
                            self.num_sample_per_chain)
             )
 
+        if self.sample_method not in SAMPLE_OPTIONS[self.inference_engine]:
+            raise EstimatorException(
+                "Sampling method: {} is not supported with inference engine: {} specified.". \
+                format(self.sample_method, self.inference_engine))
+
+        if self.predict_method not in PREDICT_OPTIONS[self.sample_method]:
+            raise EstimatorException(
+                "Predict method: {} is not supported with sampling method: {} specified.". \
+                format(self.predict_method, self.sample_method))
+
+        if self.sample_method == 'vi':
+            self._derive_vb_config()
+
+    def _derive_vb_config(self):
+        # TODO: fill-in user input and additional defaults instead of direct replacement
+        # over-write defaults from pystan
+        if self.stan_vi_args is None:
+            self.stan_vi_args = {
+                'max_iter': 10000,
+                'grad_samples': 1,
+                'elbo_samples': 100,
+                'adapt_engaged': True,
+                'tol_rel_obj':  0.01,
+                'eval_elbo': 100,
+                'adapt_iter': 50,
+            }
+
+        if self.pyro_vi_args is None:
+            self.pyro_vi_args = {
+                'num_steps': 101,
+                'learning_rate': 0.1
+            }
+
     def fit(self, df):
         """Estimates the model posterior values
 
@@ -314,17 +371,11 @@ class Estimator(object):
                 stan_extract = vb_extract(compiled_stan_file.vb(
                     data=self.stan_inputs,
                     pars=self.model_param_names,
-                    iter=self.max_iter,
-                    output_samples=self.num_sample,
                     init=self.stan_init,
                     seed=self.seed,
                     algorithm=self.algorithm,
-                    grad_samples=self.grad_samples,
-                    elbo_samples=self.elbo_samples,
-                    adapt_engaged=self.adapt_engaged,
-                    tol_rel_obj=self.tol_rel_obj,
-                    eval_elbo=self.eval_elbo,
-                    adapt_iter=self.adapt_iter
+                    output_samples=self.num_sample,
+                    **self.stan_vb_args
                 ))
                 # set posterior samples instance var
                 self._set_aggregate_posteriors(stan_extract=stan_extract)
@@ -339,7 +390,7 @@ class Estimator(object):
                     init=self.stan_init,
                     seed=self.seed,
                     algorithm=self.algorithm,
-                    control=self.stan_control
+                    control=self.stan_mcmc_control
                 ).extract(permuted=True)
                 # set posterior samples instance var
                 self._set_aggregate_posteriors(stan_extract=stan_extract)
@@ -366,7 +417,9 @@ class Estimator(object):
                     model_name=self.pyro_model_name,
                     data=self.stan_inputs,
                     seed=self.seed,
+                    num_steps=self.num_warmup,
                     num_samples=self.num_sample,
+                    **self.pyro_vi_args
                 )
                 self._set_aggregate_posteriors(stan_extract=pyro_extract)
 
