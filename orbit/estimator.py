@@ -120,7 +120,7 @@ class Estimator(object):
             num_warmup=900, num_sample=100, chains=4, cores=8, seed=8888,
             inference_engine='stan', sample_method="mcmc", predict_method="full",
             n_bootstrap_draws=-1, prediction_percentiles=[5, 95],
-            stan_mcmc_control=None, stan_vb_args=None, pyro_vi_args=None, algorithm=None,
+            stan_mcmc_control=None, stan_vi_args=None, pyro_vi_args=None, algorithm=None,
             verbose=False, **kwargs
     ):
 
@@ -273,14 +273,14 @@ class Estimator(object):
                 format(self.predict_method, self.sample_method))
 
         if self.sample_method == 'vi':
-            self._derive_vb_config()
+            self._derive_vi_config()
 
-    def _derive_vb_config(self):
+    def _derive_vi_config(self):
         # TODO: fill-in user input and additional defaults instead of direct replacement
         # over-write defaults from pystan
         if self.stan_vi_args is None:
             self.stan_vi_args = {
-                'max_iter': 10000,
+                'iter': 10000,
                 'grad_samples': 1,
                 'elbo_samples': 100,
                 'adapt_engaged': True,
@@ -375,7 +375,7 @@ class Estimator(object):
                     seed=self.seed,
                     algorithm=self.algorithm,
                     output_samples=self.num_sample,
-                    **self.stan_vb_args
+                    **self.stan_vi_args
                 ))
                 # set posterior samples instance var
                 self._set_aggregate_posteriors(stan_extract=stan_extract)
