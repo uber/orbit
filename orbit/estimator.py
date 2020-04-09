@@ -17,7 +17,7 @@ from orbit.constants.constants import (
     SampleMethod,
     EstimatorOptionsMapper,
 )
-from orbit.utils.utils import vb_extract, is_ordered_datetime
+from orbit.utils.utils import vb_extract, is_ordered_datetime, update_dict
 
 
 class Estimator(object):
@@ -44,13 +44,13 @@ class Estimator(object):
     seed : int
         Used to set the seed of the random init
     inference_engine : {'stan', 'pyro'}
-        For `pyro` only supported with sample_method {'map, 'vi'}
-    sample_method : {'map',''}
-        Determines which stan interface to use during fit (e.g. sampling / optimizing)
-        and how to aggregate and return predicted values.
+        Determines which engine to use during for sampling/optimizing
+    sample_method : {'map','vi','mcmc'}
+        Determines which interface to use during fit. For `inference_engine` == `pyro` only
+        sample_method {'map, 'vi'} are supported
     predict_method : {'mean', 'median', 'full', 'map'}
-        Determines which stan interface to use during fit (e.g. sampling / optimizing)
-        and how to aggregate and return predicted values.
+        Determines which how to aggregate posteriors and return predicted values. For
+        `sample_method` ==`map`, user has to use `map`.
     n_boostrap_draws : int, default -1
         Number of bootstrap samples to draw from `posterior_samples`. Applied only when
         `predict_method` == `full`.
@@ -156,21 +156,22 @@ class Estimator(object):
         # posterior state for a single prediction call
         self._posterior_state = {}
 
-        # stan model inputs
+        # PyStan related initialization
         self.stan_inputs = {}
-
         # stan model name
         self.stan_model_name = ''
+        self.stan_init = 'random'
+
+        # pyro related initialization
         # pyro model name
         self.pyro_model_name = ''
 
-        # stan model parameters names
+        # sampling parameters names
         self.model_param_names = []
-
-        self.stan_init = 'random'
 
         # set computed params
         self._set_computed_params()
+        self._validate_params()
 
     def get_params(self):
         """Get all class attributes and values"""
@@ -256,40 +257,26 @@ class Estimator(object):
                            self.num_sample_per_chain)
             )
 
-        if self.sample_method not in \
-                EstimatorOptionsMapper.ENGINE_TO_SAMPLE.value[self.inference_engine]:
-            raise EstimatorException(
-                "Sampling method: {} is not supported with inference engine: {}.".format(
-                    self.sample_method, self.inference_engine))
-
-        if self.predict_method not in \
-                EstimatorOptionsMapper.SAMPLE_TO_PREDICT.value[self.sample_method]:
-            raise EstimatorException(
-                "Predict method: {} is not supported with sampling method: {}.".format(
-                    self.predict_method, self.sample_method))
-
         if self.sample_method == 'vi':
             self._derive_vi_config()
 
     def _derive_vi_config(self):
-        # TODO: fill-in user input and additional defaults instead of direct replacement
-        # over-write defaults from pystan
-        if self.stan_vi_args is None:
-            self.stan_vi_args = {
-                'iter': 10000,
-                'grad_samples': 1,
-                'elbo_samples': 100,
-                'adapt_engaged': True,
-                'tol_rel_obj':  0.01,
-                'eval_elbo': 100,
-                'adapt_iter': 50,
-            }
-
-        if self.pyro_vi_args is None:
-            self.pyro_vi_args = {
+        default_stan_vi_args = {
+            'iter': 10000,
+            'grad_samples': 1,
+            'elbo_samples': 100,
+            'adapt_engaged': True,
+            'tol_rel_obj': 0.01,
+            'eval_elbo': 100,
+            'adapt_iter': 50,
+        }
+        default_pyro_vi_args = {
                 'num_steps': 101,
                 'learning_rate': 0.1
-            }
+        }
+
+        self.stan_vi_args = update_dict(default_stan_vi_args, self.stan_vi_args)
+        self.pyro_vi_args = update_dict(default_pyro_vi_args, self.pyro_vi_args)
 
     def fit(self, df):
         """Estimates the model posterior values
@@ -702,11 +689,18 @@ class Estimator(object):
 
         self.aggregated_posteriors[PredictMethod.MAP.value] = map_posterior
 
-    @abstractmethod
     def _validate_params(self):
-        """Validates static and dynamic input parameters
-
-        This method must be implemented in the child class.
-
+        """Validates static input and computed parameters
         """
-        raise NotImplementedError('_validate_params must be implemented in the child class')
+
+        if self.sample_method not in \
+                EstimatorOptionsMapper.ENGINE_TO_SAMPLE.value[self.inference_engine]:
+            raise EstimatorException(
+                "Sampling method: {} is not supported with inference engine: {}.".format(
+                    self.sample_method, self.inference_engine))
+
+        if self.predict_method not in \
+                EstimatorOptionsMapper.SAMPLE_TO_PREDICT.value[self.sample_method]:
+            raise EstimatorException(
+                "Predict method: {} is not supported with sampling method: {}.".format(
+                    self.predict_method, self.sample_method))
