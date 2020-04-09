@@ -22,6 +22,22 @@ class SampleMethod(Enum):
     MARKOV_CHAIN_MONTE_CARLO = 'mcmc'
 
 
+class EstimatorOptionsMapper(Enum):
+    """
+    Mapper for available options of a downstream input given an input upstream (within some other
+    set of options)
+    """
+    ENGINE_TO_SAMPLE = {
+        'stan': ['map','vi','mcmc'],
+        'pyro': ['map','vi']
+    }
+    SAMPLE_TO_PREDICT = {
+        'map': ['map'],
+        'vi': ['mean', 'median', 'full'],
+        'mcmc': ['mean', 'median', 'full']
+    }
+
+
 # TODO: consider combining this with PredictedComponents
 class PredictionColumnNames(Enum):
     """

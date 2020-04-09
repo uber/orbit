@@ -40,12 +40,13 @@ def test_lgt_pyro_fit(iclaims_training_data):
         date_col='week',
         seasonality=52,
         chains=4,
-        inference_engine='pyro'
+        inference_engine='pyro',
+        sample_method='vi',
+        predict_method='full',
     )
 
     lgt.fit(df=iclaims_training_data)
     expected_posterior_parameters = 13
-
     assert len(lgt.posterior_samples) == expected_posterior_parameters
 
 
@@ -58,7 +59,9 @@ def test_lgt_pyro_fit_with_missing_input(iclaims_training_data):
         date_col='week',
         seasonality=52,
         chains=4,
-        inference_engine='pyro'
+        inference_engine='pyro',
+        sample_method='vi',
+        predict_method='full',
     )
 
     lgt._stan_input_mapper = MockInputMapper
@@ -73,8 +76,9 @@ def test_lgt_pyro_fit_and_mean_predict(iclaims_training_data):
         date_col='week',
         seasonality=52,
         chains=4,
+        inference_engine='pyro',
+        sample_method='vi',
         predict_method='mean',
-        inference_engine='pyro'
     )
 
     lgt.fit(df=iclaims_training_data)
@@ -95,9 +99,9 @@ def test_lgt_pyro_fit_and_full_predict(iclaims_training_data):
         seasonality=52,
         chains=4,
         prediction_percentiles=[5, 95, 30],
-        predict_method='full',
+        inference_engine='pyro',
         sample_method='vi',
-        inference_engine='pyro'
+        predict_method='full',
     )
     
     lgt.fit(df=iclaims_training_data)

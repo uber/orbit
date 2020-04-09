@@ -8,22 +8,16 @@ import multiprocessing
 
 from orbit.models import get_compiled_stan_model
 from orbit.exceptions import (
-    IllegalArgument
+    IllegalArgument,
+    EstimatorException,
 )
 from orbit.pyro.wrapper import pyro_map, pyro_svi
 from orbit.constants.constants import (
     PredictMethod,
     SampleMethod,
+    EstimatorOptionsMapper,
 )
 from orbit.utils.utils import vb_extract, is_ordered_datetime
-
-from orbit.exceptions import EstimatorException
-
-
-SAMPLE_OPTIONS = {'stan': ['map','vi','mcmc'], 'pyro': ['map','vi']}
-PREDICT_OPTIONS = {'map': ['map'],
-                   'vi': ['mean','median','full'],
-                   'mcmc': ['mean','median','full']}
 
 
 class Estimator(object):
@@ -262,15 +256,17 @@ class Estimator(object):
                            self.num_sample_per_chain)
             )
 
-        if self.sample_method not in SAMPLE_OPTIONS[self.inference_engine]:
+        if self.sample_method not in \
+                EstimatorOptionsMapper.ENGINE_TO_SAMPLE.value[self.inference_engine]:
             raise EstimatorException(
-                "Sampling method: {} is not supported with inference engine: {} specified.". \
-                format(self.sample_method, self.inference_engine))
+                "Sampling method: {} is not supported with inference engine: {}.".format(
+                    self.sample_method, self.inference_engine))
 
-        if self.predict_method not in PREDICT_OPTIONS[self.sample_method]:
+        if self.predict_method not in \
+                EstimatorOptionsMapper.SAMPLE_TO_PREDICT.value[self.sample_method]:
             raise EstimatorException(
-                "Predict method: {} is not supported with sampling method: {} specified.". \
-                format(self.predict_method, self.sample_method))
+                "Predict method: {} is not supported with sampling method: {}.".format(
+                    self.predict_method, self.sample_method))
 
         if self.sample_method == 'vi':
             self._derive_vi_config()
@@ -350,7 +346,7 @@ class Estimator(object):
 
             compiled_stan_file = get_compiled_stan_model(self.stan_model_name)
 
-            if self.predict_method == PredictMethod.MAP.value:
+            if self.sample_method == PredictMethod.MAP.value:
                 try:
                     stan_extract = compiled_stan_file.optimizing(
                         data=self.stan_inputs,
@@ -394,44 +390,30 @@ class Estimator(object):
                 ).extract(permuted=True)
                 # set posterior samples instance var
                 self._set_aggregate_posteriors(stan_extract=stan_extract)
-            else:
-                raise NotImplementedError('Invalid sampling/predict method supplied.')
 
             self.posterior_samples = stan_extract
 
         elif self.inference_engine == 'pyro':
-            if self.predict_method == PredictMethod.MAP.value:
+            if self.sample_method == PredictMethod.MAP.value:
                 pyro_extract = pyro_map(
                     model_name=self.pyro_model_name,
                     data=self.stan_inputs,
                     seed=self.seed,
                 )
                 self._set_map_posterior(stan_extract=pyro_extract)
-            elif self.predict_method in [
-                PredictMethod.FULL_SAMPLING.value,
-                PredictMethod.MEAN.value,
-                PredictMethod.MEDIAN.value
-            ]:
+            elif self.sample_method == SampleMethod.VARIATIONAL_INFERENCE.value:
                 pyro_extract = pyro_svi(
                     # model_name="",
                     model_name=self.pyro_model_name,
                     data=self.stan_inputs,
                     seed=self.seed,
-                    num_steps=self.num_warmup,
                     num_samples=self.num_sample,
                     **self.pyro_vi_args
                 )
                 self._set_aggregate_posteriors(stan_extract=pyro_extract)
 
-            else:
-                raise ValueError(
-                    'Pyro inferece does not support prediction method: "{}"'.format(
-                        self.predict_method))
-
             self.posterior_samples = pyro_extract
 
-        else:
-            raise ValueError('Unknown inference engine: "{}"'.format(self.inference_engine))
 
     @abstractmethod
     def plot(self):
