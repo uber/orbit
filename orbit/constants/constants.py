@@ -1,3 +1,4 @@
+from collections import namedtuple
 from enum import Enum
 import os
 
@@ -114,3 +115,9 @@ SRC_DIR = os.path.join(UTS_ROOT_DIR, "src")  # pragma: no cover
 DEFAULT_REGRESSOR_SIGN = '='
 DEFAULT_REGRESSOR_BETA = 0
 DEFAULT_REGRESSOR_SIGMA = 1.0
+
+# beta coef columns
+COEFFICIENT_DF_COLS = namedtuple(
+    'coefficients_df_cols',
+    ['REGRESSOR', 'REGRESSOR_SIGN', 'COEFFICIENT']
+)('regressor', 'regressor_sign', 'coefficient')

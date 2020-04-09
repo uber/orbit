@@ -10,7 +10,8 @@ from orbit.constants import lgt
 from orbit.constants.constants import (
     DEFAULT_REGRESSOR_SIGN,
     DEFAULT_REGRESSOR_BETA,
-    DEFAULT_REGRESSOR_SIGMA
+    DEFAULT_REGRESSOR_SIGMA,
+    COEFFICIENT_DF_COLS
 )
 from orbit.exceptions import (
     PredictionException,
@@ -362,6 +363,82 @@ class LGT(Estimator):
             self.model_param_names += [
                 lgt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value]
 
+    @staticmethod
+    def _concat_regression_coefs(pr_beta=None, rr_beta=None):
+        """Concatenates regression posterior matrix
+
+        In the case that `pr_beta` or `rr_beta` is a 1d tensor, transform to 2d tensor and
+        concatenate.
+
+        Args
+        ----
+        pr_beta : torch.tensor
+            postive-value constrainted regression betas
+        rr_beta : torch.tensor
+            regular regression betas
+
+        Returns
+        -------
+        torch.tensor
+            concatenated 2d tensor of shape (1, len(rr_beta) + len(pr_beta))
+
+        """
+        regressor_beta = None
+        if pr_beta is not None and rr_beta is not None:
+            pr_beta = pr_beta if len(pr_beta.shape) == 2 else pr_beta.reshape(1, -1)
+            rr_beta = rr_beta if len(rr_beta.shape) == 2 else rr_beta.reshape(1, -1)
+            regressor_beta = torch.cat((pr_beta, rr_beta), dim=1)
+        elif pr_beta is not None:
+            regressor_beta = pr_beta
+        elif rr_beta is not None:
+            regressor_beta = rr_beta
+
+        return regressor_beta
+
+    def get_regression_coefs(self, aggregation_method='mean'):
+        """Return DataFrame regression coefficients
+
+        Args
+        ----
+        aggregation_method : str
+            any PredictMethod except `full`
+        """
+        pr_beta = self.aggregated_posteriors\
+            .get(aggregation_method)\
+            .get(lgt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+
+        rr_beta = self.aggregated_posteriors\
+            .get(aggregation_method)\
+            .get(lgt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+
+        # because `_conccat_regression_coefs` operates on torch tensors
+        pr_beta = torch.from_numpy(pr_beta)
+        rr_beta = torch.from_numpy(rr_beta)
+
+        regressor_betas = self._concat_regression_coefs(pr_beta, rr_beta)
+
+        # get column names
+        pr_cols = self.positive_regressor_col
+        rr_cols = self.regular_regressor_col
+
+        # note ordering here is not the same as `self.regressor_cols` because positive
+        # and negative do not have to be grouped on input
+        regressor_cols = pr_cols + rr_cols
+
+        # same note
+        regressor_signs \
+            = ["Positive"] * self.num_of_positive_regressors \
+            + ["Regular"] * self.num_of_regular_regressors
+
+        # init dataframe
+        reg_df = pd.DataFrame()
+
+        reg_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
+        reg_df[COEFFICIENT_DF_COLS.REGRESSOR_SIGN] = regressor_signs
+        reg_df[COEFFICIENT_DF_COLS.COEFFICIENT] = regressor_betas.flatten()
+
+        return reg_df
+
     def _predict(self, df=None, include_error=False, decompose=False):
         """Vectorized version of prediction math"""
 
@@ -407,16 +484,7 @@ class LGT(Estimator):
         # regression components
         pr_beta = model.get(lgt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
         rr_beta = model.get(lgt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
-        regressor_beta = None
-        if pr_beta is not None and rr_beta is not None:
-            pr_beta = pr_beta if len(pr_beta.shape) == 2 else pr_beta.reshape(1, -1)
-            rr_beta = rr_beta if len(rr_beta.shape) == 2 else rr_beta.reshape(1, -1)
-            regressor_beta = torch.cat((pr_beta, rr_beta), dim=1)
-        elif pr_beta is not None:
-            regressor_beta = pr_beta
-        elif rr_beta is not None:
-            regressor_beta = rr_beta
-
+        regressor_beta = self._concat_regression_coefs(pr_beta, rr_beta)
 
         ################################################################
         # Prediction Attributes
