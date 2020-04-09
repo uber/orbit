@@ -293,6 +293,10 @@ def test_get_regression_coefs(iclaims_training_data):
 
     assert set(reg_coefs[COEFFICIENT_DF_COLS.REGRESSOR]) == set(regressor_cols)
 
+    # negative case
+    with pytest.raises(IllegalArgument):
+        lgt.get_regression_coefs(aggregation_method='full')
+
 
 def test_lgt_multiple_fits(m3_monthly_data):
 

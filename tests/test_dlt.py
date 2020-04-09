@@ -278,8 +278,7 @@ def test_get_regression_coefs(iclaims_training_data):
         prediction_percentiles=[5, 95, 30],
         predict_method='full',
         sample_method='mcmc',
-        regressor_col=regressor_cols,
-        regressor_sign=["=", "=", "+"]
+        regressor_col=regressor_cols
     )
 
     dlt.fit(df=iclaims_training_data)

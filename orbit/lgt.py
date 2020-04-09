@@ -11,7 +11,8 @@ from orbit.constants.constants import (
     DEFAULT_REGRESSOR_SIGN,
     DEFAULT_REGRESSOR_BETA,
     DEFAULT_REGRESSOR_SIGMA,
-    COEFFICIENT_DF_COLS
+    COEFFICIENT_DF_COLS,
+    PredictMethod
 )
 from orbit.exceptions import (
     PredictionException,
@@ -403,6 +404,22 @@ class LGT(Estimator):
         aggregation_method : str
             any PredictMethod except `full`
         """
+        def _validate_args():
+            valid_args = set([x.value for x in PredictMethod])
+            valid_args = valid_args - set([PredictMethod.FULL_SAMPLING.value])
+
+            if aggregation_method not in valid_args:
+                raise IllegalArgument("aggregation_method must be one of {}".format(valid_args))
+
+        # init dataframe
+        reg_df = pd.DataFrame()
+
+        # end if no regressors
+        if self.num_of_regular_regressors + self.num_of_positive_regressors == 0:
+            return reg_df
+
+        _validate_args()
+
         pr_beta = self.aggregated_posteriors\
             .get(aggregation_method)\
             .get(lgt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
@@ -412,8 +429,8 @@ class LGT(Estimator):
             .get(lgt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
 
         # because `_conccat_regression_coefs` operates on torch tensors
-        pr_beta = torch.from_numpy(pr_beta)
-        rr_beta = torch.from_numpy(rr_beta)
+        pr_beta = torch.from_numpy(pr_beta) if pr_beta is not None else pr_beta
+        rr_beta = torch.from_numpy(rr_beta) if rr_beta is not None else rr_beta
 
         regressor_betas = self._concat_regression_coefs(pr_beta, rr_beta)
 
@@ -429,9 +446,6 @@ class LGT(Estimator):
         regressor_signs \
             = ["Positive"] * self.num_of_positive_regressors \
             + ["Regular"] * self.num_of_regular_regressors
-
-        # init dataframe
-        reg_df = pd.DataFrame()
 
         reg_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
         reg_df[COEFFICIENT_DF_COLS.REGRESSOR_SIGN] = regressor_signs

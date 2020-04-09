@@ -32,6 +32,7 @@ from enum import Enum
 import pytest
 from orbit.lgt import LGT
 from orbit.exceptions import IllegalArgument
+from orbit.constants.constants import COEFFICIENT_DF_COLS
 
 
 def test_lgt_pyro_fit(iclaims_training_data):
@@ -109,3 +110,22 @@ def test_lgt_pyro_fit_and_full_predict(iclaims_training_data):
 
     assert predicted_out.shape == expected_shape
     assert list(predicted_out.columns) == expected_columns
+
+# todo: fix regression in pyro implementation
+# def test_get_regression_coefs(iclaims_training_data):
+#     regressor_cols = ['trend.unemploy', 'trend.filling', 'trend.job']
+#
+#     lgt = LGT(
+#         response_col='claims',
+#         date_col='week',
+#         seasonality=52,
+#         chains=4,
+#         predict_method='mean',
+#         inference_engine='pyro',
+#         regressor_col=regressor_cols,
+#         regressor_sign=["=", "=", "+"]
+#     )
+#
+#     lgt.fit(df=iclaims_training_data)
+#     reg_coefs = lgt.get_regression_coefs()
+#     assert set(reg_coefs[COEFFICIENT_DF_COLS.REGRESSOR]) == set(regressor_cols)
