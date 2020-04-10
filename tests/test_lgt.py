@@ -5,6 +5,8 @@ import pytest
 from orbit.lgt import LGT
 from orbit.exceptions import IllegalArgument
 
+from orbit.constants.constants import COEFFICIENT_DF_COLS
+
 
 def test_lgt_fit(iclaims_training_data):
     lgt = LGT(
@@ -268,6 +270,32 @@ def test_lgt_with_regressors_and_forecast(iclaims_training_data):
 
     assert predicted_df.shape == expected_shape
     assert list(predicted_df.columns) == expected_columns
+
+
+def test_get_regression_coefs(iclaims_training_data):
+    regressor_cols = ['trend.unemploy', 'trend.filling', 'trend.job']
+
+    lgt = LGT(
+        response_col='claims',
+        date_col='week',
+        seasonality=52,
+        chains=4,
+        prediction_percentiles=[5, 95, 30],
+        predict_method='full',
+        sample_method='mcmc',
+        regressor_col=regressor_cols,
+        regressor_sign=["=", "=", "+"]
+    )
+
+    lgt.fit(df=iclaims_training_data)
+
+    reg_coefs = lgt.get_regression_coefs()
+
+    assert set(reg_coefs[COEFFICIENT_DF_COLS.REGRESSOR]) == set(regressor_cols)
+
+    # negative case
+    with pytest.raises(IllegalArgument):
+        lgt.get_regression_coefs(aggregation_method='full')
 
 
 def test_lgt_multiple_fits(m3_monthly_data):
