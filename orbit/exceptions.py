@@ -1,6 +1,10 @@
 from __future__ import absolute_import
 
 
+class EstimatorException(Exception):
+    pass
+
+
 class LGTException(Exception):
     pass
 

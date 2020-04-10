@@ -26,10 +26,12 @@ def test_dlt_get_params(iclaims_training_data):
         date_col='week',
         seasonality=52,
         chains=4,
+        sample_method='map',
+        predict_method='map',
     )
 
     params = dlt.get_params()
-    expected_params = 47
+    expected_params = 42
     assert len(params) == expected_params
 
 
@@ -39,6 +41,7 @@ def test_dlt_fit_and_mean_predict(iclaims_training_data):
         date_col='week',
         seasonality=52,
         chains=4,
+        sample_method='mcmc',
         predict_method='mean'
     )
 
@@ -60,8 +63,8 @@ def test_dlt_fit_and_mcmc_predict(iclaims_training_data):
         seasonality=52,
         chains=4,
         prediction_percentiles=[5, 95, 30],
+        sample_method='mcmc',
         predict_method='full',
-        sample_method='mcmc'
     )
 
     dlt.fit(df=iclaims_training_data)
@@ -90,7 +93,8 @@ def test_dlt_predict_decompose(iclaims_training_data):
         date_col='week',
         seasonality=52,
         chains=4,
-        predict_method='mean'
+        sample_method='mcmc',
+        predict_method='mean',
     )
 
     dlt.fit(df=iclaims_training_data)

@@ -615,6 +615,3 @@ class LGT(Estimator):
             return decomp_dict
 
         return {'prediction': pred_array}
-
-    def _validate_params(self):
-        pass

@@ -8,14 +8,16 @@ import multiprocessing
 
 from orbit.models import get_compiled_stan_model
 from orbit.exceptions import (
-    IllegalArgument
+    IllegalArgument,
+    EstimatorException,
 )
 from orbit.pyro.wrapper import pyro_map, pyro_svi
 from orbit.constants.constants import (
     PredictMethod,
     SampleMethod,
+    EstimatorOptionsMapper,
 )
-from orbit.utils.utils import vb_extract, is_ordered_datetime
+from orbit.utils.utils import vb_extract, is_ordered_datetime, update_dict
 
 
 class Estimator(object):
@@ -31,26 +33,44 @@ class Estimator(object):
     date_col : st
         Name of the date index column
     num_warmup : int
-        Number of warm up iterations for MCMC sampler
+        Number of warm up iterations for MCMC sampler [only used when mcmc algo in stan is called]
     num_sample : int
-        Number of samples to extract for MCMC sampler
+        Number of samples to extract for MCMC sampler [only used when mcmc algo in stan is called]
     chains : int
-        Number of MCMC chains
+        Number of sampling chains [only used when mcmc algo in stan is called]
     cores : int
         Number of cores. If cores is set higher than the CPU count of the system
-        the lower of the two numbers will be used.
-    stan_control : dict
-        Dictionary contains additional settings to call pystan
+        the lower of the two numbers will be used. [only used when mcmc algo in stan is called]
     seed : int
         Used to set the seed of the random init
+    inference_engine : {'stan', 'pyro'}
+        Determines which engine to use during for sampling/optimizing
+    sample_method : {'map','vi','mcmc'}
+        Determines which interface to use during fit. For `inference_engine` == `pyro` only
+        sample_method {'map, 'vi'} are supported
     predict_method : {'mean', 'median', 'full', 'map'}
-        Determines which stan interface to use during fit (e.g. sampling / optimizing)
-        and how to aggregate and return predicted values.
+        Determines which how to aggregate posteriors and return predicted values. For
+        `sample_method` ==`map`, user has to use `map`.
     n_boostrap_draws : int, default -1
-        Number of bootstrap samples to draw from `posterior_samples`
+        Number of bootstrap samples to draw from `posterior_samples`. Applied only when
+        `predict_method` == `full`.
     prediction_percentiles : list
         Prediction percentiles which should be returned in addition to predicted values.
         This is only valid when `predict_method` is 'full'
+    stan_mcmc_control : dict
+        Dictionary contains additional mcmc settings to call `pystan.StanModel.sampling()`. See
+        `control` argument from
+        https://pystan.readthedocs.io/en/latest/api.html or
+        https://mc-stan.org/rstan/reference/stan.html for details.
+    stan_vi_args : dict
+        Dictionary contains all general settings to call `pystan.StanModel.vb()` See
+        https://pystan.readthedocs.io/en/latest/api.html or
+        https://mc-stan.org/rstan/reference/stanmodel-method-vb.html for details
+    pyro_vi_args : dict
+        Dictionary contains all general settings to call `orbit.pyro.svi()`
+    algorithm : str
+        options shared by multiple sampling methods. See
+        https://pystan.readthedocs.io/en/latest/api.html for available choices.
     verbose : bool
         Print verbose.
 
@@ -91,13 +111,11 @@ class Estimator(object):
 
     def __init__(
             self, response_col='y', date_col='ds',
-            num_warmup=900, num_sample=100, chains=4, cores=8, stan_control=None, seed=8888,
-            predict_method="full", sample_method="mcmc", n_bootstrap_draws=-1,
-            prediction_percentiles=[5, 95], algorithm=None,
-            # vi additional parameters
-            max_iter=10000, grad_samples=1, elbo_samples=100, adapt_engaged=True,
-            tol_rel_obj=0.01, eval_elbo=100, adapt_iter=50,
-            inference_engine='stan', verbose=False, **kwargs
+            num_warmup=900, num_sample=100, chains=4, cores=8, seed=8888,
+            inference_engine='stan', sample_method="mcmc", predict_method="full",
+            n_bootstrap_draws=-1, prediction_percentiles=[5, 95],
+            stan_mcmc_control=None, stan_vi_args=None, pyro_vi_args=None, algorithm=None,
+            verbose=False, **kwargs
     ):
 
         # TODO: mutable defaults are dangerous. Use sentinel value
@@ -138,21 +156,22 @@ class Estimator(object):
         # posterior state for a single prediction call
         self._posterior_state = {}
 
-        # stan model inputs
+        # PyStan related initialization
         self.stan_inputs = {}
-
         # stan model name
         self.stan_model_name = ''
+        self.stan_init = 'random'
+
+        # pyro related initialization
         # pyro model name
         self.pyro_model_name = ''
 
-        # stan model parameters names
+        # sampling parameters names
         self.model_param_names = []
-
-        self.stan_init = 'random'
 
         # set computed params
         self._set_computed_params()
+        self._validate_params()
 
     def get_params(self):
         """Get all class attributes and values"""
@@ -238,6 +257,27 @@ class Estimator(object):
                            self.num_sample_per_chain)
             )
 
+        if self.sample_method == 'vi':
+            self._derive_vi_config()
+
+    def _derive_vi_config(self):
+        default_stan_vi_args = {
+            'iter': 10000,
+            'grad_samples': 1,
+            'elbo_samples': 100,
+            'adapt_engaged': True,
+            'tol_rel_obj': 0.01,
+            'eval_elbo': 100,
+            'adapt_iter': 50,
+        }
+        default_pyro_vi_args = {
+                'num_steps': 101,
+                'learning_rate': 0.1
+        }
+
+        self.stan_vi_args = update_dict(default_stan_vi_args, self.stan_vi_args)
+        self.pyro_vi_args = update_dict(default_pyro_vi_args, self.pyro_vi_args)
+
     def fit(self, df):
         """Estimates the model posterior values
 
@@ -293,7 +333,7 @@ class Estimator(object):
 
             compiled_stan_file = get_compiled_stan_model(self.stan_model_name)
 
-            if self.predict_method == PredictMethod.MAP.value:
+            if self.sample_method == PredictMethod.MAP.value:
                 try:
                     stan_extract = compiled_stan_file.optimizing(
                         data=self.stan_inputs,
@@ -314,17 +354,11 @@ class Estimator(object):
                 stan_extract = vb_extract(compiled_stan_file.vb(
                     data=self.stan_inputs,
                     pars=self.model_param_names,
-                    iter=self.max_iter,
-                    output_samples=self.num_sample,
                     init=self.stan_init,
                     seed=self.seed,
                     algorithm=self.algorithm,
-                    grad_samples=self.grad_samples,
-                    elbo_samples=self.elbo_samples,
-                    adapt_engaged=self.adapt_engaged,
-                    tol_rel_obj=self.tol_rel_obj,
-                    eval_elbo=self.eval_elbo,
-                    adapt_iter=self.adapt_iter
+                    output_samples=self.num_sample,
+                    **self.stan_vi_args
                 ))
                 # set posterior samples instance var
                 self._set_aggregate_posteriors(stan_extract=stan_extract)
@@ -339,46 +373,34 @@ class Estimator(object):
                     init=self.stan_init,
                     seed=self.seed,
                     algorithm=self.algorithm,
-                    control=self.stan_control
+                    control=self.stan_mcmc_control
                 ).extract(permuted=True)
                 # set posterior samples instance var
                 self._set_aggregate_posteriors(stan_extract=stan_extract)
-            else:
-                raise NotImplementedError('Invalid sampling/predict method supplied.')
 
             self.posterior_samples = stan_extract
 
         elif self.inference_engine == 'pyro':
-            if self.predict_method == PredictMethod.MAP.value:
+            if self.sample_method == PredictMethod.MAP.value:
                 pyro_extract = pyro_map(
                     model_name=self.pyro_model_name,
                     data=self.stan_inputs,
                     seed=self.seed,
                 )
                 self._set_map_posterior(stan_extract=pyro_extract)
-            elif self.predict_method in [
-                PredictMethod.FULL_SAMPLING.value,
-                PredictMethod.MEAN.value,
-                PredictMethod.MEDIAN.value
-            ]:
+            elif self.sample_method == SampleMethod.VARIATIONAL_INFERENCE.value:
                 pyro_extract = pyro_svi(
                     # model_name="",
                     model_name=self.pyro_model_name,
                     data=self.stan_inputs,
                     seed=self.seed,
                     num_samples=self.num_sample,
+                    **self.pyro_vi_args
                 )
                 self._set_aggregate_posteriors(stan_extract=pyro_extract)
 
-            else:
-                raise ValueError(
-                    'Pyro inferece does not support prediction method: "{}"'.format(
-                        self.predict_method))
-
             self.posterior_samples = pyro_extract
 
-        else:
-            raise ValueError('Unknown inference engine: "{}"'.format(self.inference_engine))
 
     @abstractmethod
     def plot(self):
@@ -667,11 +689,18 @@ class Estimator(object):
 
         self.aggregated_posteriors[PredictMethod.MAP.value] = map_posterior
 
-    @abstractmethod
     def _validate_params(self):
-        """Validates static and dynamic input parameters
-
-        This method must be implemented in the child class.
-
+        """Validates static input and computed parameters
         """
-        raise NotImplementedError('_validate_params must be implemented in the child class')
+
+        if self.sample_method not in \
+                EstimatorOptionsMapper.ENGINE_TO_SAMPLE.value[self.inference_engine]:
+            raise EstimatorException(
+                "Sampling method: {} is not supported with inference engine: {}.".format(
+                    self.sample_method, self.inference_engine))
+
+        if self.predict_method not in \
+                EstimatorOptionsMapper.SAMPLE_TO_PREDICT.value[self.sample_method]:
+            raise EstimatorException(
+                "Predict method: {} is not supported with sampling method: {}.".format(
+                    self.predict_method, self.sample_method))

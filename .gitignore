@@ -120,3 +120,6 @@ examples/slgt_stan_model_comparing_with_R.pkl
 examples/backtest_results/
 examples/orbit_benchmark_results/
 
+examples/debug.ipynb
+examples/debug_stan_data.txt
+examples/debug_stan_data.json

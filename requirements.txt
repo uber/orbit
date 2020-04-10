@@ -11,4 +11,4 @@ enum34==1.1.6
 torch
 tqdm
 seaborn
-pyro-ppl==1.1.0
+pyro-ppl==1.3.0
