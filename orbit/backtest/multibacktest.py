@@ -5,7 +5,7 @@ from orbit.backtest.backtest import TimeSeriesSplitter, Backtest
 
 def run_multi_series_backtest(data, response_col, key_col, model,
                               min_train_len, incremental_len, forecast_len,
-                              predicted_col='prediction', n_splits=None,
+                              predicted_col='prediction', date_col=None, n_splits=None,
                               model_callback=None, fit_callback=None, predict_callback=None,
                               fit_args=None, predict_args=None, window_type='expanding'):
 
@@ -19,7 +19,8 @@ def run_multi_series_backtest(data, response_col, key_col, model,
         df = data[data[key_col] == key]
         splitter = TimeSeriesSplitter(
             df=df, min_train_len=min_train_len, incremental_len=incremental_len,
-            forecast_len=forecast_len, n_splits=n_splits, window_type=window_type
+            forecast_len=forecast_len, n_splits=n_splits, window_type=window_type,
+            date_col=date_col,
         )
 
         bt = Backtest(splitter)

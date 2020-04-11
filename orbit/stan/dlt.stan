@@ -19,6 +19,9 @@
 // lower case for intermediate variables and variables we are interested
 
 data {
+  // indicator of which method stan using
+  int<lower=0,upper=1> WITH_MCMC;
+  
   // Data Input
   // Response Data
   int<lower=1> NUM_OF_OBS; // number of observations
@@ -45,7 +48,7 @@ data {
   real<lower=0,upper=10> REG_SIGMA_SD;
 
   // Residuals Tuning Hyper-Params
-  real<lower=0> CAUCHY_SD; //using max(RESPONSE)/300, not very sensitive
+  real<lower=0> CAUCHY_SD; // derived by MAX(RESPONSE)/constant
   //real<lower=0> MIN_SIGMA;
   //real<lower=0> MIN_VAL;
   real<lower=1> MIN_NU; real<lower=1> MAX_NU;
@@ -68,6 +71,8 @@ data {
 }
 transformed data {
   int IS_SEASONAL;
+  // SIGMA_EPS is a offset to dodge lower boundary case;
+  real SIGMA_EPS;
   int DAMPED_FACTOR_SIZE;
   real GL_LOWER;
   real GB_LOWER;
@@ -75,6 +80,7 @@ transformed data {
   
   DAMPED_FACTOR_SIZE = 1;
   IS_SEASONAL = 0;
+  SIGMA_EPS = 1e-5;
   if (SEASONALITY > 1) IS_SEASONAL = 1;
   if (DAMPED_FACTOR_FIXED > 0) DAMPED_FACTOR_SIZE = 0;
   if (GLOBAL_TREND_OPTION == 0) {
@@ -102,8 +108,12 @@ parameters {
   real<lower=SLP_SM_MIN,upper=SLP_SM_MAX> slp_sm; //slope smoothing parameter
 
   // residual tuning parameters
-  real<lower=0> obs_sigma;
-  // real<lower=0, upper=pi()/2> obs_sigma_unif_dummy;
+  // use 5*CAUCHY_SD to dodge upper boundary case
+  real<lower=SIGMA_EPS,upper=5*CAUCHY_SD> obs_sigma_dummy[1 - WITH_MCMC];
+  // this re-parameterization is sugggested by stan org and improves sampling
+  // efficiently (on uniform instead of heavy-tail)
+  // - 0.1 is made to dodge upper boundary case
+  real<lower=0, upper=pi()/2 - 0.2> obs_sigma_unif_dummy[WITH_MCMC];
   real<lower=MIN_NU,upper=MAX_NU> nu;
 
   // trend parameters
@@ -120,7 +130,7 @@ parameters {
 
 }
 transformed parameters {
-  // real<lower=0> obs_sigma;
+  real<lower=SIGMA_EPS, upper=5*CAUCHY_SD> obs_sigma;
   vector[NUM_OF_OBS] l; // local level
   vector[NUM_OF_OBS] b; // local slope
   vector[NUM_OF_OBS] pr; //positive regression component
@@ -160,14 +170,6 @@ transformed parameters {
   // global trend is deterministic
   gt_sum[1] = gl;
   
-  // for (t in 1:NUM_OF_OBS) {
-  //   if (USE_LOG_G_TREND) {
-  //     gt_sum[t] = gl + gb * log(1 + gs * (t - 1));
-  //   } else {
-  //     gt_sum[t] = gl + gb * (t - 1);
-  //   }
-  // }
-  
   b[1] = 0;
   if (IS_SEASONAL) {
     l[1] = RESPONSE[1] - gt_sum[1] - s[1] - r[1];
@@ -199,7 +201,7 @@ transformed parameters {
     } else if (GLOBAL_TREND_OPTION == 1)  {
       gt_sum[t] = gl + log(1 + gb * (t -1));
     } else {
-      gt_sum[t] = gl / (1 + exp(-1 * gb * (t - 1)));
+      gt_sum[t] = gl / (1 + exp(-1 * gb * (t - 1))) * 2;
       // gt_sum[t]  = gl * inv_logit(gb * (t - 1));
     }
     lt_sum[t] = l[t-1] + damped_factor_dummy * b[t-1];
@@ -215,11 +217,19 @@ transformed parameters {
         s[t + SEASONALITY] = sea_sm[1] * (RESPONSE[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm[1]) * s_t;
   }
 
-  // obs_sigma = CAUCHY_SD * tan(obs_sigma_unif_dummy); // obs_sigma ~ cauchy(0, CAUCHY_SD);
+  if (WITH_MCMC) {
+    // eqv. to obs_sigma ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, ];
+    obs_sigma = SIGMA_EPS + CAUCHY_SD * tan(obs_sigma_unif_dummy[1]); 
+  } else {
+    obs_sigma = obs_sigma_dummy[1]; 
+  }
 }
 model {
-  // prior for residuals
-  obs_sigma ~ cauchy(0, CAUCHY_SD) T[0,];
+  //prior for residuals
+  if (WITH_MCMC == 0) {
+    // for MAP, set finite boundary 
+    obs_sigma_dummy[1] ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, 5 * CAUCHY_SD];
+  }
   if (NUM_OF_PR > 0) {
     if (FIX_REG_COEF_SD == 0) {
       //weak prior for sigma
@@ -262,17 +272,5 @@ model {
     gl ~ normal(0, 10);
     gb ~ double_exponential(0, 1);
   }
-  // if (USE_LOG_G_TREND) {
-  //   gl ~ normal(0, 1);
-  // } else {
-  //   gl ~ normal(0, 10);
-  // }
-  // if (USE_LOG_G_TREND) {
-  //   gb ~ double_exponential(1, 0.01);
-  // } else {
-  //   gb ~ normal(0, 1);
-  // }  
-  // if (USE_LOG_G_TREND) {
-  //   gs ~ normal(0, 0.33/(NUM_OF_OBS+10))T[-1.0/(NUM_OF_OBS+10), ];
-  // }
+  
 }

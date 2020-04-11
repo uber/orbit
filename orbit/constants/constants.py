@@ -4,6 +4,14 @@ import os
 from orbit.utils.utils import get_parent_path
 
 
+# TODO: need to incorporate this into orbit.estimator._stan_input_mapper
+class GlobalStanInputMapper(Enum):
+    """
+    Global reserved inputs
+    """
+    WITH_MCMC = 'with_mcmc'
+
+
 class PredictMethod(Enum):
     """
     The predict method for all of the stan models. Often used are mean and median.

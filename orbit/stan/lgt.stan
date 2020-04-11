@@ -16,6 +16,9 @@
 // lower case for intermediate variables and variables we are interested
 
 data {
+  // indicator of which method stan using
+  int<lower=0,upper=1> WITH_MCMC;
+  
   // Data Input
   // Response Data
   int<lower=1> NUM_OF_OBS; // number of observations
@@ -48,7 +51,10 @@ data {
   real<lower=0,upper=10> REG_SIGMA_SD;
 
   // Residuals Tuning Hyper-Params
-  real<lower=0> CAUCHY_SD; //using max(RESPONSE)/300, not very sensitive
+  // this re-parameterization is sugggested by stan org and improves sampling
+  // efficiently (on uniform instead of heavy-tail)
+  // - 0.1 is made for point optimization to dodge boundary case
+  real<lower=0> CAUCHY_SD; // derived by MAX(RESPONSE)/constant
   real<lower=1> MIN_NU; real<lower=1> MAX_NU;
 
   // Seasonality Hyper-Params
@@ -60,6 +66,9 @@ data {
 }
 transformed data {
   int IS_SEASONAL;
+  // SIGMA_EPS is a offset to dodge lower boundary case;
+  real SIGMA_EPS;
+  SIGMA_EPS = 1e-5;
   IS_SEASONAL = 0;
   if (SEASONALITY > 1) IS_SEASONAL = 1;
 }
@@ -74,8 +83,12 @@ parameters {
   real<lower=SLP_SM_MIN,upper=SLP_SM_MAX> slp_sm; //slope smoothing parameter
 
   // residual tuning parameters
-  real<lower=0> obs_sigma;
-  // real<lower=0, upper=pi()/2> obs_sigma_unif_dummy;
+  // use 5*CAUCHY_SD to dodge upper boundary case
+  real<lower=SIGMA_EPS,upper=5*CAUCHY_SD> obs_sigma_dummy[1 - WITH_MCMC];
+  // this re-parameterization is sugggested by stan org and improves sampling
+  // efficiently (on uniform instead of heavy-tail)
+  // - 0.2 is made to dodge boundary case
+  real<lower=0, upper=pi()/2 - 0.2> obs_sigma_unif_dummy[WITH_MCMC];
   real<lower=MIN_NU,upper=MAX_NU> nu;
 
   // trend parameters
@@ -90,8 +103,7 @@ parameters {
   vector<lower=SEA_MIN,upper=SEA_MAX>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
 }
 transformed parameters {
-  // level; we don't have lower bound for damped trend but 0 for lgt
-  // real<lower=0> obs_sigma;
+  real<lower=SIGMA_EPS, upper=5*CAUCHY_SD> obs_sigma;
   vector<lower=0>[NUM_OF_OBS] l;
   vector[NUM_OF_OBS] b; // slope
   vector[NUM_OF_OBS] pr; //positive regression component
@@ -158,11 +170,22 @@ transformed parameters {
       s[t + SEASONALITY] = sea_sm[1] * (RESPONSE[t] - l[t] - r[t]) + (1 - sea_sm[1]) * s_t;
 
   }
-  // obs_sigma = CAUCHY_SD * tan(obs_sigma_unif_dummy); // obs_sigma ~ cauchy(0, CAUCHY_SD);
+  if (WITH_MCMC) {
+    // eqv. to obs_sigma ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, ];
+    obs_sigma = SIGMA_EPS + CAUCHY_SD * tan(obs_sigma_unif_dummy[1]); 
+  } else {
+    obs_sigma = obs_sigma_dummy[1]; 
+  }
 }
 model {
   //prior for residuals
-  obs_sigma ~ cauchy(0, CAUCHY_SD) T[0,];
+  if (WITH_MCMC == 0) {
+    // for MAP, set finite boundary 
+    obs_sigma_dummy[1] ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, 5 * CAUCHY_SD];
+  }
+  // obs_sigma ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, CAUCHY_SD * 10];
+  // obs_sigma ~ cauchy(0, CAUCHY_SD) T[0, ];
+  // obs_sigma ~ inv_gamma(1, 1) T[SIGMA_EPS, CAUCHY_SD * 10];
   if (NUM_OF_PR > 0) {
     if (FIX_REG_COEF_SD == 0) {
       //weak prior for sigma
