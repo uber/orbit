@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from copy import deepcopy
 
 
 from orbit.utils.metrics import (
@@ -29,9 +30,9 @@ class TimeSeriesSplitter(object):
             the number of observations between each successive backtest period
         forecast_len : int
             forecast length
-        n_splits : int
-            number of splits
-        window_type : {'expanding', 'rolling }
+        n_splits : int; default None
+            number of splits; when n_splits is specified, min_train_len will be ignored
+        window_type : {'expanding', 'rolling }; default 'expanding'
             split scheme
         date_col : str
             optional for user to provide date columns; note that it stills uses discrete index
@@ -184,18 +185,7 @@ class Backtest(object):
 
         Parameters
         ----------
-        df : pd.DataFrame
-            DataFrame object containing time index, response, and other features
-        min_train_len : int
-            the minimum number of observations required for the training period
-        incremental_len : int
-            the number of observations between each successive backtest period
-        forecast_len : int
-            forecast length
-        n_splits : int
-            number of splits
-        scheme : { 'expanding', 'rolling }
-            split scheme
+        splitter : instance of TimeSeriesSplitter
         """
         # init predictions df
         # grouped by model, split, time
@@ -203,7 +193,7 @@ class Backtest(object):
         self.splitter = splitter
 
     def fit_score(self, model, response_col, predicted_col='prediction', metrics=None,
-                  include_steps=False, model_callback=None, fit_callback=None,
+                  insample_predict=False, include_steps=False, model_callback=None, fit_callback=None,
                   predict_callback=None, fit_args=None, predict_args=None):
         """
        Parameters
@@ -216,6 +206,8 @@ class Backtest(object):
             optional callback to adapt data to work with `model`'s `fit()` method
         metrics : dict
             dictionary of functions `f` which score performance by f(actual_array, predicted_array)
+        insample_predict : bool
+            logic whether conduct the insample prediction on training data
         include_steps : bool
             logic whether return metrics grouped by steps
         model_callback : callable
@@ -235,8 +227,11 @@ class Backtest(object):
         if fit_args is None:
             fit_args = {}
 
+        self.insample_predict = insample_predict
+
         self._fit(
             model=model,
+            insample_predict = insample_predict,
             model_callback=model_callback,
             fit_callback=fit_callback,
             predict_callback=predict_callback,
@@ -247,7 +242,7 @@ class Backtest(object):
         self._set_score(response_col=response_col, predicted_col=predicted_col,
                         metrics=metrics, include_steps=include_steps)
 
-    def _fit(self, model, model_callback=None, fit_callback=None, predict_callback=None,
+    def _fit(self, model, insample_predict=False, model_callback=None, fit_callback=None, predict_callback=None,
              fit_args=None, predict_args=None):
         """Fits the splitted data to the model and predicts
 
@@ -255,6 +250,8 @@ class Backtest(object):
         ----------
         model : object
             arbitrary instantiated model object
+        insample_predict : bool
+            logic whether conduct the insample prediction on training data
         model_callback : callable
             optional callback to adapt model object to work with `orbit.backtest`. Particularly,
             the object needs a `fit()` and `predict()` methods if not exists.
@@ -280,8 +277,11 @@ class Backtest(object):
         #   alternatively, dict for each callback so we know clearly
 
         predicted_df = pd.DataFrame({})
+        bt_models = {}
 
         for train_df, test_df, scheme, split_key in self.splitter.split():
+            n_train = train_df.shape[0]
+            n_test = test_df.shape[0]
 
             # if we need to extend model to work with backtest
             if model_callback is not None:
@@ -294,20 +294,26 @@ class Backtest(object):
                 fit_callback(model, train_df, **fit_args)
 
             # predict with model
+            x_df = pd.concat((train_df, test_df), axis=0, ignore_index=True) if insample_predict else test_df
             if predict_callback is None:
-                predicted_out = model.predict(test_df)
+                predicted_out = model.predict(x_df)
             else:
-                predicted_out = predict_callback(model, test_df, **predict_args)
+                predicted_out = predict_callback(model, x_df, **predict_args)
 
             # predicted results should have same length as test_df
-            if test_df.shape[0] != predicted_out.shape[0]:
-                raise BacktestException('Prediction length should be the same as test df')
+            # if test_df.shape[0] != predicted_out.shape[0]:
+            #     raise BacktestException('Prediction length should be the same as test df')
 
-            results = pd.concat((test_df, predicted_out), axis=1)
+            results = pd.concat((x_df, predicted_out), axis=1)
 
             # drop duplicate columns
             results = results.loc[:, ~results.columns.duplicated()]
             results['split_key'] = split_key
+            results['df_key'] = ['train'] * n_train + ['test'] * n_test if insample_predict else \
+                                 ['test'] * n_test
+            idx_ = list(range(n_train)) + list(range(n_test)) if insample_predict else list(range(n_test))
+            results.set_index([idx_], inplace=True)
+            bt_models[split_key] = deepcopy(model)
 
             predicted_df = pd.concat((predicted_df, results), axis=0)
 
@@ -315,6 +321,7 @@ class Backtest(object):
         predicted_df = predicted_df.rename(columns={'index': 'steps'})
         predicted_df['steps'] += 1
         self._predicted_df = predicted_df
+        self._bt_models = bt_models
 
         return self._predicted_df
 
@@ -340,7 +347,7 @@ class Backtest(object):
         """
         # TODO: not sure should we restrict use of groupby
         # groupby is controlled internally with include_steps
-        groupby = ['steps'] if include_steps else None
+        groupby = ['df_key', 'steps'] if include_steps else ['df_key']
 
         score_df = self._score_by(
             response_col=response_col,
@@ -374,24 +381,24 @@ class Backtest(object):
         if metrics is None:
             metrics = {'wmape': wmape, 'smape': smape}
 
-        predicted_df = self.get_predictions()
+        predicted_df = self._predicted_df
         score_df = pd.DataFrame({})
 
         # multiple models or step segmentation
-        if groupby is not None:
-            for metric_name, metric_fun in metrics.items():
-                score_df[metric_name] = predicted_df \
-                    .groupby(by=groupby) \
-                    .apply(lambda x: metric_fun(x[response_col], x[predicted_col]))
-            score_df = score_df.reset_index()
+        # if groupby is not None:
+        for metric_name, metric_fun in metrics.items():
+            score_df[metric_name] = predicted_df \
+                .groupby(by=groupby) \
+                .apply(lambda x: metric_fun(x[response_col], x[predicted_col]))
+        score_df = score_df.reset_index()
 
-        # aggregate without groups
-        else:
-            for metric_name, metric_fun in metrics.items():
-                score_df[metric_name] = pd.Series(
-                    metric_fun(predicted_df[response_col], predicted_df[predicted_col])
-                )
-            score_df = score_df.reset_index(drop=True)
+        # # aggregate without groups
+        # else:
+        #     for metric_name, metric_fun in metrics.items():
+        #         score_df[metric_name] = pd.Series(
+        #             metric_fun(predicted_df[response_col], predicted_df[predicted_col])
+        #         )
+        #     score_df = score_df.reset_index(drop=True)
 
         return score_df
 
@@ -403,11 +410,31 @@ class Backtest(object):
 
     def get_predictions(self, include_split_meta=False):
         # TODO: implement include_split_meta
-        return self._predicted_df
+        return self._predicted_df[self._predicted_df['df_key'] == 'test'].\
+            drop(columns=['df_key']).reset_index(drop=True)
 
-    def get_scores(self, include_model_meta=False):
+    def get_insample_predictions(self, include_split_meta=False):
         # TODO: implement include_split_meta
-        return self._score_df
+        if not self.insample_predict:
+            raise BacktestException('insample_predict has to be True to obtain insample predictions...')
+
+        return self._predicted_df[self._predicted_df['df_key'] == 'train'].\
+            drop(columns=['df_key']).reset_index(drop=True)
+
+    def get_scores(self,  include_model_meta=False):
+        # TODO: implement include_split_meta
+        return self._score_df[self._score_df['df_key'] == 'test'].\
+            drop(columns=['df_key']).reset_index(drop=True)
+
+    def get_insample_scores(self, include_model_meta=False):
+        # TODO: implement include_split_meta
+        if not self.insample_predict:
+            raise BacktestException('insample_predict has to be True to obtain insample scores...')
+        return self._score_df[self._score_df['df_key'] == 'train'].\
+            drop(columns=['df_key']).reset_index(drop=True)
+
+    def get_fitted_models(self):
+        return self._bt_models
 
     # def _fit_batch(self, models, model_names=None, model_callbacks=None, fit_callbacks=None,
     #                predict_callbacks=None, fit_args=None):
