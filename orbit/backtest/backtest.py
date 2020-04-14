@@ -75,7 +75,7 @@ class TimeSeriesSplitter(object):
             raise BacktestException('holdout period length must be positive...')
 
         # train + test length cannot be longer than df length
-        if self.min_train_len + self.forecast_len > self._df_length:
+        if self.min_train_len + self.da > self._df_length:
             raise BacktestException('required time span is more than the full data frame...')
 
         if self.n_splits is not None and self.n_splits < 1:
@@ -308,6 +308,8 @@ class Backtest(object):
 
             # drop duplicate columns
             results = results.loc[:, ~results.columns.duplicated()]
+            if self.splitter.date_col:
+                results['train_end'] = train_df[self.splitter.date_col].values[-1]
             results['split_key'] = split_key
             results['df_key'] = ['train'] * n_train + ['test'] * n_test if insample_predict else \
                                  ['test'] * n_test
@@ -391,6 +393,7 @@ class Backtest(object):
                 .groupby(by=groupby) \
                 .apply(lambda x: metric_fun(x[response_col], x[predicted_col]))
         score_df = score_df.reset_index()
+        score_df['n_splits'] = self.splitter.n_splits
 
         # # aggregate without groups
         # else:
