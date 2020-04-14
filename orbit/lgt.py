@@ -246,7 +246,7 @@ class LGT(Estimator):
             regression_sigma_sum = np.sum(self.regressor_sigma_prior)
             # fit regerssor scaler in fitting
             if do_fit:
-                self.regressor_min_max_scaler = MinMaxScaler(1, 2.719)
+                self.regressor_min_max_scaler = MinMaxScaler((1, 2.719))
                 df[self.regressor_col] = \
                     self.regressor_min_max_scaler.fit_transform(df[self.regressor_col])
             # transfrom regressors
