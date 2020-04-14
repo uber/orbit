@@ -75,7 +75,7 @@ class TimeSeriesSplitter(object):
             raise BacktestException('holdout period length must be positive...')
 
         # train + test length cannot be longer than df length
-        if self.min_train_len + self.da > self._df_length:
+        if self.min_train_len + self.forecast_len > self._df_length:
             raise BacktestException('required time span is more than the full data frame...')
 
         if self.n_splits is not None and self.n_splits < 1:
