@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
+from copy import deepcopy
 
 from orbit.utils.metrics import (
     smape, wmape, mape, mse,
@@ -200,7 +200,7 @@ class Backtest(object):
         # init predictions df
         # grouped by model, split, time
         self._predicted_df = pd.DataFrame()
-        self.splitter = splitter
+        self.splitter = deepcopy(splitter)
 
     def fit_score(self, model, response_col, predicted_col='prediction', metrics=None,
                   include_steps=False, model_callback=None, fit_callback=None,

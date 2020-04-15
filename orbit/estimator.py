@@ -332,7 +332,7 @@ class Estimator(object):
         if self.inference_engine == 'stan':
 
             compiled_stan_file = get_compiled_stan_model(self.stan_model_name)
-
+            # TODO: make a stan_map_args
             if self.sample_method == PredictMethod.MAP.value:
                 try:
                     stan_extract = compiled_stan_file.optimizing(
@@ -648,6 +648,12 @@ class Estimator(object):
             )
 
         stan_inputs = {}
+
+        # extra stan input to distinguish stan methdo
+        stan_inputs['WITH_MCMC'] = 0
+        if self.sample_method in ['vi','mcmc']:
+            stan_inputs['WITH_MCMC'] = 1
+
         for key in self._stan_input_mapper:
             # mapper keys in upper case; inputs in lower case
             key_lower = key.name.lower()

@@ -186,7 +186,6 @@ class LGT(Estimator):
 
     def _set_computed_params(self):
         self._setup_computed_regression_params()
-        self._setup_seasonality_init()
 
     def _setup_computed_regression_params(self):
 
@@ -310,27 +309,30 @@ class LGT(Estimator):
         # a few of the following are related with training data.
         self.response = self.df[self.response_col].values
         self.num_of_observations = len(self.response)
+
         self.cauchy_sd = max(
                 self.response,
-            ) / 300 if self.cauchy_sd is None else self.cauchy_sd
+            ) / 30 if self.cauchy_sd is None else self.cauchy_sd
 
         self._setup_regressor_inputs()
+        self._setup_stan_init()
 
-    def _setup_seasonality_init(self):
-        if self.seasonality > 1:
-            # use the seed so we can replicate results with same seed
-            np.random.seed(self.seed)
-            # replace with empty list from purely 'random'
-            self.stan_init = []
-            # ch is not used but we need the for loop to append init points across chains
-            for ch in range(self.chains):
-                temp_init = {}
+    def _setup_stan_init(self):
+        # to use stan default, set self.stan_int to 'random'
+        self.stan_init = []
+        # use the seed so we can replicate results with same seed
+        np.random.seed(self.seed)
+        # ch is not used but we need the for loop to append init points across chains
+        for ch in range(self.chains):
+            temp_init = {}
+            # TODO: can consider having some init related obs_sigma
+            if self.seasonality > 1:
                 # note that although seed fixed, points are different across chains
                 seas_init = np.random.normal(loc=0, scale=0.05, size=self.seasonality - 1)
                 seas_init[seas_init > self.seasonality_max] = self.seasonality_max
                 seas_init[seas_init < self.seasonality_min] = self.seasonality_min
                 temp_init['init_sea'] = seas_init
-                self.stan_init.append(temp_init)
+            self.stan_init.append(temp_init)
 
     def _setup_regressor_inputs(self):
 
@@ -595,9 +597,8 @@ class LGT(Estimator):
         if full_len <= trained_len:
             trend_component = local_global_trend_sums[:, :full_len]
         else:
-            trend_forecast_length = full_len - trained_len
             trend_forecast_matrix \
-                = torch.zeros((num_sample, trend_forecast_length), dtype=torch.double)
+                = torch.zeros((num_sample, n_forecast_steps), dtype=torch.double)
             trend_component = torch.cat((local_global_trend_sums, trend_forecast_matrix), dim=1)
 
             last_local_trend_level = local_trend_levels[:, -1]
