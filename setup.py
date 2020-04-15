@@ -15,7 +15,8 @@ from setuptools.command.test import test as test_command
 
 VERSION = '0.5.0'
 DESCRIPTION = "Orbit is a package for bayesian time series modeling and inference."
-AUTHOR = "Edwin Ng <edwinng@uber.com>, Steve Yang <steve.yang@uber.com>, Huigang Chen <huigang@uber.com>"
+AUTHOR = '''Edwin Ng <edwinng@uber.com>, Steve Yang <steve.yang@uber.com>,
+            Huigang Chen <huigang@uber.com>, Zhishi Wang <zhishiw@uber.com>'''
 
 
 def read_long_description(filename="README.md"):
