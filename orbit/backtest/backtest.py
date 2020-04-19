@@ -36,6 +36,11 @@ class TimeSeriesSplitter(object):
         date_col : str
             optional for user to provide date columns; note that it stills uses discrete index
             as splitting scheme while `date_col` is used for better visualization only
+
+        Attributes
+        ----------
+        _split_scheme : dict
+            meta data of ways to split train and test set
         """
 
         self.df = df.copy()
@@ -107,6 +112,22 @@ class TimeSeriesSplitter(object):
         return self._split_scheme
 
     def split(self):
+        """
+        Args
+        ----
+
+        Returns
+        -------
+        iterables with (train_df, test_df, scheme, split_key) where
+        train_df : pd.DataFrame
+            data splitted for training
+        test_df : pd.DataFrame
+            data splitted for testing/validation
+        scheme : dict
+            derived from self._split_scheme
+        split_key : int
+             index of the iteration
+        """
         for split_key, scheme in self._split_scheme.items():
             train_df = self.df.iloc[scheme[TimeSeriesSplitSchemeNames.TRAIN_IDX.value], :] \
                 .reset_index(drop=True)
