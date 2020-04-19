@@ -7,9 +7,11 @@ import seaborn as sns
 import os
 import pandas as pd
 import numpy as np
+from copy import deepcopy
 
 from orbit.constants.constants import PredictedComponents
 from orbit.utils.utils import is_empty_dataframe
+from orbit.constants.palette import QualitativePalette
 
 
 if os.environ.get('DISPLAY', '') == '':
@@ -162,4 +164,126 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
     plt.title("Model Comparison with {}".format(metric_col))
 
     if path:
-        plt.savefig(path) 
+        plt.savefig(path)
+
+def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
+                         pair_type='scatter', figsize=None, path=None):
+    '''Data Viz for posterior samples
+
+    Params
+    ------
+    mod : orbit model object
+    kind : str, {'density', 'trace', 'pair'}
+        which kind of plot to be made. Currently, trace plot may not represent the actual sample process for
+        different chainse since this information is not stored in orbit model objects.
+    n_bins : int; default 20
+        number of bin, used in the histogram plotting
+    ci_level : float, between 0 and 1
+        confidence interval level
+    pair_type : str, {'scatter', 'reg'}
+        dot plotting type for off-diagonal plots in pair plot
+    figsize : tuple; optional
+        figure size
+    path : str; optional
+        dir path to save the chart
+
+    Returns
+    -------
+    fig : plt object
+
+    '''
+    if not 'orbit' in str(mod.__class__):
+        raise Exception("This plotting utility works for orbit model object only.")
+    if mod.predict_method != 'full':
+        raise Exception("The visualizations are only meaningful when predict_method = 'full'.")
+    if mod._posterior_state == {}:
+        raise Exception(".predict needs to be performed to have posterior states available.")
+
+    posterior_samples = deepcopy(mod._posterior_state)
+    if len(mod.positive_regressor_col) > 0:
+        for i, regressor in enumerate(mod.positive_regressor_col):
+            posterior_samples[regressor] = posterior_samples['pr_beta'][:,i]
+    if len(mod.regular_regressor_col) > 0:
+        for i, regressor in enumerate(mod.regular_regressor_col):
+            posterior_samples[regressor] = posterior_samples['rr_beta'][:,i]
+    params_ = mod.positive_regressor_col + mod.regular_regressor_col + ['obs_sigma', 'lp__']
+
+    if not figsize:
+        figsize = (8, 2 * len(params_))
+
+    def _density_plot(posterior_samples, n_bins=20, ci_level=.95, figsize=None):
+
+        fig, axes = plt.subplots(len(params_), 1, squeeze=True, figsize=figsize)
+        for i, param in enumerate(params_):
+            samples = posterior_samples[param]
+            mean = np.mean(samples)
+            median = np.median(samples)
+            cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level)/2), \
+                                    np.percentile(samples, 100 * (1 + ci_level)/2)
+
+            sns.distplot(samples, bins=n_bins, kde_kws={'shade':True}, ax=axes[i], norm_hist=False)
+            # sns.kdeplot(samples, shade=True, ax=axes[i])
+            axes[i].set_xlabel(param)
+            axes[i].set_ylabel('density')
+            # draw vertical lines
+            axes[i].axvline(mean, color=QualitativePalette['PostQ'].value[0], lw=4, alpha=.5, label='mean')
+            axes[i].axvline(median, color=QualitativePalette['PostQ'].value[1], lw=4, alpha=.5, label='median')
+            axes[i].axvline(cred_min, linestyle='--', color='k', alpha=.5, label='95% CI')
+            axes[i].axvline(cred_max, linestyle='--', color='k', alpha=.5)
+            # axes[i].legend()
+
+        handles, labels = axes[0].get_legend_handles_labels()
+        fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.15, 0.9))
+        plt.suptitle('Histogram and Density of Posterior Samples')
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+        return fig
+
+
+    def _trace_plot(posterior_samples, ci_level=.95, figsize=None):
+
+        fig, axes = plt.subplots(len(params_), 1, squeeze=True, figsize=figsize)
+        for i, param in enumerate(params_):
+            samples = posterior_samples[param]
+            mean = np.mean(samples)
+            median = np.median(samples)
+            cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level)/2), \
+                                    np.percentile(samples, 100 * (1 + ci_level)/2)
+
+            axes[i].plot(samples, lw=.8)
+            axes[i].set_xlabel('sample')
+            axes[i].set_ylabel(param)
+            # draw horizontal lines
+            axes[i].axhline(mean, color=QualitativePalette['PostQ'].value[0], lw=2, alpha=.5, label='mean')
+            axes[i].axhline(median, color=QualitativePalette['PostQ'].value[1], lw=2, alpha=.5, label='median')
+            axes[i].axhline(cred_min, linestyle='--', color='k', alpha=.5, label='95% CI')
+            axes[i].axhline(cred_max, linestyle='--', color='k', alpha=.5)
+            #axes[i].legend()
+
+        handles, labels = axes[0].get_legend_handles_labels()
+        fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.15, 0.9))
+        plt.suptitle('Trace of Posterior Samples')
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+        return fig
+
+    def _pair_plot(posterior_samples, pair_type='scatter', n_bins=20):
+        samples_df = pd.DataFrame({key: posterior_samples[key] for key in params_})
+
+        fig = sns.pairplot(samples_df, kind=pair_type, diag_kws=dict(bins=n_bins))
+        fig.fig.suptitle("Pair Plot")
+        fig.fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+        return fig
+
+    if kind == 'density':
+        fig = _density_plot(posterior_samples, n_bins=n_bins, ci_level=ci_level, figsize=figsize)
+    if kind == 'trace':
+        fig = _trace_plot(posterior_samples, ci_level=ci_level, figsize=figsize)
+    if kind == 'pair':
+        fig = _pair_plot(posterior_samples, pair_type=pair_type, n_bins=n_bins)
+
+    if path:
+        plt.savefig(path)
+
+    return fig
