@@ -67,7 +67,7 @@ class Estimator(object):
         https://pystan.readthedocs.io/en/latest/api.html or
         https://mc-stan.org/rstan/reference/stanmodel-method-vb.html for details
     pyro_vi_args : dict
-        Dictionary contains all general settings to call `orbit.pyro.svi()`
+        Dictionary contains all general settings to call `orbit.pyro.wrapper.pyro_svi()`
     algorithm : str
         options shared by multiple sampling methods. See
         https://pystan.readthedocs.io/en/latest/api.html for available choices.
@@ -390,7 +390,6 @@ class Estimator(object):
                 self._set_map_posterior(stan_extract=pyro_extract)
             elif self.sample_method == SampleMethod.VARIATIONAL_INFERENCE.value:
                 pyro_extract = pyro_svi(
-                    # model_name="",
                     model_name=self.pyro_model_name,
                     data=self.stan_inputs,
                     seed=self.seed,
