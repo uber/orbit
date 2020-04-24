@@ -4,8 +4,6 @@ import pytest
 from orbit.dlt import DLT
 from orbit.exceptions import IllegalArgument, EstimatorException
 
-from orbit.constants.constants import COEFFICIENT_DF_COLS
-
 
 @pytest.mark.parametrize("sample_method", ["map", "vi", "mcmc"])
 @pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
