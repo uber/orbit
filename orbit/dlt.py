@@ -463,5 +463,3 @@ class DLT(LGT):
 
         return {'prediction': pred_array}
 
-    def _validate_params(self):
-        pass
