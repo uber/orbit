@@ -255,8 +255,8 @@ class DLT(LGT):
         global_trend = model.get(dlt.BaseStanSamplingParameters.GLOBAL_TREND.value)
 
         # regression components
-        pr_beta = model.get(lgt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
-        rr_beta = model.get(lgt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+        pr_beta = model.get(dlt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+        rr_beta = model.get(dlt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
         regressor_beta = self._concat_regression_coefs(pr_beta, rr_beta)
 
         ################################################################
