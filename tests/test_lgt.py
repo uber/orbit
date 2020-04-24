@@ -8,23 +8,18 @@ from orbit.exceptions import IllegalArgument, EstimatorException
 
 @pytest.mark.parametrize("sample_method", ["map", "vi", "mcmc"])
 @pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
-def test_fit_and_predict_univariate(synthetic_data, sample_method, predict_method):
+def test_fit_and_predict_univariate(
+        synthetic_data, sample_method, predict_method, valid_sample_predict_method_combo):
     train_df, test_df, coef = synthetic_data
 
-    valid_permutations = [
-        ("map", "map"),
-        ("vi", "mean"), ("vi", "median"), ("vi", "full"),
-        ("mcmc", "mean"), ("mcmc", "median"), ("mcmc", "full")
-    ]
-
-    if (sample_method, predict_method) in valid_permutations:
+    if (sample_method, predict_method) in valid_sample_predict_method_combo:
         lgt = LGT(
             response_col='response',
             date_col='week',
             seasonality=52,
             sample_method=sample_method,
             predict_method=predict_method,
-            num_warmup=100,
+            num_warmup=50,
         )
 
         lgt.fit(train_df)
@@ -56,7 +51,7 @@ def test_fit_and_predict_univariate(synthetic_data, sample_method, predict_metho
                 seasonality=52,
                 sample_method=sample_method,
                 predict_method=predict_method,
-                num_warmup=100
+                num_warmup=50
             )
             lgt.fit(train_df)
 
@@ -72,16 +67,12 @@ def test_fit_and_predict_univariate(synthetic_data, sample_method, predict_metho
     ],
     ids=['positive_only', 'regular_only', 'mixed_signs']
 )
-def test_fit_and_predict_with_regression(synthetic_data, sample_method, predict_method, regressor_signs):
+def test_fit_and_predict_with_regression(
+        synthetic_data, sample_method, predict_method,
+        regressor_signs, valid_sample_predict_method_combo):
     train_df, test_df, coef = synthetic_data
 
-    valid_permutations = [
-        ("map", "map"),
-        ("vi", "mean"), ("vi", "median"), ("vi", "full"),
-        ("mcmc", "mean"), ("mcmc", "median"), ("mcmc", "full")
-    ]
-
-    if (sample_method, predict_method) in valid_permutations:
+    if (sample_method, predict_method) in valid_sample_predict_method_combo:
         lgt = LGT(
             response_col='response',
             date_col='week',
@@ -90,7 +81,7 @@ def test_fit_and_predict_with_regression(synthetic_data, sample_method, predict_
             seasonality=52,
             sample_method=sample_method,
             predict_method=predict_method,
-            num_warmup=400
+            num_warmup=50
         )
 
         lgt.fit(train_df)
@@ -122,13 +113,54 @@ def test_fit_and_predict_with_regression(synthetic_data, sample_method, predict_
                 seasonality=52,
                 sample_method=sample_method,
                 predict_method=predict_method,
-                num_warmup=400
+                num_warmup=50
             )
             lgt.fit(train_df)
 
 
-def test_fit_and_decomp_with_regression():
-    pass
+@pytest.mark.parametrize("sample_method", ["map", "vi", "mcmc"])
+@pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
+def test_fit_and_decomp_with_regression(
+        synthetic_data, sample_method, predict_method, valid_sample_predict_method_combo):
+    train_df, test_df, coef = synthetic_data
+
+    if (sample_method, predict_method) in valid_sample_predict_method_combo:
+        lgt = LGT(
+            response_col='response',
+            date_col='week',
+            regressor_col=train_df.columns.tolist()[2:],
+            seasonality=52,
+            sample_method=sample_method,
+            predict_method=predict_method,
+            num_warmup=50
+        )
+        lgt.fit(train_df)
+
+        # full should raise illegal argument
+        if predict_method == 'full':
+            with pytest.raises(IllegalArgument):
+                lgt.predict(test_df, decompose=True)
+
+        else:
+            predict_df = lgt.predict(test_df, decompose=True)
+
+            expected_columns = ['week', 'prediction', 'trend', 'seasonality', 'regression']
+            expected_shape = (51, len(expected_columns))
+
+            assert predict_df.shape == expected_shape
+            assert predict_df.columns.tolist() == expected_columns
+
+    else:
+        with pytest.raises(EstimatorException):
+            lgt = LGT(
+                response_col='response',
+                date_col='week',
+                seasonality=52,
+                sample_method=sample_method,
+                predict_method=predict_method,
+                num_warmup=50
+            )
+            lgt.fit(train_df)
 
 
 def test_lgt_fit_with_missing_input(iclaims_training_data):
@@ -156,49 +188,7 @@ def test_lgt_invalid_init_params():
         return lgt
 
 
-def test_lgt_predict_decompose(iclaims_training_data):
-
-    lgt = LGT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        chains=4,
-        predict_method='mean'
-    )
-
-    lgt.fit(df=iclaims_training_data)
-
-    predicted_out = lgt.predict(df=iclaims_training_data, decompose=True)
-
-    expected_shape = (443, 5)
-    expected_columns = ['week', 'prediction', 'trend', 'seasonality', 'regression']
-
-    print(predicted_out.head())
-
-    assert predicted_out.shape == expected_shape
-    assert list(predicted_out.columns) == expected_columns
-
-
-def test_negative_lgt_predict_mcmc(iclaims_training_data):
-
-    lgt = LGT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        chains=4,
-        predict_method='full',
-        sample_method='mcmc'
-
-    )
-
-    lgt.fit(df=iclaims_training_data)
-
-    with pytest.raises(IllegalArgument):
-        lgt.predict(df=iclaims_training_data, decompose=True)
-
-
-def test_lgt_with_regressors_negative(iclaims_training_data):
-
+def test_lgt_with_invalid_regressor_column(iclaims_training_data):
     lgt = LGT(
         response_col='claims',
         date_col='week',
@@ -213,7 +203,6 @@ def test_lgt_with_regressors_negative(iclaims_training_data):
 
 
 def test_predict_subset_of_train(iclaims_training_data):
-
     lgt = LGT(
         response_col='claims',
         date_col='week',
@@ -235,7 +224,6 @@ def test_predict_subset_of_train(iclaims_training_data):
 
 
 def test_invalid_date_order():
-
     lgt = LGT(
         response_col='claims',
         date_col='week',
@@ -258,7 +246,6 @@ def test_invalid_date_order():
 
 
 def test_lgt_multiple_fits(m3_monthly_data):
-
     lgt = LGT(response_col='value',
               date_col='date',
               seasonality=12,

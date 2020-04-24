@@ -39,3 +39,13 @@ def synthetic_data():
     test_df = df[df['week'] > '2019-01-01']
 
     return train_df, test_df, coef
+
+
+@pytest.fixture
+def valid_sample_predict_method_combo():
+    valid_permutations = [
+        ("map", "map"),
+        ("vi", "mean"), ("vi", "median"), ("vi", "full"),
+        ("mcmc", "mean"), ("mcmc", "median"), ("mcmc", "full")
+    ]
+    return valid_permutations
