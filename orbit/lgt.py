@@ -398,21 +398,11 @@ class LGT(Estimator):
 
         return regressor_beta
 
-    def get_regression_coefs(self, aggregation_method='mean'):
+    def get_regression_coefs(self):
         """Return DataFrame regression coefficients
 
-        Args
-        ----
-        aggregation_method : str
-            any PredictMethod except `full`
+        If PredictMethod is `full` return `mean` of coefficients instead
         """
-        def _validate_args():
-            valid_args = set([x.value for x in PredictMethod])
-            valid_args = valid_args - set([PredictMethod.FULL_SAMPLING.value])
-
-            if aggregation_method not in valid_args:
-                raise IllegalArgument("aggregation_method must be one of {}".format(valid_args))
-
         # init dataframe
         reg_df = pd.DataFrame()
 
@@ -420,14 +410,16 @@ class LGT(Estimator):
         if self.num_of_regular_regressors + self.num_of_positive_regressors == 0:
             return reg_df
 
-        _validate_args()
+        predict_method = PredictMethod.MEAN.value \
+            if self.predict_method == PredictMethod.FULL_SAMPLING.value \
+            else self.predict_method
 
         pr_beta = self.aggregated_posteriors\
-            .get(aggregation_method)\
+            .get(predict_method)\
             .get(lgt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
 
         rr_beta = self.aggregated_posteriors\
-            .get(aggregation_method)\
+            .get(predict_method)\
             .get(lgt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
 
         # because `_conccat_regression_coefs` operates on torch tensors
