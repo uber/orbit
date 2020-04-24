@@ -188,7 +188,7 @@ def test_lgt_invalid_init_params():
         return lgt
 
 
-def test_lgt_with_invalid_regressor_column(iclaims_training_data):
+def test_invalid_regressor_column(iclaims_training_data):
     lgt = LGT(
         response_col='claims',
         date_col='week',
@@ -245,7 +245,7 @@ def test_invalid_date_order():
         lgt.fit(df2)
 
 
-def test_lgt_multiple_fits(m3_monthly_data):
+def test_fit_monthly_data(m3_monthly_data):
     lgt = LGT(response_col='value',
               date_col='date',
               seasonality=12,
