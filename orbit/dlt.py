@@ -255,14 +255,9 @@ class DLT(LGT):
         global_trend = model.get(dlt.BaseStanSamplingParameters.GLOBAL_TREND.value)
 
         # regression components
-        pr_beta = model.get(dlt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
-        rr_beta = model.get(dlt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
-        if pr_beta is not None and rr_beta is not None:
-            pr_beta = pr_beta if len(pr_beta.shape) == 2 else pr_beta.reshape(1, -1)
-            rr_beta = rr_beta if len(rr_beta.shape) == 2 else rr_beta.reshape(1, -1)
-            regressor_beta = torch.cat((pr_beta, rr_beta), dim=1)
-        else:
-            regressor_beta = pr_beta or rr_beta
+        pr_beta = model.get(lgt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+        rr_beta = model.get(lgt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+        regressor_beta = self._concat_regression_coefs(pr_beta, rr_beta)
 
         ################################################################
         # Prediction Attributes
