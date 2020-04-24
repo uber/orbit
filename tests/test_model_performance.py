@@ -1,3 +1,4 @@
+import pytest
 from orbit.lgt import LGT
 
 @pytest.fixture(scope='module')
