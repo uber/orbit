@@ -5,55 +5,10 @@ import pytest
 from orbit.lgt import LGT
 from orbit.exceptions import IllegalArgument, EstimatorException
 
-from orbit.constants.constants import COEFFICIENT_DF_COLS
-
-
-@pytest.fixture(scope='module')
-def lgt_mcmc_mean(synthetic_data):
-    train_df, test_df, coef = synthetic_data
-    lgt = LGT(
-        response_col='response',
-        date_col='week',
-        seasonality=52,
-        sample_method='mcmc',
-        predict_method='mean'
-    )
-    lgt.fit(train_df)
-    return lgt
-
-
-@pytest.fixture(scope='module')
-def lgt_mcmc_full(synthetic_data):
-    train_df, test_df, coef = synthetic_data
-    lgt = LGT(
-        response_col='response',
-        date_col='week',
-        seasonality=52,
-        sample_method='mcmc',
-        predict_method='full'
-    )
-    lgt.fit(train_df)
-    return lgt
-
-
-@pytest.fixture(scope='module')
-def lgt_mcmc_mean_with_regression(synthetic_data):
-    train_df, test_df, coef = synthetic_data
-    lgt = LGT(
-        response_col='response',
-        date_col='week',
-        regressor_col=train_df.columns.tolist()[2:],
-        seasonality=52,
-        sample_method='mcmc',
-        predict_method='mean',
-    )
-    lgt.fit(train_df)
-    return lgt
-
 
 @pytest.mark.parametrize("sample_method", ["map", "vi", "mcmc"])
 @pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
-def test_fit_sample_and_predict_args(synthetic_data, sample_method, predict_method):
+def test_fit_and_predict_univariate(synthetic_data, sample_method, predict_method):
     train_df, test_df, coef = synthetic_data
 
     valid_permutations = [
@@ -69,7 +24,7 @@ def test_fit_sample_and_predict_args(synthetic_data, sample_method, predict_meth
             seasonality=52,
             sample_method=sample_method,
             predict_method=predict_method,
-            num_warmup=400
+            num_warmup=100,
         )
 
         lgt.fit(train_df)
@@ -101,7 +56,7 @@ def test_fit_sample_and_predict_args(synthetic_data, sample_method, predict_meth
                 seasonality=52,
                 sample_method=sample_method,
                 predict_method=predict_method,
-                num_warmup=400
+                num_warmup=100
             )
             lgt.fit(train_df)
 
@@ -117,7 +72,7 @@ def test_fit_sample_and_predict_args(synthetic_data, sample_method, predict_meth
     ],
     ids=['positive_only', 'regular_only', 'mixed_signs']
 )
-def test_fit_with_regression(synthetic_data, sample_method, predict_method, regressor_signs):
+def test_fit_and_predict_with_regression(synthetic_data, sample_method, predict_method, regressor_signs):
     train_df, test_df, coef = synthetic_data
 
     valid_permutations = [
@@ -170,6 +125,10 @@ def test_fit_with_regression(synthetic_data, sample_method, predict_method, regr
                 num_warmup=400
             )
             lgt.fit(train_df)
+
+
+def test_fit_and_decomp_with_regression():
+    pass
 
 
 def test_lgt_fit_with_missing_input(iclaims_training_data):
@@ -238,58 +197,6 @@ def test_negative_lgt_predict_mcmc(iclaims_training_data):
         lgt.predict(df=iclaims_training_data, decompose=True)
 
 
-def test_lgt_forecast(iclaims_training_data):
-
-    lgt = LGT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        chains=4,
-        predict_method='mean'
-    )
-
-    lgt.fit(df=iclaims_training_data)
-
-    forecast_df = iclaims_training_data.copy()
-    forecast_df['week'] = forecast_df['week'] + np.timedelta64(30, 'W')
-
-    predicted_out = lgt.predict(df=iclaims_training_data, decompose=True)
-    predicted_out_forecast = lgt.predict(df=forecast_df, decompose=True)
-
-    predicted_out_filtered = predicted_out.iloc[30:]['trend'].reset_index(drop=True)
-    predicted_out_forecast_filtered = predicted_out_forecast.iloc[:-30]['trend']\
-        .reset_index(drop=True)
-
-    assert predicted_out_forecast.shape == (443, 5)
-
-    # trend term should be the same during the overlapping in-sample period
-    assert predicted_out_filtered.equals(predicted_out_forecast_filtered)
-
-    # TODO implement negative case with forecast
-
-
-def test_lgt_with_regressors(iclaims_training_data):
-
-    lgt = LGT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        chains=4,
-        predict_method='mean',
-        regressor_col=['trend.unemploy', 'trend.filling']
-    )
-
-    lgt.fit(df=iclaims_training_data)
-
-    predicted_df = lgt.predict(df=iclaims_training_data, decompose=False)
-
-    expected_shape = (443, 2)
-    expected_columns = ['week', 'prediction']
-
-    assert predicted_df.shape == expected_shape
-    assert list(predicted_df.columns) == expected_columns
-
-
 def test_lgt_with_regressors_negative(iclaims_training_data):
 
     lgt = LGT(
@@ -348,61 +255,6 @@ def test_invalid_date_order():
     # catch unordered weeks
     with pytest.raises(IllegalArgument):
         lgt.fit(df2)
-
-
-def test_lgt_with_regressors_and_forecast(iclaims_training_data):
-
-    lgt = LGT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        chains=4,
-        prediction_percentiles=[5, 95, 30],
-        predict_method='full',
-        sample_method='mcmc',
-        regressor_col=['trend.unemploy', 'trend.filling']
-    )
-
-    lgt.fit(df=iclaims_training_data)
-
-    forecast_df = iclaims_training_data.copy()
-    forecast_df['week'] = forecast_df['week'] + np.timedelta64(100, 'W')
-
-    # predicted_dict = lgt._vectorized_predict(df=forecast_df, include_error=True)
-
-    predicted_df = lgt.predict(df=forecast_df, decompose=False)
-
-    expected_columns = ['week', 5, 30, 50, 95]
-    expected_shape = (443, len(expected_columns))
-
-    assert predicted_df.shape == expected_shape
-    assert list(predicted_df.columns) == expected_columns
-
-
-def test_get_regression_coefs(iclaims_training_data):
-    regressor_cols = ['trend.unemploy', 'trend.filling', 'trend.job']
-
-    lgt = LGT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        chains=4,
-        prediction_percentiles=[5, 95, 30],
-        predict_method='full',
-        sample_method='mcmc',
-        regressor_col=regressor_cols,
-        regressor_sign=["=", "=", "+"]
-    )
-
-    lgt.fit(df=iclaims_training_data)
-
-    reg_coefs = lgt.get_regression_coefs()
-
-    assert set(reg_coefs[COEFFICIENT_DF_COLS.REGRESSOR]) == set(regressor_cols)
-
-    # negative case
-    with pytest.raises(IllegalArgument):
-        lgt.get_regression_coefs(aggregation_method='full')
 
 
 def test_lgt_multiple_fits(m3_monthly_data):
