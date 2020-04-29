@@ -363,7 +363,7 @@ class Estimator(object):
                 # set posterior samples instance var
                 self._set_aggregate_posteriors(stan_extract=stan_extract)
             elif self.sample_method == SampleMethod.MARKOV_CHAIN_MONTE_CARLO.value:
-                fit = compiled_stan_file.sampling(
+                stan_mcmc_fit = compiled_stan_file.sampling(
                     data=self.stan_inputs,
                     pars=self.model_param_names,
                     iter=self.num_iter_per_chain,
@@ -375,7 +375,7 @@ class Estimator(object):
                     algorithm=self.algorithm,
                     control=self.stan_mcmc_control
                 )
-                stan_extract = fit.extract(
+                stan_extract = stan_mcmc_fit.extract(
                     pars=self.model_param_names + ['lp__'],
                     permuted=False
                 )
