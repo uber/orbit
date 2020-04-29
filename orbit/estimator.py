@@ -400,7 +400,6 @@ class Estimator(object):
 
             self.posterior_samples = pyro_extract
 
-
     @abstractmethod
     def plot(self):
         """Plots the prediction results"""
@@ -658,7 +657,7 @@ class Estimator(object):
             key_lower = key.name.lower()
             input_value = getattr(self, key_lower, None)
             if input_value is None:
-                raise IllegalArgument('{} is missing from stan input'.format(key_lower))
+                raise EstimatorException('{} is missing from stan input'.format(key_lower))
             if isinstance(input_value, bool):
                 # stan accepts bool as int only
                 input_value = int(input_value)

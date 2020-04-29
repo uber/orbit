@@ -31,7 +31,7 @@
 from enum import Enum
 import pytest
 from orbit.lgt import LGT
-from orbit.exceptions import IllegalArgument
+from orbit.exceptions import IllegalArgument, EstimatorException
 from orbit.constants.constants import COEFFICIENT_DF_COLS
 
 
@@ -67,7 +67,7 @@ def test_lgt_pyro_fit_with_missing_input(iclaims_training_data):
 
     lgt._stan_input_mapper = MockInputMapper
 
-    with pytest.raises(IllegalArgument):
+    with pytest.raises(EstimatorException):
         lgt.fit(df=iclaims_training_data)
 
 

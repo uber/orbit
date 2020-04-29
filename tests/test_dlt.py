@@ -2,24 +2,164 @@ import numpy as np
 import pandas as pd
 import pytest
 from orbit.dlt import DLT
-from orbit.exceptions import IllegalArgument
-
-from orbit.constants.constants import COEFFICIENT_DF_COLS
+from orbit.exceptions import IllegalArgument, EstimatorException
 
 
-def test_dlt_fit(iclaims_training_data):
-    dlt = DLT(
-            response_col='claims',
+@pytest.mark.parametrize("sample_method", ["map", "vi", "mcmc"])
+@pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
+def test_fit_and_predict_univariate(
+        synthetic_data, sample_method, predict_method, valid_sample_predict_method_combo):
+    train_df, test_df, coef = synthetic_data
+
+    if (sample_method, predict_method) in valid_sample_predict_method_combo:
+        dlt = DLT(
+            response_col='response',
             date_col='week',
             seasonality=52,
-            chains=4,
+            sample_method=sample_method,
+            predict_method=predict_method,
+            num_warmup=50,
         )
 
-    dlt.fit(df=iclaims_training_data)
+        dlt.fit(train_df)
+        predict_df = dlt.predict(test_df)
 
-    expected_posterior_parameters = 13
+        # assert number of posterior param keys
+        if sample_method == 'map':
+            assert len(dlt.posterior_samples) == 25
+        else:
+            assert len(dlt.posterior_samples) == 13
 
-    assert len(dlt.posterior_samples) == expected_posterior_parameters
+        # assert output shape
+        if predict_method == 'full':
+            expected_columns = ['week', 5, 50, 95]
+            expected_shape = (51, len(expected_columns))
+            assert predict_df.shape == expected_shape
+            assert predict_df.columns.tolist() == expected_columns
+        else:
+            expected_columns = ['week', 'prediction']
+            expected_shape = (51, len(expected_columns))
+            assert predict_df.shape == expected_shape
+            assert predict_df.columns.tolist() == expected_columns
+
+    else:
+        with pytest.raises(EstimatorException):
+            dlt = DLT(
+                response_col='response',
+                date_col='week',
+                seasonality=52,
+                sample_method=sample_method,
+                predict_method=predict_method,
+                num_warmup=50
+            )
+            dlt.fit(train_df)
+
+
+@pytest.mark.parametrize("sample_method", ["map", "vi", "mcmc"])
+@pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
+@pytest.mark.parametrize(
+    "regressor_signs",
+    [
+        ["+", "+", "+", "+", "+", "+"],
+        ["=", "=", "=", "=", "=", "="],
+        ["+", "=", "+", "=", "+", "+"]
+    ],
+    ids=['positive_only', 'regular_only', 'mixed_signs']
+)
+def test_fit_and_predict_with_regression(
+        synthetic_data, sample_method, predict_method,
+        regressor_signs, valid_sample_predict_method_combo):
+    train_df, test_df, coef = synthetic_data
+
+    if (sample_method, predict_method) in valid_sample_predict_method_combo:
+        dlt = DLT(
+            response_col='response',
+            date_col='week',
+            regressor_col=train_df.columns.tolist()[2:],
+            regressor_sign=regressor_signs,
+            seasonality=52,
+            sample_method=sample_method,
+            predict_method=predict_method,
+            num_warmup=50
+        )
+
+        dlt.fit(train_df)
+        predict_df = dlt.predict(test_df)
+
+        num_regressors = dlt.get_regression_coefs().shape[0]
+
+        assert num_regressors == len(train_df.columns.tolist()[2:])
+
+        # assert output shape
+        if predict_method == 'full':
+            expected_columns = ['week', 5, 50, 95]
+            expected_shape = (51, len(expected_columns))
+
+            assert predict_df.shape == expected_shape
+            assert predict_df.columns.tolist() == expected_columns
+        else:
+            expected_columns = ['week', 'prediction']
+            expected_shape = (51, len(expected_columns))
+
+            assert predict_df.shape == expected_shape
+            assert predict_df.columns.tolist() == expected_columns
+
+    else:
+        with pytest.raises(EstimatorException):
+            dlt = DLT(
+                response_col='response',
+                date_col='week',
+                seasonality=52,
+                sample_method=sample_method,
+                predict_method=predict_method,
+                num_warmup=50
+            )
+            dlt.fit(train_df)
+
+
+@pytest.mark.parametrize("sample_method", ["map", "vi", "mcmc"])
+@pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
+def test_fit_and_decomp_with_regression(
+        synthetic_data, sample_method, predict_method, valid_sample_predict_method_combo):
+    train_df, test_df, coef = synthetic_data
+
+    if (sample_method, predict_method) in valid_sample_predict_method_combo:
+        dlt = DLT(
+            response_col='response',
+            date_col='week',
+            regressor_col=train_df.columns.tolist()[2:],
+            seasonality=52,
+            sample_method=sample_method,
+            predict_method=predict_method,
+            num_warmup=50
+        )
+        dlt.fit(train_df)
+
+        # full should raise illegal argument
+        if predict_method == 'full':
+            with pytest.raises(IllegalArgument):
+                dlt.predict(test_df, decompose=True)
+
+        else:
+            predict_df = dlt.predict(test_df, decompose=True)
+
+            expected_columns = ['week', 'prediction', 'trend', 'seasonality', 'regression']
+            expected_shape = (51, len(expected_columns))
+
+            assert predict_df.shape == expected_shape
+            assert predict_df.columns.tolist() == expected_columns
+
+    else:
+        with pytest.raises(EstimatorException):
+            dlt = DLT(
+                response_col='response',
+                date_col='week',
+                seasonality=52,
+                sample_method=sample_method,
+                predict_method=predict_method,
+                num_warmup=50
+            )
+            dlt.fit(train_df)
 
 
 def test_dlt_get_params(iclaims_training_data):
@@ -29,55 +169,12 @@ def test_dlt_get_params(iclaims_training_data):
         seasonality=52,
         chains=4,
         sample_method='map',
-        predict_method='map',
+        predict_method='map'
     )
 
     params = dlt.get_params()
     expected_params = 42
     assert len(params) == expected_params
-
-
-def test_dlt_fit_and_mean_predict(iclaims_training_data):
-    dlt = DLT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        chains=4,
-        sample_method='mcmc',
-        predict_method='mean'
-    )
-
-    dlt.fit(df=iclaims_training_data)
-
-    predicted_df = dlt.predict(df=iclaims_training_data)
-
-    expected_shape = (443, 2)
-    expected_columns = ['week', 'prediction']
-
-    assert predicted_df.shape == expected_shape
-    assert list(predicted_df.columns) == expected_columns
-
-
-def test_dlt_fit_and_mcmc_predict(iclaims_training_data):
-    dlt = DLT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        chains=4,
-        prediction_percentiles=[5, 95, 30],
-        sample_method='mcmc',
-        predict_method='full',
-    )
-
-    dlt.fit(df=iclaims_training_data)
-
-    predicted_out = dlt.predict(df=iclaims_training_data)
-
-    expected_columns = ['week', 5, 30, 50, 95]
-    expected_shape = (443, len(expected_columns))
-
-    assert predicted_out.shape == expected_shape
-    assert list(predicted_out.columns) == expected_columns
 
 
 def test_dlt_invalid_init_params():
@@ -88,102 +185,7 @@ def test_dlt_invalid_init_params():
         return dlt
 
 
-def test_dlt_predict_decompose(iclaims_training_data):
-
-    dlt = DLT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        chains=4,
-        sample_method='mcmc',
-        predict_method='mean',
-    )
-
-    dlt.fit(df=iclaims_training_data)
-
-    predicted_out = dlt.predict(df=iclaims_training_data, decompose=True)
-
-    expected_shape = (443, 5)
-    expected_columns = ['week', 'prediction', 'trend', 'seasonality', 'regression']
-
-    print(predicted_out.head())
-
-    assert predicted_out.shape == expected_shape
-    assert list(predicted_out.columns) == expected_columns
-
-
-def test_negative_dlt_predict_mcmc(iclaims_training_data):
-
-    dlt = DLT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        chains=4,
-        predict_method='full',
-        sample_method='mcmc'
-
-    )
-
-    dlt.fit(df=iclaims_training_data)
-
-    with pytest.raises(IllegalArgument):
-        dlt.predict(df=iclaims_training_data, decompose=True)
-
-
-def test_dlt_forecast(iclaims_training_data):
-
-    dlt = DLT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        chains=4,
-        predict_method='mean'
-    )
-
-    dlt.fit(df=iclaims_training_data)
-
-    forecast_df = iclaims_training_data.copy()
-    forecast_df['week'] = forecast_df['week'] + np.timedelta64(30, 'W')
-
-    predicted_out = dlt.predict(df=iclaims_training_data, decompose=True)
-    predicted_out_forecast = dlt.predict(df=forecast_df, decompose=True)
-
-    predicted_out_filtered = predicted_out.iloc[30:]['trend'].reset_index(drop=True)
-    predicted_out_forecast_filtered = predicted_out_forecast.iloc[:-30]['trend']\
-        .reset_index(drop=True)
-
-    assert predicted_out_forecast.shape == (443, 5)
-
-    # trend term should be the same during the overlapping period
-    assert predicted_out_filtered.equals(predicted_out_forecast_filtered)
-
-    # TODO implement negative case with forecast
-
-
-def test_dlt_with_regressors(iclaims_training_data):
-
-    dlt = DLT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        chains=4,
-        predict_method='mean',
-        regressor_col=['trend.unemploy', 'trend.filling']
-    )
-
-    dlt.fit(df=iclaims_training_data)
-
-    predicted_df = dlt.predict(df=iclaims_training_data, decompose=False)
-
-    expected_shape = (443, 2)
-    expected_columns = ['week', 'prediction']
-
-    assert predicted_df.shape == expected_shape
-    assert list(predicted_df.columns) == expected_columns
-
-
-def test_dlt_with_regressors_negative(iclaims_training_data):
-
+def test_invalid_regressor_column(iclaims_training_data):
     dlt = DLT(
         response_col='claims',
         date_col='week',
@@ -198,7 +200,6 @@ def test_dlt_with_regressors_negative(iclaims_training_data):
 
 
 def test_predict_subset_of_train(iclaims_training_data):
-
     dlt = DLT(
         response_col='claims',
         date_col='week',
@@ -220,7 +221,6 @@ def test_predict_subset_of_train(iclaims_training_data):
 
 
 def test_invalid_date_order():
-
     dlt = DLT(
         response_col='claims',
         date_col='week',
@@ -242,58 +242,7 @@ def test_invalid_date_order():
         dlt.fit(df2)
 
 
-def test_dlt_with_regressors_and_forecast(iclaims_training_data):
-
-    dlt = DLT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        chains=4,
-        prediction_percentiles=[5, 95, 30],
-        predict_method='full',
-        sample_method='mcmc',
-        regressor_col=['trend.unemploy', 'trend.filling']
-    )
-
-    dlt.fit(df=iclaims_training_data)
-
-    forecast_df = iclaims_training_data.copy()
-    forecast_df['week'] = forecast_df['week'] + np.timedelta64(100, 'W')
-
-    # predicted_dict = dlt._vectorized_predict(df=forecast_df, include_error=True)
-
-    predicted_df = dlt.predict(df=forecast_df, decompose=False)
-
-    expected_columns = ['week', 5, 30, 50, 95]
-    expected_shape = (443, len(expected_columns))
-
-    assert predicted_df.shape == expected_shape
-    assert list(predicted_df.columns) == expected_columns
-
-
-def test_get_regression_coefs(iclaims_training_data):
-    regressor_cols = ['trend.unemploy', 'trend.filling', 'trend.job']
-
-    dlt = DLT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        chains=4,
-        prediction_percentiles=[5, 95, 30],
-        predict_method='full',
-        sample_method='mcmc',
-        regressor_col=regressor_cols
-    )
-
-    dlt.fit(df=iclaims_training_data)
-
-    reg_coefs = dlt.get_regression_coefs()
-
-    assert set(reg_coefs[COEFFICIENT_DF_COLS.REGRESSOR]) == set(regressor_cols)
-
-
-def test_dlt_multiple_fits(m3_monthly_data):
-
+def test_fit_monthly_data(m3_monthly_data):
     dlt = DLT(response_col='value',
               date_col='date',
               seasonality=12,
