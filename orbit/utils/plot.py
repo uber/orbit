@@ -200,6 +200,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         raise Exception(".predict needs to be performed to have posterior states available.")
 
     posterior_samples = deepcopy(mod._posterior_state)
+
     if len(mod.positive_regressor_col) > 0:
         for i, regressor in enumerate(mod.positive_regressor_col):
             posterior_samples[regressor] = posterior_samples['pr_beta'][:,i]
@@ -245,24 +246,27 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         fig, axes = plt.subplots(len(params_), 1, squeeze=True, figsize=figsize)
         for i, param in enumerate(params_):
             samples = posterior_samples[param]
-            mean = np.mean(samples)
-            median = np.median(samples)
-            cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level)/2), \
-                                    np.percentile(samples, 100 * (1 + ci_level)/2)
+            # chain order is preserved in the posterior samples
+            chained_samples = np.array_split(samples, mod.chains)
+            # mean = np.mean(samples)
+            # median = np.median(samples)
+            # cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level)/2), \
+            #                         np.percentile(samples, 100 * (1 + ci_level)/2)
 
-            axes[i].plot(samples, lw=.8)
-            axes[i].set_xlabel('sample')
+            for k in range(mod.chains):
+                axes[i].plot(chained_samples[k], lw=1, alpha=.5, label=f'chain {k+1}')
             axes[i].set_ylabel(param)
+            # axes[i].legend()
             # draw horizontal lines
-            axes[i].axhline(mean, color=QualitativePalette['PostQ'].value[0], lw=2, alpha=.5, label='mean')
-            axes[i].axhline(median, color=QualitativePalette['PostQ'].value[1], lw=2, alpha=.5, label='median')
-            axes[i].axhline(cred_min, linestyle='--', color='k', alpha=.5, label='95% CI')
-            axes[i].axhline(cred_max, linestyle='--', color='k', alpha=.5)
-            #axes[i].legend()
+            # axes[i].axhline(mean, color=QualitativePalette['PostQ'].value[0], lw=2, alpha=.5, label='mean')
+            # axes[i].axhline(median, color=QualitativePalette['PostQ'].value[1], lw=2, alpha=.5, label='median')
+            # axes[i].axhline(cred_min, linestyle='--', color='k', alpha=.5, label='95% CI')
+            # axes[i].axhline(cred_max, linestyle='--', color='k', alpha=.5)
 
         handles, labels = axes[0].get_legend_handles_labels()
         fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.15, 0.9))
         plt.suptitle('Trace of Posterior Samples')
+        plt.xlabel('draw')
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
         return fig
