@@ -66,8 +66,8 @@ data {
   real<lower=0,upper=1> SEA_SM_MAX;
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
   
-  // 0 As Linear, 1 As Log-Linear, 2 As Double-Log-Linear
-  int <lower=0,upper=2> GLOBAL_TREND_OPTION;
+  // 0 As linear, 1 As log-linear, 2 As logistic, 3 As flat
+  int <lower=0,upper=3> GLOBAL_TREND_OPTION;
 }
 transformed data {
   int IS_SEASONAL;
@@ -77,24 +77,35 @@ transformed data {
   real GL_LOWER;
   real GB_LOWER;
   real GB_UPPER;
-  
+  int GL_SIZE;
+  int GB_SIZE;
+
   DAMPED_FACTOR_SIZE = 1;
   IS_SEASONAL = 0;
   SIGMA_EPS = 1e-5;
+  GL_SIZE = 0;
+  GB_SIZE = 0;
+
   if (SEASONALITY > 1) IS_SEASONAL = 1;
   if (DAMPED_FACTOR_FIXED > 0) DAMPED_FACTOR_SIZE = 0;
   if (GLOBAL_TREND_OPTION == 0) {
       GL_LOWER = negative_infinity();
       GB_LOWER = negative_infinity();
       GB_UPPER = positive_infinity();
+      GL_SIZE = 1;
+      GB_SIZE = 1;
   } else if (GLOBAL_TREND_OPTION == 1) {
     GL_LOWER = 0;
     GB_LOWER = -1.0 / (NUM_OF_OBS + 10);
     GB_UPPER = 1.0 / (NUM_OF_OBS + 10);
-  } else {
+    GL_SIZE = 1;
+    GB_SIZE = 1;
+  } else if (GLOBAL_TREND_OPTION == 2) {
     GL_LOWER = negative_infinity();
     GB_LOWER = -1;
     GB_UPPER = 1;
+    GL_SIZE = 1;
+    GB_SIZE = 1;
   }
 }
 parameters {
@@ -116,10 +127,10 @@ parameters {
   real<lower=0, upper=pi()/2 - 0.2> obs_sigma_unif_dummy[WITH_MCMC];
   real<lower=MIN_NU,upper=MAX_NU> nu;
 
-  // trend parameters
-  real<lower=GL_LOWER> gl; // global level
-  real<lower=GB_LOWER,upper=GB_UPPER> gb; // global slope
-  // real<lower=-1.0/(NUM_OF_OBS+10)> gs;
+  // global trend parameters
+  real<lower=GL_LOWER> gl[GL_SIZE]; // global level
+  real<lower=GB_LOWER,upper=GB_UPPER> gb[GB_SIZE]; // global slope
+  // damped factor parameters
   real<lower=DAMPED_FACTOR_MIN,upper=DAMPED_FACTOR_MAX> damped_factor[DAMPED_FACTOR_SIZE];
 
   // seasonal parameters
@@ -168,8 +179,21 @@ transformed parameters {
   }
   
   // global trend is deterministic
-  gt_sum[1] = gl;
-  
+  // we generate the entire series here
+  // gt_sum[1] = gl;
+  for (t in 1:NUM_OF_OBS) {
+    if (GLOBAL_TREND_OPTION == 0) {
+      gt_sum[t] = gl[1] + (t - 1) * gb[1];
+    } else if (GLOBAL_TREND_OPTION == 1)  {
+      gt_sum[t] = gl[1] + log(1 + gb[1] * (t - 1));
+    } else if (GLOBAL_TREND_OPTION == 2) {
+      gt_sum[t] = gl[1] / (1 + exp(-1 * gb[1] * (t - 1)));
+      // gt_sum[t]  = gl[1] * inv_logit(gb[1] * (t - 1));
+    } if (GLOBAL_TREND_OPTION == 3) {
+      gt_sum[t] = 0.0;
+    }
+  }
+
   b[1] = 0;
   if (IS_SEASONAL) {
     l[1] = RESPONSE[1] - gt_sum[1] - s[1] - r[1];
@@ -194,16 +218,7 @@ transformed parameters {
     } else {
         s_t = 0.0;
     }
-    
     // forecast process
-    if (GLOBAL_TREND_OPTION == 0) {
-      gt_sum[t] = gt_sum[t - 1] + gb;
-    } else if (GLOBAL_TREND_OPTION == 1)  {
-      gt_sum[t] = gl + log(1 + gb * (t -1));
-    } else {
-      gt_sum[t] = gl / (1 + exp(-1 * gb * (t - 1))) * 2;
-      // gt_sum[t]  = gl * inv_logit(gb * (t - 1));
-    }
     lt_sum[t] = l[t-1] + damped_factor_dummy * b[t-1];
     yhat[t] = gt_sum[t] + lt_sum[t] + s_t + r[t];
 
@@ -263,14 +278,13 @@ model {
   }
   // global trend prior
   if (GLOBAL_TREND_OPTION == 0) {
-    gl ~ normal(0, 10);
-    gb ~ normal(0, 1);
+    gl[1] ~ normal(0, 10);
+    gb[1] ~ normal(0, 1);
   } else if (GLOBAL_TREND_OPTION == 1) {
-    gl ~ lognormal(0, 2.303);
-    gb ~ normal(0, 1)T[-1.0 / (NUM_OF_OBS + 10), ];
-  } else {
-    gl ~ normal(0, 10);
-    gb ~ double_exponential(0, 1);
+    gl[1] ~ lognormal(0, 2.303);
+    gb[1] ~ normal(0, 1)T[-1.0 / (NUM_OF_OBS + 10), ];
+  } else if (GLOBAL_TREND_OPTION == 2) {
+    gl[1] ~ normal(0, 10);
+    gb[1] ~ double_exponential(0, 1);
   }
-  
 }
