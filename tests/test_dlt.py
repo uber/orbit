@@ -55,6 +55,33 @@ def test_fit_and_predict_univariate(
             dlt.fit(train_df)
 
 
+@pytest.mark.parametrize("global_trend_option", ["linear", "loglinear", "logistic", "flat"])
+def test_fit_and_predict_with_glb_trend(synthetic_data, global_trend_option):
+    train_df, test_df, coef = synthetic_data
+
+    dlt = DLT(
+        response_col='response',
+        date_col='week',
+        seasonality=52,
+        sample_method='map',
+        predict_method='map',
+        global_trend_option=global_trend_option,
+    )
+
+    dlt.fit(train_df)
+    predict_df = dlt.predict(test_df)
+
+    # assert number of posterior param keys
+    if global_trend_option in ['linear','loglinear','logistic']:
+        assert len(dlt.posterior_samples) == 25
+
+    expected_columns = ['week', 'prediction']
+    expected_shape = (51, len(expected_columns))
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+
+    dlt.fit(train_df)
+
 @pytest.mark.parametrize("sample_method", ["map", "vi", "mcmc"])
 @pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
 @pytest.mark.parametrize(

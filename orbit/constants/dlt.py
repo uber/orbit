@@ -49,9 +49,10 @@ class GlobalTrendOption(Enum):
     linear = 0
     loglinear = 1
     logistic = 2
+    flat = 3
 
 
-class BaseStanSamplingParameters(Enum):
+class BaseSamplingParameters(Enum):
     """
     The stan output sampling parameters related with DLT base model.
     """
@@ -65,6 +66,9 @@ class BaseStanSamplingParameters(Enum):
     RESIDUAL_DEGREE_OF_FREEDOM = 'nu'
     # ---------- DLT Model Specific ---------- #
     LOCAL_TREND = 'lt_sum'
+
+
+class GlobalTrendSamplingParameters(Enum):
     GLOBAL_TREND = 'gt_sum'
     GLOBAL_TREND_SLOPE = 'gb'
     GLOBAL_TREND_LEVEL = 'gl'
