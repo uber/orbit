@@ -175,9 +175,7 @@ class DLT(LGT):
         # self.pyro_model_name = "orbit.pyro.dlt.DLTModel--WIP"
         if not hasattr(dlt.GlobalTrendOption, global_trend_option):
             gt_options = [e.name for e in dlt.GlobalTrendOption]
-            raise IllegalArgument(
-                "global_trend_option must be one of these {}".format(gt_options)
-            )
+            raise IllegalArgument("global_trend_option must be one of these {}".format(gt_options))
 
         self._global_trend_option = getattr(dlt.GlobalTrendOption, global_trend_option).value
 
@@ -204,7 +202,7 @@ class DLT(LGT):
             self.model_param_names += [
                 dlt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value]
 
-        if self._global_trend_option != dlt.GlobalTrendOption.flat.name:
+        if self._global_trend_option != dlt.GlobalTrendOption.flat.value:
             self.model_param_names += [param.value for param in dlt.GlobalTrendSamplingParameters]
 
     def _predict(self, df=None, include_error=False, decompose=False):
@@ -309,12 +307,12 @@ class DLT(LGT):
         else:
             damped_factor = model.get(dlt.DampedTrendStanSamplingParameters.DAMPED_FACTOR.value)
 
-        if self._global_trend_option != dlt.GlobalTrendOption.flat.name:
+        if self._global_trend_option != dlt.GlobalTrendOption.flat.value:
             global_trend_level = model.get(dlt.GlobalTrendSamplingParameters.GLOBAL_TREND_LEVEL.value).view(num_sample, )
             global_trend_slope = model.get(dlt.GlobalTrendSamplingParameters.GLOBAL_TREND_SLOPE.value).view(num_sample, )
             global_trend = model.get(dlt.GlobalTrendSamplingParameters.GLOBAL_TREND.value)
         else:
-            global_trend = torch.zeros((num_sample, trained_len))
+            global_trend = torch.zeros((num_sample, trained_len), dtype=torch.double)
 
         # regression components
         pr_beta = model.get(dlt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
