@@ -43,7 +43,7 @@ data {
   real<lower=0,upper=1>   SLP_SM_MAX;
 
   // Regression Hyper-Params
-  real <lower=0> BETA_MAX;
+  // real <lower=0> BETA_MAX;
   int<lower=0,upper=1> FIX_REG_COEF_SD;
   real<lower=0,upper=10> REG_SIGMA_SD;
 
@@ -112,8 +112,10 @@ parameters {
   // regression parameters
   real<lower=0> pr_sigma[NUM_OF_PR * (1 - FIX_REG_COEF_SD)];
   real<lower=0> rr_sigma[NUM_OF_RR * (1 - FIX_REG_COEF_SD)];
-  vector<lower=0,upper=BETA_MAX>[NUM_OF_PR] pr_beta;
-  vector<lower=-1 * BETA_MAX,upper=BETA_MAX>[NUM_OF_RR] rr_beta;
+  // vector<lower=0,upper=BETA_MAX>[NUM_OF_PR] pr_beta;
+  // vector<lower=-1 * BETA_MAX,upper=BETA_MAX>[NUM_OF_RR] rr_beta;
+  vector<lower=0>[NUM_OF_PR] pr_beta;
+  vector[NUM_OF_RR] rr_beta;
 
   real<lower=LEV_SM_MIN,upper=LEV_SM_MAX> lev_sm; //level smoothing parameter
   real<lower=SLP_SM_MIN,upper=SLP_SM_MAX> slp_sm; //slope smoothing parameter
@@ -123,7 +125,8 @@ parameters {
   real<lower=SIGMA_EPS,upper=5*CAUCHY_SD> obs_sigma_dummy[1 - WITH_MCMC];
   // this re-parameterization is sugggested by stan org and improves sampling
   // efficiently (on uniform instead of heavy-tail)
-  // - 0.1 is made to dodge upper boundary case
+  // - 0.2 is made to dodge boundary case (tanh(pi/2 - 0.2) roughly equals 5 to be 
+  // consistent with MAP estimation)
   real<lower=0, upper=pi()/2 - 0.2> obs_sigma_unif_dummy[WITH_MCMC];
   real<lower=MIN_NU,upper=MAX_NU> nu;
 

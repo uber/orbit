@@ -62,7 +62,7 @@ def vb_extract(results):
     extract posteriors.  The logic is based on
     https://gist.github.com/lwiklendt/9c7099288f85b59edc903a5aed2d2d64
 
-    Args
+    Parameters
     ----
     results: dict
         dict exported from pystan.StanModel object by `vb` method
@@ -181,3 +181,10 @@ def make_synthetic_series(seed=0):
     df['response'] = df['response'] * np.linspace(5, 1, df.shape[0])
 
     return df, coef
+
+def make_ts_multiplicative_regression(series_len=200, seasonality=52, reg_coef_mean=.08,
+    seed=0):
+    """
+        Parameters
+    ----------
+    """

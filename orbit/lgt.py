@@ -161,7 +161,7 @@ class LGT(Estimator):
             local_trend_coef_min=0, local_trend_coef_max=1,
             level_smoothing_min=0, level_smoothing_max=1,
             slope_smoothing_min=0, slope_smoothing_max=1,
-            regression_coef_max=1.0, fix_regression_coef_sd=1, regressor_sigma_sd=1.0,
+            lasso_scale=1.0, auto_ridge_scale=0.5, regression_penalty='lasso',
             **kwargs
     ):
 
@@ -183,6 +183,8 @@ class LGT(Estimator):
             raise IllegalArgument(
                 'Auto-scale is not supported for additive model. Please turn off auto-scale.'
             )
+
+        self._regression_penalty = getattr(lgt.RegressionPenalty, regression_penalty).value
 
     def _set_computed_params(self):
         self._setup_computed_regression_params()
