@@ -52,7 +52,7 @@ def make_ts_multiplicative_regression(series_len=200, seasonality=-1, num_of_reg
     # control probability of regression kick-in
     z = np.random.default_rng(seed).binomial(1, regression_prob, series_len * num_of_regressors).reshape(series_len, -1)
     x_obs = x_log1p * z
-    noise = np.random.default_rng(seed).normal(0, regressor_log_scale, series_len)
+    noise = np.random.default_rng(seed).normal(0, obs_log_scale, series_len)
 
     if trend_type == "rw":
         rw = np.random.default_rng(seed).normal(0.001, 0.05, series_len)
@@ -84,7 +84,7 @@ def make_ts_multiplicative_regression(series_len=200, seasonality=-1, num_of_reg
     X = np.round(np.expm1(x_obs) * regresspr_val_base)
 
     # datetime index
-    dt = pd.date_range(start='2016-01-04', periods=series_len, freq=f"{seasonality}D")
+    dt = pd.date_range(start='2016-01-04', periods=series_len, freq=f"{int(365.25/seasonality)}D")
     regressor_cols = [f"regressor_{x}" for x in range(1, num_of_regressors + 1)]
     df = pd.DataFrame(np.concatenate([y, X], axis=1), columns=[response_col] + regressor_cols)
     df['date'] = dt
