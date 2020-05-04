@@ -157,9 +157,9 @@ class DLT(LGT):
             seasonality_smoothing_min=0, seasonality_smoothing_max=1,
             level_smoothing_min=0, level_smoothing_max=1,
             slope_smoothing_min=0, slope_smoothing_max=1,
+            lasso_scale=0.1, auto_ridge_scale=0.1, regression_penalty='fixed-ridge',
             damped_factor_min=0.8, damped_factor_max=1,
             global_trend_option='linear',
-            regression_coef_max=1.0, fix_regression_coef_sd=1, regressor_sigma_sd=1.0,
             damped_factor_fixed=0.8, **kwargs
     ):
 
@@ -178,6 +178,7 @@ class DLT(LGT):
             raise IllegalArgument("global_trend_option must be one of these {}".format(gt_options))
 
         self._global_trend_option = getattr(dlt.GlobalTrendOption, global_trend_option).value
+        self._regression_penalty = getattr(dlt.RegressionPenalty, regression_penalty).value
 
     def _set_model_param_names(self):
         self.model_param_names = []

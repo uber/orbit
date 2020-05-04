@@ -69,11 +69,6 @@ data {
   
   // 0 As linear, 1 As log-linear, 2 As logistic, 3 As flat
   int <lower=0,upper=3> GLOBAL_TREND_OPTION;
-  
-  // 0 As Fixed Ridge Penalty, 1 As Lasso, 2 As Auto-Ridge
-  int <lower=0,upper=2> REG_PENALTY_TYPE;
-  real<lower=0> AUTO_RIDGE_SCALE;
-  real<lower=0> LASSO_SCALE;
 }
 transformed data {
   int IS_SEASONAL;
