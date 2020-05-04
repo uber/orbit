@@ -157,7 +157,7 @@ class DLT(LGT):
             seasonality_smoothing_min=0, seasonality_smoothing_max=1,
             level_smoothing_min=0, level_smoothing_max=1,
             slope_smoothing_min=0, slope_smoothing_max=1,
-            lasso_scale=0.1, auto_ridge_scale=0.1, regression_penalty='fixed-ridge',
+            lasso_scale=0.1, auto_ridge_scale=0.1, regression_penalty='fixed_ridge',
             damped_factor_min=0.8, damped_factor_max=1,
             global_trend_option='linear',
             damped_factor_fixed=0.8, **kwargs
