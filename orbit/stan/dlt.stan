@@ -87,7 +87,8 @@ transformed data {
   SIGMA_EPS = 1e-5;
   GL_SIZE = 0;
   GB_SIZE = 0;
-
+  FIXED_REG_SD = 0;
+  
   if (SEASONALITY > 1) IS_SEASONAL = 1;
   if (DAMPED_FACTOR_FIXED > 0) DAMPED_FACTOR_SIZE = 0;
   if (GLOBAL_TREND_OPTION == 0) {
