@@ -181,10 +181,3 @@ def make_synthetic_series(seed=0):
     df['response'] = df['response'] * np.linspace(5, 1, df.shape[0])
 
     return df, coef
-
-def make_ts_multiplicative_regression(series_len=200, seasonality=52, reg_coef_mean=.08,
-    seed=0):
-    """
-        Parameters
-    ----------
-    """

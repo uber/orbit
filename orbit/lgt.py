@@ -161,7 +161,7 @@ class LGT(Estimator):
             local_trend_coef_min=0, local_trend_coef_max=1,
             level_smoothing_min=0, level_smoothing_max=1,
             slope_smoothing_min=0, slope_smoothing_max=1,
-            lasso_scale=1.0, auto_ridge_scale=0.5, regression_penalty='lasso',
+            lasso_scale=0.1, auto_ridge_scale=0.1, regression_penalty='fixed-ridge',
             **kwargs
     ):
 

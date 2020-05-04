@@ -35,17 +35,18 @@ data {
   matrix[NUM_OF_OBS, NUM_OF_RR] RR_MAT; // regular coef regressors, more volatile range
   vector[NUM_OF_RR] RR_BETA_PRIOR;
   vector<lower=0>[NUM_OF_RR] RR_SIGMA_PRIOR;
+  
+  // Regression Hyper Params
+  // 0 As Fixed Ridge Penalty, 1 As Lasso, 2 As Auto-Ridge
+  int <lower=0,upper=2> REG_PENALTY_TYPE;
+  real<lower=0> AUTO_RIDGE_SCALE;
+  real<lower=0> LASSO_SCALE;
 
   // Trend Hyper-Params
   real<lower=0,upper=1>   LEV_SM_MIN;
   real<lower=0,upper=1>   LEV_SM_MAX;
   real<lower=0,upper=1>   SLP_SM_MIN;
   real<lower=0,upper=1>   SLP_SM_MAX;
-
-  // Regression Hyper-Params
-  // real <lower=0> BETA_MAX;
-  int<lower=0,upper=1> FIX_REG_COEF_SD;
-  real<lower=0,upper=10> REG_SIGMA_SD;
 
   // Residuals Tuning Hyper-Params
   real<lower=0> CAUCHY_SD; // derived by MAX(RESPONSE)/constant
@@ -68,6 +69,11 @@ data {
   
   // 0 As linear, 1 As log-linear, 2 As logistic, 3 As flat
   int <lower=0,upper=3> GLOBAL_TREND_OPTION;
+  
+  // 0 As Fixed Ridge Penalty, 1 As Lasso, 2 As Auto-Ridge
+  int <lower=0,upper=2> REG_PENALTY_TYPE;
+  real<lower=0> AUTO_RIDGE_SCALE;
+  real<lower=0> LASSO_SCALE;
 }
 transformed data {
   int IS_SEASONAL;
@@ -79,6 +85,7 @@ transformed data {
   real GB_UPPER;
   int GL_SIZE;
   int GB_SIZE;
+  int FIXED_REG_SD;
 
   DAMPED_FACTOR_SIZE = 1;
   IS_SEASONAL = 0;
@@ -107,11 +114,13 @@ transformed data {
     GL_SIZE = 1;
     GB_SIZE = 1;
   }
+  
+  if (REG_PENALTY_TYPE != 2) FIXED_REG_SD = 1;
 }
 parameters {
   // regression parameters
-  real<lower=0> pr_sigma[NUM_OF_PR * (1 - FIX_REG_COEF_SD)];
-  real<lower=0> rr_sigma[NUM_OF_RR * (1 - FIX_REG_COEF_SD)];
+  real<lower=0> pr_sigma[NUM_OF_PR * (1 - FIXED_REG_SD)];
+  real<lower=0> rr_sigma[NUM_OF_RR * (1 - FIXED_REG_SD)];
   // vector<lower=0,upper=BETA_MAX>[NUM_OF_PR] pr_beta;
   // vector<lower=-1 * BETA_MAX,upper=BETA_MAX>[NUM_OF_RR] rr_beta;
   vector<lower=0>[NUM_OF_PR] pr_beta;
@@ -248,37 +257,14 @@ model {
     // for MAP, set finite boundary 
     obs_sigma_dummy[1] ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, 5 * CAUCHY_SD];
   }
-  if (NUM_OF_PR > 0) {
-    if (FIX_REG_COEF_SD == 0) {
-      //weak prior for sigma
-      for(i in 1:NUM_OF_PR) {
-        pr_sigma[i] ~ cauchy(PR_SIGMA_PRIOR[i], REG_SIGMA_SD) T[0,];
-      }
-      //weak prior for betas
-      pr_beta ~ normal(PR_BETA_PRIOR, pr_sigma);
-    } else { //straight point prior for sigma
-      //weak prior for betas
-      pr_beta ~ normal(PR_BETA_PRIOR, PR_SIGMA_PRIOR);
-    }
-  }
-  if (NUM_OF_RR > 0) {
-    if (FIX_REG_COEF_SD == 0) {
-      //weak prior for sigma
-      for(j in 1:NUM_OF_RR) {
-        rr_sigma[j] ~ cauchy(RR_SIGMA_PRIOR[j], REG_SIGMA_SD) T[0,];
-      }
-      //weak prior for betas
-      rr_beta ~ normal(RR_BETA_PRIOR, rr_sigma);
-    } else { //straight point prior for sigma
-      //weak prior for betas
-      rr_beta ~ normal(RR_BETA_PRIOR, RR_SIGMA_PRIOR);
-    }
-  }
-  for (i in 1:(SEASONALITY - 1))
-    init_sea[i] ~ normal(0, 0.33); // 33% lift is with 1 sd prob.
   for (t in 2:NUM_OF_OBS) {
     RESPONSE[t] ~ student_t(nu, yhat[t], obs_sigma);
   }
+  
+  // prior for seasonality
+  for (i in 1:(SEASONALITY - 1))
+    init_sea[i] ~ normal(0, 0.33); // 33% lift is with 1 sd prob.
+
   // global trend prior
   if (GLOBAL_TREND_OPTION == 0) {
     gl[1] ~ normal(0, 10);
@@ -289,5 +275,44 @@ model {
   } else if (GLOBAL_TREND_OPTION == 2) {
     gl[1] ~ normal(0, 10);
     gb[1] ~ double_exponential(0, 1);
+  }
+
+  // regression prior
+  // see these references for details
+  // 1. https://jrnold.github.io/bayesian_notes/shrinkage-and-regularized-regression.html
+  // 2. https://betanalpha.github.io/assets/case_studies/bayes_sparse_regression.html#33_wide_weakly_informative_prior
+  if (NUM_OF_PR > 0) {
+    if (REG_PENALTY_TYPE== 0) {
+      // fixed penalty ridge
+      pr_beta ~ normal(PR_BETA_PRIOR, PR_SIGMA_PRIOR);
+    } else if (REG_PENALTY_TYPE == 1) {
+      // lasso penalty
+      pr_beta ~ double_exponential(PR_BETA_PRIOR, LASSO_SCALE);
+    } else if (REG_PENALTY_TYPE == 2) {
+      // data-driven penalty for ridge
+      //weak prior for sigma
+      for(i in 1:NUM_OF_PR) {
+        pr_sigma[i] ~ cauchy(0, AUTO_RIDGE_SCALE) T[0,];
+      }
+      //weak prior for betas
+      pr_beta ~ normal(PR_BETA_PRIOR, pr_sigma);
+    }
+  }
+  if (NUM_OF_RR > 0) {
+    if (REG_PENALTY_TYPE == 0) {
+      // fixed penalty ridge
+      rr_beta ~ normal(RR_BETA_PRIOR, RR_SIGMA_PRIOR);
+    } else if (REG_PENALTY_TYPE == 1) {
+      // lasso penalty
+      rr_beta ~ double_exponential(RR_BETA_PRIOR, LASSO_SCALE);
+    } else if (REG_PENALTY_TYPE == 2) {
+      // data-driven penalty for ridge
+      //weak prior for sigma
+      for(i in 1:NUM_OF_RR) {
+        rr_sigma[i] ~ cauchy(0, AUTO_RIDGE_SCALE) T[0,];
+      }
+      //weak prior for betas
+      rr_beta ~ normal(RR_BETA_PRIOR, rr_sigma);
+    }
   }
 }

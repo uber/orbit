@@ -32,7 +32,13 @@ data {
   matrix[NUM_OF_OBS, NUM_OF_RR] RR_MAT; // regular coef regressors, more volatile range
   vector[NUM_OF_RR] RR_BETA_PRIOR;
   vector<lower=0>[NUM_OF_RR] RR_SIGMA_PRIOR;
-
+  
+  // Regression Hyper Params
+  // 0 As Fixed Ridge Penalty, 1 As Lasso, 2 As Auto-Ridge
+  int <lower=0,upper=2> REG_PENALTY_TYPE;
+  real<lower=0> AUTO_RIDGE_SCALE;
+  real<lower=0> LASSO_SCALE;
+  
   // Trend Hyper-Params
   real<lower=-1,upper=1>  GT_COEF_MIN;
   real<lower=-1,upper=1>  GT_COEF_MAX;
@@ -44,10 +50,6 @@ data {
   real<lower=0,upper=1>   LEV_SM_MAX;
   real<lower=0,upper=1>   SLP_SM_MIN;
   real<lower=0,upper=1>   SLP_SM_MAX;
-
-  // Regression Hyper-Params
-  // real <lower=0> BETA_MAX;
-  // real<lower=0,upper=10> REG_SIGMA_SD;
 
   // Residuals Tuning Hyper-Params
   // this re-parameterization is sugggested by stan org and improves sampling
@@ -62,11 +64,6 @@ data {
   real<lower=0,upper=1> SEA_SM_MIN;
   real<lower=0,upper=1> SEA_SM_MAX;
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
-  
-  // 0 As Fixed Ridge Penalty, 1 As Lasso, 2 As Auto-Ridge
-  int <lower=0,upper=2> REG_PENALTY_TYPE;
-  real<lower=0> AUTO_RIDGE_SCALE;
-  real<lower=0> LASSO_SCALE;
 }
 transformed data {
   int IS_SEASONAL;
@@ -77,7 +74,7 @@ transformed data {
   SIGMA_EPS = 1e-5;
   IS_SEASONAL = 0;
   if (SEASONALITY > 1) IS_SEASONAL = 1;
-  if (REG_PENALTY_TYPE == 0) FIXED_REG_SD = 1;
+  if (REG_PENALTY_TYPE != 2) FIXED_REG_SD = 1;
 }
 parameters {
   // regression parameters
@@ -201,7 +198,7 @@ model {
   for (i in 1:(SEASONALITY - 1))
     init_sea[i] ~ normal(0, 0.33); // 33% lift is with 1 sd prob.
     
-  // regression control
+  // regression prior
   // see these references for details
   // 1. https://jrnold.github.io/bayesian_notes/shrinkage-and-regularized-regression.html
   // 2. https://betanalpha.github.io/assets/case_studies/bayes_sparse_regression.html#33_wide_weakly_informative_prior
@@ -211,7 +208,7 @@ model {
       pr_beta ~ normal(PR_BETA_PRIOR, PR_SIGMA_PRIOR);
     } else if (REG_PENALTY_TYPE == 1) {
       // lasso penalty
-      pr_beta ~ double_exponential(RR_BETA_PRIOR, LASSO_SCALE);
+      pr_beta ~ double_exponential(PR_BETA_PRIOR, LASSO_SCALE);
     } else if (REG_PENALTY_TYPE == 2) {
       // data-driven penalty for ridge
       //weak prior for sigma
