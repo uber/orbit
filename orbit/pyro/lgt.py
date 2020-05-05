@@ -54,7 +54,6 @@ class LGTModel:
                     pr_beta = pyro.sample("pr_beta",
                                           dist.FoldedDistribution(
                                               dist.Laplace(self.pr_beta_prior, self.lasso_scale)))
-            # pr = self.pr_mat @ pr_beta  # FIXME is this the correct matmul?
             pr = pr_beta @ self.pr_mat.transpose(-1, -2)
 
         if self.num_of_rr == 0:
@@ -76,6 +75,7 @@ class LGTModel:
                     rr_beta = pyro.sample("rr_beta", dist.Laplace(self.rr_beta_prior, self.lasso_scale))
             rr = rr_beta @ self.rr_mat.transpose(-1, -2)
 
+        # a hack to make sure we don't use a dimension "1" due to rr_beta and pr_beta sampling
         r = pr + rr
         if r.dim() > 1:
             r = r.unsqueeze(-2)

@@ -108,7 +108,8 @@ def test_fit_and_predict_with_regression(
         sample_method=sample_method,
         predict_method=predict_method,
         inference_engine='pyro',
-        pyro_map_args={'num_steps': 31, 'learning_rate': 0.1}
+        pyro_map_args={'num_steps': 31, 'learning_rate': 0.1},
+        pyro_vi_args={'num_steps': 31, 'learning_rate': 0.1},
     )
 
     lgt.fit(train_df)
@@ -129,6 +130,7 @@ def test_fit_and_predict_with_regression(
         expected_shape = (51, len(expected_columns))
         assert predict_df.shape == expected_shape
         assert predict_df.columns.tolist() == expected_columns
+
 
 def test_lgt_pyro_fit(iclaims_training_data):
     lgt = LGT(
