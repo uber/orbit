@@ -147,7 +147,7 @@ class DLT(LGT):
     value.  Moreover, it provides damped trend for user to perform long-term forecast.
     """
     # this must be defined in child class
-    _stan_input_mapper = dlt.StanInputMapper
+    _data_input_mapper = dlt.DataInputMapper
 
     def __init__(
             self, regressor_col=None, regressor_sign=None,

@@ -10,38 +10,38 @@ def make_ts_multiplicative_regression(series_len=200, seasonality=-1, num_of_reg
                                       noise_to_signal_ratio=1.0, regression_prob=0.5,
                                       obs_val_base=1000, regresspr_val_base=1000, trend_type='rw',
                                       rw_loc=0.001, rw_scale=0.1,
-                                      seas_scale=.05,, response_col='y', seed=0):
+                                      seas_scale=.05, response_col='y', seed=0):
     """
     Parameters
     ----------
         series_len: int
         seasonality: int
         num_of_regressors: int
-        regressor_sparsity: real
+        regressor_sparsity: float
             0 to 1; higher value indicates less number of useful regressors
-        coef_mean: real
-        coef_sd: real
-        regressor_log_loc: real
-        regressor_log_scale: real
-        noise_to_signal_ratio: real
-        regressorion_prob: real
+        coef_mean: float
+        coef_sd: float
+        regressor_log_loc: float
+        regressor_log_scale: float
+        noise_to_signal_ratio: float
+        regressorion_prob: float
             0 to 1
-        obs_val_base: real
+        obs_val_base: float
             positive values
-        regresspr_val_base: real
+        regresspr_val_base: float
             positive values
         trend_type: str
             ['arma', 'rw']
         rw_loc: real
         rw_scale: real
-        seas_scale: real
+        seas_scale: float
         response_col: str
         seed: int
 
     Notes
     ------
         Some ideas are from https://scikit-learn.org/stable/auto_examples/linear_model/plot_bayesian_ridge.html
-    and https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.BayesianRidge.html#sklearn.linear_model.BayesianRidge
+        and https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.BayesianRidge.html#sklearn.linear_model.BayesianRidge
     """
     coefs = np.random.default_rng(seed).normal(coef_mean, coef_sd, num_of_regressors)
     num_irrelevant_coefs = int(num_of_regressors * regressor_sparsity)

@@ -148,7 +148,7 @@ class LGT(Estimator):
     the integrated trend (like l(t-1) + b(t-1) in traditional exp. smoothing models).
     """
     # this must be defined in child class
-    _stan_input_mapper = lgt.StanInputMapper
+    _data_input_mapper = lgt.DataInputMapper
 
     def __init__(
             self, regressor_col=None, regressor_sign=None,

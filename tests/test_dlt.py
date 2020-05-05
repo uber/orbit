@@ -189,21 +189,6 @@ def test_fit_and_decomp_with_regression(
             dlt.fit(train_df)
 
 
-def test_dlt_get_params(iclaims_training_data):
-    dlt = DLT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        chains=4,
-        sample_method='map',
-        predict_method='map'
-    )
-
-    params = dlt.get_params()
-    expected_params = 42
-    assert len(params) == expected_params
-
-
 def test_dlt_invalid_init_params():
     with pytest.raises(IllegalArgument):
         dlt = DLT(
