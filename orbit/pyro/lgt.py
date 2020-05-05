@@ -76,7 +76,9 @@ class LGTModel:
                     rr_beta = pyro.sample("rr_beta", dist.Laplace(self.rr_beta_prior, self.lasso_scale))
             rr = rr_beta @ self.rr_mat.transpose(-1, -2)
 
-        r = (pr + rr).unsqueeze(-2)
+        r = pr + rr
+        if r.dim() > 1:
+            r = r.unsqueeze(-2)
 
         # trend parameters
         # local trend proportion
@@ -115,10 +117,9 @@ class LGTModel:
         # states initial condition
         b[0] = torch.zeros_like(slp_sm)
         if self.is_seasonal:
-            # the "+b[0]" is needed to broadcast for the torch.stack() operation below
-            l[0] = response[0] - r[..., 0] - s[0] + b[0]
+            l[0] = response[0] - r[..., 0] - s[0]
         else:
-            l[0] = response[0] - r[..., 0] + b[0]
+            l[0] = response[0] - r[..., 0]
 
         # update process
         for t in range(1, num_of_obs):
@@ -133,6 +134,10 @@ class LGTModel:
 
         # evaluation process
         # vectorize as much math as possible
+        for lst in [b, l, s]:
+            # torch.stack requires all items to have the same shape, but the
+            # initial items of our lists may not have batch_shape, so we expand.
+            lst[0] = lst[0].expand_as(lst[-1])
         b = torch.stack(b, dim=-1).reshape(b[0].shape[:-1] + (-1,))
         l = torch.stack(l, dim=-1).reshape(l[0].shape[:-1] + (-1,))
         s = torch.stack(s, dim=-1).reshape(s[0].shape[:-1] + (-1,))

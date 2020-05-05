@@ -82,6 +82,10 @@ def test_fit_and_predict_univariate(
             lgt.fit(train_df)
 
 
+@pytest.mark.parametrize("sample_method,predict_method", [
+    ("map", "map"),
+    ("vi", "full"),
+])
 @pytest.mark.parametrize(
     "regressor_signs",
     [
@@ -92,7 +96,7 @@ def test_fit_and_predict_univariate(
     ids=['positive_only', 'regular_only', 'mixed_signs']
 )
 def test_fit_and_predict_with_regression(
-        synthetic_data, regressor_signs, valid_sample_predict_method_combo):
+        sample_method, predict_method, synthetic_data, regressor_signs):
     train_df, test_df, coef = synthetic_data
 
     lgt = LGT(
@@ -101,8 +105,8 @@ def test_fit_and_predict_with_regression(
         regressor_col=train_df.columns.tolist()[2:],
         regressor_sign=regressor_signs,
         seasonality=52,
-        sample_method='map',
-        predict_method='map',
+        sample_method=sample_method,
+        predict_method=predict_method,
         inference_engine='pyro',
         pyro_map_args={'num_steps': 31, 'learning_rate': 0.1}
     )
@@ -115,12 +119,16 @@ def test_fit_and_predict_with_regression(
     assert num_regressors == len(train_df.columns.tolist()[2:])
 
     # assert output shape
-    expected_columns = ['week', 'prediction']
-    expected_shape = (51, len(expected_columns))
-
-    assert predict_df.shape == expected_shape
-    assert predict_df.columns.tolist() == expected_columns
-
+    if predict_method == 'full':
+        expected_columns = ['week', 5, 50, 95]
+        expected_shape = (51, len(expected_columns))
+        assert predict_df.shape == expected_shape
+        assert predict_df.columns.tolist() == expected_columns
+    else:
+        expected_columns = ['week', 'prediction']
+        expected_shape = (51, len(expected_columns))
+        assert predict_df.shape == expected_shape
+        assert predict_df.columns.tolist() == expected_columns
 
 def test_lgt_pyro_fit(iclaims_training_data):
     lgt = LGT(
