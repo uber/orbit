@@ -174,7 +174,7 @@ def test_lgt_fit_with_missing_input(iclaims_training_data):
             chains=4,
         )
 
-    lgt._stan_input_mapper = MockInputMapper
+    lgt._data_input_mapper = MockInputMapper
 
     with pytest.raises(EstimatorException):
         lgt.fit(df=iclaims_training_data)

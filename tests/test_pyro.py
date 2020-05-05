@@ -1,85 +1,42 @@
-# import os
-# import sys
-
-# import numpy as np
-# import pandas as pd
-# import pytest
-#
-# from orbit.lgt import LGT
-#
-# REPO = os.path.dirname(os.path.dirname(__file__))
-# DATA_FILE = os.path.join(REPO, "examples", "data", "iclaims.example.csv")
-#
-#
-# @pytest.mark.parametrize('predict_method', ['map', 'full', 'mean', 'median'])
-# def test_smoke(predict_method):
-#     raw_df = pd.read_csv(DATA_FILE)
-#     raw_df['week'] = pd.to_datetime(raw_df['week'])
-#     df = raw_df.copy()
-#     df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']] = \
-#         df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']].apply(np.log, axis=1)
-#
-#     test_size = 52
-#     train_df = df[:-test_size]
-#     test_df = df[-test_size:]
-#     lgt_map = LGT(response_col='claims', date_col='week', seasonality=52,
-#                   seed=8888,
-#                   predict_method=predict_method,
-#                   inference_engine='pyro')
-#     lgt_map.fit(df=train_df)
-
 from enum import Enum
 import pytest
 from orbit.lgt import LGT
 from orbit.exceptions import IllegalArgument, EstimatorException
 
 
-@pytest.mark.parametrize("sample_method", ["map", "vi"])
-@pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
+@pytest.mark.parametrize("sample_method,predict_method", [
+    ("map", "map"),
+    ("vi", "full"),
+])
 def test_fit_and_predict_univariate(
-        synthetic_data, sample_method, predict_method, valid_sample_predict_method_combo):
+        synthetic_data, sample_method, predict_method):
     train_df, test_df, coef = synthetic_data
+    lgt = LGT(
+        response_col='response',
+        date_col='week',
+        seasonality=52,
+        sample_method=sample_method,
+        predict_method=predict_method,
+        inference_engine='pyro',
+    )
 
-    if (sample_method, predict_method) in valid_sample_predict_method_combo:
-        lgt = LGT(
-            response_col='response',
-            date_col='week',
-            seasonality=52,
-            sample_method=sample_method,
-            predict_method=predict_method,
-            inference_engine='pyro',
-        )
+    lgt.fit(train_df)
+    predict_df = lgt.predict(test_df)
 
-        lgt.fit(train_df)
-        predict_df = lgt.predict(test_df)
+    # assert number of posterior param keys
+    assert len(lgt.posterior_samples) == 13
 
-        # assert number of posterior param keys
-        assert len(lgt.posterior_samples) == 13
-
-        # assert output shape
-        if predict_method == 'full':
-            expected_columns = ['week', 5, 50, 95]
-            expected_shape = (51, len(expected_columns))
-            assert predict_df.shape == expected_shape
-            assert predict_df.columns.tolist() == expected_columns
-        else:
-            expected_columns = ['week', 'prediction']
-            expected_shape = (51, len(expected_columns))
-            assert predict_df.shape == expected_shape
-            assert predict_df.columns.tolist() == expected_columns
-
+    # assert output shape
+    if predict_method == 'full':
+        expected_columns = ['week', 5, 50, 95]
+        expected_shape = (51, len(expected_columns))
+        assert predict_df.shape == expected_shape
+        assert predict_df.columns.tolist() == expected_columns
     else:
-        with pytest.raises(EstimatorException):
-            lgt = LGT(
-                response_col='response',
-                date_col='week',
-                seasonality=52,
-                sample_method=sample_method,
-                predict_method=predict_method,
-                num_warmup=50,
-                inference_engine='pyro',
-            )
-            lgt.fit(train_df)
+        expected_columns = ['week', 'prediction']
+        expected_shape = (51, len(expected_columns))
+        assert predict_df.shape == expected_shape
+        assert predict_df.columns.tolist() == expected_columns
 
 
 @pytest.mark.parametrize("sample_method,predict_method", [
@@ -162,7 +119,7 @@ def test_lgt_pyro_fit_with_missing_input(iclaims_training_data):
         predict_method='full',
     )
 
-    lgt._stan_input_mapper = MockInputMapper
+    lgt._data_input_mapper = MockInputMapper
 
     with pytest.raises(EstimatorException):
         lgt.fit(df=iclaims_training_data)
