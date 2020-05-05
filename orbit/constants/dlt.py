@@ -32,9 +32,6 @@ class StanInputMapper(Enum):
     MAX_NU = 'MAX_NU'
     CAUCHY_SD = 'CAUCHY_SD'
     # ----------  Regressions ---------- #
-    FIX_REGRESSION_COEF_SD = 'FIX_REG_COEF_SD'
-    REGRESSOR_SIGMA_SD = 'REG_SIGMA_SD'
-    REGRESSION_COEF_MAX = 'BETA_MAX'
     NUM_OF_POSITIVE_REGRESSORS = 'NUM_OF_PR'
     POSITIVE_REGRESSOR_MATRIX = 'PR_MAT'
     POSITIVE_REGRESSOR_BETA_PRIOR = 'PR_BETA_PRIOR'
@@ -43,6 +40,9 @@ class StanInputMapper(Enum):
     REGULAR_REGRESSOR_MATRIX = 'RR_MAT'
     REGULAR_REGRESSOR_BETA_PRIOR = 'RR_BETA_PRIOR'
     REGULAR_REGRESSOR_SIGMA_PRIOR = 'RR_SIGMA_PRIOR'
+    _REGRESSION_PENALTY = 'REG_PENALTY_TYPE'
+    AUTO_RIDGE_SCALE = 'AUTO_RIDGE_SCALE'
+    LASSO_SCALE = 'LASSO_SCALE'
 
 
 class GlobalTrendOption(Enum):
@@ -97,3 +97,9 @@ class RegressionStanSamplingParameters(Enum):
     """
     POSITIVE_REGRESSOR_BETA = 'pr_beta'
     REGULAR_REGRESSOR_BETA = 'rr_beta'
+
+
+class RegressionPenalty(Enum):
+    fixed_ridge = 0
+    lasso = 1
+    auto_ridge = 2

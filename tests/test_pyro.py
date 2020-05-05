@@ -32,7 +32,6 @@ from enum import Enum
 import pytest
 from orbit.lgt import LGT
 from orbit.exceptions import IllegalArgument, EstimatorException
-from orbit.constants.constants import COEFFICIENT_DF_COLS
 
 
 def test_lgt_pyro_fit(iclaims_training_data):
