@@ -10,7 +10,7 @@ def make_ts_multiplicative_regression(series_len=200, seasonality=-1, num_of_reg
                                       noise_to_signal_ratio=1.0, regression_prob=0.5,
                                       obs_val_base=1000, regresspr_val_base=1000, trend_type='rw',
                                       rw_loc=0.001, rw_scale=0.1,
-                                      seas_scale=.05,, response_col='y', seed=0):
+                                      seas_scale=.05, response_col='y', seed=0):
     """
     Parameters
     ----------

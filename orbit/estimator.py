@@ -69,7 +69,7 @@ class Estimator(object):
     pyro_vi_args : dict
         Dictionary contains all general settings to call `orbit.pyro.wrapper.pyro_svi()`
     algorithm : str
-        options shared by multiple sampling methods. See
+        options shared by multiple stan methods. See
         https://pystan.readthedocs.io/en/latest/api.html for available choices.
     verbose : bool
         Print verbose.
@@ -80,12 +80,8 @@ class Estimator(object):
         Training DataFrame
     training_df_meta : dict
         Training DataFrame meta data
-    raw_stan_extract : dict
-        Raw format for the posterior samples extracted from stan sampler. Key
-        is a model param name and value is either a 1d or 2d array, depending
-        on if the sampled param is a scalar or vector.
     posterior_samples : list of dict
-        Inverted data structure of `raw_stan_extract` so that each element is
+        Inverted data structure of `stan_extract` so that each element is
         a dict containing a single posterior sample.
     aggregated_posteriors : dict
         {'mean', 'median'} aggregation of `posterior_samples`
@@ -114,7 +110,8 @@ class Estimator(object):
             num_warmup=900, num_sample=100, chains=4, cores=8, seed=8888,
             inference_engine='stan', sample_method="mcmc", predict_method="full",
             n_bootstrap_draws=-1, prediction_percentiles=[5, 95],
-            stan_mcmc_control=None, stan_vi_args=None, pyro_vi_args=None, algorithm=None,
+            stan_mcmc_control=None, stan_map_args=None, pyro_map_args=None,
+            stan_vi_args=None, pyro_vi_args=None, algorithm=None,
             verbose=False, **kwargs
     ):
 
@@ -133,7 +130,7 @@ class Estimator(object):
         self.set_params(**local_params)
 
         # mcmc config derived from __init__
-        self._derive_sampler_config()
+        self._derive_engine_config()
 
         # training DataFrame
         self.df = None
@@ -142,7 +139,6 @@ class Estimator(object):
         # posterior samples as a result of stan extract
         # these are computed in `self._set_posterior_samples`
         self.posterior_samples = []
-        self.raw_stan_extract = None
 
         # aggregated posteriors
         # although this is only necessary if predict_method != 'full'
@@ -157,7 +153,7 @@ class Estimator(object):
         self._posterior_state = {}
 
         # PyStan related initialization
-        self.stan_inputs = {}
+        self.data_inputs = {}
         # stan model name
         self.stan_model_name = ''
         self.stan_init = 'random'
@@ -241,7 +237,7 @@ class Estimator(object):
 
         return uts_object
 
-    def _derive_sampler_config(self):
+    def _derive_engine_config(self):
         """Sets sampler configs based on init class attributes"""
         # make sure cores can only be as large as the device support
         self.cores = min(self.cores, multiprocessing.cpu_count())
@@ -259,6 +255,8 @@ class Estimator(object):
 
         if self.sample_method == 'vi':
             self._derive_vi_config()
+        if self.sample_method == 'map':
+            self._derive_map_config()
 
     def _derive_vi_config(self):
         default_stan_vi_args = {
@@ -270,13 +268,25 @@ class Estimator(object):
             'eval_elbo': 100,
             'adapt_iter': 50,
         }
+
         default_pyro_vi_args = {
-                'num_steps': 101,
-                'learning_rate': 0.1
+            'num_steps': 101,
+            'learning_rate': 0.05,
+            'verbose': False,
         }
 
         self.stan_vi_args = update_dict(default_stan_vi_args, self.stan_vi_args)
         self.pyro_vi_args = update_dict(default_pyro_vi_args, self.pyro_vi_args)
+
+    def _derive_map_config(self):
+        default_stan_map_args = {}
+        default_pyro_map_args = {
+            'num_steps': 101,
+            'learning_rate': 0.05,
+            'verbose': False,
+        }
+        self.stan_map_args = update_dict(default_stan_map_args, self.stan_map_args)
+        self.stan_pyro_args = update_dict(default_pyro_map_args, self.stan_pyro_args)
 
     def fit(self, df):
         """Estimates the model posterior values
@@ -324,7 +334,7 @@ class Estimator(object):
         self._set_dynamic_inputs()
         self._validate_params()
 
-        self._convert_to_stan_inputs()
+        self._convert_to_data_inputs()
 
         # stan model parameters
         self._set_model_param_names()
@@ -332,27 +342,28 @@ class Estimator(object):
         if self.inference_engine == 'stan':
 
             compiled_stan_file = get_compiled_stan_model(self.stan_model_name)
-            # TODO: make a stan_map_args
             if self.sample_method == PredictMethod.MAP.value:
                 try:
                     stan_extract = compiled_stan_file.optimizing(
-                        data=self.stan_inputs,
+                        data=self.data_inputs,
                         init=self.stan_init,
                         seed=self.seed,
-                        algorithm=self.algorithm
+                        algorithm=self.algorithm,
+                        **self.stan_map_args
                     )
                 except RuntimeError:
                     self.algorithm = 'Newton'
                     stan_extract = compiled_stan_file.optimizing(
-                        data=self.stan_inputs,
+                        data=self.data_inputs,
                         init=self.stan_init,
                         seed=self.seed,
-                        algorithm=self.algorithm
+                        algorithm=self.algorithm,
+                        **self.stan_map_args
                     )
-                self._set_map_posterior(stan_extract=stan_extract)
+                self._set_map_posterior(extract=stan_extract)
             elif self.sample_method == SampleMethod.VARIATIONAL_INFERENCE.value:
                 stan_extract = vb_extract(compiled_stan_file.vb(
-                    data=self.stan_inputs,
+                    data=self.data_inputs,
                     pars=self.model_param_names,
                     init=self.stan_init,
                     seed=self.seed,
@@ -361,10 +372,10 @@ class Estimator(object):
                     **self.stan_vi_args
                 ))
                 # set posterior samples instance var
-                self._set_aggregate_posteriors(stan_extract=stan_extract)
+                self._set_aggregate_posteriors(extract=stan_extract)
             elif self.sample_method == SampleMethod.MARKOV_CHAIN_MONTE_CARLO.value:
                 stan_mcmc_fit = compiled_stan_file.sampling(
-                    data=self.stan_inputs,
+                    data=self.data_inputs,
                     pars=self.model_param_names,
                     iter=self.num_iter_per_chain,
                     warmup=self.num_warmup_per_chain,
@@ -387,7 +398,7 @@ class Estimator(object):
                         stan_extract[key] = val.reshape(-1, val.shape[-1], order='F')
 
                 # set posterior samples instance var
-                self._set_aggregate_posteriors(stan_extract=stan_extract)
+                self._set_aggregate_posteriors(extract=stan_extract)
 
             self.posterior_samples = stan_extract
 
@@ -395,19 +406,20 @@ class Estimator(object):
             if self.sample_method == PredictMethod.MAP.value:
                 pyro_extract = pyro_map(
                     model_name=self.pyro_model_name,
-                    data=self.stan_inputs,
+                    data=self.data_inputs,
                     seed=self.seed,
+                    **self.pyro_map_args
                 )
-                self._set_map_posterior(stan_extract=pyro_extract)
+                self._set_map_posterior(extract=pyro_extract)
             elif self.sample_method == SampleMethod.VARIATIONAL_INFERENCE.value:
                 pyro_extract = pyro_svi(
                     model_name=self.pyro_model_name,
-                    data=self.stan_inputs,
+                    data=self.data_inputs,
                     seed=self.seed,
                     num_samples=self.num_sample,
                     **self.pyro_vi_args
                 )
-                self._set_aggregate_posteriors(stan_extract=pyro_extract)
+                self._set_aggregate_posteriors(extract=pyro_extract)
 
             self.posterior_samples = pyro_extract
 
@@ -480,12 +492,12 @@ class Estimator(object):
 
         return bootstrap_samples_dict
 
-    def _set_aggregate_posteriors(self, stan_extract):
+    def _set_aggregate_posteriors(self, extract):
         """Aggregates the raw stan extract to a point estimate using {'mean', 'median'}
 
         Args
         ----
-        stan_extract : dict
+        extract : dict
             A dict of numpy ndarrays, in which each key is a sampled model param name
             as determined by `_set_model_param_names()`
 
@@ -496,7 +508,7 @@ class Estimator(object):
 
         # for each model param, aggregate using `method`
         for param_name in self.model_param_names:
-            param_ndarray = stan_extract[param_name]
+            param_ndarray = extract[param_name]
 
             mean_posteriors.update(
                 {param_name: np.mean(param_ndarray, axis=0, keepdims=True)},
@@ -649,19 +661,19 @@ class Estimator(object):
         """
         raise NotImplementedError('_validate_params must be implemented in the child class')
 
-    def _convert_to_stan_inputs(self):
-        """Collects stan attributes into a dict for `StanModel.sampling`"""
+    def _convert_to_data_inputs(self):
+        """Collects data attributes into a dict for `StanModel.sampling`, `orbit.pyro.pyro_map` etc. """
         if not self._stan_input_mapper:
             raise NotImplementedError(
                 '_stan_input_mapper found empty. It must be implemented in the child class'
             )
 
-        stan_inputs = {}
+        data_inputs = {}
 
         # extra stan input to distinguish stan methdo
-        stan_inputs['WITH_MCMC'] = 0
+        data_inputs['WITH_MCMC'] = 0
         if self.sample_method in ['vi','mcmc']:
-            stan_inputs['WITH_MCMC'] = 1
+            data_inputs['WITH_MCMC'] = 1
 
         for key in self._stan_input_mapper:
             # mapper keys in upper case; inputs in lower case
@@ -672,9 +684,9 @@ class Estimator(object):
             if isinstance(input_value, bool):
                 # stan accepts bool as int only
                 input_value = int(input_value)
-            stan_inputs[key.value] = input_value
+            data_inputs[key.value] = input_value
 
-        self.stan_inputs = stan_inputs
+        self.data_inputs = data_inputs
 
     @abstractmethod
     def _set_model_param_names(self):
@@ -685,19 +697,19 @@ class Estimator(object):
         """
         raise NotImplementedError('_validate_params must be implemented in the child class')
 
-    def _set_map_posterior(self, stan_extract):
+    def _set_map_posterior(self, extract):
         """Sets `posterior_samples` after fit for 'MAP' predict method.
 
         Args
         ----
-        stan_extract : dict
+        extract : dict
             The raw data extract from `StanModel.optimizing()`.
 
         """
 
         map_posterior = {}
         for param_name in self.model_param_names:
-            param_array = stan_extract[param_name]
+            param_array = extract[param_name]
             # add dimension so it works with vector math in `_predict`
             param_array = np.expand_dims(param_array, axis=0)
             map_posterior.update({param_name: param_array})
