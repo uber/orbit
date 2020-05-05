@@ -200,7 +200,7 @@ def test_dlt_get_params(iclaims_training_data):
     )
 
     params = dlt.get_params()
-    expected_params = 42
+    expected_params = 44
     assert len(params) == expected_params
 
 
