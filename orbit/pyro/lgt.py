@@ -38,7 +38,7 @@ class LGTModel:
             pr = torch.zeros(num_of_obs)
         else:
             with pyro.plate("pr", self.num_of_pr):
-                if self.fix_reg_coef_sd:
+                if self.reg_penalty_type == 0:
                     pr_sigma = self.pr_sigma_prior
                 else:
                     # weak prior for sigma

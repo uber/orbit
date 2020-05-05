@@ -111,7 +111,7 @@ transformed data {
     GB_SIZE = 1;
   }
   
-  if (REG_PENALTY_TYPE != 2) FIXED_REG_SD = 1;
+  if (REG_PENALTY_TYPE == 0) FIXED_REG_SD = 1;
 }
 parameters {
   // regression parameters

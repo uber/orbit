@@ -272,7 +272,6 @@ class Estimator(object):
         default_pyro_vi_args = {
             'num_steps': 101,
             'learning_rate': 0.05,
-            'verbose': False,
         }
 
         self.stan_vi_args = update_dict(default_stan_vi_args, self.stan_vi_args)
@@ -283,10 +282,9 @@ class Estimator(object):
         default_pyro_map_args = {
             'num_steps': 101,
             'learning_rate': 0.05,
-            'verbose': False,
         }
         self.stan_map_args = update_dict(default_stan_map_args, self.stan_map_args)
-        self.stan_pyro_args = update_dict(default_pyro_map_args, self.stan_pyro_args)
+        self.pyro_map_args = update_dict(default_pyro_map_args, self.pyro_map_args)
 
     def fit(self, df):
         """Estimates the model posterior values
@@ -408,6 +406,7 @@ class Estimator(object):
                     model_name=self.pyro_model_name,
                     data=self.data_inputs,
                     seed=self.seed,
+                    verbose=self.verbose,
                     **self.pyro_map_args
                 )
                 self._set_map_posterior(extract=pyro_extract)
@@ -417,6 +416,7 @@ class Estimator(object):
                     data=self.data_inputs,
                     seed=self.seed,
                     num_samples=self.num_sample,
+                    verbose=self.verbose,
                     **self.pyro_vi_args
                 )
                 self._set_aggregate_posteriors(extract=pyro_extract)

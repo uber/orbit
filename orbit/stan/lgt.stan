@@ -74,7 +74,7 @@ transformed data {
   SIGMA_EPS = 1e-5;
   IS_SEASONAL = 0;
   if (SEASONALITY > 1) IS_SEASONAL = 1;
-  if (REG_PENALTY_TYPE != 2) FIXED_REG_SD = 1;
+  if (REG_PENALTY_TYPE == 0) FIXED_REG_SD = 1;
 }
 parameters {
   // regression parameters
