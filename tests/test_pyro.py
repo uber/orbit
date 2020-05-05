@@ -33,6 +33,8 @@ import pytest
 from orbit.lgt import LGT
 from orbit.exceptions import IllegalArgument, EstimatorException
 
+# TODO: upgrade these pyro tests
+
 
 def test_lgt_pyro_fit(iclaims_training_data):
     lgt = LGT(

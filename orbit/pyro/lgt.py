@@ -54,10 +54,10 @@ class LGTModel:
                                           dist.FoldedDistribution(
                                               dist.Normal(self.pr_beta_prior, pr_sigma)))
                 # FIXME for LASSO
-                # else:
-                #     pr_beta = pyro.sample("pr_beta",
-                #                           dist.FoldedDistribution(
-                #                               dist.DoubleExponential(self.pr_beta_prior, self.lasso_scale)))
+                else:
+                    pr_beta = pyro.sample("pr_beta",
+                                          dist.FoldedDistribution(
+                                              dist.Laplace(self.pr_beta_prior, self.lasso_scale)))
             pr = self.pr_mat @ pr_beta  # FIXME is this the correct matmul?
 
         if self.num_of_rr == 0:
@@ -78,10 +78,10 @@ class LGTModel:
                     # weak prior for betas
                     rr_beta = pyro.sample("rr_beta", dist.Normal(self.rr_beta_prior, rr_sigma))
                 # FIXME for LASSO
-                # else:
-                #     rr_beta = pyro.sample("pr_beta",
-                #                           dist.FoldedDistribution(
-                #                               dist.DoubleExponential(self.pr_beta_prior, self.lasso_scale)))
+                else:
+                    rr_beta = pyro.sample("pr_beta",
+                                          dist.FoldedDistribution(
+                                              dist.Laplace(self.pr_beta_prior, self.lasso_scale)))
             rr = self.rr_mat @ rr_beta  # FIXME is this the correct matmul?
 
         r = pr + rr
