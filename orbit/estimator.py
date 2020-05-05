@@ -109,7 +109,7 @@ class Estimator(object):
     """
     __metaclass__ = ABCMeta
     # this must be defined in child class
-    _stan_input_mapper = {}
+    _data_input_mapper = {}
 
     def __init__(
             self, response_col='y', date_col='ds',
@@ -667,7 +667,7 @@ class Estimator(object):
 
     def _convert_to_data_inputs(self):
         """Collects data attributes into a dict for `StanModel.sampling`, `orbit.pyro.pyro_map` etc. """
-        if not self._stan_input_mapper:
+        if not self._data_input_mapper:
             raise NotImplementedError(
                 '_stan_input_mapper found empty. It must be implemented in the child class'
             )
@@ -679,7 +679,7 @@ class Estimator(object):
         if self.sample_method in ['vi','mcmc']:
             data_inputs['WITH_MCMC'] = 1
 
-        for key in self._stan_input_mapper:
+        for key in self._data_input_mapper:
             # mapper keys in upper case; inputs in lower case
             key_lower = key.name.lower()
             input_value = getattr(self, key_lower, None)

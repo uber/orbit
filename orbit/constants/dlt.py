@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class StanInputMapper(Enum):
+class DataInputMapper(Enum):
     """
     mapping from object input to stan file
     """
