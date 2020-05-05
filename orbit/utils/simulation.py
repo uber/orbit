@@ -9,7 +9,8 @@ def make_ts_multiplicative_regression(series_len=200, seasonality=-1, num_of_reg
                                       coef_mean=0.0, coef_sd=.1, regressor_log_loc=0.0, regressor_log_scale=0.2,
                                       noise_to_signal_ratio=1.0, regression_prob=0.5,
                                       obs_val_base=1000, regresspr_val_base=1000, trend_type='rw',
-                                      seas_scale=.1, response_col='y', seed=0):
+                                      rw_loc=0.001, rw_scale=0.1,
+                                      seas_scale=.05,, response_col='y', seed=0):
     """
     Parameters
     ----------
@@ -31,6 +32,8 @@ def make_ts_multiplicative_regression(series_len=200, seasonality=-1, num_of_reg
             positive values
         trend_type: str
             ['arma', 'rw']
+        rw_loc: real
+        rw_scale: real
         seas_scale: real
         response_col: str
         seed: int
@@ -55,7 +58,7 @@ def make_ts_multiplicative_regression(series_len=200, seasonality=-1, num_of_reg
     noise = np.random.default_rng(seed).normal(0, obs_log_scale, series_len)
 
     if trend_type == "rw":
-        rw = np.random.default_rng(seed).normal(0.001, 0.05, series_len)
+        rw = np.random.default_rng(seed).normal(rw_loc, rw_scale, series_len)
         trend = np.cumsum(rw)
     elif trend_type == "arma":
         arparams = np.array([.25])
@@ -83,8 +86,16 @@ def make_ts_multiplicative_regression(series_len=200, seasonality=-1, num_of_reg
     y = y.reshape(-1, 1)
     X = np.round(np.expm1(x_obs) * regresspr_val_base)
 
+    # TODO: right now we hard-coded the frequency; it is not impactful since in orbit we are only using date_col
+    # TODO: as index
     # datetime index
-    dt = pd.date_range(start='2016-01-04', periods=series_len, freq=f"{int(365.25/seasonality)}D")
+    if seasonality == 52:
+        dt = pd.date_range(start='2016-01-04', periods=series_len, freq="1W")
+    elif seasonality == 12:
+        dt = pd.date_range(start='2016-01-04', periods=series_len, freq="1M")
+    else:
+        dt = pd.date_range(start='2016-01-04', periods=series_len, freq="1D")
+
     regressor_cols = [f"regressor_{x}" for x in range(1, num_of_regressors + 1)]
     df = pd.DataFrame(np.concatenate([y, X], axis=1), columns=[response_col] + regressor_cols)
     df['date'] = dt
