@@ -38,35 +38,50 @@ class LGTModel:
             pr = torch.zeros(num_of_obs)
         else:
             with pyro.plate("pr", self.num_of_pr):
+                # fixed scale ridge
                 if self.reg_penalty_type == 0:
                     pr_sigma = self.pr_sigma_prior
-                else:
+                # auto scale ridge
+                elif self.reg_penalty_type == 2:
                     # weak prior for sigma
                     pr_sigma = pyro.sample("pr_sigma",
-                                           dist.FoldedDistribution(dist.HalfCauchy(
-                                               self.pr_sigma_prior, self.reg_sigma_sd)))
-                # weak prior for betas
-                # FIXME this should be constrained to [0, self.beta_max]
-                pr_beta = pyro.sample("pr_beta",
-                                      dist.FoldedDistribution(
-                                          dist.Normal(self.pr_beta_prior, pr_sigma)))
+                                           dist.FoldedDistribution(dist.HalfCauchy(0, self.auto_ridge_scale)))
+                # case when it is not lasso
+                if self.reg_penalty_type != 1:
+                    # weak prior for betas
+                    # FIXME this should be constrained to [0, ]
+                    pr_beta = pyro.sample("pr_beta",
+                                          dist.FoldedDistribution(
+                                              dist.Normal(self.pr_beta_prior, pr_sigma)))
+                # FIXME for LASSO
+                # else:
+                #     pr_beta = pyro.sample("pr_beta",
+                #                           dist.FoldedDistribution(
+                #                               dist.DoubleExponential(self.pr_beta_prior, self.lasso_scale)))
             pr = self.pr_mat @ pr_beta  # FIXME is this the correct matmul?
 
         if self.num_of_rr == 0:
             rr = torch.zeros(num_of_obs)
         else:
             with pyro.plate("rr", self.num_of_rr):
-                if self.fix_reg_coef_sd:
+                # fixed scale ridge
+                if self.reg_penalty_type == 0:
                     rr_sigma = self.rr_sigma_prior
-                else:
+                # auto scale ridge
+                elif self.reg_penalty_type == 2:
                     # weak prior for sigma
                     rr_sigma = pyro.sample("rr_sigma",
                                            dist.FoldedDistribution(
-                                               dist.HalfCauchy(self.rr_sigma_prior,
-                                                               self.reg_sigma_sd)))
-                # weak prior for betas
-                # FIXME this should be constrained to [-self.beta_min, self.beta_max]
-                rr_beta = pyro.sample("rr_beta", dist.Normal(self.rr_beta_prior, rr_sigma))
+                                               dist.HalfCauchy(0, self.auto_ridge_scale)))
+                # case when it is not lasso
+                if self.reg_penalty_type != 1:
+                    # weak prior for betas
+                    rr_beta = pyro.sample("rr_beta", dist.Normal(self.rr_beta_prior, rr_sigma))
+                # FIXME for LASSO
+                # else:
+                #     rr_beta = pyro.sample("pr_beta",
+                #                           dist.FoldedDistribution(
+                #                               dist.DoubleExponential(self.pr_beta_prior, self.lasso_scale)))
             rr = self.rr_mat @ rr_beta  # FIXME is this the correct matmul?
 
         r = pr + rr
