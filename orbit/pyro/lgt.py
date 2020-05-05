@@ -44,21 +44,18 @@ class LGTModel:
                 # auto scale ridge
                 elif self.reg_penalty_type == 2:
                     # weak prior for sigma
-                    pr_sigma = pyro.sample("pr_sigma",
-                                           dist.FoldedDistribution(dist.HalfCauchy(0, self.auto_ridge_scale)))
+                    pr_sigma = pyro.sample("pr_sigma", dist.HalfCauchy(self.auto_ridge_scale))
                 # case when it is not lasso
                 if self.reg_penalty_type != 1:
                     # weak prior for betas
-                    # FIXME this should be constrained to [0, ]
-                    pr_beta = pyro.sample("pr_beta",
-                                          dist.FoldedDistribution(
-                                              dist.Normal(self.pr_beta_prior, pr_sigma)))
-                # FIXME for LASSO
+                    pr_beta = pyro.sample("pr_beta", dist.FoldedDistribution(
+                        dist.Normal(self.pr_beta_prior, pr_sigma)))
                 else:
                     pr_beta = pyro.sample("pr_beta",
                                           dist.FoldedDistribution(
                                               dist.Laplace(self.pr_beta_prior, self.lasso_scale)))
-            pr = self.pr_mat @ pr_beta  # FIXME is this the correct matmul?
+            # pr = self.pr_mat @ pr_beta  # FIXME is this the correct matmul?
+            pr = pr_beta @ self.pr_mat.transpose(-1, -2)
 
         if self.num_of_rr == 0:
             rr = torch.zeros(num_of_obs)
@@ -70,21 +67,16 @@ class LGTModel:
                 # auto scale ridge
                 elif self.reg_penalty_type == 2:
                     # weak prior for sigma
-                    rr_sigma = pyro.sample("rr_sigma",
-                                           dist.FoldedDistribution(
-                                               dist.HalfCauchy(0, self.auto_ridge_scale)))
+                    rr_sigma = pyro.sample("rr_sigma", dist.HalfCauchy(self.auto_ridge_scale))
                 # case when it is not lasso
                 if self.reg_penalty_type != 1:
                     # weak prior for betas
                     rr_beta = pyro.sample("rr_beta", dist.Normal(self.rr_beta_prior, rr_sigma))
-                # FIXME for LASSO
                 else:
-                    rr_beta = pyro.sample("pr_beta",
-                                          dist.FoldedDistribution(
-                                              dist.Laplace(self.pr_beta_prior, self.lasso_scale)))
-            rr = self.rr_mat @ rr_beta  # FIXME is this the correct matmul?
+                    rr_beta = pyro.sample("rr_beta", dist.Laplace(self.rr_beta_prior, self.lasso_scale))
+            rr = rr_beta @ self.rr_mat.transpose(-1, -2)
 
-        r = pr + rr
+        r = (pr + rr).unsqueeze(-2)
 
         # trend parameters
         # local trend proportion
@@ -122,18 +114,22 @@ class LGTModel:
 
         # states initial condition
         b[0] = torch.zeros_like(slp_sm)
-        l[0] = (response[0] - r[0]).expand_as(b[0])
+        if self.is_seasonal:
+            # the "+b[0]" is needed to broadcast for the torch.stack() operation below
+            l[0] = response[0] - r[..., 0] - s[0] + b[0]
+        else:
+            l[0] = response[0] - r[..., 0] + b[0]
 
         # update process
         for t in range(1, num_of_obs):
             # this update equation with l[t-1] ONLY.
             # intentionally different from the Holt-Winter form
             # this change is suggested from Slawek's original SLGT model
-            l[t] = lev_sm * (response[t] - s[t] - r[t]) + (1 - lev_sm) * l[t - 1]
+            l[t] = lev_sm * (response[t] - s[t] - r[..., t]) + (1 - lev_sm) * l[t - 1]
             b[t] = slp_sm * (l[t] - l[t - 1]) + (1 - slp_sm) * b[t - 1]
             if self.is_seasonal:
                 s[t + self.seasonality] = \
-                    sea_sm * (response[t] - l[t] - r[t]) + (1 - sea_sm) * s[t]
+                    sea_sm * (response[t] - l[t] - r[..., t]) + (1 - sea_sm) * s[t]
 
         # evaluation process
         # vectorize as much math as possible

@@ -33,7 +33,93 @@ import pytest
 from orbit.lgt import LGT
 from orbit.exceptions import IllegalArgument, EstimatorException
 
-# TODO: upgrade these pyro tests
+
+@pytest.mark.parametrize("sample_method", ["map", "vi"])
+@pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
+def test_fit_and_predict_univariate(
+        synthetic_data, sample_method, predict_method, valid_sample_predict_method_combo):
+    train_df, test_df, coef = synthetic_data
+
+    if (sample_method, predict_method) in valid_sample_predict_method_combo:
+        lgt = LGT(
+            response_col='response',
+            date_col='week',
+            seasonality=52,
+            sample_method=sample_method,
+            predict_method=predict_method,
+            inference_engine='pyro',
+        )
+
+        lgt.fit(train_df)
+        predict_df = lgt.predict(test_df)
+
+        # assert number of posterior param keys
+        assert len(lgt.posterior_samples) == 13
+
+        # assert output shape
+        if predict_method == 'full':
+            expected_columns = ['week', 5, 50, 95]
+            expected_shape = (51, len(expected_columns))
+            assert predict_df.shape == expected_shape
+            assert predict_df.columns.tolist() == expected_columns
+        else:
+            expected_columns = ['week', 'prediction']
+            expected_shape = (51, len(expected_columns))
+            assert predict_df.shape == expected_shape
+            assert predict_df.columns.tolist() == expected_columns
+
+    else:
+        with pytest.raises(EstimatorException):
+            lgt = LGT(
+                response_col='response',
+                date_col='week',
+                seasonality=52,
+                sample_method=sample_method,
+                predict_method=predict_method,
+                num_warmup=50,
+                inference_engine='pyro',
+            )
+            lgt.fit(train_df)
+
+
+@pytest.mark.parametrize(
+    "regressor_signs",
+    [
+        ["+", "+", "+", "+", "+", "+"],
+        ["=", "=", "=", "=", "=", "="],
+        ["+", "=", "+", "=", "+", "+"]
+    ],
+    ids=['positive_only', 'regular_only', 'mixed_signs']
+)
+def test_fit_and_predict_with_regression(
+        synthetic_data, regressor_signs, valid_sample_predict_method_combo):
+    train_df, test_df, coef = synthetic_data
+
+    lgt = LGT(
+        response_col='response',
+        date_col='week',
+        regressor_col=train_df.columns.tolist()[2:],
+        regressor_sign=regressor_signs,
+        seasonality=52,
+        sample_method='map',
+        predict_method='map',
+        inference_engine='pyro',
+        pyro_map_args={'num_steps': 31, 'learning_rate': 0.1}
+    )
+
+    lgt.fit(train_df)
+    predict_df = lgt.predict(test_df)
+
+    num_regressors = lgt.get_regression_coefs().shape[0]
+
+    assert num_regressors == len(train_df.columns.tolist()[2:])
+
+    # assert output shape
+    expected_columns = ['week', 'prediction']
+    expected_shape = (51, len(expected_columns))
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
 
 
 def test_lgt_pyro_fit(iclaims_training_data):
@@ -105,7 +191,7 @@ def test_lgt_pyro_fit_and_full_predict(iclaims_training_data):
         sample_method='vi',
         predict_method='full',
     )
-    
+
     lgt.fit(df=iclaims_training_data)
 
     predicted_out = lgt.predict(df=iclaims_training_data)
@@ -115,22 +201,3 @@ def test_lgt_pyro_fit_and_full_predict(iclaims_training_data):
 
     assert predicted_out.shape == expected_shape
     assert list(predicted_out.columns) == expected_columns
-
-# todo: fix regression in pyro implementation
-# def test_get_regression_coefs(iclaims_training_data):
-#     regressor_cols = ['trend.unemploy', 'trend.filling', 'trend.job']
-#
-#     lgt = LGT(
-#         response_col='claims',
-#         date_col='week',
-#         seasonality=52,
-#         chains=4,
-#         predict_method='mean',
-#         inference_engine='pyro',
-#         regressor_col=regressor_cols,
-#         regressor_sign=["=", "=", "+"]
-#     )
-#
-#     lgt.fit(df=iclaims_training_data)
-#     reg_coefs = lgt.get_regression_coefs()
-#     assert set(reg_coefs[COEFFICIENT_DF_COLS.REGRESSOR]) == set(regressor_cols)
