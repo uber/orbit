@@ -63,7 +63,7 @@ def vb_extract(results):
     https://gist.github.com/lwiklendt/9c7099288f85b59edc903a5aed2d2d64
 
     Parameters
-    ----
+    ----------
     results: dict
         dict exported from pystan.StanModel object by `vb` method
 

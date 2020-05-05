@@ -9,6 +9,25 @@ def _load_model(model_name):
 
 
 def pyro_map(model_name, data, seed, num_steps=101, learning_rate=0.1, verbose=True, message=100):
+    """
+    Parameters
+    ----------
+        model_name: str
+            name for pyro to search for the .py script and model
+        data: dict
+            all elements of data needed for sampling
+        seed: int
+        num_steps: int
+            steps of training
+        learning_rate: float
+        verbose: bool
+        message: int
+            number of steps to retrieve information of training
+    Returns
+    -------
+    params: OrderedDict:
+        dict of all required samples
+    """
     # import these lazily to avoid adding dependencies
     import pyro
     from pyro.infer import SVI, Trace_ELBO
@@ -44,6 +63,26 @@ def pyro_map(model_name, data, seed, num_steps=101, learning_rate=0.1, verbose=T
 
 
 def pyro_svi(model_name, data, seed, num_steps=101, learning_rate=0.1, num_samples=100, verbose=True, message=100):
+    """
+    Parameters
+    ----------
+        model_name: str
+            name for pyro to search for the .py script and model
+        data: dict
+            all elements of data needed for sampling
+        seed: int
+        num_steps: int
+            steps of training
+        learning_rate: float
+        num_samples: int
+        verbose: bool
+        message: int
+            number of steps to retrieve information of training
+    Returns
+    -------
+    params: OrderedDict:
+        dict of all required samples
+    """
     # import these lazily to avoid adding dependencies
     import pyro
     from pyro.infer import SVI, Trace_ELBO

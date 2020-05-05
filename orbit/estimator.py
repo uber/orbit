@@ -35,7 +35,7 @@ class Estimator(object):
     num_warmup : int
         Number of warm up iterations for MCMC sampler [only used when mcmc algo in stan is called]
     num_sample : int
-        Number of samples to extract for MCMC sampler [only used when mcmc algo in stan is called]
+        Number of samples to extract for MCMC/VI sampler
     chains : int
         Number of sampling chains [only used when mcmc algo in stan is called]
     cores : int
@@ -62,6 +62,12 @@ class Estimator(object):
         `control` argument from
         https://pystan.readthedocs.io/en/latest/api.html or
         https://mc-stan.org/rstan/reference/stan.html for details.
+    stan_map_args: dict
+        Dictionary contains all general settings to call `pystan.StanModel.optimizing()` See
+        https://pystan.readthedocs.io/en/latest/api.html or
+        https://mc-stan.org/rstan/reference/stanmodel-method-vb.html for details
+    pyro_map_args: dict
+        Dictionary contains all general settings to call `orbit.pyro.wrapper.pyro_map()`
     stan_vi_args : dict
         Dictionary contains all general settings to call `pystan.StanModel.vb()` See
         https://pystan.readthedocs.io/en/latest/api.html or
@@ -239,19 +245,17 @@ class Estimator(object):
 
     def _derive_engine_config(self):
         """Sets sampler configs based on init class attributes"""
-        # make sure cores can only be as large as the device support
-        self.cores = min(self.cores, multiprocessing.cpu_count())
-        self.num_warmup_per_chain = int(self.num_warmup/self.chains)
-        self.num_sample_per_chain = int(self.num_sample/self.chains)
-        self.num_iter_per_chain = self.num_warmup_per_chain + self.num_sample_per_chain
-        self.total_iter = self.num_iter_per_chain * self.chains
+        if self.sample_method == 'mcmc':
+            # make sure cores can only be as large as the device support
+            self.cores = min(self.cores, multiprocessing.cpu_count())
+            self.num_warmup_per_chain = int(self.num_warmup/self.chains)
+            self.num_sample_per_chain = int(self.num_sample/self.chains)
+            self.num_iter_per_chain = self.num_warmup_per_chain + self.num_sample_per_chain
+            self.total_iter = self.num_iter_per_chain * self.chains
 
-        if self.verbose:
-            print(
-                "Using {} chains, {} cores, {} warmup and {} samples per chain for sampling.". \
-                    format(self.chains, self.cores, self.num_warmup_per_chain,
-                           self.num_sample_per_chain)
-            )
+            if self.verbose:
+                print("Using {} chains, {} cores, {} warmup and {} samples per chain for sampling.".format(
+                    self.chains, self.cores, self.num_warmup_per_chain, self.num_sample_per_chain))
 
         if self.sample_method == 'vi':
             self._derive_vi_config()
@@ -270,7 +274,7 @@ class Estimator(object):
         }
 
         default_pyro_vi_args = {
-            'num_steps': 101,
+            'num_steps': 501,
             'learning_rate': 0.05,
         }
 
@@ -280,7 +284,7 @@ class Estimator(object):
     def _derive_map_config(self):
         default_stan_map_args = {}
         default_pyro_map_args = {
-            'num_steps': 101,
+            'num_steps': 501,
             'learning_rate': 0.05,
         }
         self.stan_map_args = update_dict(default_stan_map_args, self.stan_map_args)
