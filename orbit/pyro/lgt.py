@@ -144,6 +144,9 @@ class LGTModel:
 
         lgt_sum = l + gt_coef * l.abs() ** gt_pow + lt_coef * b
         lgt_sum = torch.cat([l[..., :1], lgt_sum[..., :-1]], dim=-1)  # shift by 1
+        # a hack here as well to get rid of the extra "1" in r.shape
+        if r.dim() >= 2:
+            r = r.squeeze(-2)
         yhat = lgt_sum + s[..., :num_of_obs] + r
 
         with pyro.plate("response_plate", num_of_obs - 1):
