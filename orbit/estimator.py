@@ -117,7 +117,7 @@ class Estimator(object):
             inference_engine='stan', sample_method="mcmc", predict_method="full",
             n_bootstrap_draws=-1, prediction_percentiles=[5, 95],
             stan_mcmc_control=None, stan_map_args=None, pyro_map_args=None,
-            stan_vi_args=None, pyro_vi_args=None, algorithm=None,
+            stan_vi_args=None, pyro_vi_args=None, stan_mcmc_args=None, algorithm=None,
             verbose=False, **kwargs
     ):
 
@@ -257,10 +257,11 @@ class Estimator(object):
                 print("Using {} chains, {} cores, {} warmup and {} samples per chain for sampling.".format(
                     self.chains, self.cores, self.num_warmup_per_chain, self.num_sample_per_chain))
 
-        if self.sample_method == 'vi':
+        if self.sample_method == SampleMethod.VARIATIONAL_INFERENCE:
             self._derive_vi_config()
-        if self.sample_method == 'map':
+        elif self.sample_method == SampleMethod.:
             self._derive_map_config()
+        elif self.sample_method == PredictMethod.
 
     def _derive_vi_config(self):
         default_stan_vi_args = {

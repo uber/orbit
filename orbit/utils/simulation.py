@@ -5,14 +5,13 @@ import statsmodels.api as sm
 from orbit.exceptions import IllegalArgument
 
 
-def make_ts_multiplicative_regression(series_len=200, seasonality=-1, coefs=None, regressor_relevance=0.0,
-
-                                      regressor_log_loc=0.0, regressor_log_scale=0.2,
-                                      regressor_log_cov=None,
-                                      noise_to_signal_ratio=1.0, regression_sparsity=0.5,
-                                      obs_val_base=1000, regresspr_val_base=1000,
-                                      trend_type='rw', rw_loc=0.001, rw_scale=0.1, seas_scale=.05,
-                                      response_col='y', seed=0):
+def make_ts_multiplicative(series_len=200, seasonality=-1, coefs=None, regressor_relevance=0.0,
+                           regressor_log_loc=0.0, regressor_log_scale=0.2,
+                           regressor_log_cov=None,
+                           noise_to_signal_ratio=1.0, regression_sparsity=0.5,
+                           obs_val_base=1000, regresspr_val_base=1000,
+                           trend_type='rw', rw_loc=0.001, rw_scale=0.1, seas_scale=.05,
+                           response_col='y', seed=0):
     """
     Parameters
     ----------
@@ -61,8 +60,9 @@ def make_ts_multiplicative_regression(series_len=200, seasonality=-1, coefs=None
             x_log1p = np.random.default_rng(seed).normal(
                 regressor_log_loc, regressor_log_scale, series_len * num_of_regressors).reshape(series_len, -1) + 1
         else:
-            x_log1p = np.random.default_rng(seed).multivariate_normal([regressor_log_loc] * num_of_regressors,
-                                                                      regressor_log_cov, series_len)
+            x_log1p = np.random.default_rng(seed).multivariate_normal(
+                np.array([regressor_log_loc] * num_of_regressors, dtype=np.float64),
+                regressor_log_cov, series_len)
         # control probability of regression kick-in
         z = np.random.default_rng(seed).binomial(
             1, regression_sparsity, series_len * num_of_regressors).reshape(series_len, -1)
