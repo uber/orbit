@@ -69,7 +69,7 @@ transformed data {
   int IS_SEASONAL;
   // SIGMA_EPS is a offset to dodge lower boundary case;
   real SIGMA_EPS;
-  int VARY_SIGMA;
+  int USE_VARY_SIGMA;
   USE_VARY_SIGMA = 0;
   SIGMA_EPS = 1e-5;
   IS_SEASONAL = 0;
