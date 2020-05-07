@@ -245,23 +245,23 @@ class Estimator(object):
 
     def _derive_engine_config(self):
         """Sets sampler configs based on init class attributes"""
-        if self.sample_method == 'mcmc':
+        if self.sample_method == SampleMethod.MARKOV_CHAIN_MONTE_CARLO.value:
             # make sure cores can only be as large as the device support
             self.cores = min(self.cores, multiprocessing.cpu_count())
             self.num_warmup_per_chain = int(self.num_warmup/self.chains)
             self.num_sample_per_chain = int(self.num_sample/self.chains)
             self.num_iter_per_chain = self.num_warmup_per_chain + self.num_sample_per_chain
             self.total_iter = self.num_iter_per_chain * self.chains
+            self.stan_mcmc_args = update_dict({}, self.stan_mcmc_args)
 
             if self.verbose:
                 print("Using {} chains, {} cores, {} warmup and {} samples per chain for sampling.".format(
                     self.chains, self.cores, self.num_warmup_per_chain, self.num_sample_per_chain))
 
-        if self.sample_method == SampleMethod.VARIATIONAL_INFERENCE:
+        if self.sample_method == SampleMethod.VARIATIONAL_INFERENCE.value:
             self._derive_vi_config()
-        elif self.sample_method == SampleMethod.:
+        elif self.sample_method == SampleMethod.MAP.value:
             self._derive_map_config()
-        elif self.sample_method == PredictMethod.
 
     def _derive_vi_config(self):
         default_stan_vi_args = {
@@ -387,7 +387,8 @@ class Estimator(object):
                     init=self.stan_init,
                     seed=self.seed,
                     algorithm=self.algorithm,
-                    control=self.stan_mcmc_control
+                    control=self.stan_mcmc_control,
+                    **self.stan_mcmc_args
                 )
                 stan_extract = stan_mcmc_fit.extract(
                     pars=self.model_param_names + ['lp__'],
