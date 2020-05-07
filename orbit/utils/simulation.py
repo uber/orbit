@@ -47,15 +47,13 @@ def make_ts_multiplicative(series_len=200, seasonality=-1, coefs=None, regressor
     with_regression = False
     if coefs is not None:
         with_regression = True
-
+    # make regression
     if with_regression:
         num_of_regressors = len(coefs)
         num_irrelevant_coefs = int(num_of_regressors * regressor_relevance)
         if num_irrelevant_coefs >= 1:
             irrelevant_coef_idx = np.random.choice(num_of_regressors, num_irrelevant_coefs)
             coefs[irrelevant_coef_idx] = 0.0
-
-        obs_log_scale = noise_to_signal_ratio * regressor_log_scale
         if regressor_log_cov is None:
             x_log1p = np.random.default_rng(seed).normal(
                 regressor_log_loc, regressor_log_scale, series_len * num_of_regressors).reshape(series_len, -1) + 1
@@ -67,9 +65,8 @@ def make_ts_multiplicative(series_len=200, seasonality=-1, coefs=None, regressor
         z = np.random.default_rng(seed).binomial(
             1, regression_sparsity, series_len * num_of_regressors).reshape(series_len, -1)
         x_obs = x_log1p * z
-        noise = np.random.default_rng(seed).normal(0, obs_log_scale, series_len)
 
-        # make trend
+    # make trend
     if trend_type == "rw":
         rw = np.random.default_rng(seed).normal(rw_loc, rw_scale, series_len)
         trend = np.cumsum(rw)
@@ -94,6 +91,9 @@ def make_ts_multiplicative(series_len=200, seasonality=-1, coefs=None, regressor
     else:
         seasonality = 1
         seas = np.zeros(series_len)
+    # make noise
+    obs_log_scale = noise_to_signal_ratio * regressor_log_scale
+    noise = np.random.default_rng(seed).normal(0, obs_log_scale, series_len)
 
     # make observed data
     if with_regression:

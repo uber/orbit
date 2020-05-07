@@ -80,14 +80,14 @@ transformed data {
   real GB_UPPER;
   int GL_SIZE;
   int GB_SIZE;
-  int FIXED_REG_SD;
+  int USE_VARY_SIGMA;
 
   DAMPED_FACTOR_SIZE = 1;
   IS_SEASONAL = 0;
   SIGMA_EPS = 1e-5;
   GL_SIZE = 0;
   GB_SIZE = 0;
-  FIXED_REG_SD = 0;
+  USE_VARY_SIGMA = 0;
   
   if (SEASONALITY > 1) IS_SEASONAL = 1;
   if (DAMPED_FACTOR_FIXED > 0) DAMPED_FACTOR_SIZE = 0;
@@ -111,12 +111,12 @@ transformed data {
     GB_SIZE = 1;
   }
   
-  if (REG_PENALTY_TYPE == 0) FIXED_REG_SD = 1;
+  if (REG_PENALTY_TYPE == 2) USE_VARY_SIGMA = 1;
 }
 parameters {
   // regression parameters
-  real<lower=0> pr_sigma[NUM_OF_PR * (1 - FIXED_REG_SD)];
-  real<lower=0> rr_sigma[NUM_OF_RR * (1 - FIXED_REG_SD)];
+  real<lower=0> pr_sigma[NUM_OF_PR * (USE_VARY_SIGMA)];
+  real<lower=0> rr_sigma[NUM_OF_RR * (USE_VARY_SIGMA)];
   // vector<lower=0,upper=BETA_MAX>[NUM_OF_PR] pr_beta;
   // vector<lower=-1 * BETA_MAX,upper=BETA_MAX>[NUM_OF_RR] rr_beta;
   vector<lower=0>[NUM_OF_PR] pr_beta;

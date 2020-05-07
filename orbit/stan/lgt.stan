@@ -69,17 +69,18 @@ transformed data {
   int IS_SEASONAL;
   // SIGMA_EPS is a offset to dodge lower boundary case;
   real SIGMA_EPS;
-  int FIXED_REG_SD;
-  FIXED_REG_SD = 0;
+  int VARY_SIGMA;
+  USE_VARY_SIGMA = 0;
   SIGMA_EPS = 1e-5;
   IS_SEASONAL = 0;
   if (SEASONALITY > 1) IS_SEASONAL = 1;
-  if (REG_PENALTY_TYPE == 0) FIXED_REG_SD = 1;
+  # Only auto-ridge is using pr_sigma and rr_sigma
+  if (REG_PENALTY_TYPE == 2) USE_VARY_SIGMA = 1;
 }
 parameters {
   // regression parameters
-  real<lower=0> pr_sigma[NUM_OF_PR * (1 - FIXED_REG_SD)];
-  real<lower=0> rr_sigma[NUM_OF_RR * (1 - FIXED_REG_SD)];
+  real<lower=0> pr_sigma[NUM_OF_PR * (USE_VARY_SIGMA)];
+  real<lower=0> rr_sigma[NUM_OF_RR * (USE_VARY_SIGMA)];
   // vector<lower=0,upper=BETA_MAX>[NUM_OF_PR] pr_beta;
   // vector<lower=-1 * BETA_MAX,upper=BETA_MAX>[NUM_OF_RR] rr_beta;
   vector<lower=0>[NUM_OF_PR] pr_beta;
