@@ -29,6 +29,7 @@ class SampleMethod(Enum):
     """
     VARIATIONAL_INFERENCE = 'vi'
     MARKOV_CHAIN_MONTE_CARLO = 'mcmc'
+    MAP = 'map'
 
 
 class EstimatorOptionsMapper(Enum):
