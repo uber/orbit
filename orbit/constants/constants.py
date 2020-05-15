@@ -23,7 +23,7 @@ class PredictMethod(Enum):
     FULL_SAMPLING = 'full'
 
 
-class SampleMethod(Enum):
+class InferMethod(Enum):
     """
     The predict method for all of the stan models. Often used are mean and median.
     """
