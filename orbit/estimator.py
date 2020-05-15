@@ -5,6 +5,7 @@ import pickle
 import numpy as np
 import pandas as pd
 import multiprocessing
+from warnings import warn
 
 from orbit.models import get_compiled_stan_model
 from orbit.exceptions import (
@@ -127,6 +128,13 @@ class Estimator(object):
         # get all init args and values and set
         local_params = {k: v for (k, v) in locals().items() if k not in ['kwargs', 'self']}
         kw_params = locals()['kwargs']
+
+        # handle sample_method and print out deprecation warning message
+        if 'sample_method' in kw_params.keys():
+            warn("sample_method will be decrecated in the future release of orbit. "
+                 "Please use infer_method instead.", category=FutureWarning)
+            local_params.update({'infer_method': kw_params['sample_method']})
+            kw_params.pop('sample_method')
 
         # kwargs is strictly used to pass parent param
         # and so we should never receive params that are not explicitly defined in __init__
@@ -729,11 +737,11 @@ class Estimator(object):
         if self.infer_method not in \
                 EstimatorOptionsMapper.ENGINE_TO_SAMPLE.value[self.inference_engine]:
             raise EstimatorException(
-                "Sampling method: {} is not supported with inference engine: {}.".format(
+                "Inference method: {} is not supported with inference engine: {}.".format(
                     self.infer_method, self.inference_engine))
 
         if self.predict_method not in \
                 EstimatorOptionsMapper.SAMPLE_TO_PREDICT.value[self.infer_method]:
             raise EstimatorException(
-                "Predict method: {} is not supported with sampling method: {}.".format(
+                "Predict method: {} is not supported with inference method: {}.".format(
                     self.predict_method, self.infer_method))
