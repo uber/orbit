@@ -14,7 +14,7 @@ from orbit.exceptions import (
 from orbit.pyro.wrapper import pyro_map, pyro_svi
 from orbit.constants.constants import (
     PredictMethod,
-    SampleMethod,
+    InferMethod,
     EstimatorOptionsMapper,
 )
 from orbit.utils.utils import vb_extract, is_ordered_datetime, update_dict
@@ -45,12 +45,12 @@ class Estimator(object):
         Used to set the seed of the random init
     inference_engine : {'stan', 'pyro'}
         Determines which engine to use during for sampling/optimizing
-    sample_method : {'map','vi','mcmc'}
+    infer_method : {'map','vi','mcmc'}
         Determines which interface to use during fit. For `inference_engine` == `pyro` only
-        sample_method {'map, 'vi'} are supported
+        infer_method {'map, 'vi'} are supported
     predict_method : {'mean', 'median', 'full', 'map'}
         Determines which how to aggregate posteriors and return predicted values. For
-        `sample_method` ==`map`, user has to use `map`.
+        `infer_method` ==`map`, user has to use `map`.
     n_boostrap_draws : int, default -1
         Number of bootstrap samples to draw from `posterior_samples`. Applied only when
         `predict_method` == `full`.
@@ -114,7 +114,7 @@ class Estimator(object):
     def __init__(
             self, response_col='y', date_col='ds',
             num_warmup=900, num_sample=100, chains=4, cores=8, seed=8888,
-            inference_engine='stan', sample_method="mcmc", predict_method="full",
+            inference_engine='stan', infer_method="mcmc", predict_method="full",
             n_bootstrap_draws=-1, prediction_percentiles=[5, 95],
             stan_mcmc_control=None, stan_map_args=None, pyro_map_args=None,
             stan_vi_args=None, pyro_vi_args=None, stan_mcmc_args=None, algorithm=None,
@@ -245,7 +245,7 @@ class Estimator(object):
 
     def _derive_engine_config(self):
         """Sets sampler configs based on init class attributes"""
-        if self.sample_method == SampleMethod.MARKOV_CHAIN_MONTE_CARLO.value:
+        if self.infer_method == InferMethod.MARKOV_CHAIN_MONTE_CARLO.value:
             # make sure cores can only be as large as the device support
             self.cores = min(self.cores, multiprocessing.cpu_count())
             self.num_warmup_per_chain = int(self.num_warmup/self.chains)
@@ -258,9 +258,9 @@ class Estimator(object):
                 print("Using {} chains, {} cores, {} warmup and {} samples per chain for sampling.".format(
                     self.chains, self.cores, self.num_warmup_per_chain, self.num_sample_per_chain))
 
-        if self.sample_method == SampleMethod.VARIATIONAL_INFERENCE.value:
+        if self.infer_method == InferMethod.VARIATIONAL_INFERENCE.value:
             self._derive_vi_config()
-        elif self.sample_method == SampleMethod.MAP.value:
+        elif self.infer_method == InferMethod.MAP.value:
             self._derive_map_config()
 
     def _derive_vi_config(self):
@@ -345,7 +345,7 @@ class Estimator(object):
         if self.inference_engine == 'stan':
 
             compiled_stan_file = get_compiled_stan_model(self.stan_model_name)
-            if self.sample_method == PredictMethod.MAP.value:
+            if self.infer_method == InferMethod.MAP.value:
                 try:
                     stan_extract = compiled_stan_file.optimizing(
                         data=self.data_inputs,
@@ -364,7 +364,7 @@ class Estimator(object):
                         **self.stan_map_args
                     )
                 self._set_map_posterior(extract=stan_extract)
-            elif self.sample_method == SampleMethod.VARIATIONAL_INFERENCE.value:
+            elif self.infer_method == InferMethod.VARIATIONAL_INFERENCE.value:
                 stan_extract = vb_extract(compiled_stan_file.vb(
                     data=self.data_inputs,
                     pars=self.model_param_names,
@@ -376,7 +376,7 @@ class Estimator(object):
                 ))
                 # set posterior samples instance var
                 self._set_aggregate_posteriors(extract=stan_extract)
-            elif self.sample_method == SampleMethod.MARKOV_CHAIN_MONTE_CARLO.value:
+            elif self.infer_method == InferMethod.MARKOV_CHAIN_MONTE_CARLO.value:
                 stan_mcmc_fit = compiled_stan_file.sampling(
                     data=self.data_inputs,
                     pars=self.model_param_names,
@@ -407,7 +407,7 @@ class Estimator(object):
             self.posterior_samples = stan_extract
 
         elif self.inference_engine == 'pyro':
-            if self.sample_method == PredictMethod.MAP.value:
+            if self.infer_method == InferMethod.MAP.value:
                 pyro_extract = pyro_map(
                     model_name=self.pyro_model_name,
                     data=self.data_inputs,
@@ -416,7 +416,7 @@ class Estimator(object):
                     **self.pyro_map_args
                 )
                 self._set_map_posterior(extract=pyro_extract)
-            elif self.sample_method == SampleMethod.VARIATIONAL_INFERENCE.value:
+            elif self.infer_method == InferMethod.VARIATIONAL_INFERENCE.value:
                 pyro_extract = pyro_svi(
                     model_name=self.pyro_model_name,
                     data=self.data_inputs,
@@ -678,7 +678,7 @@ class Estimator(object):
 
         # extra stan input to distinguish stan methdo
         data_inputs['WITH_MCMC'] = 0
-        if self.sample_method in ['vi','mcmc']:
+        if self.infer_method in ['vi','mcmc']:
             data_inputs['WITH_MCMC'] = 1
 
         for key in self._data_input_mapper:
@@ -726,14 +726,14 @@ class Estimator(object):
         """Validates static input and computed parameters
         """
 
-        if self.sample_method not in \
+        if self.infer_method not in \
                 EstimatorOptionsMapper.ENGINE_TO_SAMPLE.value[self.inference_engine]:
             raise EstimatorException(
                 "Sampling method: {} is not supported with inference engine: {}.".format(
-                    self.sample_method, self.inference_engine))
+                    self.infer_method, self.inference_engine))
 
         if self.predict_method not in \
-                EstimatorOptionsMapper.SAMPLE_TO_PREDICT.value[self.sample_method]:
+                EstimatorOptionsMapper.SAMPLE_TO_PREDICT.value[self.infer_method]:
             raise EstimatorException(
                 "Predict method: {} is not supported with sampling method: {}.".format(
-                    self.predict_method, self.sample_method))
+                    self.predict_method, self.infer_method))
