@@ -4,18 +4,18 @@ from orbit.lgt import LGT
 from orbit.exceptions import IllegalArgument, EstimatorException
 
 
-@pytest.mark.parametrize("sample_method,predict_method", [
+@pytest.mark.parametrize("infer_method,predict_method", [
     ("map", "map"),
     ("vi", "full"),
 ])
 def test_fit_and_predict_univariate(
-        synthetic_data, sample_method, predict_method):
+        synthetic_data, infer_method, predict_method):
     train_df, test_df, coef = synthetic_data
     lgt = LGT(
         response_col='response',
         date_col='week',
         seasonality=52,
-        sample_method=sample_method,
+        infer_method=infer_method,
         predict_method=predict_method,
         inference_engine='pyro',
     )
@@ -39,7 +39,7 @@ def test_fit_and_predict_univariate(
         assert predict_df.columns.tolist() == expected_columns
 
 
-@pytest.mark.parametrize("sample_method,predict_method", [
+@pytest.mark.parametrize("infer_method,predict_method", [
     ("map", "map"),
     ("vi", "full"),
 ])
@@ -53,7 +53,7 @@ def test_fit_and_predict_univariate(
     ids=['positive_only', 'regular_only', 'mixed_signs']
 )
 def test_fit_and_predict_with_regression(
-        sample_method, predict_method, synthetic_data, regressor_signs):
+        infer_method, predict_method, synthetic_data, regressor_signs):
     train_df, test_df, coef = synthetic_data
 
     lgt = LGT(
@@ -62,7 +62,7 @@ def test_fit_and_predict_with_regression(
         regressor_col=train_df.columns.tolist()[2:],
         regressor_sign=regressor_signs,
         seasonality=52,
-        sample_method=sample_method,
+        infer_method=infer_method,
         predict_method=predict_method,
         inference_engine='pyro',
         pyro_map_args={'num_steps': 31, 'learning_rate': 0.1},
@@ -96,7 +96,7 @@ def test_lgt_pyro_fit(iclaims_training_data):
         seasonality=52,
         chains=4,
         inference_engine='pyro',
-        sample_method='vi',
+        infer_method='vi',
         predict_method='full',
     )
 
@@ -115,7 +115,7 @@ def test_lgt_pyro_fit_with_missing_input(iclaims_training_data):
         seasonality=52,
         chains=4,
         inference_engine='pyro',
-        sample_method='vi',
+        infer_method='vi',
         predict_method='full',
     )
 
@@ -132,7 +132,7 @@ def test_lgt_pyro_fit_and_mean_predict(iclaims_training_data):
         seasonality=52,
         chains=4,
         inference_engine='pyro',
-        sample_method='vi',
+        infer_method='vi',
         predict_method='mean',
     )
 
@@ -155,7 +155,7 @@ def test_lgt_pyro_fit_and_full_predict(iclaims_training_data):
         chains=4,
         prediction_percentiles=[5, 95, 30],
         inference_engine='pyro',
-        sample_method='vi',
+        infer_method='vi',
         predict_method='full',
     )
 

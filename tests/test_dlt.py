@@ -5,18 +5,18 @@ from orbit.dlt import DLT
 from orbit.exceptions import IllegalArgument, EstimatorException
 
 
-@pytest.mark.parametrize("sample_method", ["map", "vi", "mcmc"])
+@pytest.mark.parametrize("infer_method", ["map", "vi", "mcmc"])
 @pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
 def test_fit_and_predict_univariate(
-        synthetic_data, sample_method, predict_method, valid_sample_predict_method_combo):
+        synthetic_data, infer_method, predict_method, valid_sample_predict_method_combo):
     train_df, test_df, coef = synthetic_data
 
-    if (sample_method, predict_method) in valid_sample_predict_method_combo:
+    if (infer_method, predict_method) in valid_sample_predict_method_combo:
         dlt = DLT(
             response_col='response',
             date_col='week',
             seasonality=52,
-            sample_method=sample_method,
+            infer_method=infer_method,
             predict_method=predict_method,
             num_warmup=50,
         )
@@ -25,7 +25,7 @@ def test_fit_and_predict_univariate(
         predict_df = dlt.predict(test_df)
 
         # assert number of posterior param keys
-        if sample_method == 'map':
+        if infer_method == 'map':
             assert len(dlt.posterior_samples) == 25
         else:
             assert len(dlt.posterior_samples) == 13
@@ -48,7 +48,7 @@ def test_fit_and_predict_univariate(
                 response_col='response',
                 date_col='week',
                 seasonality=52,
-                sample_method=sample_method,
+                infer_method=infer_method,
                 predict_method=predict_method,
                 num_warmup=50
             )
@@ -63,7 +63,7 @@ def test_fit_and_predict_with_glb_trend(synthetic_data, global_trend_option):
         response_col='response',
         date_col='week',
         seasonality=52,
-        sample_method='map',
+        infer_method='map',
         predict_method='map',
         global_trend_option=global_trend_option,
     )
@@ -82,7 +82,7 @@ def test_fit_and_predict_with_glb_trend(synthetic_data, global_trend_option):
 
     dlt.fit(train_df)
 
-@pytest.mark.parametrize("sample_method", ["map", "vi", "mcmc"])
+@pytest.mark.parametrize("infer_method", ["map", "vi", "mcmc"])
 @pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
 @pytest.mark.parametrize(
     "regressor_signs",
@@ -94,18 +94,18 @@ def test_fit_and_predict_with_glb_trend(synthetic_data, global_trend_option):
     ids=['positive_only', 'regular_only', 'mixed_signs']
 )
 def test_fit_and_predict_with_regression(
-        synthetic_data, sample_method, predict_method,
+        synthetic_data, infer_method, predict_method,
         regressor_signs, valid_sample_predict_method_combo):
     train_df, test_df, coef = synthetic_data
 
-    if (sample_method, predict_method) in valid_sample_predict_method_combo:
+    if (infer_method, predict_method) in valid_sample_predict_method_combo:
         dlt = DLT(
             response_col='response',
             date_col='week',
             regressor_col=train_df.columns.tolist()[2:],
             regressor_sign=regressor_signs,
             seasonality=52,
-            sample_method=sample_method,
+            infer_method=infer_method,
             predict_method=predict_method,
             num_warmup=50
         )
@@ -137,26 +137,26 @@ def test_fit_and_predict_with_regression(
                 response_col='response',
                 date_col='week',
                 seasonality=52,
-                sample_method=sample_method,
+                infer_method=infer_method,
                 predict_method=predict_method,
                 num_warmup=50
             )
             dlt.fit(train_df)
 
 
-@pytest.mark.parametrize("sample_method", ["map", "vi", "mcmc"])
+@pytest.mark.parametrize("infer_method", ["map", "vi", "mcmc"])
 @pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
 def test_fit_and_decomp_with_regression(
-        synthetic_data, sample_method, predict_method, valid_sample_predict_method_combo):
+        synthetic_data, infer_method, predict_method, valid_sample_predict_method_combo):
     train_df, test_df, coef = synthetic_data
 
-    if (sample_method, predict_method) in valid_sample_predict_method_combo:
+    if (infer_method, predict_method) in valid_sample_predict_method_combo:
         dlt = DLT(
             response_col='response',
             date_col='week',
             regressor_col=train_df.columns.tolist()[2:],
             seasonality=52,
-            sample_method=sample_method,
+            infer_method=infer_method,
             predict_method=predict_method,
             num_warmup=50
         )
@@ -182,7 +182,7 @@ def test_fit_and_decomp_with_regression(
                 response_col='response',
                 date_col='week',
                 seasonality=52,
-                sample_method=sample_method,
+                infer_method=infer_method,
                 predict_method=predict_method,
                 num_warmup=50
             )
@@ -258,7 +258,7 @@ def test_fit_monthly_data(m3_monthly_data):
     dlt = DLT(response_col='value',
               date_col='date',
               seasonality=12,
-              sample_method='mcmc',
+              infer_method='mcmc',
               predict_method='full')
 
     # multiple fits should not raise exceptions

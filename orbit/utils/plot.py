@@ -21,7 +21,7 @@ if os.environ.get('DISPLAY', '') == '':
 
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, pred_col,
                         title="", test_actual_df=None, pred_quantiles_col=[],
-                        is_visible=True, figsize=None):
+                        is_visible=True, figsize=None, path=None):
     """
     plot training actual response together with predicted data; if actual response of predicted
     data is there, plot it too.
@@ -94,11 +94,13 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
     ax.set_title(title, fontsize=16)
     ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
     ax.legend()
+    if path:
+        plt.savefig(path)
     if is_visible:
         plt.show()
 
 
-def plot_predicted_components(predicted_df, date_col, figsize=None):
+def plot_predicted_components(predicted_df, date_col, figsize=None, path=None):
     """ Plot predicted componenets with the data frame of decomposed prediction where components
     has been pre-defined as `trend`, `seasonality` and `regression`.
     Parameters
@@ -129,6 +131,8 @@ def plot_predicted_components(predicted_df, date_col, figsize=None):
         ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.2)
         ax.set_title(comp, fontsize=16)
     fig.tight_layout()
+    if path:
+        plt.savefig(path)
 
 
 def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon',
@@ -167,7 +171,8 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
         plt.savefig(path)
 
 def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
-                         pair_type='scatter', figsize=None, path=None):
+                         pair_type='scatter', figsize=None, path=None,
+                         incl_trend_params=False, incl_smooth_params=False):
     '''Data Viz for posterior samples
 
     Params
@@ -186,6 +191,10 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         figure size
     path : str; optional
         dir path to save the chart
+    incl_trend_params : bool
+        if plot trend parameters; default False
+    incl_smooth_params : bool
+        if plot smoothing parameters; default False
 
     Returns
     -------
@@ -198,6 +207,8 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         raise Exception("The visualizations are only meaningful when predict_method = 'full'.")
     if mod._posterior_state == {}:
         raise Exception(".predict needs to be performed to have posterior states available.")
+    if kind not in ['density', 'trace', 'pair']:
+        raise Exception("kind must be one of 'density', 'trace', or 'pair'.")
 
     posterior_samples = deepcopy(mod._posterior_state)
 
@@ -206,8 +217,16 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
             posterior_samples[regressor] = posterior_samples['pr_beta'][:,i]
     if len(mod.regular_regressor_col) > 0:
         for i, regressor in enumerate(mod.regular_regressor_col):
-            posterior_samples[regressor] = posterior_samples['rr_beta'][:,i]
-    params_ = mod.positive_regressor_col + mod.regular_regressor_col + ['obs_sigma', 'lp__']
+            posterior_samples[regressor] = posterior_samples['rr_beta'][:, i]
+
+    params_ = mod.positive_regressor_col + mod.regular_regressor_col + ['obs_sigma']
+    if incl_trend_params:
+        # trend params in LGT or DLT
+        params_ += ['gt_pow', 'lt_coef', 'gt_coef', 'gb', 'gl']
+    if incl_smooth_params:
+        params_ += ['lev_sm', 'slp_sm', 'sea_sm']
+
+    params_ = [x for x in params_ if x in posterior_samples.keys()]
 
     if not figsize:
         figsize = (8, 2 * len(params_))
@@ -272,7 +291,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         return fig
 
     def _pair_plot(posterior_samples, pair_type='scatter', n_bins=20):
-        samples_df = pd.DataFrame({key: posterior_samples[key] for key in params_})
+        samples_df = pd.DataFrame({key: posterior_samples[key].flatten() for key in params_})
 
         fig = sns.pairplot(samples_df, kind=pair_type, diag_kws=dict(bins=n_bins))
         fig.fig.suptitle("Pair Plot")
@@ -282,9 +301,9 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
 
     if kind == 'density':
         fig = _density_plot(posterior_samples, n_bins=n_bins, ci_level=ci_level, figsize=figsize)
-    if kind == 'trace':
+    elif kind == 'trace':
         fig = _trace_plot(posterior_samples, ci_level=ci_level, figsize=figsize)
-    if kind == 'pair':
+    elif kind == 'pair':
         fig = _pair_plot(posterior_samples, pair_type=pair_type, n_bins=n_bins)
 
     if path:

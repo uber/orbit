@@ -9,7 +9,7 @@ def lgt_mcmc_mean_with_regression(synthetic_data):
         date_col='week',
         regressor_col=train_df.columns.tolist()[2:],
         seasonality=52,
-        sample_method='mcmc',
+        infer_method='mcmc',
         predict_method='mean',
     )
     lgt.fit(train_df)

@@ -22,7 +22,7 @@ def test_single_model_score(iclaims_training_data):
         response_col='claims',
         date_col='week',
         predict_method='mean',
-        sample_method='vi',
+        infer_method='vi',
         seasonality=52,
         chains=4,
     )
@@ -139,7 +139,7 @@ def test_single_model_score_with_callback(iclaims_training_data):
 #         seasonality=52,
 #         chains=4,
 #         predict_method='mean',
-#         sample_method='vi',
+#         infer_method='vi',
 #     )
 #
 #     dlt = DLT(
@@ -148,7 +148,7 @@ def test_single_model_score_with_callback(iclaims_training_data):
 #         seasonality=52,
 #         chains=4,
 #         predict_method='mean',
-#         sample_method='vi',
+#         infer_method='vi',
 #     )
 #
 #     # batch fit and score models
@@ -189,7 +189,7 @@ def test_single_model_score_with_callback(iclaims_training_data):
 #         seasonality=52,
 #         chains=4,
 #         predict_method='mean',
-#         sample_method='vi',
+#         infer_method='vi',
 #     )
 #
 #     # sklearn model
@@ -245,7 +245,7 @@ def test_single_model_score_with_callback(iclaims_training_data):
 #         response_col='claims',
 #         date_col='week',
 #         predict_method='mean',
-#         sample_method='vi',
+#         infer_method='vi',
 #         seasonality=52,
 #         chains=4,
 #     )
