@@ -203,14 +203,12 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     '''
     if not 'orbit' in str(mod.__class__):
         raise Exception("This plotting utility works for orbit model object only.")
-    if mod.predict_method != 'full':
-        raise Exception("The visualizations are only meaningful when predict_method = 'full'.")
-    if mod._posterior_state == {}:
-        raise Exception(".predict needs to be performed to have posterior states available.")
+    if mod.infer_method != 'mcmc':
+        raise Exception("This plotting utility works for mcmc inference only.")
     if kind not in ['density', 'trace', 'pair']:
         raise Exception("kind must be one of 'density', 'trace', or 'pair'.")
 
-    posterior_samples = deepcopy(mod._posterior_state)
+    posterior_samples = deepcopy(mod.posterior_samples)
 
     if len(mod.positive_regressor_col) > 0:
         for i, regressor in enumerate(mod.positive_regressor_col):
