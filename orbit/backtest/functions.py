@@ -7,12 +7,39 @@ from orbit.utils.metrics import mape, smape, wmape
 from orbit.exceptions import BacktestException
 
 
-def run_multi_series_backtest(data, response_col, key_col, model,
-                              min_train_len, incremental_len, forecast_len,
-                              predicted_col='prediction', date_col=None, n_splits=None,
-                              model_callback=None, fit_callback=None, predict_callback=None,
-                              fit_args=None, predict_args=None, window_type='expanding'):
+def run_multi_series_backtest(data, key_col, min_train_len, incremental_len, forecast_len,
+                              n_splits=None, window_type='expanding', date_col=None, **kwargs):
+    """ A wrapper function to backtest multiple univariate time-series by looping through keys in a panel data
 
+    Parameters
+    ----------
+    data : pd.DataFrame
+        DataFrame object containing key_col, time index, response, and other features. Panel data format.
+    key_col : str
+        label of the keys column to indetify each univarite time-series in the given panel data
+    min_train_len : int
+        the minimum number of observations required for the training period
+    incremental_len : int
+        the number of observations between each successive backtest period
+    forecast_len : int
+        forecast length
+    n_splits : int; default None
+        number of splits; when n_splits is specified, min_train_len will be ignored
+    window_type : {'expanding', 'rolling }; default 'expanding'
+        split scheme
+    date_col : str
+        optional for user to provide date columns; note that it stills uses discrete index
+        as splitting scheme while `date_col` is used for better visualization only
+
+    Other Parameters
+    ----------------
+    Arguments passed into `orbit.backtest.backtest.Backtest.fitscore()` call.
+
+    Returns
+    -------
+    Pandas Data Frame :
+        combined results of each time-series retrieved from backtest
+    """
     # store result per series key
     # data = data.copy()
     unique_keys = data[key_col].unique()
@@ -22,16 +49,12 @@ def run_multi_series_backtest(data, response_col, key_col, model,
     for key in tqdm.tqdm(unique_keys):
         df = data[data[key_col] == key]
         splitter = TimeSeriesSplitter(
-            df=df, min_train_len=min_train_len, incremental_len=incremental_len,
-            forecast_len=forecast_len, n_splits=n_splits, window_type=window_type,
-            date_col=date_col,
+            df=df, min_train_len=min_train_len, incremental_len=incremental_len, forecast_len=forecast_len,
+            n_splits=n_splits, window_type=window_type, date_col=date_col,
         )
 
         bt = Backtest(splitter)
-        bt.fit_score(model=model, response_col=response_col, predicted_col=predicted_col,
-                     model_callback=model_callback,
-                     fit_callback=fit_callback, predict_callback=predict_callback,
-                     fit_args=fit_args, predict_args=predict_args)
+        bt.fit_score(**kwargs)
 
         all_result.append(bt.get_predictions())
         scores_df = bt.get_scores()
@@ -42,12 +65,13 @@ def run_multi_series_backtest(data, response_col, key_col, model,
     all_scores = pd.concat(all_scores, axis=0, ignore_index=True)
     return all_result, all_scores
 
+
 def tune_damped_factor(model,
                        splitter,
                        damped_factor_grid,
                        predicted_col = 'prediction',
                        metrics={"smape": smape, "mape": mape}):
-    ''' Utility to tune the damped factor in DLT model with the backtest engine in orbit
+    """ Utility to tune the damped factor in DLT model with the backtest engine in orbit
 
     Parameters
     ----------
@@ -67,8 +91,7 @@ def tune_damped_factor(model,
     Pandas Data Frame :
         the aggregated backtesting metrics for each damped factor. Users could pick the dampted fator
         with the smallest out-of-time metrics.
-
-    '''
+    """
 
     if not isinstance(model, DLT):
         raise BacktestException('model should be an instance of orbit.dlt.DLT.')

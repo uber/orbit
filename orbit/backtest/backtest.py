@@ -165,8 +165,8 @@ class TimeSeriesSplitter(object):
             tt_indices = list(scheme[TimeSeriesSplitSchemeNames.TEST_IDX.value])
 
             indices = tr_indices + tt_indices
-            tr_color = [(QualitativePalette['Line4'].value)[0]] * len(tr_indices)
-            tt_color = [(QualitativePalette['Line4'].value)[1]] * len(tt_indices)
+            tr_color = [(QualitativePalette['Bar5'].value)[2]] * len(tr_indices)
+            tt_color = [(QualitativePalette['Bar5'].value)[3]] * len(tt_indices)
 
             # Visualize the results
             ax.scatter(
@@ -451,7 +451,7 @@ class Backtest(object):
         return self._predicted_df[self._predicted_df['df_key'] == 'train'].\
             drop(columns=['df_key']).reset_index(drop=True)
 
-    def get_scores(self,  include_model_meta=False):
+    def get_scores(self, include_model_meta=False):
         # TODO: implement include_split_meta
         return self._score_df[self._score_df['df_key'] == 'test'].\
             drop(columns=['df_key']).reset_index(drop=True)

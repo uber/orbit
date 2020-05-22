@@ -170,10 +170,11 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
     if path:
         plt.savefig(path)
 
+
 def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
                          pair_type='scatter', figsize=None, path=None,
                          incl_trend_params=False, incl_smooth_params=False):
-    '''Data Viz for posterior samples
+    """ Data Viz for posterior samples
 
     Params
     ------
@@ -199,8 +200,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     Returns
     -------
     fig : plt object
-
-    '''
+    """
     if not 'orbit' in str(mod.__class__):
         raise Exception("This plotting utility works for orbit model object only.")
     if mod.infer_method != 'mcmc':
@@ -256,7 +256,6 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
         return fig
-
 
     def _trace_plot(posterior_samples, ci_level=.95, figsize=None):
 
