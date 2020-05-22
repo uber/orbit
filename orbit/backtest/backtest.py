@@ -245,7 +245,7 @@ class Backtest(object):
             additional kwargs to be passed to the `predict_callback` function
         """
 
-        # TODO: fit response_col from model but set score takes another separately
+        # TODO: Consider fit response_col from model but set score takes another separately
         if fit_args is None:
             fit_args = {}
 
@@ -419,7 +419,7 @@ class Backtest(object):
             score_df[metric_name] = pred_df_grouped.apply(lambda x: metric_fun(x[response_col], x[predicted_col]))
         score_df = score_df.reset_index()
         score_df['n_splits'] = self.splitter.n_splits
-        score_df['n_obs'] = pred_df_grouped[self.splitter.date_col].agg('count').values
+        score_df['n_obs'] = pred_df_grouped[predicted_col].agg('count').values
 
         # # aggregate without groups
         # else:
