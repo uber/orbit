@@ -166,7 +166,7 @@ class TimeSeriesSplitter(object):
 
             indices = tr_indices + tt_indices
             tr_color = [(QualitativePalette['Bar5'].value)[2]] * len(tr_indices)
-            tt_color = [(QualitativePalette['Bar5'].value)[3]] * len(tt_indices)
+            tt_color = [(QualitativePalette['Bar5'].value)[1]] * len(tt_indices)
 
             # Visualize the results
             ax.scatter(
@@ -410,17 +410,16 @@ class Backtest(object):
         if metrics is None:
             metrics = {'wmape': wmape, 'smape': smape}
 
-        predicted_df = self._predicted_df
+        pred_df_grouped = self._predicted_df.groupby(by=groupby)
         score_df = pd.DataFrame({})
 
         # multiple models or step segmentation
         # if groupby is not None:
         for metric_name, metric_fun in metrics.items():
-            score_df[metric_name] = predicted_df \
-                .groupby(by=groupby) \
-                .apply(lambda x: metric_fun(x[response_col], x[predicted_col]))
+            score_df[metric_name] = pred_df_grouped.apply(lambda x: metric_fun(x[response_col], x[predicted_col]))
         score_df = score_df.reset_index()
         score_df['n_splits'] = self.splitter.n_splits
+        score_df['n_obs'] = pred_df_grouped
 
         # # aggregate without groups
         # else:
