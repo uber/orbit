@@ -165,8 +165,8 @@ class TimeSeriesSplitter(object):
             tt_indices = list(scheme[TimeSeriesSplitSchemeNames.TEST_IDX.value])
 
             indices = tr_indices + tt_indices
-            tr_color = [(QualitativePalette['Q5'].value)[0]] * len(tr_indices)
-            tt_color = [(QualitativePalette['Q5'].value)[1]] * len(tt_indices)
+            tr_color = [(QualitativePalette['Line4'].value)[0]] * len(tr_indices)
+            tt_color = [(QualitativePalette['Line4'].value)[1]] * len(tt_indices)
 
             # Visualize the results
             ax.scatter(
@@ -212,8 +212,8 @@ class Backtest(object):
         self._predicted_df = pd.DataFrame()
         self.splitter = deepcopy(splitter)
 
-    def fit_score(self, model, response_col, predicted_col='prediction', metrics=None,
-                  insample_predict=False, include_steps=False, model_callback=None, fit_callback=None,
+    def fit_score(self, model, response_col, predicted_col='prediction', metrics=None, insample_predict=False,
+                  save_model=False, include_steps=False, model_callback=None, fit_callback=None,
                   predict_callback=None, fit_args=None, predict_args=None):
         """
        Parameters
@@ -228,6 +228,8 @@ class Backtest(object):
             dictionary of functions `f` which score performance by f(actual_array, predicted_array)
         insample_predict : bool
             logic whether conduct the insample prediction on training data
+        save_model : bool
+            logic whether save the fitted models for each backtest iteration
         include_steps : bool
             logic whether return metrics grouped by steps
         model_callback : callable
@@ -251,7 +253,8 @@ class Backtest(object):
 
         self._fit(
             model=model,
-            insample_predict = insample_predict,
+            insample_predict=insample_predict,
+            save_model=save_model,
             model_callback=model_callback,
             fit_callback=fit_callback,
             predict_callback=predict_callback,
@@ -262,7 +265,8 @@ class Backtest(object):
         self._set_score(response_col=response_col, predicted_col=predicted_col,
                         metrics=metrics, include_steps=include_steps)
 
-    def _fit(self, model, insample_predict=False, model_callback=None, fit_callback=None, predict_callback=None,
+    def _fit(self, model, insample_predict=False, save_model=False,
+             model_callback=None, fit_callback=None, predict_callback=None,
              fit_args=None, predict_args=None):
         """Fits the splitted data to the model and predicts
 
@@ -272,6 +276,8 @@ class Backtest(object):
             arbitrary instantiated model object
         insample_predict : bool
             logic whether conduct the insample prediction on training data
+        save_model : bool
+            logic whether save the fitted models for each backtest iteration
         model_callback : callable
             optional callback to adapt model object to work with `orbit.backtest`. Particularly,
             the object needs a `fit()` and `predict()` methods if not exists.
@@ -335,7 +341,8 @@ class Backtest(object):
                                  ['test'] * n_test
             idx_ = list(range(n_train)) + list(range(n_test)) if insample_predict else list(range(n_test))
             results.set_index([idx_], inplace=True)
-            bt_models[split_key] = deepcopy(model)
+            if save_model:
+                bt_models[split_key] = deepcopy(model)
 
             predicted_df = pd.concat((predicted_df, results), axis=0)
 
