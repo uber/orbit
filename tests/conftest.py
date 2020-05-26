@@ -49,3 +49,12 @@ def valid_sample_predict_method_combo():
         ("mcmc", "mean"), ("mcmc", "median"), ("mcmc", "full")
     ]
     return valid_permutations
+
+
+@pytest.fixture
+def valid_pyro_sample_predict_method_combo():
+    valid_permutations = [
+        ("map", "map"),
+        ("vi", "mean"), ("vi", "median"), ("vi", "full")
+    ]
+    return valid_permutations
