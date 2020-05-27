@@ -272,3 +272,32 @@ def test_fit_monthly_data(m3_monthly_data):
 
     assert predicted_df.shape == expected_shape
     assert list(predicted_df.columns) == expected_columns
+
+
+def test_fit_and_predict_with_regression_all_int(synthetic_data):
+    train_df, test_df, coef = synthetic_data
+    reg_columns = train_df.columns.tolist()[2:]
+
+    # convert to all int
+    train_df[reg_columns] = train_df[reg_columns].astype(np.int) + 1
+    test_df[reg_columns] = test_df[reg_columns].astype(np.int) + 1
+
+    dlt = DLT(
+        response_col='response',
+        date_col='week',
+        regressor_col=reg_columns,
+        seasonality=52,
+        infer_method='mcmc',
+        predict_method='mean',
+        num_warmup=50,
+        is_multiplicative=False
+    )
+    dlt.fit(train_df)
+
+    predict_df = dlt.predict(df=test_df)
+
+    expected_columns = ['week', 'prediction']
+    expected_shape = (51, len(expected_columns))
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
