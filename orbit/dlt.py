@@ -329,7 +329,7 @@ class DLT(LGT):
         if self.regressor_col is not None and len(self.regular_regressor_col) > 0:
             regressor_beta = regressor_beta.t()
             regressor_matrix = df[self.regressor_col].values
-            regressor_torch = torch.from_numpy(regressor_matrix)
+            regressor_torch = torch.from_numpy(regressor_matrix).double()
             regressor_component = torch.matmul(regressor_torch, regressor_beta)
             regressor_component = regressor_component.t()
         else:

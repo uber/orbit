@@ -338,8 +338,8 @@ class LGT(Estimator):
 
     def _setup_regressor_inputs(self):
 
-        self.positive_regressor_matrix = np.zeros((self.num_of_observations, 0))
-        self.regular_regressor_matrix = np.zeros((self.num_of_observations, 0))
+        self.positive_regressor_matrix = np.zeros((self.num_of_observations, 0), dtype=np.double)
+        self.regular_regressor_matrix = np.zeros((self.num_of_observations, 0), dtype=np.double)
 
         # update regression matrices
         if self.num_of_positive_regressors > 0:
@@ -558,7 +558,7 @@ class LGT(Estimator):
         if self.regressor_col is not None and len(self.regular_regressor_col) > 0:
             regressor_beta = regressor_beta.t()
             regressor_matrix = df[self.regressor_col].values
-            regressor_torch = torch.from_numpy(regressor_matrix)
+            regressor_torch = torch.from_numpy(regressor_matrix).double()
             regressor_component = torch.matmul(regressor_torch, regressor_beta)
             regressor_component = regressor_component.t()
         else:
