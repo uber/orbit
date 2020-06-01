@@ -4,45 +4,59 @@ from orbit.lgt import LGT
 from orbit.exceptions import IllegalArgument, EstimatorException
 
 
-@pytest.mark.parametrize("infer_method,predict_method", [
-    ("map", "map"),
-    ("vi", "full"),
-])
+@pytest.mark.parametrize("infer_method", ["map", "vi", "mcmc"])
+@pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
 def test_fit_and_predict_univariate(
-        synthetic_data, infer_method, predict_method):
+        synthetic_data, infer_method, predict_method, valid_pyro_sample_predict_method_combo):
     train_df, test_df, coef = synthetic_data
-    lgt = LGT(
-        response_col='response',
-        date_col='week',
-        seasonality=52,
-        infer_method=infer_method,
-        predict_method=predict_method,
-        inference_engine='pyro',
-    )
 
-    lgt.fit(train_df)
-    predict_df = lgt.predict(test_df)
+    if (infer_method, predict_method) in valid_pyro_sample_predict_method_combo:
+        lgt = LGT(
+            response_col='response',
+            date_col='week',
+            seasonality=52,
+            infer_method=infer_method,
+            predict_method=predict_method,
+            inference_engine='pyro',
+            pyro_map_args={'num_steps': 31, 'learning_rate': 0.1},
+            pyro_vi_args={'num_steps': 31, 'learning_rate': 0.1},
+            num_warmup=50
+        )
 
-    # assert number of posterior param keys
-    assert len(lgt.posterior_samples) == 13
+        lgt.fit(train_df)
+        predict_df = lgt.predict(test_df)
 
-    # assert output shape
-    if predict_method == 'full':
-        expected_columns = ['week', 5, 50, 95]
-        expected_shape = (51, len(expected_columns))
-        assert predict_df.shape == expected_shape
-        assert predict_df.columns.tolist() == expected_columns
+        # assert number of posterior param keys
+        assert len(lgt.posterior_samples) == 13
+
+        # assert output shape
+        if predict_method == 'full':
+            expected_columns = ['week', 5, 50, 95]
+            expected_shape = (51, len(expected_columns))
+            assert predict_df.shape == expected_shape
+            assert predict_df.columns.tolist() == expected_columns
+        else:
+            expected_columns = ['week', 'prediction']
+            expected_shape = (51, len(expected_columns))
+            assert predict_df.shape == expected_shape
+            assert predict_df.columns.tolist() == expected_columns
+
     else:
-        expected_columns = ['week', 'prediction']
-        expected_shape = (51, len(expected_columns))
-        assert predict_df.shape == expected_shape
-        assert predict_df.columns.tolist() == expected_columns
+        with pytest.raises(EstimatorException):
+            lgt = LGT(
+                response_col='response',
+                date_col='week',
+                seasonality=52,
+                infer_method=infer_method,
+                predict_method=predict_method,
+                inference_engine='pyro',
+                num_warmup=50
+            )
+            lgt.fit(train_df)
 
 
-@pytest.mark.parametrize("infer_method,predict_method", [
-    ("map", "map"),
-    ("vi", "full"),
-])
+@pytest.mark.parametrize("infer_method", ["map", "vi", "mcmc"])
+@pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
 @pytest.mark.parametrize(
     "regressor_signs",
     [
@@ -52,41 +66,59 @@ def test_fit_and_predict_univariate(
     ],
     ids=['positive_only', 'regular_only', 'mixed_signs']
 )
+
+
 def test_fit_and_predict_with_regression(
-        infer_method, predict_method, synthetic_data, regressor_signs):
+        infer_method, predict_method, synthetic_data,
+        regressor_signs, valid_pyro_sample_predict_method_combo):
     train_df, test_df, coef = synthetic_data
 
-    lgt = LGT(
-        response_col='response',
-        date_col='week',
-        regressor_col=train_df.columns.tolist()[2:],
-        regressor_sign=regressor_signs,
-        seasonality=52,
-        infer_method=infer_method,
-        predict_method=predict_method,
-        inference_engine='pyro',
-        pyro_map_args={'num_steps': 31, 'learning_rate': 0.1},
-        pyro_vi_args={'num_steps': 31, 'learning_rate': 0.1},
-    )
+    if (infer_method, predict_method) in valid_pyro_sample_predict_method_combo:
+        lgt = LGT(
+            response_col='response',
+            date_col='week',
+            regressor_col=train_df.columns.tolist()[2:],
+            regressor_sign=regressor_signs,
+            seasonality=52,
+            infer_method=infer_method,
+            predict_method=predict_method,
+            inference_engine='pyro',
+            pyro_map_args={'num_steps': 31, 'learning_rate': 0.1},
+            pyro_vi_args={'num_steps': 31, 'learning_rate': 0.1},
+            num_warmup=50
+        )
 
-    lgt.fit(train_df)
-    predict_df = lgt.predict(test_df)
+        lgt.fit(train_df)
+        predict_df = lgt.predict(test_df)
 
-    num_regressors = lgt.get_regression_coefs().shape[0]
+        num_regressors = lgt.get_regression_coefs().shape[0]
 
-    assert num_regressors == len(train_df.columns.tolist()[2:])
+        assert num_regressors == len(train_df.columns.tolist()[2:])
 
-    # assert output shape
-    if predict_method == 'full':
-        expected_columns = ['week', 5, 50, 95]
-        expected_shape = (51, len(expected_columns))
-        assert predict_df.shape == expected_shape
-        assert predict_df.columns.tolist() == expected_columns
+        # assert output shape
+        if predict_method == 'full':
+            expected_columns = ['week', 5, 50, 95]
+            expected_shape = (51, len(expected_columns))
+            assert predict_df.shape == expected_shape
+            assert predict_df.columns.tolist() == expected_columns
+        else:
+            expected_columns = ['week', 'prediction']
+            expected_shape = (51, len(expected_columns))
+            assert predict_df.shape == expected_shape
+            assert predict_df.columns.tolist() == expected_columns
+
     else:
-        expected_columns = ['week', 'prediction']
-        expected_shape = (51, len(expected_columns))
-        assert predict_df.shape == expected_shape
-        assert predict_df.columns.tolist() == expected_columns
+        with pytest.raises(EstimatorException):
+            lgt = LGT(
+                response_col='response',
+                date_col='week',
+                seasonality=52,
+                infer_method=infer_method,
+                predict_method=predict_method,
+                inference_engine='pyro',
+                num_warmup=50
+            )
+            lgt.fit(train_df)
 
 
 def test_lgt_pyro_fit(iclaims_training_data):
