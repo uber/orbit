@@ -153,14 +153,19 @@ class LGT(Estimator):
     def __init__(
             self, regressor_col=None, regressor_sign=None,
             regressor_beta_prior=None, regressor_sigma_prior=None,
-            is_multiplicative=True, auto_scale=False, cauchy_sd=None, min_nu=5, max_nu=40,
-            seasonality=0, seasonality_min=-1.0, seasonality_max=1.0,
-            seasonality_smoothing_min=0, seasonality_smoothing_max=1.0,
+            is_multiplicative=True, auto_scale=False,
+            # cauchy_sd=None,
+            # min_nu=5, max_nu=40,
+            seasonality=-1,
+            # this is explicit for now; for real, we derive this from seasonality (max of seasonalities)
+            period=1.0,
+            # seasonality_min=-1.0, seasonality_max=1.0,
+            # seasonality_smoothing_min=0, seasonality_smoothing_max=1.0,
             global_trend_coef_min=-0.5, global_trend_coef_max=0.5,
             global_trend_pow_min=0, global_trend_pow_max=1,
             local_trend_coef_min=0, local_trend_coef_max=1,
-            level_smoothing_min=0, level_smoothing_max=1,
-            slope_smoothing_min=0, slope_smoothing_max=1,
+            # level_smoothing_min=0, level_smoothing_max=1,
+            # slope_smoothing_min=0, slope_smoothing_max=1,
             lasso_scale=0.5, auto_ridge_scale=0.5, regression_penalty='fixed_ridge',
             **kwargs
     ):
@@ -187,10 +192,25 @@ class LGT(Estimator):
         self._regression_penalty = getattr(lgt.RegressionPenalty, regression_penalty).value
 
     def _set_computed_params(self):
+        self._setup_computed_smoothing_params()
         self._setup_computed_regression_params()
+        self._setup_computed_residual_params()
+
+    def _setup_computed_smoothing_params(self):
+        self.level_smoothing_min = 0.0
+        self.level_smoothing_max = 1.0 / max(self.seasonality, self.period)
+        self.slope_smoothing_min = 0.0
+        self.slope_smoothing_max = 1.0 / max(self.seasonality, self.period)
+        self.seasonality_min = -1.0
+        self.seasonality_max = 1.0
+        self.seasonality_smoothing_min = 0.0
+        self.seasonality_smoothing_max = 1.0
+
+    def _setup_computed_residual_params(self):
+        self.min_nu = 30.0
+        self.max_nu = 31.0
 
     def _setup_computed_regression_params(self):
-
         def _validate(regression_params, valid_length):
             for p in regression_params:
                 if p is not None and len(p) != valid_length:
@@ -312,9 +332,7 @@ class LGT(Estimator):
         self.response = self.df[self.response_col].values
         self.num_of_observations = len(self.response)
 
-        self.cauchy_sd = max(
-                self.response,
-            ) / 30 if self.cauchy_sd is None else self.cauchy_sd
+        self.cauchy_sd = max(self.response) / 30.0
 
         self._setup_regressor_inputs()
         self._setup_stan_init()

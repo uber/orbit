@@ -152,14 +152,18 @@ class DLT(LGT):
     def __init__(
             self, regressor_col=None, regressor_sign=None,
             regressor_beta_prior=None, regressor_sigma_prior=None,
-            is_multiplicative=True, auto_scale=False, cauchy_sd=None, min_nu=5, max_nu=40,
-            seasonality=0, seasonality_min=-1.0, seasonality_max=1.0,
-            seasonality_smoothing_min=0, seasonality_smoothing_max=1,
-            level_smoothing_min=0, level_smoothing_max=1,
-            slope_smoothing_min=0, slope_smoothing_max=1,
+            is_multiplicative=True, auto_scale=False,
+            # cauchy_sd=None, min_nu=5, max_nu=40,
+            seasonality=-1,
+            # this is explicit for now; for real, we derive this from seasonality (max of seasonalities)
+            period=1.0,
+            # seasonality_min=-1.0, seasonality_max=1.0,
+            # seasonality_smoothing_min=0, seasonality_smoothing_max=1,
+            # level_smoothing_min=0, level_smoothing_max=1,
+            # slope_smoothing_min=0, slope_smoothing_max=1,
             lasso_scale=0.5, auto_ridge_scale=0.5, regression_penalty='fixed_ridge',
             damped_factor_min=0.8, damped_factor_max=1,
-            global_trend_option='linear',
+            global_trend_option='flat',
             damped_factor_fixed=0.8, **kwargs
     ):
 
