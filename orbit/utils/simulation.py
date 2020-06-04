@@ -52,7 +52,7 @@ def make_ts_multiplicative(series_len=200, seasonality=-1, coefs=None, regressor
         num_of_regressors = len(coefs)
         num_irrelevant_coefs = int(num_of_regressors * regressor_relevance)
         if num_irrelevant_coefs >= 1:
-            irrelevant_coef_idx = np.random.choice(num_of_regressors, num_irrelevant_coefs)
+            irrelevant_coef_idx = np.random.choice(num_of_regressors, num_irrelevant_coefs, replace=False)
             coefs[irrelevant_coef_idx] = 0.0
         if regressor_log_cov is None:
             x_log1p = np.random.default_rng(seed).normal(
