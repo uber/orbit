@@ -12,17 +12,16 @@ class DataInputMapper(Enum):
     RESPONSE = 'RESPONSE'
     # ---------- Seasonality ---------- #
     SEASONALITY = 'SEASONALITY'
-    SEASONALITY_MIN = 'SEA_MIN'
-    SEASONALITY_MAX = 'SEA_MAX'
-    SEASONALITY_SMOOTHING_MIN = 'SEA_SM_MIN'
+    SEASONALITY_SMOOTHING_ALPHA = 'SEA_SM_ALPHA'
     SEASONALITY_SMOOTHING_MAX = 'SEA_SM_MAX'
     # ---------- Common Local Trend ---------- #
-    LEVEL_SMOOTHING_MIN = 'LEV_SM_MIN'
+    LEVEL_SMOOTHING_ALPHA = 'LEV_SM_ALPHA'
+    SLOPE_SMOOTHING_ALPHA = 'SLP_SM_ALPHA'
     LEVEL_SMOOTHING_MAX = 'LEV_SM_MAX'
-    SLOPE_SMOOTHING_MIN = 'SLP_SM_MIN'
     SLOPE_SMOOTHING_MAX = 'SLP_SM_MAX'
     # ---------- Global Trend ---------- #
     _GLOBAL_TREND_OPTION = 'GLOBAL_TREND_OPTION'
+    TIME_DELTA = 'TIME_DELTA'
     # ---------- Damped Trend ---------- #
     DAMPED_FACTOR_MIN = 'DAMPED_FACTOR_MIN'
     DAMPED_FACTOR_MAX = 'DAMPED_FACTOR_MAX'
@@ -43,6 +42,10 @@ class DataInputMapper(Enum):
     _REGRESSION_PENALTY = 'REG_PENALTY_TYPE'
     AUTO_RIDGE_SCALE = 'AUTO_RIDGE_SCALE'
     LASSO_SCALE = 'LASSO_SCALE'
+    # Experimental; to avoid over-parameterization of latent variable vs. regression when
+    # they have similar marginal impact.  In that case, penalty kick in to reward more to explain variation with
+    # regression instead of latent variables.
+    R_SQUARED_PENALTY = 'R_SQUARED_PENALTY'
 
 
 class GlobalTrendOption(Enum):

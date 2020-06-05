@@ -4,6 +4,7 @@ from scipy.stats import nct
 import torch
 from copy import deepcopy
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.linear_model import LinearRegression
 
 from orbit.estimator import Estimator
 from orbit.constants import lgt
@@ -154,18 +155,10 @@ class LGT(Estimator):
             self, regressor_col=None, regressor_sign=None,
             regressor_beta_prior=None, regressor_sigma_prior=None,
             is_multiplicative=True, auto_scale=False,
-            # cauchy_sd=None,
-            # min_nu=5, max_nu=40,
             seasonality=-1,
             # this is explicit for now; for real, we derive this from seasonality (max of seasonalities)
             period=1.0,
-            # seasonality_min=-1.0, seasonality_max=1.0,
-            # seasonality_smoothing_min=0, seasonality_smoothing_max=1.0,
-            global_trend_coef_min=-0.5, global_trend_coef_max=0.5,
-            global_trend_pow_min=0, global_trend_pow_max=1,
-            local_trend_coef_min=0, local_trend_coef_max=1,
-            # level_smoothing_min=0, level_smoothing_max=1,
-            # slope_smoothing_min=0, slope_smoothing_max=1,
+            r_squared_penalty=None,
             lasso_scale=0.5, auto_ridge_scale=0.5, regression_penalty='fixed_ridge',
             **kwargs
     ):
@@ -197,18 +190,22 @@ class LGT(Estimator):
         self._setup_computed_residual_params()
 
     def _setup_computed_smoothing_params(self):
-        self.level_smoothing_min = 0.0
-        self.level_smoothing_max = 1.0 / max(self.seasonality, self.period)
-        self.slope_smoothing_min = 0.0
-        self.slope_smoothing_max = 1.0 / max(self.seasonality, self.period)
-        self.seasonality_min = -1.0
-        self.seasonality_max = 1.0
-        self.seasonality_smoothing_min = 0.0
+        # beta = 5; so (5,5) would be symmetric
+        # derive shift of loc towards smaller value with respect to seasonality
+        max_period = max(self.period, self.seasonality)
+        self.time_delta = 1/max_period
+        self.level_smoothing_alpha = max(1, 5 - 0.01 * max_period)
+        self.slope_smoothing_alpha = max(1, 5 - 0.01 * max_period)
+        # penalize less for seasonality
+        self.seasonality_smoothing_alpha = max(1, 5 - 0.01 * (max_period/self.seasonality))
+        self.level_smoothing_max = 1.0
+        self.slope_smoothing_max = 1.0
         self.seasonality_smoothing_max = 1.0
 
     def _setup_computed_residual_params(self):
-        self.min_nu = 30.0
-        self.max_nu = 31.0
+        # TODO: Should this tie to number of observations?
+        self.min_nu = 5.0
+        self.max_nu = 40.0
 
     def _setup_computed_regression_params(self):
         def _validate(regression_params, valid_length):
@@ -229,6 +226,7 @@ class LGT(Estimator):
 
         # if no regressors, end here
         if self.regressor_col is None:
+            self.r_squared_penalty = 0.0
             return
 
         num_of_regressors = len(self.regressor_col)
@@ -336,6 +334,29 @@ class LGT(Estimator):
 
         self._setup_regressor_inputs()
         self._setup_stan_init()
+        # TODO: maybe useful to calculate vanlia (adjusted) R-Squared
+        # self._adjust_smoothing_with_regression()
+
+    # def _adjust_smoothing_with_regression(self):
+    #     num_of_regressors = len(self.regressor_col)
+    #     if num_of_regressors > 0 :
+    #         # TODO: not using R-Squared for now
+    #         # X = self.df[self.regressor_col].values
+    #         # # append intercept
+    #         # X = np.concatenate([np.ones((X.shape[0], 1)), X], axis=1)
+    #         # X_VAR_INV = np.linalg.inv(np.matmul(X.T, X))
+    #         # b = np.matmul(X_VAR_INV, np.matmul(X.T, self.response))
+    #         # ss_tot = np.sum(np.square(self.response - np.mean(self.response)))
+    #         # rc = np.matmul(X, b)
+    #         # ss_res = np.sum(np.square(self.response - rc))
+    #         # r_sq = 1 - ss_res / ss_tot
+    #         if self.r_squared_penalty is None:
+    #             self.r_squared_penalty = np.sqrt(self.num_of_observations)
+    #         # self.level_smoothing_max = 1.0 * (1 - r_sq)
+    #         # self.slope_smoothing_max = 1.0 * (1 - r_sq)
+    #         # self.seasonality_max_smoothing_max = 1.0 * (1 - r_sq)
+    #     else:
+    #         self.r_squared_penalty = 0.0
 
     def _setup_stan_init(self):
         # to use stan default, set self.stan_int to 'random'
@@ -345,12 +366,11 @@ class LGT(Estimator):
         # ch is not used but we need the for loop to append init points across chains
         for ch in range(self.chains):
             temp_init = {}
-            # TODO: can consider having some init related obs_sigma
             if self.seasonality > 1:
                 # note that although seed fixed, points are different across chains
                 seas_init = np.random.normal(loc=0, scale=0.05, size=self.seasonality - 1)
-                seas_init[seas_init > self.seasonality_max] = self.seasonality_max
-                seas_init[seas_init < self.seasonality_min] = self.seasonality_min
+                seas_init[seas_init > 1.0] = 1.0
+                seas_init[seas_init < -1.0] = -1.0
                 temp_init['init_sea'] = seas_init
             self.stan_init.append(temp_init)
 
@@ -367,6 +387,11 @@ class LGT(Estimator):
         if self.num_of_regular_regressors > 0:
             self.regular_regressor_matrix = self.df.filter(
                 items=self.regular_regressor_col,).values
+
+        if (self.regressor_col is not None) and (self.r_squared_penalty is None):
+            self.r_squared_penalty = np.sqrt(self.num_of_observations)
+        else:
+            self.r_squared_penalty = max(self.r_squared_penalty, 0.0)
 
     def _set_model_param_names(self):
         self.model_param_names = []
