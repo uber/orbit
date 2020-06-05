@@ -157,10 +157,7 @@ class DLT(LGT):
             seasonality=-1,
             # this is explicit for now; for real, we derive this from seasonality (max of seasonalities)
             period=1.0,
-            # seasonality_min=-1.0, seasonality_max=1.0,
-            # seasonality_smoothing_min=0, seasonality_smoothing_max=1,
-            # level_smoothing_min=0, level_smoothing_max=1,
-            # slope_smoothing_min=0, slope_smoothing_max=1,
+            r_squared_penalty=None,
             lasso_scale=0.5, auto_ridge_scale=0.5, regression_penalty='fixed_ridge',
             damped_factor_min=0.8, damped_factor_max=1,
             global_trend_option='flat',
@@ -381,11 +378,14 @@ class DLT(LGT):
                 full_local_trend[:, idx] = curr_local_trend
                 # idx = time - 1
                 if self.global_trend_option == dlt.GlobalTrendOption.linear.name:
-                    full_global_trend[:, idx] = global_trend_level + global_trend_slope * idx
+                    full_global_trend[:, idx] = \
+                        global_trend_level + global_trend_slope * idx * self.time_delta
                 elif self.global_trend_option == dlt.GlobalTrendOption.loglinear.name:
-                    full_global_trend[:, idx] = global_trend_level + torch.log(1 + global_trend_slope * idx)
+                    full_global_trend[:, idx] = \
+                        global_trend_level + torch.log(1 + global_trend_slope * idx * self.time_delta)
                 elif self.global_trend_option == dlt.GlobalTrendOption.logistic.name:
-                    full_global_trend[:, idx] = global_trend_level / (1 + torch.exp(-1 * global_trend_slope * idx))
+                    full_global_trend[:, idx] = \
+                        global_trend_level / (1 + torch.exp(-1 * global_trend_slope * idx * self.time_delta))
                 elif self._global_trend_option == dlt.GlobalTrendOption.flat.name:
                     full_global_trend[:, idx] = 0
 
