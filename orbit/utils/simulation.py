@@ -5,6 +5,36 @@ import statsmodels.api as sm
 from orbit.exceptions import IllegalArgument
 
 
+def make_trend(rw_loc=0.001, rw_scale=0.1, series_len=200, trend_type='rw'):
+    """ Module to generate time-series trend with different methods
+
+    Parameters
+    ----------
+        trend_type: str
+        ['arma', 'rw']
+        rw_loc: float
+        rw_scale: float
+
+    """
+
+    # make trend
+    if trend_type == "rw":
+        rw = np.random.default_rng(seed).normal(rw_loc, rw_scale, series_len)
+        trend = np.cumsum(rw)
+    elif trend_type == "arma":
+        # TODO: consider parameterize this
+        arparams = np.array([.25])
+        maparams = np.array([.6])
+        ar = np.r_[1, -arparams]
+        ma = np.r_[1, maparams]
+        arma_process = sm.tsa.ArmaProcess(ar, ma)
+        trend = arma_process.generate_sample(series_len)
+    else:
+        raise IllegalArgument("Invalid trend_type.")
+
+    return trend
+
+
 def make_ts_multiplicative(series_len=200, seasonality=-1, coefs=None, regressor_relevance=0.0,
                            regressor_log_loc=0.0, regressor_log_scale=0.2,
                            regressor_log_cov=None,
@@ -33,8 +63,6 @@ def make_ts_multiplicative(series_len=200, seasonality=-1, coefs=None, regressor
             positive values
         trend_type: str
             ['arma', 'rw']
-        rw_loc: real
-        rw_scale: real
         seas_scale: float
         response_col: str
         seed: int
