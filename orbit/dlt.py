@@ -160,7 +160,7 @@ class DLT(LGT):
             r_squared_penalty=None,
             lasso_scale=0.5, auto_ridge_scale=0.5, regression_penalty='fixed_ridge',
             damped_factor_min=0.8, damped_factor_max=1,
-            global_trend_option='flat',
+            global_trend_option='linear',
             damped_factor_fixed=0.8, **kwargs
     ):
 

@@ -332,7 +332,7 @@ model {
   //   real rsq;
   //   real ybar;
   //   real new_ybar;
-  //   
+  // 
   //   ybar = mean(RESPONSE);
   //   diff_tot = RESPONSE - ybar;
   //   ss_tot = sum(diff_tot .* diff_tot);
