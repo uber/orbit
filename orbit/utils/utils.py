@@ -40,16 +40,15 @@ def is_empty_dataframe(df):
 
 def get_parent_path(current_file_path):
     """
-
     Parameters
     ----------
     current_file_path: str
         The given file path, should be an absolute path
 
-    Returns: str
-        The parent path of give file path
+    Returns:
     -------
-
+        str
+        The parent path of give file path
     """
 
     return os.path.abspath(os.path.join(current_file_path, os.pardir))
