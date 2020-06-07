@@ -45,10 +45,12 @@ data {
   real<lower=0.0> R_SQUARED_PENALTY;
 
   // Trend Hyper-Params
-  real<lower=0> LEV_SM_ALPHA;
-  real<lower=0> SLP_SM_ALPHA;
-  real<lower=0,upper=1> LEV_SM_MAX;
-  real<lower=0,upper=1> SLP_SM_MAX;
+  real<lower=0> LEV_SM_LOC;
+  real<lower=1> LEV_SM_SHAPE;
+  real<lower=0> SLP_SM_LOC;
+  real<lower=1> SLP_SM_SHAPE;
+  // real<lower=0,upper=1> LEV_SM_MAX;
+  // real<lower=0,upper=1> SLP_SM_MAX;
   real<lower=0> TIME_DELTA;
 
   // Residuals Tuning Hyper-Params
@@ -62,8 +64,8 @@ data {
   real DAMPED_FACTOR_FIXED;
 
   // Seasonality Hyper-Params
-  real<lower=0> SEA_SM_ALPHA;
-  real<lower=0,upper=1> SEA_SM_MAX;
+  real<lower=0> SEA_SM_LOC;
+  real<lower=1> SEA_SM_SHAPE;
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
   
   // 0 As linear, 1 As log-linear, 2 As logistic, 3 As flat
@@ -80,6 +82,10 @@ transformed data {
   int GL_SIZE;
   int GB_SIZE;
   int USE_VARY_SIGMA;
+  // smoothing beta params
+  real LEV_SM_ALPHA  = (LEV_SM_LOC * (2 - LEV_SM_SHAPE) - 1)/(LEV_SM_LOC - 1);
+  real SLP_SM_ALPHA  = (SLP_SM_LOC * (2 - SLP_SM_SHAPE) - 1)/(SLP_SM_LOC - 1);
+  real SEA_SM_ALPHA  = (SEA_SM_LOC * (2 - SEA_SM_SHAPE) - 1)/(SEA_SM_LOC - 1);
 
   DAMPED_FACTOR_SIZE = 1;
   IS_SEASONAL = 0;
@@ -119,8 +125,8 @@ parameters {
   vector<lower=0>[NUM_OF_PR] pr_beta;
   vector[NUM_OF_RR] rr_beta;
 
-  real<lower=0,upper=LEV_SM_MAX> lev_sm; //level smoothing parameter
-  real<lower=0,upper=SLP_SM_MAX> slp_sm; //slope smoothing parameter
+  real<lower=0,upper=1> lev_sm; //level smoothing parameter
+  real<lower=0,upper=1> slp_sm; //slope smoothing parameter
 
   // residual tuning parameters
   // use 5*CAUCHY_SD to dodge upper boundary case
@@ -140,7 +146,7 @@ parameters {
 
   // seasonal parameters
   //seasonality smoothing parameter
-  real<lower=0,upper=SEA_SM_MAX> sea_sm[IS_SEASONAL ? 1:0];
+  real<lower=0,upper=1> sea_sm[IS_SEASONAL ? 1:0];
   // initial seasonality
   vector<lower=-1,upper=1>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
 
@@ -246,15 +252,9 @@ transformed parameters {
 }
 model {
   //TEST Instead of uniform, impose beta prior for smoothing to adapt better with seasonality
-  lev_sm ~ beta(LEV_SM_ALPHA, 5);
-  slp_sm ~ beta(SLP_SM_ALPHA, 5);
-  sea_sm ~ beta(SEA_SM_ALPHA, 5);
-  
-  // real beta_a;
-  // real beta_b;
-  // beta_a = spike[al] * exp(amplitude[al]);
-  // beta_b = exp(amplitude[al]) - beta_a;
-  
+  lev_sm ~ beta(LEV_SM_ALPHA, LEV_SM_SHAPE);
+  slp_sm ~ beta(SLP_SM_ALPHA, SLP_SM_SHAPE);
+  sea_sm ~ beta(SEA_SM_ALPHA, SEA_SM_SHAPE);
   
   //prior for residuals
   if (WITH_MCMC == 0) {
@@ -323,25 +323,25 @@ model {
   // TEST (no need to use adjusted R2 since we are purely using it as metric within a model)
   // REASON: We want to make sure our regression component is as useful as condition w/o
   // dynamic trend to avoid overfit with weird combination of r(t) and u(t) + s(t)
-  if (NUM_OF_PR + NUM_OF_RR > 0) {
-    // vector[NUM_OF_OBS] ybar;
-    vector[NUM_OF_OBS] diff_tot;
-    vector[NUM_OF_OBS] diff_res;
-    real ss_tot;
-    real ss_res;
-    real rsq;
-    real ybar;
-    real new_ybar;
-    
-    ybar = mean(RESPONSE);
-    diff_tot = RESPONSE - ybar;
-    ss_tot = sum(diff_tot .* diff_tot);
-    new_ybar = mean(RESPONSE - r);
-    diff_res = RESPONSE - r - new_ybar;
-    ss_res = sum(diff_res .* diff_res);
-    rsq = 1 - ss_res/ss_tot;
-    // print(rsq);
-    // square-root make deminishing incentives of optimizing r square
-    target += R_SQUARED_PENALTY * rsq;
-  }
+  // if (NUM_OF_PR + NUM_OF_RR > 0) {
+  //   // vector[NUM_OF_OBS] ybar;
+  //   vector[NUM_OF_OBS] diff_tot;
+  //   vector[NUM_OF_OBS] diff_res;
+  //   real ss_tot;
+  //   real ss_res;
+  //   real rsq;
+  //   real ybar;
+  //   real new_ybar;
+  //   
+  //   ybar = mean(RESPONSE);
+  //   diff_tot = RESPONSE - ybar;
+  //   ss_tot = sum(diff_tot .* diff_tot);
+  //   new_ybar = mean(RESPONSE - r);
+  //   diff_res = RESPONSE - r - new_ybar;
+  //   ss_res = sum(diff_res .* diff_res);
+  //   rsq = 1 - ss_res/ss_tot;
+  //   // print(rsq);
+  //   // square-root make deminishing incentives of optimizing r square
+  //   target += R_SQUARED_PENALTY * rsq;
+  // }
 }

@@ -190,17 +190,33 @@ class LGT(Estimator):
         self._setup_computed_residual_params()
 
     def _setup_computed_smoothing_params(self):
-        # beta = 5; so (5,5) would be symmetric
         # derive shift of loc towards smaller value with respect to seasonality
         max_period = max(self.period, self.seasonality)
         self.time_delta = 1/max_period
-        self.level_smoothing_alpha = max(1, 5 - 0.01 * max_period)
-        self.slope_smoothing_alpha = max(1, 5 - 0.01 * max_period)
-        # penalize less for seasonality
-        self.seasonality_smoothing_alpha = max(1, 5 - 0.01 * (max_period/self.seasonality))
-        self.level_smoothing_max = 1.0
-        self.slope_smoothing_max = 1.0
-        self.seasonality_smoothing_max = 1.0
+        # self.level_smoothing_loc = max(1, 5 - 0.01 * max_period)
+        # self.slope_smoothing_loc = max(1, 5 - 0.01 * max_period)
+        # # penalize less for seasonality
+        # self.seasonality_smoothing_alpha = max(1, 5 - 0.01 * (max_period/self.seasonality))
+        # self.level_smoothing_max = 1.0
+        # self.slope_smoothing_max = 1.0
+        # self.seasonality_smoothing_max = 1.0
+        # shape: the greater the more concentrate
+        # loc: mode of the pdf
+        if self.regressor_col is None:
+            self.level_smoothing_loc = 0.3
+            self.slope_smoothing_loc = 0.3
+            self.seasonality_smoothing_loc = 0.3
+            self.level_smoothing_shape = 1.0
+            self.slope_smoothing_shape = 1.0
+            self.seasonality_smoothing_shape = 1.0
+        else:
+            # TODO: consider condition on initial adj. R-Squared
+            self.level_smoothing_loc = 0.1
+            self.slope_smoothing_loc = 0.1
+            self.seasonality_smoothing_loc = 0.1
+            self.level_smoothing_shape = 5.0
+            self.slope_smoothing_shape = 5.0
+            self.seasonality_smoothing_shape = 5.0
 
     def _setup_computed_residual_params(self):
         # TODO: Should this tie to number of observations?
