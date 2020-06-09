@@ -4,6 +4,7 @@ import pandas as pd
 import string
 from collections import OrderedDict
 from copy import deepcopy
+from datetime import datetime
 
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.datasets import make_regression
@@ -180,3 +181,56 @@ def make_synthetic_series(seed=0):
     df['response'] = df['response'] * np.linspace(5, 1, df.shape[0])
 
     return df, coef
+
+
+def fourier_series(dates, period, order=3):
+    """ Given dates array, cyclical period and order.  Return a set of fourier series.
+
+    Parameters
+    ----------
+    dates: array-like date-stamp
+    period: int
+    order: int
+
+    Returns
+    -------
+        2D array where each column is a specific order fourier series with sin() or cos().
+    """
+    t = np.array(
+        (dates - datetime(1970, 1, 1))
+            .dt.total_seconds()
+            .astype(np.float)
+    ) / (3600 * 24.)
+    out = list()
+    for i in range(1, order + 1):
+        x = 2.0 * i * np.pi * t / period
+        out.append(np.sin(x))
+        out.append(np.cos(x))
+    out = np.column_stack(out)
+    return out
+
+
+def fourier_series_df(df, date_col, period, order=3):
+    """ Given a data-frame, cyclical period and order.  Return a set of fourier series.
+    Parameters
+    ----------
+    df: pd.DataFrame
+    date_col: str
+    period: int
+    order: int
+
+    Returns
+    -------
+    df: pd.DataFrame
+        data with computed fourier series attached
+    fs_cols: list
+        list of labels derived from fourier series
+    """
+    fs = fourier_series(df[date_col], period, order=order)
+    fs_cols = []
+    for i in range(1, order + 1):
+        fs_cols.append('fs_cos{}'.format(i))
+        fs_cols.append('fs_sin{}'.format(i))
+    fs_df = pd.DataFrame(fs, columns=fs_cols)
+    df = pd.concat([df.reset_index(drop=True), fs_df], axis=1)
+    return df, fs_cols
