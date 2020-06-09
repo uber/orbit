@@ -12,8 +12,8 @@ class DataInputMapper(Enum):
     RESPONSE = 'RESPONSE'
     # ---------- Seasonality ---------- #
     SEASONALITY = 'SEASONALITY'
-    SEASONALITY_SMOOTHING_ALPHA = 'SEA_SM_ALPHA'
-    SEASONALITY_SMOOTHING_MAX = 'SEA_SM_MAX'
+    SEASONALITY_SMOOTHING_LOC= 'SEA_SM_LOC'
+    SEASONALITY_SMOOTHING_SHAPE = 'SEA_SM_SHAPE'
     # ---------- LGT Global Trend ---------- #
     # GLOBAL_TREND_COEF_MIN = 'GT_COEF_MIN'
     # GLOBAL_TREND_COEF_MAX = 'GT_COEF_MAX'
@@ -22,10 +22,10 @@ class DataInputMapper(Enum):
     # LOCAL_TREND_COEF_MIN = 'LT_COEF_MIN'
     # LOCAL_TREND_COEF_MAX = 'LT_COEF_MAX'
     # ---------- Common Local Trend ---------- #
-    LEVEL_SMOOTHING_ALPHA = 'LEV_SM_ALPHA'
-    SLOPE_SMOOTHING_ALPHA = 'SLP_SM_ALPHA'
-    LEVEL_SMOOTHING_MAX = 'LEV_SM_MAX'
-    SLOPE_SMOOTHING_MAX = 'SLP_SM_MAX'
+    LEVEL_SMOOTHING_LOC = 'LEV_SM_LOC'
+    LEVEL_SMOOTHING_SHAPE = 'LEV_SM_SHAPE'
+    SLOPE_SMOOTHING_LOC = 'SLP_SM_LOC'
+    SLOPE_SMOOTHING_SHAPE = 'SLP_SM_SHAPE'
     # ----------  Noise Distribution  ---------- #
     MIN_NU = 'MIN_NU'
     MAX_NU = 'MAX_NU'

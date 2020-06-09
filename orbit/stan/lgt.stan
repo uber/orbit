@@ -42,10 +42,10 @@ data {
   real<lower=0.0> R_SQUARED_PENALTY;
   
   // Trend Hyper-Params
-  real<lower=0> LEV_SM_ALPHA;
-  real<lower=0> SLP_SM_ALPHA;
-  real<lower=0,upper=1> LEV_SM_MAX;
-  real<lower=0,upper=1> SLP_SM_MAX;
+  real<lower=0> LEV_SM_LOC;
+  real<lower=1> LEV_SM_SHAPE;
+  real<lower=0> SLP_SM_LOC;
+  real<lower=1> SLP_SM_SHAPE;
 
   // Residuals Tuning Hyper-Params
   // this re-parameterization is sugggested by stan org and improves sampling
@@ -55,8 +55,8 @@ data {
   real<lower=1> MIN_NU; real<lower=1> MAX_NU;
 
   // Seasonality Hyper-Params
-  real<lower=0> SEA_SM_ALPHA;
-  real<lower=0,upper=1> SEA_SM_MAX;
+  real<lower=0> SEA_SM_LOC;
+  real<lower=1> SEA_SM_SHAPE;
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
 }
 transformed data {
@@ -64,6 +64,12 @@ transformed data {
   // SIGMA_EPS is a offset to dodge lower boundary case;
   real SIGMA_EPS;
   int USE_VARY_SIGMA;
+  
+  // smoothing beta params
+  real LEV_SM_ALPHA  = (LEV_SM_LOC * (2 - LEV_SM_SHAPE) - 1)/(LEV_SM_LOC - 1);
+  real SLP_SM_ALPHA  = (SLP_SM_LOC * (2 - SLP_SM_SHAPE) - 1)/(SLP_SM_LOC - 1);
+  real SEA_SM_ALPHA  = (SEA_SM_LOC * (2 - SEA_SM_SHAPE) - 1)/(SEA_SM_LOC - 1);
+  
   USE_VARY_SIGMA = 0;
   SIGMA_EPS = 1e-5;
   IS_SEASONAL = 0;
@@ -80,8 +86,8 @@ parameters {
   vector<lower=0>[NUM_OF_PR] pr_beta;
   vector[NUM_OF_RR] rr_beta;
 
-  real<lower=0,upper=LEV_SM_MAX> lev_sm; //level smoothing parameter
-  real<lower=0,upper=SLP_SM_MAX> slp_sm; //slope smoothing parameter
+  real<lower=0,upper=1> lev_sm; //level smoothing parameter
+  real<lower=0,upper=1> slp_sm; //slope smoothing parameter
 
   // residual tuning parameters
   // use 5*CAUCHY_SD to dodge upper boundary case
@@ -100,7 +106,7 @@ parameters {
 
   // seasonal parameters
   //seasonality smoothing parameter
-  real<lower=0,upper=SEA_SM_MAX> sea_sm[IS_SEASONAL ? 1:0];
+  real<lower=0,upper=1> sea_sm[IS_SEASONAL ? 1:0];
   //initial seasonality
   vector<lower=-1,upper=1>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
 }
@@ -180,6 +186,11 @@ transformed parameters {
   }
 }
 model {
+  //TEST Instead of uniform, impose beta prior for smoothing to adapt better with seasonality
+  lev_sm ~ beta(LEV_SM_ALPHA, LEV_SM_SHAPE);
+  slp_sm ~ beta(SLP_SM_ALPHA, SLP_SM_SHAPE);
+  sea_sm ~ beta(SEA_SM_ALPHA, SEA_SM_SHAPE);
+  
   // prior for residuals
   if (WITH_MCMC == 0) {
     // for MAP, set finite boundary else use uniform with transformation
