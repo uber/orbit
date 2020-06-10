@@ -66,6 +66,20 @@ class LGT(Estimator):
 
     Parameters
     ----------
+    is_multiplicative : bool
+        if True, response and regressor values are log transformed such that the model is
+        multiplicative. If False, no transformations are applied. Default True.
+    seasonality : int
+        The length of the seasonality period. For example, if dataframe contains weekly data
+        points, `52` would indicate a yearly seasonality.
+    period : float
+        **EXPERIMENTAL** A supplemental parameter to define the number of steps in a cycle.  It can be
+        a positive fraction.  Suggested to use only when user try to model dual seasonality where step size
+        is 1/`max_period` and `max_period` = max of `seasonality` and `period`.
+    auto_scale : bool
+        **EXPERIMENTAL AND UNSTABLE** if True, response and regressor values are transformed
+        with a `MinMaxScaler` such that the min value is `e` and max value is
+        the max value in the data
     regressor_col : list
         a list of regressor column names in the dataframe
     regressor_sign : list
@@ -78,34 +92,18 @@ class LGT(Estimator):
     regressor_sigma_prior : list
         prior values for regressors standard deviation. The length of `regressor_sigma_prior` must
         be the same as `regressor_col`
-    is_multiplicative : bool
-        if True, response and regressor values are log transformed such that the model is
-        multiplicative. If False, no transformations are applied. Default True.
-    auto_scale : bool
-        **EXPERIMENTAL AND UNSTABLE** if True, response and regressor values are transformed
-        with a `MinMaxScaler` such that the min value is `e` and max value is
-        the max value in the data
-    cauchy_sd : float
-        a hyperprior for residuals scale parameter
-    seasonality : int
-        The length of the seasonality period. For example, if dataframe contains weekly data
-        points, `52` would indicate a yearly seasonality.
-    period : float
-        **EXPERIMENTAL** A supplemental parameter to define the number of steps in a cycle.  It can be
-        a positive fraction.  Suggested to use only when user try to model dual seasonality where step size
-        is 1/`max_period` and `max_period` = max of `seasonality` and `period`.
-    seasonality_smoothing_min : float
-        minimum value allowed for seasonality smoothing coefficient samples
-    seasonality_smoothing_max : float
-        maximum value allowed for seasonality smoothing coefficient samples
-    level_smoothing_min : float
-         minimum value allowed for level smoothing coefficient samples
-    level_smoothing_max : float
-        maximum value allowed for level smoothing coefficient samples
-    slope_smoothing_min : float
-        minimum value allowed for local slope smoothing coefficient samples
-    slope_smoothing_max : float
-        maximum value allowed for local slope smoothing coefficient samples
+    seasonality_smoothing_loc : float
+        location prior of seasonality smoothing
+    seasonality_smoothing_shape : float
+        shape prior of seasonality smoothing
+    level_smoothing_loc : float
+        location prior of local level smoothing
+    level_smoothing_shape : float
+        shape prior of local level smoothing
+    slope_smoothing_loc : float
+        location prior of local slope smoothing
+    slope_smoothing_shape : float
+        shape prior of local slope smoothing
     regression_penalty : str
         a string in one of {'fixed_ridge','lasso','auto_ridge'}. See orbit.constants.lgt.RegressionPenalty
     lasso_scale : float
@@ -137,10 +135,10 @@ class LGT(Estimator):
     _data_input_mapper = lgt.DataInputMapper
 
     def __init__(
-            self, regressor_col=None, regressor_sign=None,
+            self, is_multiplicative=True, seasonality=-1, period=1.0,
+            auto_scale=False,
+            regressor_col=None, regressor_sign=None,
             regressor_beta_prior=None, regressor_sigma_prior=None,
-            is_multiplicative=True, auto_scale=False,
-            seasonality=-1, period=1.0,
             regression_penalty='fixed_ridge',
             lasso_scale=0.5, auto_ridge_scale=0.5,
             **kwargs
