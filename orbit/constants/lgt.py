@@ -45,7 +45,7 @@ class DataInputMapper(Enum):
     # Experimental; to avoid over-parameterization of latent variable vs. regression when
     # they have similar marginal impact.  In that case, penalty kick in to reward more to explain variation with
     # regression instead of latent variables.
-    R_SQUARED_PENALTY = 'R_SQUARED_PENALTY'
+    # R_SQUARED_PENALTY = 'R_SQUARED_PENALTY'
 
 
 class BaseStanSamplingParameters(Enum):

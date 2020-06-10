@@ -42,7 +42,7 @@ data {
   real<lower=0> AUTO_RIDGE_SCALE;
   real<lower=0> LASSO_SCALE;
   // Test penalty scale parameter to avoid regression and smoothing over-mixed
-  real<lower=0.0> R_SQUARED_PENALTY;
+  // real<lower=0.0> R_SQUARED_PENALTY;
 
   // Trend Hyper-Params
   real<lower=0> LEV_SM_LOC;

@@ -155,10 +155,7 @@ class LGT(Estimator):
             self, regressor_col=None, regressor_sign=None,
             regressor_beta_prior=None, regressor_sigma_prior=None,
             is_multiplicative=True, auto_scale=False,
-            seasonality=-1,
-            # this is explicit for now; for real, we derive this from seasonality (max of seasonalities)
-            period=1.0,
-            r_squared_penalty=None,
+            seasonality=-1, period=1.0,
             lasso_scale=0.5, auto_ridge_scale=0.5, regression_penalty='fixed_ridge',
             **kwargs
     ):
@@ -190,18 +187,12 @@ class LGT(Estimator):
         self._setup_computed_residual_params()
 
     def _setup_computed_smoothing_params(self):
-        # derive shift of loc towards smaller value with respect to seasonality
+        """ Derived loc and shape conditioning on regression
+        """
         max_period = max(self.period, self.seasonality)
         self.time_delta = 1/max_period
-        # self.level_smoothing_loc = max(1, 5 - 0.01 * max_period)
-        # self.slope_smoothing_loc = max(1, 5 - 0.01 * max_period)
-        # # penalize less for seasonality
-        # self.seasonality_smoothing_alpha = max(1, 5 - 0.01 * (max_period/self.seasonality))
-        # self.level_smoothing_max = 1.0
-        # self.slope_smoothing_max = 1.0
-        # self.seasonality_smoothing_max = 1.0
-        # shape: the greater the more concentrate
-        # loc: mode of the pdf
+        # shape: the greater the more concentrated of pdf
+        # loc: mode of pdf
         if self.regressor_col is None:
             self.level_smoothing_loc = 0.3
             self.slope_smoothing_loc = 0.3
@@ -210,7 +201,6 @@ class LGT(Estimator):
             self.slope_smoothing_shape = 1.0
             self.seasonality_smoothing_shape = 1.0
         else:
-            # TODO: consider condition on initial adj. R-Squared
             self.level_smoothing_loc = 0.1
             self.slope_smoothing_loc = 0.1
             self.seasonality_smoothing_loc = 0.1
@@ -239,11 +229,6 @@ class LGT(Estimator):
         self.regular_regressor_col = []
         self.regular_regressor_beta_prior = []
         self.regular_regressor_sigma_prior = []
-
-        # if no regressors, end here
-        if self.regressor_col is None:
-            self.r_squared_penalty = 0.0
-            return
 
         num_of_regressors = len(self.regressor_col)
 
