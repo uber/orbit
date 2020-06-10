@@ -25,9 +25,13 @@ class LGTModel:
         response = self.response
         num_of_obs = self.num_of_obs
 
-        # regression parameters
-        lev_sm = pyro.sample("lev_sm", dist.Uniform(self.lev_sm_min, self.lev_sm_max))
-        slp_sm = pyro.sample("slp_sm", dist.Uniform(self.slp_sm_min, self.slp_sm_max))
+        # smoothing params
+        lev_sm_alpha = (self.lev_sm_loc * (2 - self.lev_sm_shape) - 1) / (self.lev_sm_loc - 1)
+        slp_sm_alpha = (self.slp_sm_loc * (2 - self.slp_sm_shape) - 1) / (self.slp_sm_loc - 1)
+        sea_sm_alpha = (self.sea_sm_loc * (2 - self.sea_sm_shape) - 1) / (self.sea_sm_loc - 1)
+
+        lev_sm = pyro.sample("lev_sm", dist.Beta(lev_sm_alpha, self.lev_sm_shape))
+        slp_sm = pyro.sample("slp_sm", dist.Beta(slp_sm_alpha, self.slp_sm_shape))
 
         # residual tuning parameters
         nu = pyro.sample("nu", dist.Uniform(self.min_nu, self.max_nu))
@@ -56,6 +60,7 @@ class LGTModel:
                                               dist.Laplace(self.pr_beta_prior, self.lasso_scale)))
             pr = pr_beta @ self.pr_mat.transpose(-1, -2)
 
+        # regression parameters
         if self.num_of_rr == 0:
             rr = torch.zeros(num_of_obs)
         else:
@@ -82,20 +87,17 @@ class LGTModel:
 
         # trend parameters
         # local trend proportion
-        lt_coef = pyro.sample("lt_coef", dist.Uniform(self.lt_coef_min,
-                                                      self.lt_coef_max))
+        lt_coef = pyro.sample("lt_coef", dist.Uniform(0, 1))
         # global trend proportion
-        gt_coef = pyro.sample("gt_coef", dist.Uniform(self.gt_coef_min,
-                                                      self.gt_coef_max))
+        gt_coef = pyro.sample("gt_coef", dist.Uniform(-0.5, 0.5))
         # global trend parameter
-        gt_pow = pyro.sample("gt_pow", dist.Uniform(self.gt_pow_min,
-                                                    self.gt_pow_max))
+        gt_pow = pyro.sample("gt_pow", dist.Uniform(0, 1))
 
         # seasonal parameters
         if self.is_seasonal:
             # seasonality smoothing parameter
-            sea_sm = pyro.sample("sea_sm", dist.Uniform(self.sea_sm_min,
-                                                        self.sea_sm_max))
+            sea_sm = pyro.sample("sea_sm", dist.Beta(sea_sm_alpha, self.sea_sm_shape))
+
             # initial seasonality
             # 33% lift is with 1 sd prob.
             init_sea = pyro.sample("init_sea",

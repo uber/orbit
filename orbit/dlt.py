@@ -136,8 +136,6 @@ class DLT(LGT):
          minimum value allowed for damped factor samples. Ignored when `damped_factor_fixed` > 0
     damped_factor_max : float
          maximum value allowed for damped factor  samples. Ignored when `damped_factor_fixed` > 0
-    regression_coef_max : float
-        Maximum absolute value allowed for regression coefficient samples
 
 
     Notes
@@ -157,7 +155,6 @@ class DLT(LGT):
             seasonality=-1,
             # this is explicit for now; for real, we derive this from seasonality (max of seasonalities)
             period=1.0,
-            r_squared_penalty=None,
             lasso_scale=0.5, auto_ridge_scale=0.5, regression_penalty='fixed_ridge',
             damped_factor_min=0.8, damped_factor_max=1,
             global_trend_option='linear',

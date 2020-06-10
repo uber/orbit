@@ -65,7 +65,7 @@ transformed data {
   real SIGMA_EPS;
   int USE_VARY_SIGMA;
   
-  // smoothing beta params
+  // smoothing params
   real LEV_SM_ALPHA  = (LEV_SM_LOC * (2 - LEV_SM_SHAPE) - 1)/(LEV_SM_LOC - 1);
   real SLP_SM_ALPHA  = (SLP_SM_LOC * (2 - SLP_SM_SHAPE) - 1)/(SLP_SM_LOC - 1);
   real SEA_SM_ALPHA  = (SEA_SM_LOC * (2 - SEA_SM_SHAPE) - 1)/(SEA_SM_LOC - 1);

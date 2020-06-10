@@ -90,22 +90,10 @@ class LGT(Estimator):
     seasonality : int
         The length of the seasonality period. For example, if dataframe contains weekly data
         points, `52` would indicate a yearly seasonality.
-    seasonality_min : float
-        minimum value allowed for initial seasonality samples
-    seasonality_max : float
-        maximum value allowed for initial seasonality samples
     seasonality_smoothing_min : float
         minimum value allowed for seasonality smoothing coefficient samples
     seasonality_smoothing_max : float
         maximum value allowed for seasonality smoothing coefficient samples
-    global_trend_coef_min : float
-        minimum value allowed for global trend coefficient samples
-    global_trend_coef_max : float
-        maximum value allowed for global trend coefficient samples
-    global_trend_pow_min : float
-        minimum value allowed for global trend power samples
-    global_trend_pow_max : float
-        maximum value allowed for global trend power samples
     local_trend_coef_min : float
         minimum value allowed for local trend coefficient samples
     local_trend_coef_max : float
@@ -118,14 +106,6 @@ class LGT(Estimator):
         minimum value allowed for local slope smoothing coefficient samples
     slope_smoothing_max : float
         maximum value allowed for local slope smoothing coefficient samples
-    fix_regression_coef_sd : int
-        binary input 1 for using point prior of regressors sigma; 0 for using Cauchy hyperprior for
-        regressor sigma
-    regressor_sigma_sd : float
-        hyperprior for regressor coefficient scale parameter. Ignored when `fix_regression_coef_sd`
-        is 1.
-    regression_coef_max : float
-        Maximum absolute value allowed for regression coefficient samples
 
 
     Notes
@@ -229,6 +209,10 @@ class LGT(Estimator):
         self.regular_regressor_col = []
         self.regular_regressor_beta_prior = []
         self.regular_regressor_sigma_prior = []
+
+        # if no regressors, end here
+        if self.regressor_col is None:
+            return
 
         num_of_regressors = len(self.regressor_col)
 
@@ -389,10 +373,10 @@ class LGT(Estimator):
             self.regular_regressor_matrix = self.df.filter(
                 items=self.regular_regressor_col,).values
 
-        if (self.regressor_col is not None) and (self.r_squared_penalty is None):
-            self.r_squared_penalty = np.sqrt(self.num_of_observations)
-        else:
-            self.r_squared_penalty = max(self.r_squared_penalty, 0.0)
+        # if (self.regressor_col is not None) and (self.r_squared_penalty is None):
+        #     self.r_squared_penalty = np.sqrt(self.num_of_observations)
+        # else:
+        #     self.r_squared_penalty = max(self.r_squared_penalty, 0.0)
 
     def _set_model_param_names(self):
         self.model_param_names = []
