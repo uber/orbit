@@ -96,47 +96,33 @@ class DLT(LGT):
     seasonality : int
         The length of the seasonality period. For example, if dataframe contains weekly data
         points, `52` would indicate a yearly seasonality.
-    seasonality_min : float
-        minimum value allowed for initial seasonality samples
-    seasonality_max : float
-        maximum value allowed for initial seasonality samples
-    seasonality_smoothing_min : float
-        minimum value allowed for seasonality smoothing coefficient samples
-    seasonality_smoothing_max : float
-        maximum value allowed for seasonality smoothing coefficient samples
-    global_trend_coef_min : float
-        minimum value allowed for global trend coefficient samples
-    global_trend_coef_max : float
-        maximum value allowed for global trend coefficient samples
-    global_trend_pow_min : float
-        minimum value allowed for global trend power samples
-    global_trend_pow_max : float
-        maximum value allowed for global trend power samples
-    local_trend_coef_min : float
-        minimum value allowed for local trend coefficient samples
-    local_trend_coef_max : float
-        maximum value allowed for local trend coefficient samples
-    level_smoothing_min : float
-         minimum value allowed for level smoothing coefficient samples
-    level_smoothing_max : float
-        maximum value allowed for level smoothing coefficient samples
-    slope_smoothing_min : float
-        minimum value allowed for local slope smoothing coefficient samples
-    slope_smoothing_max : float
-        maximum value allowed for local slope smoothing coefficient samples
-    fix_regression_coef_sd : int
-        binary input 1 for using point prior of regressors sigma; 0 for using Cauchy hyperprior for
-        regressor sigma
-    regressor_sigma_sd : float
-        hyperprior for regressor coefficient scale parameter. Ignored when `fix_regression_coef_sd`
-        is 1.
+    period : float
+        **EXPERIMENTAL** A supplemental parameter to define the number of steps in a cycle.  It can be
+        a positive fraction.  Suggested to use only when user try to model dual seasonality where step size
+        is 1/`max_period` and `max_period` = max of `seasonality` and `period`.
+    seasonality_smoothing_loc : float
+    seasonality_smoothing_shape : float
+    level_smoothing_loc : float
+    level_smoothing_shape : float
+    slope_smoothing_loc : float
+        local slope smoothing coefficient samples
+    slope_smoothing_shape : float
+       local slope smoothing coefficient samples
+    regression_penalty : str
+        a string in one of {'fixed_ridge','lasso','auto_ridge'}; see from orbit.constants.lgt.RegressionPenalty
+    lasso_scale : float
+        shared regression sigma scale parameters used only when `regression_penalty` == 'lasso'.
+    auto_ridge_scale : float
+        shared regression sigma scale parameters used only when `regression_penalty` == 'auto_ridge'
     damped_factor_fixed : float
         input between 0 and 1 which specify damped effect of local slope per period.
     damped_factor_min : float
-         minimum value allowed for damped factor samples. Ignored when `damped_factor_fixed` > 0
+        minimum value allowed for damped factor samples. Ignored when `damped_factor_fixed` > 0
     damped_factor_max : float
-         maximum value allowed for damped factor  samples. Ignored when `damped_factor_fixed` > 0
-
+        maximum value allowed for damped factor  samples. Ignored when `damped_factor_fixed` > 0
+    global_trend_option : str
+        a string in of {'linear', 'loglinear', 'logistic' ,'flat'} to define the type of deterministic trend. See
+        orbit.constants.dlt.GlobalTrendOption
 
     Notes
     -----
@@ -155,10 +141,12 @@ class DLT(LGT):
             seasonality=-1,
             # this is explicit for now; for real, we derive this from seasonality (max of seasonalities)
             period=1.0,
-            lasso_scale=0.5, auto_ridge_scale=0.5, regression_penalty='fixed_ridge',
+            regression_penalty='fixed_ridge',
+            lasso_scale=0.5, auto_ridge_scale=0.5,
             damped_factor_min=0.8, damped_factor_max=1,
+            damped_factor_fixed=0.8,
             global_trend_option='linear',
-            damped_factor_fixed=0.8, **kwargs
+            **kwargs
     ):
 
         # get all init args and values and set

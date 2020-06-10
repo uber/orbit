@@ -90,14 +90,14 @@ class LGT(Estimator):
     seasonality : int
         The length of the seasonality period. For example, if dataframe contains weekly data
         points, `52` would indicate a yearly seasonality.
+    period : float
+        **EXPERIMENTAL** A supplemental parameter to define the number of steps in a cycle.  It can be
+        a positive fraction.  Suggested to use only when user try to model dual seasonality where step size
+        is 1/`max_period` and `max_period` = max of `seasonality` and `period`.
     seasonality_smoothing_min : float
         minimum value allowed for seasonality smoothing coefficient samples
     seasonality_smoothing_max : float
         maximum value allowed for seasonality smoothing coefficient samples
-    local_trend_coef_min : float
-        minimum value allowed for local trend coefficient samples
-    local_trend_coef_max : float
-        maximum value allowed for local trend coefficient samples
     level_smoothing_min : float
          minimum value allowed for level smoothing coefficient samples
     level_smoothing_max : float
@@ -106,7 +106,12 @@ class LGT(Estimator):
         minimum value allowed for local slope smoothing coefficient samples
     slope_smoothing_max : float
         maximum value allowed for local slope smoothing coefficient samples
-
+    regression_penalty : str
+        a string in one of {'fixed_ridge','lasso','auto_ridge'}. See orbit.constants.lgt.RegressionPenalty
+    lasso_scale : float
+        shared regression sigma scale parameters used only when `regression_penalty` == 'lasso'.
+    auto_ridge_scale : float
+        shared regression sigma scale parameters used only when `regression_penalty` == 'auto_ridge'
 
     Notes
     -----
@@ -136,7 +141,8 @@ class LGT(Estimator):
             regressor_beta_prior=None, regressor_sigma_prior=None,
             is_multiplicative=True, auto_scale=False,
             seasonality=-1, period=1.0,
-            lasso_scale=0.5, auto_ridge_scale=0.5, regression_penalty='fixed_ridge',
+            regression_penalty='fixed_ridge',
+            lasso_scale=0.5, auto_ridge_scale=0.5,
             **kwargs
     ):
 
