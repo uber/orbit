@@ -4,6 +4,7 @@ from scipy.stats import nct
 import torch
 from copy import deepcopy
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.linear_model import LinearRegression
 
 from orbit.estimator import Estimator
 from orbit.constants import lgt
@@ -65,6 +66,20 @@ class LGT(Estimator):
 
     Parameters
     ----------
+    is_multiplicative : bool
+        if True, response and regressor values are log transformed such that the model is
+        multiplicative. If False, no transformations are applied. Default True.
+    seasonality : int
+        The length of the seasonality period. For example, if dataframe contains weekly data
+        points, `52` would indicate a yearly seasonality.
+    period : float
+        **EXPERIMENTAL** A supplemental parameter to define the number of steps in a cycle.  It can be
+        a positive fraction.  Suggested to use only when user try to model dual seasonality where step size
+        is 1/`max_period` and `max_period` = max of `seasonality` and `period`.
+    auto_scale : bool
+        **EXPERIMENTAL AND UNSTABLE** if True, response and regressor values are transformed
+        with a `MinMaxScaler` such that the min value is `e` and max value is
+        the max value in the data
     regressor_col : list
         a list of regressor column names in the dataframe
     regressor_sign : list
@@ -77,55 +92,24 @@ class LGT(Estimator):
     regressor_sigma_prior : list
         prior values for regressors standard deviation. The length of `regressor_sigma_prior` must
         be the same as `regressor_col`
-    is_multiplicative : bool
-        if True, response and regressor values are log transformed such that the model is
-        multiplicative. If False, no transformations are applied. Default True.
-    auto_scale : bool
-        **EXPERIMENTAL AND UNSTABLE** if True, response and regressor values are transformed
-        with a `MinMaxScaler` such that the min value is `e` and max value is
-        the max value in the data
-    cauchy_sd : float
-        a hyperprior for residuals scale parameter
-    seasonality : int
-        The length of the seasonality period. For example, if dataframe contains weekly data
-        points, `52` would indicate a yearly seasonality.
-    seasonality_min : float
-        minimum value allowed for initial seasonality samples
-    seasonality_max : float
-        maximum value allowed for initial seasonality samples
-    seasonality_smoothing_min : float
-        minimum value allowed for seasonality smoothing coefficient samples
-    seasonality_smoothing_max : float
-        maximum value allowed for seasonality smoothing coefficient samples
-    global_trend_coef_min : float
-        minimum value allowed for global trend coefficient samples
-    global_trend_coef_max : float
-        maximum value allowed for global trend coefficient samples
-    global_trend_pow_min : float
-        minimum value allowed for global trend power samples
-    global_trend_pow_max : float
-        maximum value allowed for global trend power samples
-    local_trend_coef_min : float
-        minimum value allowed for local trend coefficient samples
-    local_trend_coef_max : float
-        maximum value allowed for local trend coefficient samples
-    level_smoothing_min : float
-         minimum value allowed for level smoothing coefficient samples
-    level_smoothing_max : float
-        maximum value allowed for level smoothing coefficient samples
-    slope_smoothing_min : float
-        minimum value allowed for local slope smoothing coefficient samples
-    slope_smoothing_max : float
-        maximum value allowed for local slope smoothing coefficient samples
-    fix_regression_coef_sd : int
-        binary input 1 for using point prior of regressors sigma; 0 for using Cauchy hyperprior for
-        regressor sigma
-    regressor_sigma_sd : float
-        hyperprior for regressor coefficient scale parameter. Ignored when `fix_regression_coef_sd`
-        is 1.
-    regression_coef_max : float
-        Maximum absolute value allowed for regression coefficient samples
-
+    seasonality_smoothing_loc : float
+        location prior of seasonality smoothing
+    seasonality_smoothing_shape : float
+        shape prior of seasonality smoothing
+    level_smoothing_loc : float
+        location prior of local level smoothing
+    level_smoothing_shape : float
+        shape prior of local level smoothing
+    slope_smoothing_loc : float
+        location prior of local slope smoothing
+    slope_smoothing_shape : float
+        shape prior of local slope smoothing
+    regression_penalty : str
+        a string in one of {'fixed_ridge','lasso','auto_ridge'}. See orbit.constants.lgt.RegressionPenalty
+    lasso_scale : float
+        shared regression sigma scale parameters used only when `regression_penalty` == 'lasso'.
+    auto_ridge_scale : float
+        shared regression sigma scale parameters used only when `regression_penalty` == 'auto_ridge'
 
     Notes
     -----
@@ -151,17 +135,12 @@ class LGT(Estimator):
     _data_input_mapper = lgt.DataInputMapper
 
     def __init__(
-            self, regressor_col=None, regressor_sign=None,
+            self, is_multiplicative=True, seasonality=-1, period=1.0,
+            auto_scale=False,
+            regressor_col=None, regressor_sign=None,
             regressor_beta_prior=None, regressor_sigma_prior=None,
-            is_multiplicative=True, auto_scale=False, cauchy_sd=None, min_nu=5, max_nu=40,
-            seasonality=0, seasonality_min=-1.0, seasonality_max=1.0,
-            seasonality_smoothing_min=0, seasonality_smoothing_max=1.0,
-            global_trend_coef_min=-0.5, global_trend_coef_max=0.5,
-            global_trend_pow_min=0, global_trend_pow_max=1,
-            local_trend_coef_min=0, local_trend_coef_max=1,
-            level_smoothing_min=0, level_smoothing_max=1,
-            slope_smoothing_min=0, slope_smoothing_max=1,
-            lasso_scale=0.5, auto_ridge_scale=0.5, regression_penalty='fixed_ridge',
+            regression_penalty='fixed_ridge',
+            lasso_scale=0.5, auto_ridge_scale=0.5,
             **kwargs
     ):
 
@@ -187,10 +166,38 @@ class LGT(Estimator):
         self._regression_penalty = getattr(lgt.RegressionPenalty, regression_penalty).value
 
     def _set_computed_params(self):
+        self._setup_computed_smoothing_params()
         self._setup_computed_regression_params()
+        self._setup_computed_residual_params()
+
+    def _setup_computed_smoothing_params(self):
+        """ Derived loc and shape conditioning on regression
+        """
+        max_period = max(self.period, self.seasonality)
+        self.time_delta = 1/max_period
+        # shape: the greater the more concentrated of pdf
+        # loc: mode of pdf
+        if self.regressor_col is None:
+            self.level_smoothing_loc = 0.3
+            self.slope_smoothing_loc = 0.3
+            self.seasonality_smoothing_loc = 0.3
+            self.level_smoothing_shape = 1.0
+            self.slope_smoothing_shape = 1.0
+            self.seasonality_smoothing_shape = 1.0
+        else:
+            self.level_smoothing_loc = 0.1
+            self.slope_smoothing_loc = 0.1
+            self.seasonality_smoothing_loc = 0.1
+            self.level_smoothing_shape = 5.0
+            self.slope_smoothing_shape = 5.0
+            self.seasonality_smoothing_shape = 5.0
+
+    def _setup_computed_residual_params(self):
+        # TODO: Should this tie to number of observations?
+        self.min_nu = 5.0
+        self.max_nu = 40.0
 
     def _setup_computed_regression_params(self):
-
         def _validate(regression_params, valid_length):
             for p in regression_params:
                 if p is not None and len(p) != valid_length:
@@ -312,12 +319,33 @@ class LGT(Estimator):
         self.response = self.df[self.response_col].values
         self.num_of_observations = len(self.response)
 
-        self.cauchy_sd = max(
-                self.response,
-            ) / 30 if self.cauchy_sd is None else self.cauchy_sd
+        self.cauchy_sd = max(self.response) / 30.0
 
         self._setup_regressor_inputs()
         self._setup_stan_init()
+        # TODO: maybe useful to calculate vanlia (adjusted) R-Squared
+        # self._adjust_smoothing_with_regression()
+
+    # def _adjust_smoothing_with_regression(self):
+    #     num_of_regressors = len(self.regressor_col)
+    #     if num_of_regressors > 0 :
+    #         # TODO: not using R-Squared for now
+    #         # X = self.df[self.regressor_col].values
+    #         # # append intercept
+    #         # X = np.concatenate([np.ones((X.shape[0], 1)), X], axis=1)
+    #         # X_VAR_INV = np.linalg.inv(np.matmul(X.T, X))
+    #         # b = np.matmul(X_VAR_INV, np.matmul(X.T, self.response))
+    #         # ss_tot = np.sum(np.square(self.response - np.mean(self.response)))
+    #         # rc = np.matmul(X, b)
+    #         # ss_res = np.sum(np.square(self.response - rc))
+    #         # r_sq = 1 - ss_res / ss_tot
+    #         if self.r_squared_penalty is None:
+    #             self.r_squared_penalty = np.sqrt(self.num_of_observations)
+    #         # self.level_smoothing_max = 1.0 * (1 - r_sq)
+    #         # self.slope_smoothing_max = 1.0 * (1 - r_sq)
+    #         # self.seasonality_max_smoothing_max = 1.0 * (1 - r_sq)
+    #     else:
+    #         self.r_squared_penalty = 0.0
 
     def _setup_stan_init(self):
         # to use stan default, set self.stan_int to 'random'
@@ -327,12 +355,11 @@ class LGT(Estimator):
         # ch is not used but we need the for loop to append init points across chains
         for ch in range(self.chains):
             temp_init = {}
-            # TODO: can consider having some init related obs_sigma
             if self.seasonality > 1:
                 # note that although seed fixed, points are different across chains
                 seas_init = np.random.normal(loc=0, scale=0.05, size=self.seasonality - 1)
-                seas_init[seas_init > self.seasonality_max] = self.seasonality_max
-                seas_init[seas_init < self.seasonality_min] = self.seasonality_min
+                seas_init[seas_init > 1.0] = 1.0
+                seas_init[seas_init < -1.0] = -1.0
                 temp_init['init_sea'] = seas_init
             self.stan_init.append(temp_init)
 
@@ -349,6 +376,11 @@ class LGT(Estimator):
         if self.num_of_regular_regressors > 0:
             self.regular_regressor_matrix = self.df.filter(
                 items=self.regular_regressor_col,).values
+
+        # if (self.regressor_col is not None) and (self.r_squared_penalty is None):
+        #     self.r_squared_penalty = np.sqrt(self.num_of_observations)
+        # else:
+        #     self.r_squared_penalty = max(self.r_squared_penalty, 0.0)
 
     def _set_model_param_names(self):
         self.model_param_names = []

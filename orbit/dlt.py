@@ -72,6 +72,29 @@ class DLT(LGT):
 
     Parameters
     ----------
+    is_multiplicative : bool
+        if True, response and regressor values are log transformed such that the model is
+        multiplicative. If False, no transformations are applied. Default True.
+    seasonality : int
+        The length of the seasonality period. For example, if dataframe contains weekly data
+        points, `52` would indicate a yearly seasonality.
+    period : float
+        **EXPERIMENTAL** A supplemental parameter to define the number of steps in a cycle.  It can be
+        a positive fraction.  Suggested to use only when user try to model dual seasonality where step size
+        is 1/`max_period` and `max_period` = max of `seasonality` and `period`.
+    damped_factor_fixed : float
+        input between 0 and 1 which specify damped effect of local slope per period.
+    damped_factor_min : float
+        minimum value allowed for damped factor samples. Ignored when `damped_factor_fixed` > 0
+    damped_factor_max : float
+        maximum value allowed for damped factor  samples. Ignored when `damped_factor_fixed` > 0
+    global_trend_option : str
+        a string in of {'linear', 'loglinear', 'logistic' ,'flat'} to define the type of deterministic trend. See
+        orbit.constants.dlt.GlobalTrendOption
+    auto_scale : bool
+        **EXPERIMENTAL AND UNSTABLE** if True, response and regressor values are transformed
+        with a `MinMaxScaler` such that the min value is `e` and max value is
+        the max value in the data
     regressor_col : list
         a list of regressor column names in the dataframe
     regressor_sign : list
@@ -84,60 +107,24 @@ class DLT(LGT):
     regressor_sigma_prior : list
         prior values for regressors standard deviation. The length of `regressor_sigma_prior` must
         be the same as `regressor_col`
-    is_multiplicative : bool
-        if True, response and regressor values are log transformed such that the model is
-        multiplicative. If False, no transformations are applied. Default True.
-    auto_scale : bool
-        **EXPERIMENTAL AND UNSTABLE** if True, response and regressor values are transformed
-        with a `MinMaxScaler` such that the min value is `e` and max value is
-        the max value in the data
-    cauchy_sd : float
-        a hyperprior for residuals scale parameter
-    seasonality : int
-        The length of the seasonality period. For example, if dataframe contains weekly data
-        points, `52` would indicate a yearly seasonality.
-    seasonality_min : float
-        minimum value allowed for initial seasonality samples
-    seasonality_max : float
-        maximum value allowed for initial seasonality samples
-    seasonality_smoothing_min : float
-        minimum value allowed for seasonality smoothing coefficient samples
-    seasonality_smoothing_max : float
-        maximum value allowed for seasonality smoothing coefficient samples
-    global_trend_coef_min : float
-        minimum value allowed for global trend coefficient samples
-    global_trend_coef_max : float
-        maximum value allowed for global trend coefficient samples
-    global_trend_pow_min : float
-        minimum value allowed for global trend power samples
-    global_trend_pow_max : float
-        maximum value allowed for global trend power samples
-    local_trend_coef_min : float
-        minimum value allowed for local trend coefficient samples
-    local_trend_coef_max : float
-        maximum value allowed for local trend coefficient samples
-    level_smoothing_min : float
-         minimum value allowed for level smoothing coefficient samples
-    level_smoothing_max : float
-        maximum value allowed for level smoothing coefficient samples
-    slope_smoothing_min : float
-        minimum value allowed for local slope smoothing coefficient samples
-    slope_smoothing_max : float
-        maximum value allowed for local slope smoothing coefficient samples
-    fix_regression_coef_sd : int
-        binary input 1 for using point prior of regressors sigma; 0 for using Cauchy hyperprior for
-        regressor sigma
-    regressor_sigma_sd : float
-        hyperprior for regressor coefficient scale parameter. Ignored when `fix_regression_coef_sd`
-        is 1.
-    damped_factor_fixed : float
-        input between 0 and 1 which specify damped effect of local slope per period.
-    damped_factor_min : float
-         minimum value allowed for damped factor samples. Ignored when `damped_factor_fixed` > 0
-    damped_factor_max : float
-         maximum value allowed for damped factor  samples. Ignored when `damped_factor_fixed` > 0
-    regression_coef_max : float
-        Maximum absolute value allowed for regression coefficient samples
+    seasonality_smoothing_loc : float
+        location prior of seasonality smoothing
+    seasonality_smoothing_shape : float
+        shape prior of seasonality smoothing
+    level_smoothing_loc : float
+        location prior of local level smoothing
+    level_smoothing_shape : float
+        shape prior of local level smoothing
+    slope_smoothing_loc : float
+        location prior of local slope smoothing
+    slope_smoothing_shape : float
+        shape prior of local slope smoothing
+    regression_penalty : str
+        a string in one of {'fixed_ridge','lasso','auto_ridge'}; see from orbit.constants.lgt.RegressionPenalty
+    lasso_scale : float
+        shared regression sigma scale parameters used only when `regression_penalty` == 'lasso'.
+    auto_ridge_scale : float
+        shared regression sigma scale parameters used only when `regression_penalty` == 'auto_ridge'
 
 
     Notes
@@ -150,17 +137,16 @@ class DLT(LGT):
     _data_input_mapper = dlt.DataInputMapper
 
     def __init__(
-            self, regressor_col=None, regressor_sign=None,
-            regressor_beta_prior=None, regressor_sigma_prior=None,
-            is_multiplicative=True, auto_scale=False, cauchy_sd=None, min_nu=5, max_nu=40,
-            seasonality=0, seasonality_min=-1.0, seasonality_max=1.0,
-            seasonality_smoothing_min=0, seasonality_smoothing_max=1,
-            level_smoothing_min=0, level_smoothing_max=1,
-            slope_smoothing_min=0, slope_smoothing_max=1,
-            lasso_scale=0.5, auto_ridge_scale=0.5, regression_penalty='fixed_ridge',
+            self, is_multiplicative=True, seasonality=-1, period=1.0,
             damped_factor_min=0.8, damped_factor_max=1,
+            damped_factor_fixed=0.8,
             global_trend_option='linear',
-            damped_factor_fixed=0.8, **kwargs
+            auto_scale=False,
+            regressor_col=None, regressor_sign=None,
+            regressor_beta_prior=None, regressor_sigma_prior=None,
+            regression_penalty='fixed_ridge',
+            lasso_scale=0.5, auto_ridge_scale=0.5,
+            **kwargs
     ):
 
         # get all init args and values and set
@@ -377,11 +363,14 @@ class DLT(LGT):
                 full_local_trend[:, idx] = curr_local_trend
                 # idx = time - 1
                 if self.global_trend_option == dlt.GlobalTrendOption.linear.name:
-                    full_global_trend[:, idx] = global_trend_level + global_trend_slope * idx
+                    full_global_trend[:, idx] = \
+                        global_trend_level + global_trend_slope * idx * self.time_delta
                 elif self.global_trend_option == dlt.GlobalTrendOption.loglinear.name:
-                    full_global_trend[:, idx] = global_trend_level + torch.log(1 + global_trend_slope * idx)
+                    full_global_trend[:, idx] = \
+                        global_trend_level + torch.log(1 + global_trend_slope * idx * self.time_delta)
                 elif self.global_trend_option == dlt.GlobalTrendOption.logistic.name:
-                    full_global_trend[:, idx] = global_trend_level / (1 + torch.exp(-1 * global_trend_slope * idx))
+                    full_global_trend[:, idx] = \
+                        global_trend_level / (1 + torch.exp(-1 * global_trend_slope * idx * self.time_delta))
                 elif self._global_trend_option == dlt.GlobalTrendOption.flat.name:
                     full_global_trend[:, idx] = 0
 

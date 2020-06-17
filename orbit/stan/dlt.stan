@@ -41,17 +41,20 @@ data {
   int <lower=0,upper=2> REG_PENALTY_TYPE;
   real<lower=0> AUTO_RIDGE_SCALE;
   real<lower=0> LASSO_SCALE;
+  // Test penalty scale parameter to avoid regression and smoothing over-mixed
+  // real<lower=0.0> R_SQUARED_PENALTY;
 
   // Trend Hyper-Params
-  real<lower=0,upper=1>   LEV_SM_MIN;
-  real<lower=0,upper=1>   LEV_SM_MAX;
-  real<lower=0,upper=1>   SLP_SM_MIN;
-  real<lower=0,upper=1>   SLP_SM_MAX;
+  real<lower=0> LEV_SM_LOC;
+  real<lower=1> LEV_SM_SHAPE;
+  real<lower=0> SLP_SM_LOC;
+  real<lower=1> SLP_SM_SHAPE;
+  // real<lower=0,upper=1> LEV_SM_MAX;
+  // real<lower=0,upper=1> SLP_SM_MAX;
+  real<lower=0> TIME_DELTA;
 
   // Residuals Tuning Hyper-Params
   real<lower=0> CAUCHY_SD; // derived by MAX(RESPONSE)/constant
-  //real<lower=0> MIN_SIGMA;
-  //real<lower=0> MIN_VAL;
   real<lower=1> MIN_NU; real<lower=1> MAX_NU;
 
   // Damped Trend Hyper-Params
@@ -61,10 +64,8 @@ data {
   real DAMPED_FACTOR_FIXED;
 
   // Seasonality Hyper-Params
-  real<lower=-1,upper=1> SEA_MIN;
-  real<lower=-1,upper=1> SEA_MAX;
-  real<lower=0,upper=1> SEA_SM_MIN;
-  real<lower=0,upper=1> SEA_SM_MAX;
+  real<lower=0> SEA_SM_LOC;
+  real<lower=1> SEA_SM_SHAPE;
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
   
   // 0 As linear, 1 As log-linear, 2 As logistic, 3 As flat
@@ -81,6 +82,11 @@ transformed data {
   int GL_SIZE;
   int GB_SIZE;
   int USE_VARY_SIGMA;
+  
+  // smoothing params
+  real LEV_SM_ALPHA  = (LEV_SM_LOC * (2 - LEV_SM_SHAPE) - 1)/(LEV_SM_LOC - 1);
+  real SLP_SM_ALPHA  = (SLP_SM_LOC * (2 - SLP_SM_SHAPE) - 1)/(SLP_SM_LOC - 1);
+  real SEA_SM_ALPHA  = (SEA_SM_LOC * (2 - SEA_SM_SHAPE) - 1)/(SEA_SM_LOC - 1);
 
   DAMPED_FACTOR_SIZE = 1;
   IS_SEASONAL = 0;
@@ -117,13 +123,11 @@ parameters {
   // regression parameters
   real<lower=0> pr_sigma[NUM_OF_PR * (USE_VARY_SIGMA)];
   real<lower=0> rr_sigma[NUM_OF_RR * (USE_VARY_SIGMA)];
-  // vector<lower=0,upper=BETA_MAX>[NUM_OF_PR] pr_beta;
-  // vector<lower=-1 * BETA_MAX,upper=BETA_MAX>[NUM_OF_RR] rr_beta;
   vector<lower=0>[NUM_OF_PR] pr_beta;
   vector[NUM_OF_RR] rr_beta;
 
-  real<lower=LEV_SM_MIN,upper=LEV_SM_MAX> lev_sm; //level smoothing parameter
-  real<lower=SLP_SM_MIN,upper=SLP_SM_MAX> slp_sm; //slope smoothing parameter
+  real<lower=0,upper=1> lev_sm; //level smoothing parameter
+  real<lower=0,upper=1> slp_sm; //slope smoothing parameter
 
   // residual tuning parameters
   // use 5*CAUCHY_SD to dodge upper boundary case
@@ -143,9 +147,9 @@ parameters {
 
   // seasonal parameters
   //seasonality smoothing parameter
-  real<lower=SEA_SM_MIN,upper=SEA_SM_MAX> sea_sm[IS_SEASONAL ? 1:0];
+  real<lower=0,upper=1> sea_sm[IS_SEASONAL ? 1:0];
   // initial seasonality
-  vector<lower=SEA_MIN,upper=SEA_MAX>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
+  vector<lower=-1,upper=1>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
 
 }
 transformed parameters {
@@ -191,11 +195,11 @@ transformed parameters {
   // gt_sum[1] = gl;
   for (t in 1:NUM_OF_OBS) {
     if (GLOBAL_TREND_OPTION == 0) {
-      gt_sum[t] = gl[1] + (t - 1) * gb[1];
+      gt_sum[t] = gl[1] + gb[1] * (t - 1) * TIME_DELTA;
     } else if (GLOBAL_TREND_OPTION == 1)  {
-      gt_sum[t] = gl[1] + log(1 + gb[1] * (t - 1));
+      gt_sum[t] = gl[1] + log(1 + gb[1] * (t - 1) * TIME_DELTA);
     } else if (GLOBAL_TREND_OPTION == 2) {
-      gt_sum[t] = gl[1] / (1 + exp(-1 * gb[1] * (t - 1)));
+      gt_sum[t] = gl[1] / (1 + exp(-1 * gb[1] * (t - 1) * TIME_DELTA));
       // gt_sum[t]  = gl[1] * inv_logit(gb[1] * (t - 1));
     } if (GLOBAL_TREND_OPTION == 3) {
       gt_sum[t] = 0.0;
@@ -248,6 +252,11 @@ transformed parameters {
   }
 }
 model {
+  //TEST Instead of uniform, impose beta prior for smoothing to adapt better with seasonality
+  lev_sm ~ beta(LEV_SM_ALPHA, LEV_SM_SHAPE);
+  slp_sm ~ beta(SLP_SM_ALPHA, SLP_SM_SHAPE);
+  sea_sm ~ beta(SEA_SM_ALPHA, SEA_SM_SHAPE);
+  
   //prior for residuals
   if (WITH_MCMC == 0) {
     // for MAP, set finite boundary 
@@ -311,4 +320,29 @@ model {
       rr_beta ~ normal(RR_BETA_PRIOR, rr_sigma);
     }
   }
+  
+  // TEST (no need to use adjusted R2 since we are purely using it as metric within a model)
+  // REASON: We want to make sure our regression component is as useful as condition w/o
+  // dynamic trend to avoid overfit with weird combination of r(t) and u(t) + s(t)
+  // if (NUM_OF_PR + NUM_OF_RR > 0) {
+  //   // vector[NUM_OF_OBS] ybar;
+  //   vector[NUM_OF_OBS] diff_tot;
+  //   vector[NUM_OF_OBS] diff_res;
+  //   real ss_tot;
+  //   real ss_res;
+  //   real rsq;
+  //   real ybar;
+  //   real new_ybar;
+  // 
+  //   ybar = mean(RESPONSE);
+  //   diff_tot = RESPONSE - ybar;
+  //   ss_tot = sum(diff_tot .* diff_tot);
+  //   new_ybar = mean(RESPONSE - r);
+  //   diff_res = RESPONSE - r - new_ybar;
+  //   ss_res = sum(diff_res .* diff_res);
+  //   rsq = 1 - ss_res/ss_tot;
+  //   // print(rsq);
+  //   // square-root make deminishing incentives of optimizing r square
+  //   target += R_SQUARED_PENALTY * rsq;
+  // }
 }

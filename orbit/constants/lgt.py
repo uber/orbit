@@ -12,22 +12,20 @@ class DataInputMapper(Enum):
     RESPONSE = 'RESPONSE'
     # ---------- Seasonality ---------- #
     SEASONALITY = 'SEASONALITY'
-    SEASONALITY_MIN = 'SEA_MIN'
-    SEASONALITY_MAX = 'SEA_MAX'
-    SEASONALITY_SMOOTHING_MIN = 'SEA_SM_MIN'
-    SEASONALITY_SMOOTHING_MAX = 'SEA_SM_MAX'
+    SEASONALITY_SMOOTHING_LOC= 'SEA_SM_LOC'
+    SEASONALITY_SMOOTHING_SHAPE = 'SEA_SM_SHAPE'
     # ---------- LGT Global Trend ---------- #
-    GLOBAL_TREND_COEF_MIN = 'GT_COEF_MIN'
-    GLOBAL_TREND_COEF_MAX = 'GT_COEF_MAX'
-    GLOBAL_TREND_POW_MIN = 'GT_POW_MIN'
-    GLOBAL_TREND_POW_MAX = 'GT_POW_MAX'
-    LOCAL_TREND_COEF_MIN = 'LT_COEF_MIN'
-    LOCAL_TREND_COEF_MAX = 'LT_COEF_MAX'
+    # GLOBAL_TREND_COEF_MIN = 'GT_COEF_MIN'
+    # GLOBAL_TREND_COEF_MAX = 'GT_COEF_MAX'
+    # GLOBAL_TREND_POW_MIN = 'GT_POW_MIN'
+    # GLOBAL_TREND_POW_MAX = 'GT_POW_MAX'
+    # LOCAL_TREND_COEF_MIN = 'LT_COEF_MIN'
+    # LOCAL_TREND_COEF_MAX = 'LT_COEF_MAX'
     # ---------- Common Local Trend ---------- #
-    LEVEL_SMOOTHING_MIN = 'LEV_SM_MIN'
-    LEVEL_SMOOTHING_MAX = 'LEV_SM_MAX'
-    SLOPE_SMOOTHING_MIN = 'SLP_SM_MIN'
-    SLOPE_SMOOTHING_MAX = 'SLP_SM_MAX'
+    LEVEL_SMOOTHING_LOC = 'LEV_SM_LOC'
+    LEVEL_SMOOTHING_SHAPE = 'LEV_SM_SHAPE'
+    SLOPE_SMOOTHING_LOC = 'SLP_SM_LOC'
+    SLOPE_SMOOTHING_SHAPE = 'SLP_SM_SHAPE'
     # ----------  Noise Distribution  ---------- #
     MIN_NU = 'MIN_NU'
     MAX_NU = 'MAX_NU'
@@ -44,6 +42,10 @@ class DataInputMapper(Enum):
     _REGRESSION_PENALTY = 'REG_PENALTY_TYPE'
     AUTO_RIDGE_SCALE = 'AUTO_RIDGE_SCALE'
     LASSO_SCALE = 'LASSO_SCALE'
+    # Experimental; to avoid over-parameterization of latent variable vs. regression when
+    # they have similar marginal impact.  In that case, penalty kick in to reward more to explain variation with
+    # regression instead of latent variables.
+    # R_SQUARED_PENALTY = 'R_SQUARED_PENALTY'
 
 
 class BaseStanSamplingParameters(Enum):
