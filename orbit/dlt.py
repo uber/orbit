@@ -348,10 +348,41 @@ class DLT(LGT):
         if full_len <= trained_len:
             full_local_trend = local_trend[:, :full_len]
             full_global_trend = global_trend[:, :full_len]
+
+            # in-sample error are iids
+            if include_error:
+                error_value = nct.rvs(
+                    df=residual_degree_of_freedom.unsqueeze(-1),
+                    nc=0,
+                    loc=0,
+                    scale=residual_sigma.unsqueeze(-1),
+                    size=(num_sample, full_len)
+                )
+
+                error_value = torch.from_numpy(error_value.reshape(num_sample, full_len)).double()
+                full_local_trend += error_value
         else:
             trend_forecast_length = full_len - trained_len
             trend_forecast_init = torch.zeros((num_sample, trend_forecast_length), dtype=torch.double)
-            full_local_trend = torch.cat((local_trend[:, :full_len], trend_forecast_init), dim=1)
+            full_local_trend = local_trend[:, :full_len]
+            # for convenience, we lump error on local trend since the formula would
+            # yield the same as yhat + noise - global_trend - seasonality - regression
+            # equivalent with local_trend + noise
+            # in-sample error are iids
+            if include_error:
+                error_value = nct.rvs(
+                    df=residual_degree_of_freedom.unsqueeze(-1),
+                    nc=0,
+                    loc=0,
+                    scale=residual_sigma.unsqueeze(-1),
+                    size=(num_sample, full_local_trend.shape[1])
+                )
+
+                error_value = torch.from_numpy(
+                    error_value.reshape(num_sample, full_local_trend.shape[1])).double()
+                full_local_trend += error_value
+
+            full_local_trend = torch.cat((full_local_trend, trend_forecast_init), dim=1)
             full_global_trend = torch.cat((global_trend[:, :full_len], trend_forecast_init), dim=1)
             last_local_trend_level = local_trend_levels[:, -1]
             last_local_trend_slope = local_trend_slopes[:, -1]
@@ -383,9 +414,6 @@ class DLT(LGT):
                         size=num_sample
                     )
                     error_value = torch.from_numpy(error_value).double()
-                    # for convenience, we lump error on local trend since the formula would
-                    # yield the same as yhat + noise - global_trend - seasonality - regression
-                    # equivalent with local_trend + noise
                     full_local_trend[:, idx] += error_value
 
                 # now full_local_trend contains the error term and hence we need to use

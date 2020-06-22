@@ -622,10 +622,37 @@ class LGT(Estimator):
         # However, if predicted end of period > training period, update with out-of-samples forecast
         if full_len <= trained_len:
             trend_component = local_global_trend_sums[:, :full_len]
+
+            # in-sample error are iids
+            if include_error:
+                error_value = nct.rvs(
+                    df=residual_degree_of_freedom.unsqueeze(-1),
+                    nc=0,
+                    loc=0,
+                    scale=residual_sigma.unsqueeze(-1),
+                    size=(num_sample, full_len)
+                )
+
+                error_value = torch.from_numpy(error_value.reshape(num_sample, full_len)).double()
+                trend_component += error_value
         else:
-            trend_forecast_matrix \
-                = torch.zeros((num_sample, n_forecast_steps), dtype=torch.double)
-            trend_component = torch.cat((local_global_trend_sums, trend_forecast_matrix), dim=1)
+            trend_component = local_global_trend_sums
+            # in-sample error are iids
+            if include_error:
+                error_value = nct.rvs(
+                    df=residual_degree_of_freedom.unsqueeze(-1),
+                    nc=0,
+                    loc=0,
+                    scale=residual_sigma.unsqueeze(-1),
+                    size=(num_sample, local_global_trend_sums.shape[1])
+                )
+
+                error_value = torch.from_numpy(
+                    error_value.reshape(num_sample, local_global_trend_sums.shape[1])).double()
+                trend_component += error_value
+
+            trend_forecast_matrix = torch.zeros((num_sample, n_forecast_steps), dtype=torch.double)
+            trend_component = torch.cat((trend_component, trend_forecast_matrix), dim=1)
 
             last_local_trend_level = local_trend_levels[:, -1]
             last_local_trend_slope = local_trend_slopes[:, -1]
