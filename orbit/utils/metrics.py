@@ -3,6 +3,7 @@ EPS = 1e-5
 
 # utilities/loss to evaluate model performance
 
+
 def smape(actual, predicted):
     ''' calculate symmetric mape
 
@@ -10,7 +11,7 @@ def smape(actual, predicted):
     ----------
     actual: array-like
         true values
-    pred: array-like
+    predicted: array-like
         prediction values
 
     Returns
@@ -31,7 +32,7 @@ def mape(actual, predicted):
     ----------
     actual: array-like
         true values
-    pred: array-like
+    predicted: array-like
         prediction values
 
     Returns
@@ -52,7 +53,7 @@ def wmape(actual, predicted):
     ----------
     actual: array-like
         true values
-    pred: array-like
+    predicted: array-like
         prediction values
 
     Returns
@@ -67,14 +68,14 @@ def wmape(actual, predicted):
     return np.sum(weights * np.abs((actual - predicted) / actual))
 
 
-def mse(actual, predicted):
+def mse(actual, predicted, exclude_leading_zeros=True):
     ''' calculate mse metric
 
     Parameters
     ----------
     actual: array-like
         true values
-    pred: array-like
+    predicted: array-like
         prediction values
 
     Returns
@@ -83,25 +84,38 @@ def mse(actual, predicted):
         mse value
     '''
 
+    if exclude_leading_zeros:
+        first_nz = np.min(np.nonzero(predicted))
+        actual = actual[first_nz:]
+        predicted = predicted[first_nz:]
+
     return np.mean(np.square(actual - predicted))
 
 
-def mse_naive(observed, exclude_leading_zeros=True):
-    ''' calculate mse using last observed value as predictor
+def rmsse(actual, predicted, n=None, exclude_leading_zeros=True):
+    ''' Root Mean Squared Scaled Error (RMSSE), a variant of the well-known Mean Absolut Scaled Error (MASE)
+    proposed by Hyndman and Koehler (2006)
+
+    .. math::
+        \sqrt{\frac{1}{h}\frac{\sum^{n+h}_{t=n+1}(Y_t-\hat{Y}_t)^2}{}
+
     Parameters
     ----------
     actual: array-like
-        observed values
-    Returns
-    -------
-    float
-        mse value
-    '''
-    actual = observed[1:]
-    predicted = observed[:-1]
-    if exclude_leading_zeros:
-        first_non_zero = np.min(np.nonzero(predicted))
-        actual = actual[first_non_zero:]
-        predicted = predicted[first_non_zero:]
+        true values
+    predicted: array-like
+        prediction values
+    n: int
+        forecast periods
 
-    return mse(actual, predicted)
+    Notes
+    -----
+    The general idea is that we want to measure additional value added by the model
+    comparing to a naive lag-1 predictor.
+    Reference from https://mofc.unic.ac.cy/m5-guidelines/
+    '''
+    if n is None:
+        n = len(predicted)
+    lag1_mse = mse(actual[1:-n], actual[:(-n-1)], exclude_leading_zeros)
+    forecast_mse = mse(actual[-n:], predicted[-n:])
+    return np.sqrt(forecast_mse / lag1_mse)
