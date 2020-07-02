@@ -101,36 +101,6 @@ class DateInfo(Enum):
     DATE_INTERVAL = 'date_interval'
 
 
-class TimeSeriesSplitSchemeNames(Enum):
-    """ hash table keys for the dictionary of back-test meta data
-    """
-    MODEL = 'model'
-    TRAIN_START_DATE = 'train_start_date'
-    TRAIN_END_DATE = 'train_end_date'
-    TRAIN_IDX = 'train_idx'
-    TEST_IDX = 'test_idx'
-
-
-class BacktestFitColumnNames(Enum):
-    """ column names for the data frame of back-test fitting result
-    """
-    TRAIN_START_DATE = 'train_start_date'
-    TRAIN_END_DATE = 'train_end_date'
-    FORECAST_DATES = 'forecast_dates'
-    ACTUAL = 'actual'
-    PRED = 'pred'
-    PRED_HORIZON = 'pred_horizon'
-
-
-class BacktestAnalyzeKeys(Enum):
-    """ hash table keys for the dictionary of back-test aggregation analysis result
-    """
-    METRIC_NAME = 'metric_name'
-    METRIC_PER_BTMOD = 'metric_per_btmod'
-    METRIC_GEO = 'metric_geo'
-    METRIC_PER_HORIZON = 'metric_per_horizon'
-
-
 # Misc constants
 THIS_FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 UTS_ROOT_DIR = get_parent_path(THIS_FILE_PATH)
