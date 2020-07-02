@@ -3,18 +3,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy
 
-from orbit.utils.metrics import (
-    smape, wmape, mape, mse,
-)
+from orbit.backtest import metrics as metlib
 from orbit.exceptions import BacktestException
-from orbit.constants.constants import TimeSeriesSplitSchemeNames
+from orbit.constants.backtest import BacktestNames
 from orbit.constants.palette import QualitativePalette
+from orbit.backtest.outcome import to_df
 
 
 class TimeSeriesSplitter(object):
     """ Split time series observations into train-test style
     """
-
+    # FIXME: enforce date_col as an input?
     def __init__(self, df, min_train_len, incremental_len, forecast_len, n_splits=None,
                  window_type='expanding', date_col=None):
         """Initializes object with DataFrame and splits data
@@ -32,15 +31,14 @@ class TimeSeriesSplitter(object):
         n_splits : int; default None
             number of splits; when n_splits is specified, min_train_len will be ignored
         window_type : {'expanding', 'rolling }; default 'expanding'
-            split scheme
         date_col : str
             optional for user to provide date columns; note that it stills uses discrete index
             as splitting scheme while `date_col` is used for better visualization only
 
         Attributes
         ----------
-        _split_scheme : dict
-            meta data of ways to split train and test set
+        _schemes : list of dict
+            each element describes meta data to split train and test set
         """
 
         self.df = df.copy()
@@ -58,10 +56,10 @@ class TimeSeriesSplitter(object):
         self._validate_params()
 
         # init meta data of how to split
-        self._split_scheme = {}
+        self._schemes = []
 
         # timeseries cross validation split
-        self._set_split_scheme()
+        self._set_schemes()
 
     def _set_defaults(self):
         self._df_length = self.df.shape[0]
@@ -89,27 +87,29 @@ class TimeSeriesSplitter(object):
             if not self.date_col in self.df.columns:
                 raise BacktestException('date_col not found in df provided.')
 
-    def _set_split_scheme(self):
+    def _set_schemes(self):
         test_end_min = self.min_train_len - 1
         test_end_max = self._df_length - self.forecast_len
         test_seq = range(test_end_min, test_end_max, self.incremental_len)
 
-        split_scheme = {}
-        for i, train_end_idx in enumerate(test_seq):
-            split_scheme[i] = {}
+        schemes = []
+        for train_end_idx in test_seq:
+            new_scheme = {}
             train_start_idx = train_end_idx - self.min_train_len + 1 \
                 if self.window_type == 'rolling' else 0
-            split_scheme[i][TimeSeriesSplitSchemeNames.TRAIN_IDX.value] = range(
+            new_scheme[BacktestNames.TRAIN_IDX.value] = range(
                 train_start_idx, train_end_idx + 1)
-            split_scheme[i][TimeSeriesSplitSchemeNames.TEST_IDX.value] = range(
+            new_scheme[BacktestNames.TEST_IDX.value] = range(
                 train_end_idx + 1, train_end_idx + self.forecast_len + 1)
 
-        self._split_scheme = split_scheme
-        # enforce n_splits to match scheme in case scheme is determined by min_train_len
-        self.n_splits = len(split_scheme)
+            schemes.append(new_scheme)
 
-    def get_scheme(self):
-        return self._split_scheme
+        self._schemes = schemes
+        # enforce n_splits to match scheme in case scheme is determined by min_train_len
+        self.n_splits = len(schemes)
+
+    def get_schemes(self):
+        return self._schemes
 
     def split(self):
         """
@@ -124,26 +124,26 @@ class TimeSeriesSplitter(object):
         test_df : pd.DataFrame
             data splitted for testing/validation
         scheme : dict
-            derived from self._split_scheme
+            derived from self._scheme
         split_key : int
              index of the iteration
         """
-        for split_key, scheme in self._split_scheme.items():
-            train_df = self.df.iloc[scheme[TimeSeriesSplitSchemeNames.TRAIN_IDX.value], :] \
+        for sch in self._schemes:
+            train_df = self.df.iloc[sch[BacktestNames.TRAIN_IDX.value], :] \
                 .reset_index(drop=True)
-            test_df = self.df.iloc[scheme[TimeSeriesSplitSchemeNames.TEST_IDX.value], :] \
+            test_df = self.df.iloc[sch[BacktestNames.TEST_IDX.value], :] \
                 .reset_index(drop=True)
 
-            yield train_df, test_df, scheme, split_key
+            yield train_df, test_df, sch
 
     def __str__(self):
         message = ""
-        for idx, scheme in self._split_scheme.items():
+        for idx, sch in enumerate(self._schemes):
             # print train/test start/end indices
-            tr_start = list(scheme[TimeSeriesSplitSchemeNames.TRAIN_IDX.value])[0]
-            tr_end = list(scheme[TimeSeriesSplitSchemeNames.TRAIN_IDX.value])[-1]
-            tt_start = list(scheme[TimeSeriesSplitSchemeNames.TEST_IDX.value])[0]
-            tt_end = list(scheme[TimeSeriesSplitSchemeNames.TEST_IDX.value])[-1]
+            tr_start = list(sch[BacktestNames.TRAIN_IDX.value])[0]
+            tr_end = list(sch[BacktestNames.TRAIN_IDX.value])[-1]
+            tt_start = list(sch[BacktestNames.TEST_IDX.value])[0]
+            tt_end = list(sch[BacktestNames.TEST_IDX.value])[-1]
             message += f"\n------------ Fold: ({idx + 1} / {self.n_splits})------------\n"
             message += f"Train start index: {tr_start} Train end index: {tr_end}\n"
             message += f"Test start index: {tt_start} Test end index: {tt_end}\n"
@@ -156,13 +156,15 @@ class TimeSeriesSplitter(object):
                 message += f"Test start date: {tt_start_date} Test end date: {tt_end_date}\n"
         return message
 
-    def plot(self, lw=20, fig_width=20):
-        _, ax = plt.subplots(figsize=(fig_width, self.n_splits))
+    def plot(self, lw=20, figsize=None):
+        if figsize is None:
+            figsize = (20, self.n_splits)
+        _, ax = plt.subplots(figsize=figsize)
         # visualize the train/test windows for each split
-        for idx, scheme in self._split_scheme.items():
+        for idx, sch in enumerate(self._schemes):
             # fill in indices with the training/test groups
-            tr_indices = list(scheme[TimeSeriesSplitSchemeNames.TRAIN_IDX.value])
-            tt_indices = list(scheme[TimeSeriesSplitSchemeNames.TEST_IDX.value])
+            tr_indices = list(sch[BacktestNames.TRAIN_IDX.value])
+            tt_indices = list(sch[BacktestNames.TEST_IDX.value])
 
             indices = tr_indices + tt_indices
             tr_color = [(QualitativePalette['Bar5'].value)[2]] * len(tr_indices)
@@ -198,7 +200,12 @@ class TimeSeriesSplitter(object):
 
 
 class Backtest(object):
-    """Object used to backtest..."""
+    '''Object used to backtest
+    Parameters
+    ----------
+    splitter: orbit.backtest.bacltest.TimeSeriesSplitter
+        splitter object which describes the scheme to split train and test set
+    '''
 
     def __init__(self, splitter):
         """Initializes Backtest object with DataFrame and splits data
@@ -213,25 +220,23 @@ class Backtest(object):
         self.splitter = deepcopy(splitter)
 
     def fit_score(self, model, response_col, predicted_col='prediction', metrics=None, insample_predict=False,
-                  save_model=False, include_steps=False, model_callback=None, fit_callback=None,
+                  save_model=False, model_callback=None, fit_callback=None,
                   predict_callback=None, fit_args=None, predict_args=None):
         """
-       Parameters
+        Parameters
         ----------
         model : object
             arbitrary instantiated model object
-        response_col : str
-            column label of data frame define the response of the model
+        response_col: str
+            column label of data frame define the response
         predicted_col : str
-            optional callback to adapt data to work with `model`'s `fit()` method
+            column indicates the prediction label
         metrics : dict
-            dictionary of functions `f` which score performance by f(actual_array, predicted_array)
+            dictionary of callables f which score performance by f(outcome); outcome is a dictionary
         insample_predict : bool
             logic whether conduct the insample prediction on training data
         save_model : bool
             logic whether save the fitted models for each backtest iteration
-        include_steps : bool
-            logic whether return metrics grouped by steps
         model_callback : callable
             optional callback to adapt model object to work with `orbit.backtest`. Particularly,
             the object needs a `fit()` and `predict()` methods if not exists.
@@ -250,10 +255,13 @@ class Backtest(object):
             fit_args = {}
 
         self.insample_predict = insample_predict
+        # FIXME: also assert model.date_col == self.splitter.date_col if exists
+        self.date_col = self.splitter.date_col if self.splitter.date_col else None
+        self.predicted_col = predicted_col
+        self.response_col = response_col
 
         self._fit(
             model=model,
-            insample_predict=insample_predict,
             save_model=save_model,
             model_callback=model_callback,
             fit_callback=fit_callback,
@@ -262,10 +270,9 @@ class Backtest(object):
             predict_args=predict_args
         )
 
-        self._set_score(response_col=response_col, predicted_col=predicted_col,
-                        metrics=metrics, include_steps=include_steps)
+        self._set_score(metrics=metrics)
 
-    def _fit(self, model, insample_predict=False, save_model=False,
+    def _fit(self, model, save_model=False,
              model_callback=None, fit_callback=None, predict_callback=None,
              fit_args=None, predict_args=None):
         """Fits the splitted data to the model and predicts
@@ -274,8 +281,6 @@ class Backtest(object):
         ----------
         model : object
             arbitrary instantiated model object
-        insample_predict : bool
-            logic whether conduct the insample prediction on training data
         save_model : bool
             logic whether save the fitted models for each backtest iteration
         model_callback : callable
@@ -286,9 +291,9 @@ class Backtest(object):
         predict_callback : callable
             optional callback to adapt prediction results to work with `orbit.backtest`
         fit_args :
-            additional kwargs to be passed to the `fit_callback` function
+            additional kwargs to be passed to `fit_callback`
         predict_args :
-            additional kwargs to be passed to the `predict_callback` function
+            additional kwargs to be passed to `predict_callback`
 
         Returns
         -------
@@ -302,13 +307,10 @@ class Backtest(object):
         #   which callbacks they belong to
         #   alternatively, dict for each callback so we know clearly
 
-        predicted_df = pd.DataFrame({})
-        bt_models = {}
+        bt_models = []
+        pred_outcomes = []
 
-        for train_df, test_df, scheme, split_key in self.splitter.split():
-            n_train = train_df.shape[0]
-            n_test = test_df.shape[0]
-
+        for train_df, test_df, scheme in self.splitter.split():
             # if we need to extend model to work with backtest
             if model_callback is not None:
                 model = model_callback(model)
@@ -319,54 +321,51 @@ class Backtest(object):
             else:
                 fit_callback(model, train_df, **fit_args)
 
-            # predict with model
-            x_df = pd.concat((train_df, test_df), axis=0, ignore_index=True) if insample_predict else test_df
             if predict_callback is None:
-                predicted_out = model.predict(x_df)
+                predicted_df = model.predict(test_df)
             else:
-                predicted_out = predict_callback(model, x_df, **predict_args)
+                predicted_df = predict_callback(model, test_df, **predict_args)
 
-            # predicted results should have same length as test_df
-            # if test_df.shape[0] != predicted_out.shape[0]:
-            #     raise BacktestException('Prediction length should be the same as test df')
+            # packing result into a outcome dict
+            outcome = {
+                "train_actual": train_df[self.response_col].values,
+                "train_pred": None,
+                "train_dts": None,
+                "test_pred": predicted_df[self.predicted_col].values,
+                "test_actual": test_df[self.response_col].values,
+                "test_dts": None,
+                "train_end_dt": None,
+                "n_train": train_df.shape[0],
+                "n_test": test_df.shape[0],
+            }
 
-            results = pd.concat((x_df, predicted_out), axis=1)
+            if self.insample_predict:
+                if predict_callback is None:
+                    predicted_df = model.predict(train_df)
+                else:
+                    predicted_df = predict_callback(model, train_df, **predict_args)
+                outcome['train_pred'] = predicted_df[self.predicted_col]
 
-            # drop duplicate columns
-            results = results.loc[:, ~results.columns.duplicated()]
-            if self.splitter.date_col:
-                results['train_end'] = train_df[self.splitter.date_col].values[-1]
-            results['split_key'] = split_key
-            results['df_key'] = ['train'] * n_train + ['test'] * n_test if insample_predict else \
-                                 ['test'] * n_test
-            idx_ = list(range(n_train)) + list(range(n_test)) if insample_predict else list(range(n_test))
-            results.set_index([idx_], inplace=True)
+            if self.date_col:
+                outcome["train_end_dt"] = train_df[self.date_col].values[-1]
+                outcome["train_dts"] = train_df[self.date_col].values
+                outcome["test_dts"] = test_df[self.date_col].values
+
             if save_model:
-                bt_models[split_key] = deepcopy(model)
+                bt_models.append(deepcopy(model))
+            pred_outcomes.append(outcome)
 
-            predicted_df = pd.concat((predicted_df, results), axis=0)
-
-        predicted_df = predicted_df.reset_index()
-        predicted_df = predicted_df.rename(columns={'index': 'steps'})
-        predicted_df['steps'] += 1
-        self._predicted_df = predicted_df
+        self._pred_outcomes = pred_outcomes
         self._bt_models = bt_models
 
-        return self._predicted_df
+        return pred_outcomes
 
-    def _set_score(self, response_col, predicted_col='prediction', metrics=None,
-                   include_steps=False):
+    def _set_score(self, metrics=None):
         """
         Parameters
         ----------
-        response_col : str
-            column of the data frames
-        predicted_col : str
-            optional callback to adapt data to work with `model`'s `fit()` method
         metrics : dict
-            dictionary of functions `f` which score performance by f(actual_array, predicted_array)
-        include_steps : bool
-            logic whether return metrics grouped by steps
+            dictionary of callables which score performance by (actual, predicted)
 
         Returns
         -------
@@ -374,32 +373,22 @@ class Backtest(object):
             DataFrame with scores computed with metrics function provided
 
         """
-        # TODO: not sure should we restrict use of groupby
-        # groupby is controlled internally with include_steps
-        groupby = ['df_key', 'steps'] if include_steps else ['df_key']
-
-        score_df = self._score_by(
-            response_col=response_col,
-            groupby=groupby,
-            predicted_col=predicted_col,
-            metrics=metrics
-        )
-
+        # TODO: recover how to evaluate metrics with different steps
+        score_df = self._score_by(metrics=metrics)
         self._score_df = score_df
+        return score_df
 
-    def _score_by(self, response_col, groupby, predicted_col='prediction', metrics=None):
+    def _score_by(self, metrics=None):
         """
 
         Parameters
         ----------
         response_col : str
             column label of data frame define the response of the model
-        groupby : list
-            list of columns to be grouped while computing metrics used by pandas.groupby()
         predicted_col : str
             optional callback to adapt data to work with `model`'s `fit()` method
         metrics : dict
-            dictionary of functions `f` which score performance by f(actual_array, predicted_array)
+            dictionary of callables which score performance by (actual, predicted)
 
         Returns
         -------
@@ -407,27 +396,24 @@ class Backtest(object):
             DataFrame with scores computed with metrics function provided
 
         """
-        if metrics is None:
-            metrics = {'wmape': wmape, 'smape': smape}
+        # TODO: recover metrics calculated with group by
 
-        pred_df_grouped = self._predicted_df.groupby(by=groupby)
-        score_df = pd.DataFrame({})
+        if metrics is None:
+            metrics = ['wmape', 'smape', 'rmsse']
+
+        # pred_df_grouped = self._predicted_df.groupby(by=groupby)
+        score_df = pd.DataFrame({
+            'n_splits':  len(self._pred_outcomes),
+            'forecast_len':  self.splitter.forecast_len,
+            'incremental_len':  self.splitter.incremental_len,
+        }, index=[0])
 
         # multiple models or step segmentation
         # if groupby is not None:
-        for metric_name, metric_fun in metrics.items():
-            score_df[metric_name] = pred_df_grouped.apply(lambda x: metric_fun(x[response_col], x[predicted_col]))
-        score_df = score_df.reset_index()
-        score_df['n_splits'] = self.splitter.n_splits
-        score_df['n_obs'] = pred_df_grouped[predicted_col].agg('count').values
-
-        # # aggregate without groups
-        # else:
-        #     for metric_name, metric_fun in metrics.items():
-        #         score_df[metric_name] = pd.Series(
-        #             metric_fun(predicted_df[response_col], predicted_df[predicted_col])
-        #         )
-        #     score_df = score_df.reset_index(drop=True)
+        for metric_name in metrics:
+            metric_method = getattr(metlib, metric_name)
+            z = np.fromiter(map(metric_method, self._pred_outcomes), dtype=np.float32)
+            score_df[metric_name] = np.mean(z)
 
         return score_df
 
@@ -437,123 +423,39 @@ class Backtest(object):
     def _append_model_meta(self):
         pass
 
-    def get_predictions(self, include_split_meta=False):
-        # TODO: implement include_split_meta
-        return self._predicted_df[self._predicted_df['df_key'] == 'test'].\
-            drop(columns=['df_key']).reset_index(drop=True)
+    def get_predictions(self, insample=False):
+        result = []
+        for idx, poc in enumerate(self._pred_outcomes):
+            df = to_df(poc, self.date_col, self.response_col)
+            if not insample:
+                df = df[df[BacktestNames.TRAIN_TEST_PARTITION.value] == 'test'].reset_index(drop=True)
+            df['split_key'] = idx
+            result.append(df)
+        result = pd.concat(result, axis=0)
+        return result
 
-    def get_insample_predictions(self, include_split_meta=False):
         # TODO: implement include_split_meta
-        if not self.insample_predict:
-            raise BacktestException('insample_predict has to be True to obtain insample predictions...')
+        return self._predicted_df[self._predicted_df[BacktestNames.TRAIN_TEST_PARTITION.value] == 'test'].\
+            drop(columns=[BacktestNames.TRAIN_TEST_PARTITION.value]).reset_index(drop=True)
 
-        return self._predicted_df[self._predicted_df['df_key'] == 'train'].\
-            drop(columns=['df_key']).reset_index(drop=True)
+    # def get_insample_predictions(self, include_split_meta=False):
+    #     # TODO: implement include_split_meta
+    #     if not self.insample_predict:
+    #         raise BacktestException('insample_predict has to be True to obtain insample predictions...')
+    #
+    #     return self._predicted_df[self._predicted_df[BacktestNames.TRAIN_TEST_PARTITION.value] == 'train'].\
+    #         drop(columns=[BacktestNames.TRAIN_TEST_PARTITION.value]).reset_index(drop=True)
 
     def get_scores(self, include_model_meta=False):
         # TODO: implement include_split_meta
-        return self._score_df[self._score_df['df_key'] == 'test'].\
-            drop(columns=['df_key']).reset_index(drop=True)
+        return self._score_df
 
-    def get_insample_scores(self, include_model_meta=False):
-        # TODO: implement include_split_meta
-        if not self.insample_predict:
-            raise BacktestException('insample_predict has to be True to obtain insample scores...')
-        return self._score_df[self._score_df['df_key'] == 'train'].\
-            drop(columns=['df_key']).reset_index(drop=True)
+    # def get_insample_scores(self, include_model_meta=False):
+    #     # TODO: implement include_split_meta
+    #     if not self.insample_predict:
+    #         raise BacktestException('insample_predict has to be True to obtain insample scores...')
+    #     return self._score_df[self._score_df[BacktestNames.TRAIN_TEST_PARTITION.value] == 'train'].\
+    #         drop(columns=[BacktestNames.TRAIN_TEST_PARTITION.value]).reset_index(drop=True)
 
     def get_fitted_models(self):
         return self._bt_models
-
-    # def _fit_batch(self, models, model_names=None, model_callbacks=None, fit_callbacks=None,
-    #                predict_callbacks=None, fit_args=None):
-    #     """Runs `_fit()` on a batch of models
-    #
-    #     Parameters
-    #     ----------
-    #     models
-    #     model_callbacks
-    #     fit_callbacks
-    #     predict_callbacks
-    #     kwargs
-    #
-    #     Returns
-    #     -------
-    #
-    #     """
-    #     # store model object if we need to retrieve later
-    #     self._models = models
-    #     self._model_names = model_names
-    #
-    #     batch_size = len(models)
-    #
-    #     if model_callbacks is None:
-    #         model_callbacks = [None] * batch_size
-    #     if fit_callbacks is None:
-    #         fit_callbacks = [None] * batch_size
-    #     if predict_callbacks is None:
-    #         predict_callbacks = [None] * batch_size
-    #     if fit_args is None:
-    #         fit_args = [None] * batch_size
-    #
-    #     # todo: validate that all the lengths of args align
-    #
-    #     predicted_df = self._predicted_df
-    #
-    #     for idx, model in enumerate(models):
-    #         each_predicted_df = self._fit(
-    #             model,
-    #             model_callback=model_callbacks[idx],
-    #             fit_callback=fit_callbacks[idx],
-    #             predict_callback=predict_callbacks[idx],
-    #             fit_args=fit_args[idx]
-    #         )  # note this also sets `self._predicted_df` inside `_fit()`
-    #
-    #         # to retrieve from `self._models` if needed
-    #         each_predicted_df['model_idx'] = idx
-    #
-    #         # some model types raise errors if not converted to string here
-    #         # e.g. models with `len()` over-ridden
-    #         if model_names:
-    #             each_predicted_df['model'] = model_names[idx]
-    #         else:
-    #             each_predicted_df['model'] = model.__class__.__name__
-    #
-    #         predicted_df = pd.concat((predicted_df, each_predicted_df), axis=0, ignore_index=True)
-    #
-    #     self._predicted_df = predicted_df.reset_index(drop=True)
-    #
-    # def _set_score_batch(self, response_col, predicted_col='prediction',
-    #                      metrics=None, include_steps=True):
-    #
-    #     # groupby determined by `include_steps` bool
-    #     groupby = ['model_idx', 'model', 'steps'] \
-    #         if include_steps \
-    #         else ['model_idx', 'model']
-    #
-    #     score_df = self._score_by(
-    #         response_col=response_col,
-    #         groupby=groupby,
-    #         predicted_col=predicted_col,
-    #         metrics=metrics
-    #     )
-    #
-    #     self._score_df = score_df
-
-    # def fit_score_batch(self, models, response_col, predicted_col='prediction', metrics=None,
-    #                     model_names=None, include_steps=False, model_callbacks=None,
-    #                     fit_callbacks=None, predict_callbacks=None, fit_args=None):
-    #
-    #     self._fit_batch(
-    #         models=models,
-    #         model_names=model_names,
-    #         model_callbacks=model_callbacks,
-    #         fit_callbacks=fit_callbacks,
-    #         predict_callbacks=predict_callbacks,
-    #         fit_args=fit_args
-    #     )
-    #
-    #     self._set_score_batch(response_col=response_col,
-    #                           predicted_col=predicted_col,
-    #                           metrics=metrics,
-    #                           include_steps=include_steps)
