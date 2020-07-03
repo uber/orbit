@@ -92,18 +92,6 @@ class LGT(Estimator):
     regressor_sigma_prior : list
         prior values for regressors standard deviation. The length of `regressor_sigma_prior` must
         be the same as `regressor_col`
-    seasonality_smoothing_loc : float
-        location prior of seasonality smoothing
-    seasonality_smoothing_shape : float
-        shape prior of seasonality smoothing
-    level_smoothing_loc : float
-        location prior of local level smoothing
-    level_smoothing_shape : float
-        shape prior of local level smoothing
-    slope_smoothing_loc : float
-        location prior of local slope smoothing
-    slope_smoothing_shape : float
-        shape prior of local slope smoothing
     regression_penalty : str
         a string in one of {'fixed_ridge','lasso','auto_ridge'}. See orbit.constants.lgt.RegressionPenalty
     lasso_scale : float
@@ -141,6 +129,9 @@ class LGT(Estimator):
             regressor_beta_prior=None, regressor_sigma_prior=None,
             regression_penalty='fixed_ridge',
             lasso_scale=0.5, auto_ridge_scale=0.5,
+            seasonality_sm_input=-1,
+            slope_sm_input=-1,
+            level_sm_input=-1,
             **kwargs
     ):
 
@@ -175,22 +166,6 @@ class LGT(Estimator):
         """
         max_period = max(self.period, self.seasonality)
         self.time_delta = 1/max_period
-        # shape: the greater the more concentrated of pdf
-        # loc: mode of pdf
-        if self.regressor_col is None:
-            self.level_smoothing_loc = 0.3
-            self.slope_smoothing_loc = 0.3
-            self.seasonality_smoothing_loc = 0.3
-            self.level_smoothing_shape = 1.0
-            self.slope_smoothing_shape = 1.0
-            self.seasonality_smoothing_shape = 1.0
-        else:
-            self.level_smoothing_loc = 0.1
-            self.slope_smoothing_loc = 0.1
-            self.seasonality_smoothing_loc = 0.1
-            self.level_smoothing_shape = 5.0
-            self.slope_smoothing_shape = 5.0
-            self.seasonality_smoothing_shape = 5.0
 
     def _setup_computed_residual_params(self):
         # TODO: Should this tie to number of observations?

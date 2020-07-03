@@ -146,6 +146,9 @@ class DLT(LGT):
             regressor_beta_prior=None, regressor_sigma_prior=None,
             regression_penalty='fixed_ridge',
             lasso_scale=0.5, auto_ridge_scale=0.5,
+            seasonality_sm_input=-1,
+            slope_sm_input=-1,
+            level_sm_input=-1,
             **kwargs
     ):
 

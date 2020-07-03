@@ -44,13 +44,11 @@ data {
   // Test penalty scale parameter to avoid regression and smoothing over-mixed
   // real<lower=0.0> R_SQUARED_PENALTY;
 
-  // Trend Hyper-Params
-  real<lower=0> LEV_SM_LOC;
-  real<lower=1> LEV_SM_SHAPE;
-  real<lower=0> SLP_SM_LOC;
-  real<lower=1> SLP_SM_SHAPE;
-  // real<lower=0,upper=1> LEV_SM_MAX;
-  // real<lower=0,upper=1> SLP_SM_MAX;
+  // Smoothing Hyper-Params
+  real<upper=1> LEV_SM_INPUT;
+  real<upper=1> SLP_SM_INPUT;
+  real<upper=1> SEA_SM_INPUT;
+  // step size
   real<lower=0> TIME_DELTA;
 
   // Residuals Tuning Hyper-Params
@@ -64,8 +62,6 @@ data {
   real DAMPED_FACTOR_FIXED;
 
   // Seasonality Hyper-Params
-  real<lower=0> SEA_SM_LOC;
-  real<lower=1> SEA_SM_SHAPE;
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
   
   // 0 As linear, 1 As log-linear, 2 As logistic, 3 As flat
@@ -82,20 +78,29 @@ transformed data {
   int GL_SIZE;
   int GB_SIZE;
   int USE_VARY_SIGMA;
+  int<lower=0,upper=1> LEV_SM_SIZE;
+  int<lower=0,upper=1> SLP_SM_SIZE;
+  int<lower=0,upper=1> SEA_SM_SIZE;
   
-  // smoothing params
-  real LEV_SM_ALPHA  = (LEV_SM_LOC * (2 - LEV_SM_SHAPE) - 1)/(LEV_SM_LOC - 1);
-  real SLP_SM_ALPHA  = (SLP_SM_LOC * (2 - SLP_SM_SHAPE) - 1)/(SLP_SM_LOC - 1);
-  real SEA_SM_ALPHA  = (SEA_SM_LOC * (2 - SEA_SM_SHAPE) - 1)/(SEA_SM_LOC - 1);
-
+  LEV_SM_SIZE = 0;
+  SLP_SM_SIZE = 0;
+  SEA_SM_SIZE = 0;
+  
   DAMPED_FACTOR_SIZE = 1;
-  IS_SEASONAL = 0;
   SIGMA_EPS = 1e-5;
+  IS_SEASONAL = 0;
   GL_SIZE = 0;
   GB_SIZE = 0;
   USE_VARY_SIGMA = 0;
   
   if (SEASONALITY > 1) IS_SEASONAL = 1;
+  # Only auto-ridge is using pr_sigma and rr_sigma
+  if (REG_PENALTY_TYPE == 2) USE_VARY_SIGMA = 1;
+  
+  if (LEV_SM_INPUT < 0) LEV_SM_SIZE = 1;
+  if (SLP_SM_INPUT < 0) SLP_SM_SIZE = 1;
+  if (SEA_SM_INPUT < 0) SEA_SM_SIZE = 1 * IS_SEASONAL;
+  
   if (DAMPED_FACTOR_FIXED > 0) DAMPED_FACTOR_SIZE = 0;
   if (GLOBAL_TREND_OPTION == 0) {
       GL_LOWER = negative_infinity();
@@ -125,10 +130,15 @@ parameters {
   real<lower=0> rr_sigma[NUM_OF_RR * (USE_VARY_SIGMA)];
   vector<lower=0>[NUM_OF_PR] pr_beta;
   vector[NUM_OF_RR] rr_beta;
-
-  real<lower=0,upper=1> lev_sm; //level smoothing parameter
-  real<lower=0,upper=1> slp_sm; //slope smoothing parameter
-
+ 
+  // smoothing parameters
+  //level smoothing parameter
+  real<lower=0,upper=1> lev_sm_dummy[LEV_SM_SIZE]; 
+  //slope smoothing parameter
+  real<lower=0,upper=1> slp_sm_dummy[SLP_SM_SIZE];
+  //seasonality smoothing parameter
+  real<lower=0,upper=1> sea_sm_dummy[SEA_SM_SIZE];
+ 
   // residual tuning parameters
   // use 5*CAUCHY_SD to dodge upper boundary case
   real<lower=SIGMA_EPS,upper=5*CAUCHY_SD> obs_sigma_dummy[1 - WITH_MCMC];
@@ -145,9 +155,6 @@ parameters {
   // damped factor parameters
   real<lower=DAMPED_FACTOR_MIN,upper=DAMPED_FACTOR_MAX> damped_factor[DAMPED_FACTOR_SIZE];
 
-  // seasonal parameters
-  //seasonality smoothing parameter
-  real<lower=0,upper=1> sea_sm[IS_SEASONAL ? 1:0];
   // initial seasonality
   vector<lower=-1,upper=1>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
 
@@ -165,6 +172,26 @@ transformed parameters {
   // seasonality vector with 1-cycle upfront as the initial condition
   vector[(NUM_OF_OBS + SEASONALITY) * IS_SEASONAL] s;
   real damped_factor_dummy;
+  // smoothing parameters
+  real<lower=0,upper=1> lev_sm; 
+  real<lower=0,upper=1> slp_sm;
+  real<lower=0,upper=1> sea_sm;
+  
+  if (LEV_SM_SIZE > 0) {
+    lev_sm = lev_sm_dummy[1];
+  } else {
+    lev_sm = LEV_SM_INPUT;
+  }
+  if (SLP_SM_SIZE > 0) {
+    slp_sm = slp_sm_dummy[1];
+  } else {
+    slp_sm = SLP_SM_INPUT;
+  }
+  if (SEA_SM_SIZE > 0) {
+    sea_sm = sea_sm_dummy[1];
+  } else {
+    sea_sm = SEA_SM_INPUT;
+  }
 
   // compute regression
   if (NUM_OF_PR > 0)
@@ -241,7 +268,7 @@ transformed parameters {
     // we can safely use "l[t]" instead of "l[t-1] + damped_factor_dummy * b[t-1]" where 0 < sea_sm < 1
     // otherwise with original one, use 0 < sea_sm < 1 - lev_sm
     if (IS_SEASONAL)
-        s[t + SEASONALITY] = sea_sm[1] * (RESPONSE[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm[1]) * s_t;
+        s[t + SEASONALITY] = sea_sm * (RESPONSE[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm) * s_t;
   }
 
   if (WITH_MCMC) {
@@ -252,11 +279,6 @@ transformed parameters {
   }
 }
 model {
-  //TEST Instead of uniform, impose beta prior for smoothing to adapt better with seasonality
-  lev_sm ~ beta(LEV_SM_ALPHA, LEV_SM_SHAPE);
-  slp_sm ~ beta(SLP_SM_ALPHA, SLP_SM_SHAPE);
-  sea_sm ~ beta(SEA_SM_ALPHA, SEA_SM_SHAPE);
-  
   //prior for residuals
   if (WITH_MCMC == 0) {
     // for MAP, set finite boundary 
