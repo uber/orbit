@@ -25,10 +25,10 @@ def test_fit_and_predict_univariate(
         predict_df = dlt.predict(test_df)
 
         # assert number of posterior param keys
-        if infer_method == 'map':
-            assert len(dlt.posterior_samples) == 25
-        else:
+        if predict_method == 'full':
             assert len(dlt.posterior_samples) == 13
+        else:
+            assert len(dlt.aggregated_posteriors[predict_method]) == 12
 
         # assert output shape
         if predict_method == 'full':
@@ -73,7 +73,9 @@ def test_fit_and_predict_with_glb_trend(synthetic_data, global_trend_option):
 
     # assert number of posterior param keys
     if global_trend_option in ['linear','loglinear','logistic']:
-        assert len(dlt.posterior_samples) == 25
+        assert len(dlt.aggregated_posteriors['map']) == 12
+    else:
+        len(dlt.aggregated_posteriors['map']) == 11
 
     expected_columns = ['week', 'prediction']
     expected_shape = (51, len(expected_columns))
