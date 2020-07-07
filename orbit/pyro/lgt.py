@@ -24,14 +24,19 @@ class LGTModel:
     def __call__(self):
         response = self.response
         num_of_obs = self.num_of_obs
+        extra_out = {}
 
         # smoothing params
-        lev_sm_alpha = (self.lev_sm_loc * (2 - self.lev_sm_shape) - 1) / (self.lev_sm_loc - 1)
-        slp_sm_alpha = (self.slp_sm_loc * (2 - self.slp_sm_shape) - 1) / (self.slp_sm_loc - 1)
-        sea_sm_alpha = (self.sea_sm_loc * (2 - self.sea_sm_shape) - 1) / (self.sea_sm_loc - 1)
-
-        lev_sm = pyro.sample("lev_sm", dist.Beta(lev_sm_alpha, self.lev_sm_shape))
-        slp_sm = pyro.sample("slp_sm", dist.Beta(slp_sm_alpha, self.slp_sm_shape))
+        if self.lev_sm_input < 0:
+            lev_sm = pyro.sample("lev_sm", dist.Uniform(0, 1))
+        else:
+            lev_sm = torch.tensor(self.lev_sm_input, dtype=torch.double)
+            extra_out['lev_sm'] = lev_sm
+        if self.slp_sm_input < 0:
+            slp_sm = pyro.sample("slp_sm", dist.Uniform(0, 1))
+        else:
+            slp_sm = torch.tensor(self.slp_sm_input, dtype=torch.double)
+            extra_out['slp_sm'] = slp_sm
 
         # residual tuning parameters
         nu = pyro.sample("nu", dist.Uniform(self.min_nu, self.max_nu))
@@ -96,7 +101,11 @@ class LGTModel:
         # seasonal parameters
         if self.is_seasonal:
             # seasonality smoothing parameter
-            sea_sm = pyro.sample("sea_sm", dist.Beta(sea_sm_alpha, self.sea_sm_shape))
+            if self.sea_sm_input < 0:
+                sea_sm = pyro.sample("sea_sm", dist.Uniform(0, 1))
+            else:
+                sea_sm = torch.tensor(self.sea_sm_input, dtype=torch.double)
+                extra_out['sea_sm'] = sea_sm
 
             # initial seasonality
             # 33% lift is with 1 sd prob.
@@ -155,4 +164,6 @@ class LGTModel:
             pyro.sample("response", dist.StudentT(nu, yhat[..., 1:], obs_sigma),
                         obs=response[1:])
 
-        return {'b': b, 'l': l, 's': s, 'lgt_sum': lgt_sum}
+        extra_out.update({'b': b, 'l': l, 's': s, 'lgt_sum': lgt_sum})
+        return extra_out
+

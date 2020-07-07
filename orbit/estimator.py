@@ -384,6 +384,7 @@ class Estimator(object):
                 ))
                 # set posterior samples instance var
                 self._set_aggregate_posteriors(extract=stan_extract)
+                self.posterior_samples = stan_extract
             elif self.infer_method == InferMethod.MARKOV_CHAIN_MONTE_CARLO.value:
                 stan_mcmc_fit = compiled_stan_file.sampling(
                     data=self.data_inputs,
@@ -411,8 +412,7 @@ class Estimator(object):
 
                 # set posterior samples instance var
                 self._set_aggregate_posteriors(extract=stan_extract)
-
-            self.posterior_samples = stan_extract
+                self.posterior_samples = stan_extract
 
         elif self.inference_engine == 'pyro':
             if self.infer_method == InferMethod.MAP.value:
@@ -434,8 +434,7 @@ class Estimator(object):
                     **self.pyro_vi_args
                 )
                 self._set_aggregate_posteriors(extract=pyro_extract)
-
-            self.posterior_samples = pyro_extract
+                self.posterior_samples = pyro_extract
 
     @abstractmethod
     def plot(self):

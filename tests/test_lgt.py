@@ -26,10 +26,10 @@ def test_fit_and_predict_univariate(
         predict_df = lgt.predict(test_df)
 
         # assert number of posterior param keys
-        if infer_method == 'map':
-            assert len(lgt.posterior_samples) == 23
-        else:
+        if predict_method == 'full':
             assert len(lgt.posterior_samples) == 13
+        else:
+            assert len(lgt.aggregated_posteriors[predict_method]) == 12
 
         # assert output shape
         if predict_method == 'full':

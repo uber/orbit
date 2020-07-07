@@ -1,19 +1,17 @@
-// Holt-Winters’ seasonal method
+// A variation from Holt-Winters’ seasonal method
+// R. Hyndman's Exponential Smoothing Book (2008) with equation 3.16a-3.16e
 // Additive Trend, Additive Seasonal and Additive Error model
 // as known as ETS(A,A,A)
-// Hyndman Exponential Smoothing Book page. 46
-// Using equation 3.16a-3.16e
-// Additional Regression Components are added as r[t]
-// normalized seasonal component using chapter 8.1 in initial components
-// can consider dynamic normalization later
-// lgt version provided an additional global power trend suggested by Slawek
+// Additional Regression Components are added as `r[t]`
+// normalized seasonal component using chapter 8.1 in initial condition
+// lgt version provided an additional global power trend suggested by S. Smyl
 
 // rr stands for regular regressor(s) where the coef follows normal distribution
 // pr stands for positive regressor(s) where the coef follows truncated normal distribution
 
 // --- Code Style for .stan ---
 // Upper case for Input
-// lower case for intermediate variables and variables we are interested
+// lower case for intermediate variables and parameters to draw 
 
 data {
   // indicator of which method stan using
@@ -21,74 +19,80 @@ data {
   
   // Data Input
   // Response Data
-  int<lower=1> NUM_OF_OBS; // number of observations
+  // number of observations
+  int<lower=1> NUM_OF_OBS; 
   vector<lower=0>[NUM_OF_OBS] RESPONSE;
+  // 4 for quarterly, 12 for monthly, 52 for weekly
+  int SEASONALITY; 
   // Regression Data
   int<lower=0> NUM_OF_PR; // number of positive regressors
   matrix[NUM_OF_OBS, NUM_OF_PR] PR_MAT; // positive coef regressors, less volatile range
-  vector<lower=0>[NUM_OF_PR] PR_BETA_PRIOR;
-  vector<lower=0>[NUM_OF_PR] PR_SIGMA_PRIOR;
   int<lower=0> NUM_OF_RR; // number of regular regressors
   matrix[NUM_OF_OBS, NUM_OF_RR] RR_MAT; // regular coef regressors, more volatile range
+
+  // Priors, Hyper-Priors and Other Configuration
+  // Regression
+  vector<lower=0>[NUM_OF_PR] PR_BETA_PRIOR;
+  vector<lower=0>[NUM_OF_PR] PR_SIGMA_PRIOR;
   vector[NUM_OF_RR] RR_BETA_PRIOR;
   vector<lower=0>[NUM_OF_RR] RR_SIGMA_PRIOR;
-  
-  // Regression Hyper Params
+  // Regression Penalty
   // 0 As Fixed Ridge Penalty, 1 As Lasso, 2 As Auto-Ridge
   int <lower=0,upper=2> REG_PENALTY_TYPE;
   real<lower=0> AUTO_RIDGE_SCALE;
   real<lower=0> LASSO_SCALE;
-  // Test penalty scale parameter to avoid regression and smoothing over-mixed
-  // real<lower=0.0> R_SQUARED_PENALTY;
-  
-  // Trend Hyper-Params
-  real<lower=0> LEV_SM_LOC;
-  real<lower=1> LEV_SM_SHAPE;
-  real<lower=0> SLP_SM_LOC;
-  real<lower=1> SLP_SM_SHAPE;
 
+  // Smoothing Hyper-Params
+  real<upper=1> LEV_SM_INPUT;
+  real<upper=1> SLP_SM_INPUT;
+  real<upper=1> SEA_SM_INPUT;
+  
   // Residuals Tuning Hyper-Params
   // this re-parameterization is sugggested by stan org and improves sampling
   // efficiently (on uniform instead of heavy-tail)
   // - 0.1 is made for point optimization to dodge boundary case
   real<lower=0> CAUCHY_SD; // derived by MAX(RESPONSE)/constant
   real<lower=1> MIN_NU; real<lower=1> MAX_NU;
-
-  // Seasonality Hyper-Params
-  real<lower=0> SEA_SM_LOC;
-  real<lower=1> SEA_SM_SHAPE;
-  int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
 }
 transformed data {
-  int IS_SEASONAL;
+  int<lower=0,upper=1>  IS_SEASONAL;
   // SIGMA_EPS is a offset to dodge lower boundary case;
   real SIGMA_EPS;
   int USE_VARY_SIGMA;
-  
-  // smoothing params
-  real LEV_SM_ALPHA  = (LEV_SM_LOC * (2 - LEV_SM_SHAPE) - 1)/(LEV_SM_LOC - 1);
-  real SLP_SM_ALPHA  = (SLP_SM_LOC * (2 - SLP_SM_SHAPE) - 1)/(SLP_SM_LOC - 1);
-  real SEA_SM_ALPHA  = (SEA_SM_LOC * (2 - SEA_SM_SHAPE) - 1)/(SEA_SM_LOC - 1);
+  int<lower=0,upper=1> LEV_SM_SIZE;
+  int<lower=0,upper=1> SLP_SM_SIZE;
+  int<lower=0,upper=1> SEA_SM_SIZE;
   
   USE_VARY_SIGMA = 0;
   SIGMA_EPS = 1e-5;
   IS_SEASONAL = 0;
+  LEV_SM_SIZE = 0;
+  SLP_SM_SIZE = 0;
+  SEA_SM_SIZE = 0;
   if (SEASONALITY > 1) IS_SEASONAL = 1;
   # Only auto-ridge is using pr_sigma and rr_sigma
   if (REG_PENALTY_TYPE == 2) USE_VARY_SIGMA = 1;
+  
+  if (LEV_SM_INPUT < 0) LEV_SM_SIZE = 1;
+  if (SLP_SM_INPUT < 0) SLP_SM_SIZE = 1;
+  if (SEA_SM_INPUT < 0) SEA_SM_SIZE = 1 * IS_SEASONAL;
 }
 parameters {
   // regression parameters
-  real<lower=0> pr_sigma[NUM_OF_PR * (USE_VARY_SIGMA)];
-  real<lower=0> rr_sigma[NUM_OF_RR * (USE_VARY_SIGMA)];
-  // vector<lower=0,upper=BETA_MAX>[NUM_OF_PR] pr_beta;
-  // vector<lower=-1 * BETA_MAX,upper=BETA_MAX>[NUM_OF_RR] rr_beta;
   vector<lower=0>[NUM_OF_PR] pr_beta;
   vector[NUM_OF_RR] rr_beta;
 
-  real<lower=0,upper=1> lev_sm; //level smoothing parameter
-  real<lower=0,upper=1> slp_sm; //slope smoothing parameter
+  real<lower=0> pr_sigma[NUM_OF_PR * (USE_VARY_SIGMA)];
+  real<lower=0> rr_sigma[NUM_OF_RR * (USE_VARY_SIGMA)];
 
+  // smoothing parameters
+  //level smoothing parameter
+  real<lower=0,upper=1> lev_sm_dummy[LEV_SM_SIZE]; 
+  //slope smoothing parameter
+  real<lower=0,upper=1> slp_sm_dummy[SLP_SM_SIZE];
+  //seasonality smoothing parameter
+  real<lower=0,upper=1> sea_sm_dummy[SEA_SM_SIZE];
+  
   // residual tuning parameters
   // use 5*CAUCHY_SD to dodge upper boundary case
   real<lower=SIGMA_EPS,upper=5*CAUCHY_SD> obs_sigma_dummy[1 - WITH_MCMC];
@@ -99,20 +103,17 @@ parameters {
   real<lower=0, upper=pi()/2 - 0.2> obs_sigma_unif_dummy[WITH_MCMC];
   real<lower=MIN_NU,upper=MAX_NU> nu;
 
-  // trend parameters
+  // lgt parameters
   real<lower=0,upper=1> lt_coef; // local trend coef
   real<lower=-0.5,upper=0.5> gt_coef; // global trend coef
   real<lower=0,upper=1> gt_pow; // global trend parameter
 
-  // seasonal parameters
-  //seasonality smoothing parameter
-  real<lower=0,upper=1> sea_sm[IS_SEASONAL ? 1:0];
   //initial seasonality
   vector<lower=-1,upper=1>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
 }
 transformed parameters {
   real<lower=SIGMA_EPS, upper=5*CAUCHY_SD> obs_sigma;
-  vector<lower=0>[NUM_OF_OBS] l;
+  vector<lower=0>[NUM_OF_OBS] l; // levs
   vector[NUM_OF_OBS] b; // slope
   vector[NUM_OF_OBS] pr; //positive regression component
   vector[NUM_OF_OBS] rr; //regular regression component
@@ -121,8 +122,28 @@ transformed parameters {
   vector[NUM_OF_OBS] yhat; // response prediction
   //seasonality vector with 1-cycle upfront as the initial condition
   vector[(NUM_OF_OBS + SEASONALITY) * IS_SEASONAL] s;
+  // smoothing parameters
+  real<lower=0,upper=1> lev_sm; 
+  real<lower=0,upper=1> slp_sm;
+  real<lower=0,upper=1> sea_sm;
+  
+  if (LEV_SM_SIZE > 0) {
+    lev_sm = lev_sm_dummy[1];
+  } else {
+    lev_sm = LEV_SM_INPUT;
+  }
+  if (SLP_SM_SIZE > 0) {
+    slp_sm = slp_sm_dummy[1];
+  } else {
+    slp_sm = SLP_SM_INPUT;
+  }
+  if (SEA_SM_SIZE > 0) {
+    sea_sm = sea_sm_dummy[1];
+  } else {
+    sea_sm = SEA_SM_INPUT;
+  }
 
-  // compute regression
+  // compute regression components
   if (NUM_OF_PR > 0)
     pr = PR_MAT * pr_beta;
   else
@@ -175,7 +196,7 @@ transformed parameters {
     // we can safely use "l[t]" instead of "l[t-1] + b[t-1]" where 0 < sea_sm < 1
     // otherwise with original one, use 0 < sea_sm < 1 - lev_sm
     if (IS_SEASONAL)
-      s[t + SEASONALITY] = sea_sm[1] * (RESPONSE[t] - l[t] - r[t]) + (1 - sea_sm[1]) * s_t;
+      s[t + SEASONALITY] = sea_sm * (RESPONSE[t] - l[t] - r[t]) + (1 - sea_sm) * s_t;
 
   }
   if (WITH_MCMC) {
@@ -186,11 +207,6 @@ transformed parameters {
   }
 }
 model {
-  //TEST Instead of uniform, impose beta prior for smoothing to adapt better with seasonality
-  lev_sm ~ beta(LEV_SM_ALPHA, LEV_SM_SHAPE);
-  slp_sm ~ beta(SLP_SM_ALPHA, SLP_SM_SHAPE);
-  sea_sm ~ beta(SEA_SM_ALPHA, SEA_SM_SHAPE);
-  
   // prior for residuals
   if (WITH_MCMC == 0) {
     // for MAP, set finite boundary else use uniform with transformation
@@ -242,29 +258,4 @@ model {
       rr_beta ~ normal(RR_BETA_PRIOR, rr_sigma);
     }
   }
-  
-  // TEST (no need to use adjusted R2 since we are purely using it as metric within a model)
-  // REASON: We want to make sure our regression component is as useful as condition w/o
-  // dynamic trend to avoid overfit with weird combination of r(t) and u(t) + s(t)
-  // if (NUM_OF_PR + NUM_OF_RR > 0) {
-  //   // vector[NUM_OF_OBS] ybar;
-  //   vector[NUM_OF_OBS] diff_tot;
-  //   vector[NUM_OF_OBS] diff_res;
-  //   real ss_tot;
-  //   real ss_res;
-  //   real rsq;
-  //   real ybar;
-  //   real new_ybar;
-  //   
-  //   ybar = mean(RESPONSE);
-  //   diff_tot = RESPONSE - ybar;
-  //   ss_tot = sum(diff_tot .* diff_tot);
-  //   new_ybar = mean(RESPONSE - r);
-  //   diff_res = RESPONSE - r - new_ybar;
-  //   ss_res = sum(diff_res .* diff_res);
-  //   rsq = 1 - ss_res/ss_tot;
-  //   // print(rsq);
-  //   // square-root make deminishing incentives of optimizing r square
-  //   target += R_SQUARED_PENALTY * rsq;
-  // }
 }

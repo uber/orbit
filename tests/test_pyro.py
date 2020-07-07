@@ -4,7 +4,7 @@ from orbit.lgt import LGT
 from orbit.exceptions import IllegalArgument, EstimatorException
 
 
-@pytest.mark.parametrize("infer_method", ["map", "vi", "mcmc"])
+@pytest.mark.parametrize("infer_method", ["map", "vi"])
 @pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
 def test_fit_and_predict_univariate(
         synthetic_data, infer_method, predict_method, valid_pyro_sample_predict_method_combo):
@@ -27,7 +27,10 @@ def test_fit_and_predict_univariate(
         predict_df = lgt.predict(test_df)
 
         # assert number of posterior param keys
-        assert len(lgt.posterior_samples) == 13
+        if predict_method == 'full':
+            assert len(lgt.posterior_samples) == 13
+        else:
+            assert len(lgt.aggregated_posteriors[predict_method]) == 12
 
         # assert output shape
         if predict_method == 'full':
@@ -55,7 +58,7 @@ def test_fit_and_predict_univariate(
             lgt.fit(train_df)
 
 
-@pytest.mark.parametrize("infer_method", ["map", "vi", "mcmc"])
+@pytest.mark.parametrize("infer_method", ["map", "vi"])
 @pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
 @pytest.mark.parametrize(
     "regressor_signs",
