@@ -39,13 +39,9 @@ class DataInputMapper(Enum):
     _REGRESSION_PENALTY = 'REG_PENALTY_TYPE'
     AUTO_RIDGE_SCALE = 'AUTO_RIDGE_SCALE'
     LASSO_SCALE = 'LASSO_SCALE'
-    # Experimental; to avoid over-parameterization of latent variable vs. regression when
-    # they have similar marginal impact.  In that case, penalty kick in to reward more to explain variation with
-    # regression instead of latent variables.
-    # R_SQUARED_PENALTY = 'R_SQUARED_PENALTY'
 
 
-class BaseStanSamplingParameters(Enum):
+class BaseSamplingParameters(Enum):
     """
     The stan output sampling parameters related with LGT base model.
     """
@@ -64,7 +60,7 @@ class BaseStanSamplingParameters(Enum):
     GLOBAL_TREND_COEF = 'gt_coef'
 
 
-class SeasonalityStanSamplingParameters(Enum):
+class SeasonalitySamplingParameters(Enum):
     """
     The stan output sampling parameters related with seasonality component.
     """
@@ -74,7 +70,7 @@ class SeasonalityStanSamplingParameters(Enum):
     SEASONALITY_SMOOTHING_FACTOR = 'sea_sm'
 
 
-class RegressionStanSamplingParameters(Enum):
+class RegressionSamplingParameters(Enum):
     """
     The stan output sampling parameters related with regression component.
     """

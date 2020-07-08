@@ -359,21 +359,21 @@ class LGT(Estimator):
 
     def _set_model_param_names(self):
         self.model_param_names = []
-        self.model_param_names += [param.value for param in lgt.BaseStanSamplingParameters]
+        self.model_param_names += [param.value for param in lgt.BaseSamplingParameters]
 
         # append seasonality param names
         if self.seasonality > 1:
-            self.model_param_names += [param.value for param in lgt.SeasonalityStanSamplingParameters]
+            self.model_param_names += [param.value for param in lgt.SeasonalitySamplingParameters]
 
         # append positive regressors if any
         if self.num_of_positive_regressors > 0:
             self.model_param_names += [
-                lgt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
+                lgt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
 
         # append regular regressors if any
         if self.num_of_regular_regressors > 0:
             self.model_param_names += [
-                lgt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value]
+                lgt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value]
 
     @staticmethod
     def _concat_regression_coefs(pr_beta=None, rr_beta=None):
@@ -425,11 +425,11 @@ class LGT(Estimator):
 
         pr_beta = self.aggregated_posteriors\
             .get(predict_method)\
-            .get(lgt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+            .get(lgt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
 
         rr_beta = self.aggregated_posteriors\
             .get(predict_method)\
-            .get(lgt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+            .get(lgt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value)
 
         # because `_conccat_regression_coefs` operates on torch tensors
         pr_beta = torch.from_numpy(pr_beta) if pr_beta is not None else pr_beta
@@ -476,31 +476,31 @@ class LGT(Estimator):
 
         # seasonality components
         seasonality_levels = model.get(
-            lgt.SeasonalityStanSamplingParameters.SEASONALITY_LEVELS.value)
+            lgt.SeasonalitySamplingParameters.SEASONALITY_LEVELS.value)
         seasonality_smoothing_factor = model.get(
-            lgt.SeasonalityStanSamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
+            lgt.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
         )
 
         # trend components
         slope_smoothing_factor = model.get(
-            lgt.BaseStanSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
+            lgt.BaseSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
         level_smoothing_factor = model.get(
-            lgt.BaseStanSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
-        local_trend_levels = model.get(lgt.BaseStanSamplingParameters.LOCAL_TREND_LEVELS.value)
-        local_trend_slopes = model.get(lgt.BaseStanSamplingParameters.LOCAL_TREND_SLOPES.value)
+            lgt.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
+        local_trend_levels = model.get(lgt.BaseSamplingParameters.LOCAL_TREND_LEVELS.value)
+        local_trend_slopes = model.get(lgt.BaseSamplingParameters.LOCAL_TREND_SLOPES.value)
         residual_degree_of_freedom = model.get(
-            lgt.BaseStanSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
-        residual_sigma = model.get(lgt.BaseStanSamplingParameters.RESIDUAL_SIGMA.value)
+            lgt.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
+        residual_sigma = model.get(lgt.BaseSamplingParameters.RESIDUAL_SIGMA.value)
 
-        local_trend_coef = model.get(lgt.BaseStanSamplingParameters.LOCAL_TREND_COEF.value)
-        global_trend_power = model.get(lgt.BaseStanSamplingParameters.GLOBAL_TREND_POWER.value)
-        global_trend_coef = model.get(lgt.BaseStanSamplingParameters.GLOBAL_TREND_COEF.value)
+        local_trend_coef = model.get(lgt.BaseSamplingParameters.LOCAL_TREND_COEF.value)
+        global_trend_power = model.get(lgt.BaseSamplingParameters.GLOBAL_TREND_POWER.value)
+        global_trend_coef = model.get(lgt.BaseSamplingParameters.GLOBAL_TREND_COEF.value)
         local_global_trend_sums = model.get(
-            lgt.BaseStanSamplingParameters.LOCAL_GLOBAL_TREND_SUMS.value)
+            lgt.BaseSamplingParameters.LOCAL_GLOBAL_TREND_SUMS.value)
 
         # regression components
-        pr_beta = model.get(lgt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
-        rr_beta = model.get(lgt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+        pr_beta = model.get(lgt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+        rr_beta = model.get(lgt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value)
         regressor_beta = self._concat_regression_coefs(pr_beta, rr_beta)
 
         ################################################################

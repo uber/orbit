@@ -74,14 +74,14 @@ class GlobalTrendSamplingParameters(Enum):
     GLOBAL_TREND_LEVEL = 'gl'
 
 
-class DampedTrendStanSamplingParameters(Enum):
+class DampedTrendSamplingParameters(Enum):
     """
     The optional stan output sampling parameters applied when damped factor optimization required.
     """
     DAMPED_FACTOR = 'damped_factor'
 
 
-class SeasonalityStanSamplingParameters(Enum):
+class SeasonalitySamplingParameters(Enum):
     """
     The stan output sampling parameters related with seasonality component.
     """
@@ -91,7 +91,7 @@ class SeasonalityStanSamplingParameters(Enum):
     SEASONALITY_SMOOTHING_FACTOR = 'sea_sm'
 
 
-class RegressionStanSamplingParameters(Enum):
+class RegressionSamplingParameters(Enum):
     """
     The stan output sampling parameters related with regression component.
     """

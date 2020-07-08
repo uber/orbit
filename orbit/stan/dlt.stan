@@ -342,29 +342,4 @@ model {
       rr_beta ~ normal(RR_BETA_PRIOR, rr_sigma);
     }
   }
-  
-  // TEST (no need to use adjusted R2 since we are purely using it as metric within a model)
-  // REASON: We want to make sure our regression component is as useful as condition w/o
-  // dynamic trend to avoid overfit with weird combination of r(t) and u(t) + s(t)
-  // if (NUM_OF_PR + NUM_OF_RR > 0) {
-  //   // vector[NUM_OF_OBS] ybar;
-  //   vector[NUM_OF_OBS] diff_tot;
-  //   vector[NUM_OF_OBS] diff_res;
-  //   real ss_tot;
-  //   real ss_res;
-  //   real rsq;
-  //   real ybar;
-  //   real new_ybar;
-  // 
-  //   ybar = mean(RESPONSE);
-  //   diff_tot = RESPONSE - ybar;
-  //   ss_tot = sum(diff_tot .* diff_tot);
-  //   new_ybar = mean(RESPONSE - r);
-  //   diff_res = RESPONSE - r - new_ybar;
-  //   ss_res = sum(diff_res .* diff_res);
-  //   rsq = 1 - ss_res/ss_tot;
-  //   // print(rsq);
-  //   // square-root make deminishing incentives of optimizing r square
-  //   target += R_SQUARED_PENALTY * rsq;
-  // }
 }

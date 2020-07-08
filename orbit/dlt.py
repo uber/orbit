@@ -175,22 +175,22 @@ class DLT(LGT):
 
         # append seasonality param names
         if self.seasonality > 1:
-            self.model_param_names += [param.value for param in dlt.SeasonalityStanSamplingParameters]
+            self.model_param_names += [param.value for param in dlt.SeasonalitySamplingParameters]
 
         # append damped trend param names
         if self.damped_factor_fixed < 0:
             self.model_param_names += [
-                param.value for param in dlt.DampedTrendStanSamplingParameters]
+                param.value for param in dlt.DampedTrendSamplingParameters]
 
         # append positive regressors if any
         if self.num_of_positive_regressors > 0:
             self.model_param_names += [
-                dlt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
+                dlt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
 
         # append regular regressors if any
         if self.num_of_regular_regressors > 0:
             self.model_param_names += [
-                dlt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value]
+                dlt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value]
 
         if self._global_trend_option != dlt.GlobalTrendOption.flat.value:
             self.model_param_names += [param.value for param in dlt.GlobalTrendSamplingParameters]
@@ -272,9 +272,9 @@ class DLT(LGT):
 
         # seasonality components
         seasonality_levels = model.get(
-            dlt.SeasonalityStanSamplingParameters.SEASONALITY_LEVELS.value)
+            dlt.SeasonalitySamplingParameters.SEASONALITY_LEVELS.value)
         seasonality_smoothing_factor = model.get(
-            dlt.SeasonalityStanSamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
+            dlt.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
         )
 
         # trend components
@@ -295,7 +295,7 @@ class DLT(LGT):
             damped_factor = torch.empty(num_sample, dtype=torch.double)
             damped_factor.fill_(self.damped_factor_fixed)
         else:
-            damped_factor = model.get(dlt.DampedTrendStanSamplingParameters.DAMPED_FACTOR.value)
+            damped_factor = model.get(dlt.DampedTrendSamplingParameters.DAMPED_FACTOR.value)
 
         if self._global_trend_option != dlt.GlobalTrendOption.flat.value:
             global_trend_level = model.get(dlt.GlobalTrendSamplingParameters.GLOBAL_TREND_LEVEL.value).view(num_sample, )
@@ -305,8 +305,8 @@ class DLT(LGT):
             global_trend = torch.zeros((num_sample, trained_len), dtype=torch.double)
 
         # regression components
-        pr_beta = model.get(dlt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
-        rr_beta = model.get(dlt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+        pr_beta = model.get(dlt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+        rr_beta = model.get(dlt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value)
         regressor_beta = self._concat_regression_coefs(pr_beta, rr_beta)
 
 
