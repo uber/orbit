@@ -21,7 +21,7 @@
 data {
   // indicator of which method stan using
   int<lower=0,upper=1> WITH_MCMC;
-  
+
   // Data Input
   // Response Data
   int<lower=1> NUM_OF_OBS; // number of observations
@@ -35,7 +35,7 @@ data {
   matrix[NUM_OF_OBS, NUM_OF_RR] RR_MAT; // regular coef regressors, more volatile range
   vector[NUM_OF_RR] RR_BETA_PRIOR;
   vector<lower=0>[NUM_OF_RR] RR_SIGMA_PRIOR;
-  
+
   // Regression Hyper Params
   // 0 As Fixed Ridge Penalty, 1 As Lasso, 2 As Auto-Ridge
   int <lower=0,upper=2> REG_PENALTY_TYPE;
@@ -58,12 +58,12 @@ data {
   // Damped Trend Hyper-Params
   real<lower=0> DAMPED_FACTOR_MIN;
   real<upper=1> DAMPED_FACTOR_MAX;
-  // -1 or 0 means not fixed 
+  // -1 or 0 means not fixed
   real DAMPED_FACTOR_FIXED;
 
   // Seasonality Hyper-Params
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
-  
+
   // 0 As linear, 1 As log-linear, 2 As logistic, 3 As flat
   int <lower=0,upper=3> GLOBAL_TREND_OPTION;
 }
@@ -81,26 +81,26 @@ transformed data {
   int<lower=0,upper=1> LEV_SM_SIZE;
   int<lower=0,upper=1> SLP_SM_SIZE;
   int<lower=0,upper=1> SEA_SM_SIZE;
-  
+
   LEV_SM_SIZE = 0;
   SLP_SM_SIZE = 0;
   SEA_SM_SIZE = 0;
-  
+
   DAMPED_FACTOR_SIZE = 1;
   SIGMA_EPS = 1e-5;
   IS_SEASONAL = 0;
   GL_SIZE = 0;
   GB_SIZE = 0;
   USE_VARY_SIGMA = 0;
-  
+
   if (SEASONALITY > 1) IS_SEASONAL = 1;
   # Only auto-ridge is using pr_sigma and rr_sigma
   if (REG_PENALTY_TYPE == 2) USE_VARY_SIGMA = 1;
-  
+
   if (LEV_SM_INPUT < 0) LEV_SM_SIZE = 1;
   if (SLP_SM_INPUT < 0) SLP_SM_SIZE = 1;
-  if (SEA_SM_INPUT < 0) SEA_SM_SIZE = 1 * IS_SEASONAL;
-  
+  if (SEA_SM_INPUT < 0) SEA_SM_SIZE = 1;
+
   if (DAMPED_FACTOR_FIXED > 0) DAMPED_FACTOR_SIZE = 0;
   if (GLOBAL_TREND_OPTION == 0) {
       GL_LOWER = negative_infinity();
@@ -121,7 +121,7 @@ transformed data {
     GL_SIZE = 1;
     GB_SIZE = 1;
   }
-  
+
   if (REG_PENALTY_TYPE == 2) USE_VARY_SIGMA = 1;
 }
 parameters {
@@ -130,21 +130,21 @@ parameters {
   real<lower=0> rr_sigma[NUM_OF_RR * (USE_VARY_SIGMA)];
   vector<lower=0>[NUM_OF_PR] pr_beta;
   vector[NUM_OF_RR] rr_beta;
- 
+
   // smoothing parameters
   //level smoothing parameter
-  real<lower=0,upper=1> lev_sm_dummy[LEV_SM_SIZE]; 
+  real<lower=0,upper=1> lev_sm_dummy[LEV_SM_SIZE];
   //slope smoothing parameter
   real<lower=0,upper=1> slp_sm_dummy[SLP_SM_SIZE];
   //seasonality smoothing parameter
   real<lower=0,upper=1> sea_sm_dummy[SEA_SM_SIZE];
- 
+
   // residual tuning parameters
   // use 5*CAUCHY_SD to dodge upper boundary case
   real<lower=SIGMA_EPS,upper=5*CAUCHY_SD> obs_sigma_dummy[1 - WITH_MCMC];
   // this re-parameterization is sugggested by stan org and improves sampling
   // efficiently (on uniform instead of heavy-tail)
-  // - 0.2 is made to dodge boundary case (tanh(pi/2 - 0.2) roughly equals 5 to be 
+  // - 0.2 is made to dodge boundary case (tanh(pi/2 - 0.2) roughly equals 5 to be
   // consistent with MAP estimation)
   real<lower=0, upper=pi()/2 - 0.2> obs_sigma_unif_dummy[WITH_MCMC];
   real<lower=MIN_NU,upper=MAX_NU> nu;
@@ -173,10 +173,10 @@ transformed parameters {
   vector[(NUM_OF_OBS + SEASONALITY) * IS_SEASONAL] s;
   real damped_factor_dummy;
   // smoothing parameters
-  real<lower=0,upper=1> lev_sm; 
+  real<lower=0,upper=1> lev_sm;
   real<lower=0,upper=1> slp_sm;
   real<lower=0,upper=1> sea_sm;
-  
+
   if (LEV_SM_SIZE > 0) {
     lev_sm = lev_sm_dummy[1];
   } else {
@@ -216,7 +216,7 @@ transformed parameters {
     s[SEASONALITY] = -1 * sum_init_sea;
     s[SEASONALITY + 1] = init_sea[1];
   }
-  
+
   // global trend is deterministic
   // we generate the entire series here
   // gt_sum[1] = gl;
@@ -273,21 +273,21 @@ transformed parameters {
 
   if (WITH_MCMC) {
     // eqv. to obs_sigma ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, ];
-    obs_sigma = SIGMA_EPS + CAUCHY_SD * tan(obs_sigma_unif_dummy[1]); 
+    obs_sigma = SIGMA_EPS + CAUCHY_SD * tan(obs_sigma_unif_dummy[1]);
   } else {
-    obs_sigma = obs_sigma_dummy[1]; 
+    obs_sigma = obs_sigma_dummy[1];
   }
 }
 model {
   //prior for residuals
   if (WITH_MCMC == 0) {
-    // for MAP, set finite boundary 
+    // for MAP, set finite boundary
     obs_sigma_dummy[1] ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, 5 * CAUCHY_SD];
   }
   for (t in 2:NUM_OF_OBS) {
     RESPONSE[t] ~ student_t(nu, yhat[t], obs_sigma);
   }
-  
+
   // prior for seasonality
   for (i in 1:(SEASONALITY - 1))
     init_sea[i] ~ normal(0, 0.33); // 33% lift is with 1 sd prob.
