@@ -56,6 +56,20 @@ def test_fit_and_predict_univariate(
             lgt.fit(train_df)
 
 
+@pytest.mark.parametrize("seasonality_sm_input", [-1, 0.5])
+def test_non_seasonal_fit(m3_monthly_data, seasonality_sm_input):
+    mod = LGT(response_col='value',
+              date_col='date',
+              seasonality=-1,
+              seasonality_sm_input=seasonality_sm_input,
+              infer_method='map',
+              predict_method='map')
+
+    mod.fit(df=m3_monthly_data)
+    predicted_df = mod.predict(df=m3_monthly_data)
+    assert len(mod.aggregated_posteriors['map']) == 10
+    assert predicted_df.shape == (68, 2)
+
 @pytest.mark.parametrize("infer_method", ["map", "vi", "mcmc"])
 @pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
 @pytest.mark.parametrize(

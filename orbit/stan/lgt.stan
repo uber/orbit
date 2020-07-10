@@ -11,19 +11,19 @@
 
 // --- Code Style for .stan ---
 // Upper case for Input
-// lower case for intermediate variables and parameters to draw 
+// lower case for intermediate variables and parameters to draw
 
 data {
   // indicator of which method stan using
   int<lower=0,upper=1> WITH_MCMC;
-  
+
   // Data Input
   // Response Data
   // number of observations
-  int<lower=1> NUM_OF_OBS; 
+  int<lower=1> NUM_OF_OBS;
   vector<lower=0>[NUM_OF_OBS] RESPONSE;
   // 4 for quarterly, 12 for monthly, 52 for weekly
-  int SEASONALITY; 
+  int SEASONALITY;
   // Regression Data
   int<lower=0> NUM_OF_PR; // number of positive regressors
   matrix[NUM_OF_OBS, NUM_OF_PR] PR_MAT; // positive coef regressors, less volatile range
@@ -46,7 +46,7 @@ data {
   real<upper=1> LEV_SM_INPUT;
   real<upper=1> SLP_SM_INPUT;
   real<upper=1> SEA_SM_INPUT;
-  
+
   // Residuals Tuning Hyper-Params
   // this re-parameterization is sugggested by stan org and improves sampling
   // efficiently (on uniform instead of heavy-tail)
@@ -62,7 +62,7 @@ transformed data {
   int<lower=0,upper=1> LEV_SM_SIZE;
   int<lower=0,upper=1> SLP_SM_SIZE;
   int<lower=0,upper=1> SEA_SM_SIZE;
-  
+
   USE_VARY_SIGMA = 0;
   SIGMA_EPS = 1e-5;
   IS_SEASONAL = 0;
@@ -72,7 +72,7 @@ transformed data {
   if (SEASONALITY > 1) IS_SEASONAL = 1;
   # Only auto-ridge is using pr_sigma and rr_sigma
   if (REG_PENALTY_TYPE == 2) USE_VARY_SIGMA = 1;
-  
+
   if (LEV_SM_INPUT < 0) LEV_SM_SIZE = 1;
   if (SLP_SM_INPUT < 0) SLP_SM_SIZE = 1;
   if (SEA_SM_INPUT < 0) SEA_SM_SIZE = 1 * IS_SEASONAL;
@@ -87,18 +87,18 @@ parameters {
 
   // smoothing parameters
   //level smoothing parameter
-  real<lower=0,upper=1> lev_sm_dummy[LEV_SM_SIZE]; 
+  real<lower=0,upper=1> lev_sm_dummy[LEV_SM_SIZE];
   //slope smoothing parameter
   real<lower=0,upper=1> slp_sm_dummy[SLP_SM_SIZE];
   //seasonality smoothing parameter
   real<lower=0,upper=1> sea_sm_dummy[SEA_SM_SIZE];
-  
+
   // residual tuning parameters
   // use 5*CAUCHY_SD to dodge upper boundary case
   real<lower=SIGMA_EPS,upper=5*CAUCHY_SD> obs_sigma_dummy[1 - WITH_MCMC];
   // this re-parameterization is sugggested by stan org and improves sampling
   // efficiently (on uniform instead of heavy-tail)
-  // - 0.2 is made to dodge boundary case (tanh(pi/2 - 0.2) roughly equals 5 to be 
+  // - 0.2 is made to dodge boundary case (tanh(pi/2 - 0.2) roughly equals 5 to be
   // consistent with MAP estimation)
   real<lower=0, upper=pi()/2 - 0.2> obs_sigma_unif_dummy[WITH_MCMC];
   real<lower=MIN_NU,upper=MAX_NU> nu;
@@ -123,10 +123,10 @@ transformed parameters {
   //seasonality vector with 1-cycle upfront as the initial condition
   vector[(NUM_OF_OBS + SEASONALITY) * IS_SEASONAL] s;
   // smoothing parameters
-  real<lower=0,upper=1> lev_sm; 
+  real<lower=0,upper=1> lev_sm;
   real<lower=0,upper=1> slp_sm;
   real<lower=0,upper=1> sea_sm;
-  
+
   if (LEV_SM_SIZE > 0) {
     lev_sm = lev_sm_dummy[1];
   } else {
@@ -137,10 +137,14 @@ transformed parameters {
   } else {
     slp_sm = SLP_SM_INPUT;
   }
-  if (SEA_SM_SIZE > 0) {
-    sea_sm = sea_sm_dummy[1];
+  if (IS_SEASONAL) {
+    if (SEA_SM_SIZE > 0) {
+      sea_sm = sea_sm_dummy[1];
+    } else {
+      sea_sm = SEA_SM_INPUT;
+    }
   } else {
-    sea_sm = SEA_SM_INPUT;
+    sea_sm = 0.0;
   }
 
   // compute regression components
@@ -181,11 +185,11 @@ transformed parameters {
     } else {
         s_t = 0.0;
     }
-    
+
     // forecast process
     lgt_sum[t] = l[t-1] + gt_coef * fabs(l[t-1]) ^ gt_pow + lt_coef * b[t-1];
     yhat[t] = lgt_sum[t] + s_t + r[t];
-    
+
     // update process
     // l[t] update equation with l[t-1] ONLY by excluding b[t-1];
     // It is intentionally different from the Holt-Winter form
@@ -201,9 +205,9 @@ transformed parameters {
   }
   if (WITH_MCMC) {
     // eqv. to obs_sigma ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, ];
-    obs_sigma = SIGMA_EPS + CAUCHY_SD * tan(obs_sigma_unif_dummy[1]); 
+    obs_sigma = SIGMA_EPS + CAUCHY_SD * tan(obs_sigma_unif_dummy[1]);
   } else {
-    obs_sigma = obs_sigma_dummy[1]; 
+    obs_sigma = obs_sigma_dummy[1];
   }
 }
 model {
@@ -215,11 +219,11 @@ model {
   for (t in 2:NUM_OF_OBS) {
     RESPONSE[t] ~ student_t(nu, yhat[t], obs_sigma);
   }
-  
+
   // prior for seasonality
   for (i in 1:(SEASONALITY - 1))
     init_sea[i] ~ normal(0, 0.33); // 33% lift is with 1 sd prob.
-    
+
   // regression prior
   // see these references for details
   // 1. https://jrnold.github.io/bayesian_notes/shrinkage-and-regularized-regression.html
