@@ -99,7 +99,7 @@ transformed data {
 
   if (LEV_SM_INPUT < 0) LEV_SM_SIZE = 1;
   if (SLP_SM_INPUT < 0) SLP_SM_SIZE = 1;
-  if (SEA_SM_INPUT < 0) SEA_SM_SIZE = 1;
+  if (SEA_SM_INPUT < 0) SEA_SM_SIZE = 1 * IS_SEASONAL;
 
   if (DAMPED_FACTOR_FIXED > 0) DAMPED_FACTOR_SIZE = 0;
   if (GLOBAL_TREND_OPTION == 0) {
