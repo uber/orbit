@@ -187,10 +187,14 @@ transformed parameters {
   } else {
     slp_sm = SLP_SM_INPUT;
   }
-  if (SEA_SM_SIZE > 0) {
-    sea_sm = sea_sm_dummy[1];
+  if (IS_SEASONAL) {
+    if (SEA_SM_SIZE > 0) {
+      sea_sm = sea_sm_dummy[1];
+    } else {
+      sea_sm = SEA_SM_INPUT;
+    }
   } else {
-    sea_sm = SEA_SM_INPUT;
+    sea_sm = 0.0;
   }
 
   // compute regression
