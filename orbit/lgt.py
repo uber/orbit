@@ -76,10 +76,6 @@ class LGT(Estimator):
         **EXPERIMENTAL** A supplemental parameter to define the number of steps in a cycle.  It can be
         a positive fraction.  Suggested to use only when user try to model dual seasonality where step size
         is 1/`max_period` and `max_period` = max of `seasonality` and `period`.
-    auto_scale : bool
-        **EXPERIMENTAL AND UNSTABLE** if True, response and regressor values are transformed
-        with a `MinMaxScaler` such that the min value is `e` and max value is
-        the max value in the data
     regressor_col : list
         a list of regressor column names in the dataframe
     regressor_sign : list
@@ -124,7 +120,6 @@ class LGT(Estimator):
 
     def __init__(
             self, is_multiplicative=True, seasonality=-1, period=1.0,
-            auto_scale=False,
             regressor_col=None, regressor_sign=None,
             regressor_beta_prior=None, regressor_sigma_prior=None,
             regression_penalty='fixed_ridge',
@@ -145,15 +140,6 @@ class LGT(Estimator):
         # associates with the *.stan model resource
         self.stan_model_name = "lgt"
         self.pyro_model_name = "orbit.pyro.lgt.LGTModel"
-        # rescale depends on max of response
-        self.response_min_max_scaler = None
-        # rescale depends on num of regressors
-        self.regressor_min_max_scaler = None
-        if auto_scale and not is_multiplicative:
-            raise IllegalArgument(
-                'Auto-scale is not supported for additive model. Please turn off auto-scale.'
-            )
-
         self._regression_penalty = getattr(lgt.RegressionPenalty, regression_penalty).value
 
     def _set_computed_params(self):
@@ -222,35 +208,6 @@ class LGT(Estimator):
                 self.regular_regressor_beta_prior.append(self.regressor_beta_prior[index])
                 self.regular_regressor_sigma_prior.append(self.regressor_sigma_prior[index])
 
-    def _scale_df(self, df, do_fit=False):
-        regression_sigma_sum = 0.0
-        # scale regressors if avaliable
-        if self.regressor_col is not None:
-            regression_sigma_sum = np.sum(self.regressor_sigma_prior)
-            # fit regerssor scaler in fitting
-            if do_fit:
-                self.regressor_min_max_scaler = MinMaxScaler((1, 2.719))
-                df[self.regressor_col] = \
-                    self.regressor_min_max_scaler.fit_transform(df[self.regressor_col])
-            # transfrom regressors
-            else:
-                df[self.regressor_col] = \
-                    self.regressor_min_max_scaler.transform(df[self.regressor_col])
-
-        # fit response scaler in fitting
-        if do_fit:
-            n = df.shape[0]
-            x = df[self.response_col].astype(np.float64).values.reshape(n, 1)
-            # bounded by chance of seasoanlity and sum of regression causing negative
-            # it won't completely get rid of chacne but should catch most of the cases
-            lower = max(1.001 +
-                        max(-1 * self.seasonality_min, 0) +
-                        2 * regression_sigma_sum, np.min(x))
-            upper = min(lower + 10, np.max(x))
-            self.response_min_max_scaler = MinMaxScaler((lower, upper))
-            df[self.response_col] = self.response_min_max_scaler.fit_transform(x).flatten()
-        return df
-
     def _log_transform_df(self, df, do_fit=False):
         # transform the response column
         if do_fit:
@@ -285,8 +242,6 @@ class LGT(Estimator):
 
         _validate_regression_columns()
 
-        if self.auto_scale:
-            self.df = self._scale_df(self.df, do_fit=True)
         if self.is_multiplicative:
             self.df = self._log_transform_df(self.df, do_fit=True)
 
@@ -300,27 +255,6 @@ class LGT(Estimator):
         self._setup_stan_init()
         # TODO: maybe useful to calculate vanlia (adjusted) R-Squared
         # self._adjust_smoothing_with_regression()
-
-    # def _adjust_smoothing_with_regression(self):
-    #     num_of_regressors = len(self.regressor_col)
-    #     if num_of_regressors > 0 :
-    #         # TODO: not using R-Squared for now
-    #         # X = self.df[self.regressor_col].values
-    #         # # append intercept
-    #         # X = np.concatenate([np.ones((X.shape[0], 1)), X], axis=1)
-    #         # X_VAR_INV = np.linalg.inv(np.matmul(X.T, X))
-    #         # b = np.matmul(X_VAR_INV, np.matmul(X.T, self.response))
-    #         # ss_tot = np.sum(np.square(self.response - np.mean(self.response)))
-    #         # rc = np.matmul(X, b)
-    #         # ss_res = np.sum(np.square(self.response - rc))
-    #         # r_sq = 1 - ss_res / ss_tot
-    #         if self.r_squared_penalty is None:
-    #             self.r_squared_penalty = np.sqrt(self.num_of_observations)
-    #         # self.level_smoothing_max = 1.0 * (1 - r_sq)
-    #         # self.slope_smoothing_max = 1.0 * (1 - r_sq)
-    #         # self.seasonality_max_smoothing_max = 1.0 * (1 - r_sq)
-    #     else:
-    #         self.r_squared_penalty = 0.0
 
     def _setup_stan_init(self):
         # to use stan default, set self.stan_int to 'random'
@@ -351,11 +285,6 @@ class LGT(Estimator):
         if self.num_of_regular_regressors > 0:
             self.regular_regressor_matrix = self.df.filter(
                 items=self.regular_regressor_col,).values
-
-        # if (self.regressor_col is not None) and (self.r_squared_penalty is None):
-        #     self.r_squared_penalty = np.sqrt(self.num_of_observations)
-        # else:
-        #     self.r_squared_penalty = max(self.r_squared_penalty, 0.0)
 
     def _set_model_param_names(self):
         self.model_param_names = []
@@ -511,8 +440,6 @@ class LGT(Estimator):
         training_df_meta = self.training_df_meta
         # remove reference from original input
         df = df.copy()
-        if self.auto_scale:
-            df = self._scale_df(df, do_fit=False)
         # for multiplicative model
         if self.is_multiplicative:
             df = self._log_transform_df(df, do_fit=False)
@@ -703,16 +630,6 @@ class LGT(Estimator):
             trend_component = trend_component.numpy()
             seasonality_component = seasonality_component.numpy()
             regressor_component = regressor_component.numpy()
-
-        if self.auto_scale:
-            # work around response_min_max_scaler initial shape
-            init_shape = pred_array.shape
-            # enfroce a 2D array
-            pred_array = np.reshape(pred_array, (-1, 1))
-            pred_array = self.response_min_max_scaler.inverse_transform(pred_array)
-            pred_array = pred_array.reshape(init_shape)
-            # we assume the unit is based on trend component while others are multipliers
-            trend_component = self.response_min_max_scaler.inverse_transform(trend_component)
 
         # if decompose output dictionary of components
         if decompose:

@@ -141,7 +141,6 @@ class DLT(LGT):
             damped_factor_min=0.8, damped_factor_max=1,
             damped_factor_fixed=0.8,
             global_trend_option='linear',
-            auto_scale=False,
             regressor_col=None, regressor_sign=None,
             regressor_beta_prior=None, regressor_sigma_prior=None,
             regression_penalty='fixed_ridge',
@@ -205,8 +204,6 @@ class DLT(LGT):
         training_df_meta = self.training_df_meta
         # remove reference from original input
         df = df.copy()
-        if self.auto_scale:
-            df = self._scale_df(df, do_fit=False)
         # for multiplicative model
         if self.is_multiplicative:
             df = self._log_transform_df(df, do_fit=False)
@@ -461,15 +458,6 @@ class DLT(LGT):
             seasonality_component = seasonality_component.numpy()
             regressor_component = regressor_component.numpy()
 
-        if self.auto_scale:
-            # work around response_min_max_scaler initial shape
-            init_shape = pred_array.shape
-            # enfroce a 2D array
-            pred_array = np.reshape(pred_array, (-1, 1))
-            pred_array = self.response_min_max_scaler.inverse_transform(pred_array)
-            pred_array = pred_array.reshape(init_shape)
-            # we assume the unit is based on trend component while others are multipliers
-            trend_component = self.response_min_max_scaler.inverse_transform(trend_component)
 
         # if decompose output dictionary of components
         if decompose:
