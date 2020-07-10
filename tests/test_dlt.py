@@ -54,6 +54,20 @@ def test_fit_and_predict_univariate(
             )
             dlt.fit(train_df)
 
+@pytest.mark.parametrize("seasonality_sm_input", [-1, 0.5])
+def test_non_seasonal_fit(m3_monthly_data, seasonality_sm_input):
+    dlt = DLT(response_col='value',
+              date_col='date',
+              seasonality=-1,
+              seasonality_sm_input=seasonality_sm_input,
+              infer_method='map',
+              predict_method='map')
+
+    dlt.fit(df=m3_monthly_data)
+    predicted_df = dlt.predict(df=m3_monthly_data)
+    assert len(dlt.aggregated_posteriors['map']) == 10
+    assert predicted_df.shape == (68, 2)
+
 
 @pytest.mark.parametrize("global_trend_option", ["linear", "loglinear", "logistic", "flat"])
 def test_fit_and_predict_with_glb_trend(synthetic_data, global_trend_option):
@@ -274,6 +288,9 @@ def test_fit_monthly_data(m3_monthly_data):
 
     assert predicted_df.shape == expected_shape
     assert list(predicted_df.columns) == expected_columns
+
+
+
 
 
 def test_fit_and_predict_with_regression_all_int(synthetic_data):
