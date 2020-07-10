@@ -75,7 +75,7 @@ transformed data {
 
   if (LEV_SM_INPUT < 0) LEV_SM_SIZE = 1;
   if (SLP_SM_INPUT < 0) SLP_SM_SIZE = 1;
-  if (SEA_SM_INPUT < 0) SEA_SM_SIZE = 1;
+  if (SEA_SM_INPUT < 0) SEA_SM_SIZE = 1 * IS_SEASONAL;
 }
 parameters {
   // regression parameters
@@ -137,10 +137,14 @@ transformed parameters {
   } else {
     slp_sm = SLP_SM_INPUT;
   }
-  if (SEA_SM_SIZE > 0) {
-    sea_sm = sea_sm_dummy[1];
+  if (IS_SEASONAL) {
+    if (SEA_SM_SIZE > 0) {
+      sea_sm = sea_sm_dummy[1];
+    } else {
+      sea_sm = SEA_SM_INPUT;
+    }
   } else {
-    sea_sm = SEA_SM_INPUT;
+    sea_sm = 0.0;
   }
 
   // compute regression components
