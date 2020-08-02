@@ -290,9 +290,6 @@ def test_fit_monthly_data(m3_monthly_data):
     assert list(predicted_df.columns) == expected_columns
 
 
-
-
-
 def test_fit_and_predict_with_regression_all_int(synthetic_data):
     train_df, test_df, coef = synthetic_data
     reg_columns = train_df.columns.tolist()[2:]
