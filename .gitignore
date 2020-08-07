@@ -87,6 +87,7 @@ build/
 dist/
 orbit.egg-info/
 orbit/stan_model/
+orbit/stan_compiled/
 env_docs/
 docs/_build/
 docs/_static
