@@ -14,7 +14,7 @@ class StanEstimator(BaseEstimator):
     """Stan Estimator for interaction with PyStan"""
     def __init__(self, num_warmup=900, num_sample=100, chains=4,
                  cores=8, seed=8888, algorithm=None, **kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
         self.num_warmup = num_warmup
         self.num_sample = num_sample
         self.chains = chains
@@ -57,8 +57,13 @@ class StanEstimator(BaseEstimator):
 
 class StanEstimatorMCMC(StanEstimator):
     """Stan Estimator for MCMC Sampling"""
-    def __init__(self, stan_mcmc_control=None, stan_mcmc_args=None):
-        super().__init__()
+    # is_mcmc boolean indicator -- some models are parameterized slightly different for
+    # MCMC estimator vs other estimators for convergence. Indicator let's model and estimator
+    # to remain independent
+    _is_mcmc_estimator = True
+
+    def __init__(self, stan_mcmc_control=None, stan_mcmc_args=None, **kwargs):
+        super().__init__(**kwargs)
         self.stan_mcmc_control = stan_mcmc_control
         self.stan_mcmc_args = stan_mcmc_args
 

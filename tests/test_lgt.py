@@ -5,6 +5,8 @@ import pytest
 from orbit.lgt import LGT
 from orbit.exceptions import IllegalArgument, EstimatorException
 
+from orbit_v1.models.lgt import BaseLGT, LGTFull
+
 
 @pytest.mark.parametrize("infer_method", ["map", "vi", "mcmc"])
 @pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
@@ -306,3 +308,42 @@ def test_fit_and_predict_with_regression_all_int(synthetic_data):
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
+
+
+def test_base_lgt_init():
+    lgt = BaseLGT()
+
+    is_fitted = lgt.is_fitted()
+
+    stan_data_input = lgt._get_stan_data_input()
+    model_param_names = lgt._get_model_param_names()
+    stan_init = lgt._get_stan_init()
+
+    assert not is_fitted  # model is not yet fitted
+    assert not stan_data_input  # should only be initialized and not set
+    assert model_param_names  # model param names should already be set
+    # todo: change when stan_init callable is implemented
+    assert stan_init == 'random'
+
+
+def test_lgt_full_univariate(synthetic_data):
+    train_df, test_df, coef = synthetic_data
+
+    lgt = LGTFull(
+        response_col='response',
+        date_col='week',
+        prediction_percentiles=[5, 95],
+        seasonality=52,
+        num_warmup=50,
+        verbose=False
+    )
+
+    lgt.fit(train_df)
+    predict_df = lgt.predict(test_df)
+
+    expected_columns = ['week', 5, 'prediction', 95]
+    expected_shape = (51, len(expected_columns))
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+    assert len(lgt._posterior_samples) == 13
