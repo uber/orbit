@@ -39,6 +39,8 @@ class DLTRH(Estimator):
         # associates with the *.stan model resource
         self.stan_model_name = "dlt_rh"
         self.pyro_model_name = None
+        self.min_nu = 5.0
+        self.max_nu = 40.0
 
     def _set_computed_params(self):
         pass
@@ -51,6 +53,7 @@ class DLTRH(Estimator):
         self.response = self.df[self.response_col].values
         self.num_of_observations = len(self.response)
         self.init_lev = np.mean(self.response[:10])
+        self.cauchy_sd = max(self.response) / 30.0
         # self.init_lev = self.response[0]
         self.init_lev_sd = np.std(self.response[:10]) * 0.1
         self.response_sd = np.std(self.response)

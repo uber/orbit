@@ -18,6 +18,10 @@ class DataInputMapper(Enum):
     # ---------- Seasonality ---------- #
     SEASONALITY = 'SEASONALITY'
     NORMALIZE_SEASONALITY = 'NORM_SEAS'
+    # ----------  Noise Distribution  ---------- #
+    MIN_NU = 'MIN_NU'
+    MAX_NU = 'MAX_NU'
+    CAUCHY_SD = 'CAUCHY_SD'
 
 
 class BaseSamplingParameters(Enum):
@@ -31,6 +35,7 @@ class BaseSamplingParameters(Enum):
     SLOPE_SMOOTHING_FACTOR = 'b_sm'
     # ---------- Noise Trend ---------- #
     RESIDUAL_SIGMA = 'obs_sigma'
+    RESIDUAL_DEGREE_OF_FREEDOM = 'nu'
     GLOBAL_TREND_SLOPE = 'gb'
     # GLOBAL_TREND_LEVEL = 'gl'
     GLOBAL_TREND = 'gt_sum'

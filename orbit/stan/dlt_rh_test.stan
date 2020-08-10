@@ -32,7 +32,7 @@ parameters {
   real init_l;
   // initial seasonality
   vector<lower=-1,upper=1>[SEASONALITY - 1] init_s;
-  real<lower=1e-3,upper=RESPONSE_SD> obs_sigma;
+  real<lower=1e-5,upper=RESPONSE_SD> obs_sigma;
 }
 
 transformed parameters {
