@@ -13,7 +13,7 @@ from ..constants.constants import (
     COEFFICIENT_DF_COLS,
     PredictMethod
 )
-from ..estimators.stan_estimator import StanEstimatorMCMC
+from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
 from ..exceptions import IllegalArgument, LGTException, PredictionException
 from ..utils.general import is_ordered_datetime
 
@@ -752,10 +752,11 @@ class LGTFull(BaseLGT):
 
 
 class LGTAggregated(object):
-    def __init__(self, estimator_class, model_params, **kwargs):
-        pass
+    def __init__(self, aggregate_method='mean', **kwargs):
+        super().__init__(**kwargs)
+        self.aggregate_method = aggregate_method
 
 
 class LGTMAP(object):
-    def __init__(self, estimator_class, model_params, **kwargs):
-        pass
+    def __init__(self, **kwargs):
+        super().__init__(estimator_type=StanEstimatorMAP, **kwargs)
