@@ -3,6 +3,7 @@ import numpy as np
 from scipy.stats import nct
 import torch
 from copy import copy, deepcopy
+from functools import partial
 
 from ..constants import lgt
 from ..constants.constants import (
@@ -73,6 +74,8 @@ class BaseLGT(object):
         self.regular_regressor_col = list()
         self.regular_regressor_beta_prior = list()
         self.regular_regressor_sigma_prior = list()
+        # depends on seasonality length
+        self._stan_init = None
         
         # set static data attributes
         self._set_static_data_attributes()
@@ -90,7 +93,6 @@ class BaseLGT(object):
         self.response = None
         self.num_of_observations = None
         self.cauchy_sd = None
-        self.stan_init = 'random'
         # regression data
         self.positive_regressor_matrix = None
         self.regular_regressor_matrix = None
@@ -154,6 +156,7 @@ class BaseLGT(object):
         self._set_regression_penalty()
         self._set_static_regression_attributes()
         self._set_with_mcmc()
+        self._set_stan_init()
 
     def _set_training_df_meta(self, df):
         # Date Metadata
@@ -225,23 +228,30 @@ class BaseLGT(object):
         return df
 
     def _set_stan_init(self):
-        # # to use stan default, set self.stan_int to 'random'
-        # self.stan_init = []
-        # # use the seed so we can replicate results with same seed
-        # np.random.seed(self.seed)
-        # # ch is not used but we need the for loop to append init points across chains
-        # for ch in range(self.chains):
-        #     temp_init = {}
-        #     if self.seasonality > 1:
-        #         # note that although seed fixed, points are different across chains
-        #         seas_init = np.random.normal(loc=0, scale=0.05, size=self.seasonality - 1)
-        #         seas_init[seas_init > 1.0] = 1.0
-        #         seas_init[seas_init < -1.0] = -1.0
-        #         temp_init['init_sea'] = seas_init
-        #     self.stan_init.append(temp_init)
-        # todo: logic to pass a function that is not chain dependent
-        #   and init logic will occur in the estimator not model
-        pass
+        """Set Stan init as a callable
+
+        See: https://pystan.readthedocs.io/en/latest/api.htm
+        """
+        def stan_init_callable(seasonality):
+            stan_init = dict()
+            if seasonality > 1:
+                seas_init = np.random.normal(loc=0, scale=0.05, size=seasonality - 1)
+                # catch cases with extreme values
+                seas_init[seas_init > 1.0] = 1.0
+                seas_init[seas_init < -1.0] = -1.0
+                stan_init['init_sea'] = seas_init
+
+            return stan_init
+
+        seasonality = self.seasonality
+
+        # stan_init_partial = partial(stan_init_callable, seasonality=seasonality)
+        # partialfunc does not work when passed to PyStan because PyStan uses
+        # inspect.getargspec(func) which seems to raise an exception with keyword-only args
+        # caused by using partialfunc
+        # lambda as an alternative workaround
+        stan_init_partial = lambda: stan_init_callable(seasonality)  # noqa
+        self._stan_init = stan_init_partial
 
     def _set_dynamic_data_attributes(self, df):
         """Stan data input based on input DataFrame, rather than at object instantiation"""
@@ -306,7 +316,7 @@ class BaseLGT(object):
         return self._stan_data_input
 
     def _get_stan_init(self):
-        return self.stan_init
+        return self._stan_init
 
     def is_fitted(self):
         # if empty dict false, else true
