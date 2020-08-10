@@ -28,10 +28,10 @@ class BaseLGT(object):
     _stan_model_name = 'lgt'
 
     def __init__(self, response_col='y', date_col='ds', regressor_col=None,
-                 seasonality=-1, period=1., is_multiplicative=True,
+                 seasonality=None, period=1., is_multiplicative=True,
                  regressor_sign=None, regressor_beta_prior=None, regressor_sigma_prior=None,
                  regression_penalty='fixed_ridge', lasso_scale=0.5, auto_ridge_scale=0.5,
-                 seasonality_sm_input=-1, slope_sm_input=-1, level_sm_input=-1,
+                 seasonality_sm_input=None, slope_sm_input=None, level_sm_input=None,
                  estimator_type=StanEstimatorMCMC, **kwargs):
         self.response_col = response_col
         self.date_col = date_col
@@ -50,30 +50,40 @@ class BaseLGT(object):
         self.level_sm_input = level_sm_input
         self.estimator_type = estimator_type
 
+        # Set private var to arg value
+        # if None set default in _set_default_base_args()
+        self._seasonality = self.seasonality
+        self._seasonality_sm_input = self.seasonality_sm_input
+        self._slope_sm_input = self.slope_sm_input
+        self._level_sm_input = self.level_sm_input
+        self._regressor_sign = self.regressor_sign
+        self._regressor_beta_prior = self.regressor_beta_prior
+        self._regressor_sigma_prior = self.regressor_sigma_prior
+
         # create concrete estimator object
         self.estimator = self.estimator_type(**kwargs)
 
+        self._model_param_names = list()
+        self._training_df_meta = None
+        self._stan_data_input = dict()
+
         # init static data attributes
         # the following are set by `_set_static_data_attributes()`
-        self._training_df_meta = None
-        self._model_param_names = list()
-        self._stan_data_input = dict()
-        # todo: refactor all computed args to private variables?
         self._regression_penalty = None
         self._with_mcmc = 0
         # todo: should this be based on number of obs?
-        self.min_nu = 5.
-        self.max_nu = 40.
+        self._min_nu = 5.
+        self._max_nu = 40.
         # positive regressors
-        self.num_of_positive_regressors = 0
-        self.positive_regressor_col = list()
-        self.positive_regressor_beta_prior = list()
-        self.positive_regressor_sigma_prior = list()
+        self._num_of_positive_regressors = 0
+        self._positive_regressor_col = list()
+        self._positive_regressor_beta_prior = list()
+        self._positive_regressor_sigma_prior = list()
         # regular regressors
-        self.num_of_regular_regressors = 0
-        self.regular_regressor_col = list()
-        self.regular_regressor_beta_prior = list()
-        self.regular_regressor_sigma_prior = list()
+        self._num_of_regular_regressors = 0
+        self._regular_regressor_col = list()
+        self._regular_regressor_beta_prior = list()
+        self._regular_regressor_sigma_prior = list()
         # depends on seasonality length
         self._stan_init = None
         
@@ -90,31 +100,49 @@ class BaseLGT(object):
         # the following are set by `_set_dynamic_data_attributes()` and generally set during fit()
         # from input df
         # response data
-        self.response = None
-        self.num_of_observations = None
-        self.cauchy_sd = None
+        self._response = None
+        self._num_of_observations = None
+        self._cauchy_sd = None
         # regression data
-        self.positive_regressor_matrix = None
-        self.regular_regressor_matrix = None
+        self._positive_regressor_matrix = None
+        self._regular_regressor_matrix = None
 
         # init posterior samples
         # `_posterior_samples` is set by `fit()`
         self._posterior_samples = dict()
         
-    def _set_regression_penalty(self):
-        regression_penalty = self.regression_penalty
-        self._regression_penalty = getattr(lgt.RegressionPenalty, regression_penalty).value
+    def _set_default_base_args(self):
+        """Set default attributes for None
 
-    def _set_static_regression_attributes(self):
+        Stan requires static data types so data must be cast to the correct type
+        """
+        if self.seasonality_sm_input is None:
+            self._seasonality_sm_input = -1
+        if self.slope_sm_input is None:
+            self._slope_sm_input = -1
+        if self.level_sm_input is None:
+            self._level_sm_input = -1
+        if self.seasonality is None:
+            self._seasonality = -1
+
+        ##############################
+        # if no regressors, end here #
+        ##############################
+        if self.regressor_col is None:
+            # regardless of what args are set for these, if regressor_col is None
+            # these should all be empty lists
+            self._regressor_sign = list()
+            self._regressor_beta_prior = list()
+            self._regressor_sigma_prior = list()
+
+            return
+
         def _validate(regression_params, valid_length):
             for p in regression_params:
                 if p is not None and len(p) != valid_length:
                     raise IllegalArgument('Wrong dimension length in Regression Param Input')
 
-        # if no regressors, end here
-        if self.regressor_col is None:
-            return
-
+        # regressor defaults
         num_of_regressors = len(self.regressor_col)
 
         _validate(
@@ -123,26 +151,35 @@ class BaseLGT(object):
         )
 
         if self.regressor_sign is None:
-            self.regressor_sign = [DEFAULT_REGRESSOR_SIGN] * num_of_regressors
+            self._regressor_sign = [DEFAULT_REGRESSOR_SIGN] * num_of_regressors
 
         if self.regressor_beta_prior is None:
-            self.regressor_beta_prior = [DEFAULT_REGRESSOR_BETA] * num_of_regressors
+            self._regressor_beta_prior = [DEFAULT_REGRESSOR_BETA] * num_of_regressors
 
         if self.regressor_sigma_prior is None:
-            self.regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * num_of_regressors
+            self._regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * num_of_regressors
+
+    def _set_regression_penalty(self):
+        regression_penalty = self.regression_penalty
+        self._regression_penalty = getattr(lgt.RegressionPenalty, regression_penalty).value
+
+    def _set_static_regression_attributes(self):
+        # if no regressors, end here
+        if self.regressor_col is None:
+            return
 
         # inside *.stan files, we need to distinguish regular regressors from positive regressors
-        for index, reg_sign in enumerate(self.regressor_sign):
+        for index, reg_sign in enumerate(self._regressor_sign):
             if reg_sign == '+':
-                self.num_of_positive_regressors += 1
-                self.positive_regressor_col.append(self.regressor_col[index])
-                self.positive_regressor_beta_prior.append(self.regressor_beta_prior[index])
-                self.positive_regressor_sigma_prior.append(self.regressor_sigma_prior[index])
+                self._num_of_positive_regressors += 1
+                self._positive_regressor_col.append(self.regressor_col[index])
+                self._positive_regressor_beta_prior.append(self._regressor_beta_prior[index])
+                self._positive_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
             else:
-                self.num_of_regular_regressors += 1
-                self.regular_regressor_col.append(self.regressor_col[index])
-                self.regular_regressor_beta_prior.append(self.regressor_beta_prior[index])
-                self.regular_regressor_sigma_prior.append(self.regressor_sigma_prior[index])
+                self._num_of_regular_regressors += 1
+                self._regular_regressor_col.append(self.regressor_col[index])
+                self._regular_regressor_beta_prior.append(self._regressor_beta_prior[index])
+                self._regular_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
 
     def _set_with_mcmc(self):
         estimator_type = self.estimator_type
@@ -153,6 +190,7 @@ class BaseLGT(object):
 
     def _set_static_data_attributes(self):
         """Stan data input based on args at instatiation or computed from args at instantiation"""
+        self._set_default_base_args()
         self._set_regression_penalty()
         self._set_static_regression_attributes()
         self._set_with_mcmc()
@@ -193,17 +231,17 @@ class BaseLGT(object):
 
     def _set_regressor_matrix(self):
         # init of regression matrix depends on length of response vector
-        self.positive_regressor_matrix = np.zeros((self.num_of_observations, 0), dtype=np.double)
-        self.regular_regressor_matrix = np.zeros((self.num_of_observations, 0), dtype=np.double)
+        self._positive_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
+        self._regular_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
 
         # update regression matrices
-        if self.num_of_positive_regressors > 0:
-            self.positive_regressor_matrix = self.df.filter(
-                items=self.positive_regressor_col,).values
+        if self._num_of_positive_regressors > 0:
+            self._positive_regressor_matrix = self.df.filter(
+                items=self._positive_regressor_col,).values
 
-        if self.num_of_regular_regressors > 0:
-            self.regular_regressor_matrix = self.df.filter(
-                items=self.regular_regressor_col,).values
+        if self._num_of_regular_regressors > 0:
+            self._regular_regressor_matrix = self.df.filter(
+                items=self._regular_regressor_col,).values
 
     def _log_transform_df(self, df, do_fit=False):
         # transform the response column
@@ -232,7 +270,7 @@ class BaseLGT(object):
 
         See: https://pystan.readthedocs.io/en/latest/api.htm
         """
-        def stan_init_callable(seasonality):
+        def stan_init_function(seasonality):
             stan_init = dict()
             if seasonality > 1:
                 seas_init = np.random.normal(loc=0, scale=0.05, size=seasonality - 1)
@@ -243,15 +281,16 @@ class BaseLGT(object):
 
             return stan_init
 
-        seasonality = self.seasonality
+        seasonality = self._seasonality
 
         # stan_init_partial = partial(stan_init_callable, seasonality=seasonality)
         # partialfunc does not work when passed to PyStan because PyStan uses
         # inspect.getargspec(func) which seems to raise an exception with keyword-only args
         # caused by using partialfunc
         # lambda as an alternative workaround
-        stan_init_partial = lambda: stan_init_callable(seasonality)  # noqa
-        self._stan_init = stan_init_partial
+        if seasonality > 1:
+            stan_init_callable = lambda: stan_init_function(seasonality)  # noqa
+            self._stan_init = stan_init_callable
 
     def _set_dynamic_data_attributes(self, df):
         """Stan data input based on input DataFrame, rather than at object instantiation"""
@@ -264,12 +303,12 @@ class BaseLGT(object):
             df = self._log_transform_df(df, do_fit=True)
 
         # a few of the following are related with training data.
-        self.response = df[self.response_col].values
-        self.num_of_observations = len(self.response)
+        self._response = df[self.response_col].values
+        self._num_of_observations = len(self._response)
 
-        self.cauchy_sd = max(self.response) / 30.0
+        self._cauchy_sd = max(self._response) / 30.0
 
-        self._set_regressor_matrix()  # depends on num_of_observations
+        self._set_regressor_matrix()  # depends on _num_of_observations
         self._set_stan_init()
         # TODO: maybe useful to calculate vanlia (adjusted) R-Squared
         # self._adjust_smoothing_with_regression()
@@ -279,16 +318,16 @@ class BaseLGT(object):
         self._model_param_names += [param.value for param in lgt.BaseSamplingParameters]
 
         # append seasonality param names
-        if self.seasonality > 1:
+        if self._seasonality > 1:
             self._model_param_names += [param.value for param in lgt.SeasonalitySamplingParameters]
 
         # append positive regressors if any
-        if self.num_of_positive_regressors > 0:
+        if self._num_of_positive_regressors > 0:
             self._model_param_names += [
                 lgt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
 
         # append regular regressors if any
-        if self.num_of_regular_regressors > 0:
+        if self._num_of_regular_regressors > 0:
             self._model_param_names += [
                 lgt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value]
 
@@ -458,7 +497,7 @@ class BaseLGT(object):
         ################################################################
 
         # calculate regression component
-        if self.regressor_col is not None and len(self.regular_regressor_col) > 0:
+        if self.regressor_col is not None and len(self._regular_regressor_col) > 0:
             regressor_beta = regressor_beta.t()
             regressor_matrix = df[self.regressor_col].values
             regressor_torch = torch.from_numpy(regressor_matrix).double()
@@ -473,7 +512,7 @@ class BaseLGT(object):
         ################################################################
 
         # calculate seasonality component
-        if self.seasonality > 1:
+        if self._seasonality > 1:
             if full_len <= seasonality_levels.shape[1]:
                 seasonality_component = seasonality_levels[:, :full_len]
             else:
@@ -568,8 +607,8 @@ class BaseLGT(object):
                     slope_smoothing_factor * (new_local_trend_level - last_local_trend_level) \
                     + (1 - slope_smoothing_factor) * last_local_trend_slope
 
-                if self.seasonality > 1 and idx + self.seasonality < full_len:
-                    seasonality_component[:, idx + self.seasonality] = \
+                if self._seasonality > 1 and idx + self._seasonality < full_len:
+                    seasonality_component[:, idx + self._seasonality] = \
                         seasonality_smoothing_factor.flatten() \
                         * (trend_component[:, idx] + seasonality_component[:, idx] -
                            new_local_trend_level) \

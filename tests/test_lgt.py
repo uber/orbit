@@ -323,7 +323,7 @@ def test_base_lgt_init():
     assert not stan_data_input  # should only be initialized and not set
     assert model_param_names  # model param names should already be set
     # todo: change when stan_init callable is implemented
-    assert stan_init == 'random'
+    assert not stan_init
 
 
 def test_lgt_full_univariate(synthetic_data):
@@ -343,7 +343,28 @@ def test_lgt_full_univariate(synthetic_data):
 
     expected_columns = ['week', 5, 'prediction', 95]
     expected_shape = (51, len(expected_columns))
+    expected_num_parameters = 13
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
-    assert len(lgt._posterior_samples) == 13
+    assert len(lgt._posterior_samples) == expected_num_parameters
+
+
+def test_lgt_non_seasonal_fit(synthetic_data):
+    train_df, test_df, coef = synthetic_data
+
+    lgt = LGTFull(
+        response_col='response',
+        date_col='week',
+    )
+
+    lgt.fit(train_df)
+    predict_df = lgt.predict(test_df)
+
+    expected_columns = ['week', 'prediction']
+    expected_shape = (51, len(expected_columns))
+    expected_num_parameters = 11
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+    assert len(lgt._posterior_samples) == expected_num_parameters
