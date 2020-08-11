@@ -5,8 +5,8 @@ import pytest
 from orbit.lgt import LGT
 from orbit.exceptions import IllegalArgument, EstimatorException
 
-from orbit_v1.models.lgt import BaseLGT, LGTFull, LGTAggregated
-from orbit_v1.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI
+from orbit_v1.models.lgt import BaseLGT, LGTFull, LGTAggregated, LGTMAP
+from orbit_v1.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 
 
 @pytest.mark.parametrize("infer_method", ["map", "vi", "mcmc"])
@@ -394,6 +394,29 @@ def test_lgt_aggregated_univariate(synthetic_data, estimator_type):
     expected_columns = ['week', 'prediction']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 13
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+    assert len(lgt._posterior_samples) == expected_num_parameters
+
+
+def test_lgt_map_univariate(synthetic_data):
+    train_df, test_df, coef = synthetic_data
+
+    lgt = LGTMAP(
+        response_col='response',
+        date_col='week',
+        seasonality=52,
+        num_warmup=50,
+        verbose=False,
+    )
+
+    lgt.fit(train_df)
+    predict_df = lgt.predict(test_df)
+
+    expected_columns = ['week', 'prediction']
+    expected_shape = (51, len(expected_columns))
+    expected_num_parameters = 12  # no `lp__` parameter in optimizing()
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns

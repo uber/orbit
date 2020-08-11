@@ -861,8 +861,55 @@ class LGTAggregated(BaseLGT):
         return predicted_df
 
 
-class LGTMAP(object):
+class LGTMAP(BaseLGT):
     _supported_estimator_types = [StanEstimatorMAP]
 
     def __init__(self, **kwargs):
         super().__init__(estimator_type=StanEstimatorMAP, **kwargs)
+
+        # init aggregate posteriors
+        self._aggregate_posteriors = {
+            PredictMethod.MAP.value: dict(),
+        }
+
+    def _set_map_posterior(self):
+        posterior_samples = self._posterior_samples
+
+        map_posterior = {}
+        for param_name in self._model_param_names:
+            param_array = posterior_samples[param_name]
+            # add dimension so it works with vector math in `_predict`
+            param_array = np.expand_dims(param_array, axis=0)
+            map_posterior.update(
+                {param_name: param_array}
+            )
+
+        self._aggregate_posteriors[PredictMethod.MAP.value] = map_posterior
+
+    def fit(self, df):
+        """Fit model to data and set extracted posterior samples"""
+        super().fit(df)
+        self._set_map_posterior()
+
+    def predict(self, df, decompose=False):
+        # raise if model is not fitted
+        if not self.is_fitted():
+            raise PredictionException("Model is not fitted yet.")
+
+        aggregate_posteriors = self._aggregate_posteriors.get(PredictMethod.MAP.value)
+
+        predicted_dict = self._predict(
+            posterior_estimates=aggregate_posteriors,
+            df=df,
+            include_error=False,
+            decompose=decompose
+        )
+
+        # must flatten to convert to DataFrame
+        for k, v in predicted_dict.items():
+            predicted_dict[k] = v.flatten()
+
+        predicted_df = pd.DataFrame(predicted_dict)
+        predicted_df = self._prepend_date_column(predicted_df, df)
+
+        return predicted_df
