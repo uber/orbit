@@ -1,6 +1,8 @@
 from abc import abstractmethod
+from collections import OrderedDict
 import logging
-import pandas as pd
+import numpy as np
+from copy import copy
 import multiprocessing
 from .base_estimator import BaseEstimator
 
@@ -27,11 +29,10 @@ class StanEstimator(BaseEstimator):
         self.stan_init = 'random'
 
         # init computed configs
-        # todo: change to private variables
-        self.num_warmup_per_chain = None
-        self.num_sample_per_chain = None
-        self.num_iter_per_chain = None
-        self.total_iter = None
+        self._num_warmup_per_chain = None
+        self._num_sample_per_chain = None
+        self._num_iter_per_chain = None
+        self._total_iter = None
 
         self._set_computed_stan_configs()
 
@@ -39,15 +40,15 @@ class StanEstimator(BaseEstimator):
         """Sets sampler configs based on init class attributes"""
         # make sure cores can only be as large as the device support
         self.cores = min(self.cores, multiprocessing.cpu_count())
-        self.num_warmup_per_chain = int(self.num_warmup/self.chains)
-        self.num_sample_per_chain = int(self.num_sample/self.chains)
-        self.num_iter_per_chain = self.num_warmup_per_chain + self.num_sample_per_chain
-        self.total_iter = self.num_iter_per_chain * self.chains
+        self._num_warmup_per_chain = int(self.num_warmup / self.chains)
+        self._num_sample_per_chain = int(self.num_sample / self.chains)
+        self._num_iter_per_chain = self._num_warmup_per_chain + self._num_sample_per_chain
+        self._total_iter = self._num_iter_per_chain * self.chains
 
         if self.verbose:
             msg_template = "Using {} chains, {} cores, {} warmup and {} samples per chain for sampling."
             msg = msg_template.format(
-                self.chains, self.cores, self.num_warmup_per_chain, self.num_sample_per_chain)
+                self.chains, self.cores, self._num_warmup_per_chain, self._num_sample_per_chain)
             logging.info(msg)
 
     @abstractmethod
@@ -67,10 +68,13 @@ class StanEstimatorMCMC(StanEstimator):
         self.stan_mcmc_control = stan_mcmc_control
         self.stan_mcmc_args = stan_mcmc_args
 
+        # init computed args
+        self._stan_mcmc_args = copy(self.stan_mcmc_args)
+
         self._set_computed_stan_mcmc_configs()
 
     def _set_computed_stan_mcmc_configs(self):
-        self.stan_mcmc_args = update_dict({}, self.stan_mcmc_args)
+        self._stan_mcmc_args = update_dict({}, self._stan_mcmc_args)
 
     def fit(self, stan_model_name, model_param_names, data_input, stan_init=None):
         """Estimate model posteriors with Stan
@@ -88,18 +92,17 @@ class StanEstimatorMCMC(StanEstimator):
 
         """
         compiled_stan_file = get_compiled_stan_model(stan_model_name)
-        # todo: to decouple estimator and model, we cannot pass predefined
-        #   stan_init from the model because that depends on number of chains
-        #   which should only be available in the estimator. test to make sure
-        #   passing callable from the model will work as seen in `initfun1()`
-        #   here: https://pystan.readthedocs.io/en/latest/api.html
-        stan_init = stan_init or self.stan_init  # if None, use default as defined in class variable
+
+        #   passing callable from the model as seen in `initfun1()`
+        #   https://pystan.readthedocs.io/en/latest/api.html
+        #   if None, use default as defined in class variable
+        stan_init = stan_init or self.stan_init
 
         stan_mcmc_fit = compiled_stan_file.sampling(
             data=data_input,
             pars=model_param_names,
-            iter=self.num_iter_per_chain,
-            warmup=self.num_warmup_per_chain,
+            iter=self._num_iter_per_chain,
+            warmup=self._num_warmup_per_chain,
             chains=self.chains,
             n_jobs=self.cores,
             # fall back to default if not provided by model payload
@@ -107,7 +110,7 @@ class StanEstimatorMCMC(StanEstimator):
             seed=self.seed,
             algorithm=self.algorithm,
             control=self.stan_mcmc_control,
-            **self.stan_mcmc_args
+            **self._stan_mcmc_args
         )
 
         # extract `lp__` in addition to defined model params
@@ -129,11 +132,107 @@ class StanEstimatorMCMC(StanEstimator):
         return stan_extract
 
 
-class StanEstimatorMAP(StanEstimator):
-    """Stan Estimator for MAP Posteriors"""
-    pass
-
-
 class StanEstimatorVI(StanEstimator):
     """Stan Estimator for VI Sampling"""
+    _is_mcmc_estimator = True
+
+    def __init__(self, stan_vi_args=None, **kwargs):
+        super().__init__(**kwargs)
+        self.stan_vi_args = stan_vi_args
+
+        # init internal variable
+        self._stan_vi_args = copy(self.stan_vi_args)
+
+        # set defaults if None
+        self._set_computed_stan_vi_configs()
+
+    def _set_computed_stan_vi_configs(self):
+        default_stan_vi_args = {
+            'iter': 10000,
+            'grad_samples': 1,
+            'elbo_samples': 100,
+            'adapt_engaged': True,
+            'tol_rel_obj': 0.01,
+            'eval_elbo': 100,
+            'adapt_iter': 50,
+        }
+
+        self._stan_vi_args = update_dict(default_stan_vi_args, self._stan_vi_args)
+
+    @staticmethod
+    def _vb_extract(vi_fit):
+        """Re-arrange and extract posteriors from variational inference fit from stan
+
+        Due to different structure of the output from fit from vb, we need this additional logic to
+        extract posteriors.  The logic is based on
+        https://gist.github.com/lwiklendt/9c7099288f85b59edc903a5aed2d2d64
+
+        Parameters
+        ----------
+        vi_fit: dict
+            dict exported from pystan.StanModel object by `vb` method
+
+        Returns
+        -------
+        params: OrderedDict
+            dict of arrays where each element represent arrays of samples (Index of Sample, Sample
+            dimension 1, Sample dimension 2, ...)
+        """
+        param_specs = vi_fit['sampler_param_names']
+        samples = vi_fit['sampler_params']
+        n = len(samples[0])
+
+        # first pass, calculate the shape
+        param_shapes = OrderedDict()
+        for param_spec in param_specs:
+            splt = param_spec.split('[')
+            name = splt[0]
+            if len(splt) > 1:
+                # no +1 for shape calculation because pystan already returns 1-based indexes for vb!
+                idxs = [int(i) for i in splt[1][:-1].split(',')]
+            else:
+                idxs = ()
+            param_shapes[name] = np.maximum(idxs, param_shapes.get(name, idxs))
+
+        # create arrays
+        params = OrderedDict([(name, np.nan * np.empty((n,) + tuple(shape))) for name, shape in param_shapes.items()])
+
+        # second pass, set arrays
+        for param_spec, param_samples in zip(param_specs, samples):
+            splt = param_spec.split('[')
+            name = splt[0]
+            if len(splt) > 1:
+                # -1 because pystan returns 1-based indexes for vb!
+                idxs = [int(i) - 1 for i in splt[1][:-1].split(',')]
+            else:
+                idxs = ()
+            params[name][(...,) + tuple(idxs)] = param_samples
+
+        return params
+
+    def fit(self, stan_model_name, model_param_names, data_input, stan_init=None):
+        compiled_stan_file = get_compiled_stan_model(stan_model_name)
+
+        #   passing callable from the model as seen in `initfun1()`
+        #   https://pystan.readthedocs.io/en/latest/api.html
+        #   if None, use default as defined in class variable
+        stan_init = stan_init or self.stan_init
+
+        stan_vi_fit = compiled_stan_file.vb(
+            data=data_input,
+            pars=model_param_names,
+            init=stan_init,
+            seed=self.seed,
+            algorithm=self.algorithm,
+            output_samples=self.num_sample,
+            **self._stan_vi_args
+        )
+
+        stan_extract = self._vb_extract(stan_vi_fit)  # `lp__` already automatically included for vb
+
+        return stan_extract
+
+
+class StanEstimatorMAP(StanEstimator):
+    """Stan Estimator for MAP Posteriors"""
     pass
