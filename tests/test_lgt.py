@@ -5,7 +5,7 @@ import pytest
 from orbit.lgt import LGT
 from orbit.exceptions import IllegalArgument, EstimatorException
 
-from orbit_v1.models.lgt import BaseLGT, LGTFull
+from orbit_v1.models.lgt import BaseLGT, LGTFull, LGTAggregated
 
 
 @pytest.mark.parametrize("infer_method", ["map", "vi", "mcmc"])
@@ -356,6 +356,29 @@ def test_lgt_non_seasonal_fit(synthetic_data):
     lgt = LGTFull(
         response_col='response',
         date_col='week',
+    )
+
+    lgt.fit(train_df)
+    predict_df = lgt.predict(test_df)
+
+    expected_columns = ['week', 'prediction']
+    expected_shape = (51, len(expected_columns))
+    expected_num_parameters = 11
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+    assert len(lgt._posterior_samples) == expected_num_parameters
+
+
+def test_lgt_aggregated_univariate(synthetic_data):
+    train_df, test_df, coef = synthetic_data
+
+    lgt = LGTAggregated(
+        response_col='response',
+        date_col='week',
+        seasonality=52,
+        num_warmup=50,
+        verbose=False
     )
 
     lgt.fit(train_df)

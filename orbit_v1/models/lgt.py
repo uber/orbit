@@ -13,7 +13,7 @@ from ..constants.constants import (
     COEFFICIENT_DF_COLS,
     PredictMethod
 )
-from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
+from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 from ..exceptions import IllegalArgument, LGTException, PredictionException
 from ..utils.general import is_ordered_datetime
 
@@ -666,8 +666,32 @@ class BaseLGT(object):
 
         return predicted_df
 
+    def fit(self, df):
+        """Fit model to data and set extracted posterior samples"""
+        estimator = self.estimator
+        stan_model_name = self._stan_model_name
+
+        self._set_dynamic_data_attributes(df)
+        self._set_stan_data_input()
+
+        # estimator inputs
+        data_input = self._get_stan_data_input()
+        stan_init = self._get_stan_init()
+        model_param_names = self._get_model_param_names()
+
+        stan_extract = estimator.fit(
+            stan_model_name=stan_model_name,
+            model_param_names=model_param_names,
+            data_input=data_input,
+            stan_init=stan_init
+        )
+
+        self._posterior_samples = stan_extract
+
 
 class LGTFull(BaseLGT):
+    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
+
     def __init__(self, n_bootstrap_draws=-1, prediction_percentiles=None, **kwargs):
         # todo: assert compatible estimator
         super().__init__(**kwargs)
@@ -745,28 +769,6 @@ class LGTFull(BaseLGT):
 
         return aggregate_df
 
-    def fit(self, df):
-        """Fit model to data and set extracted posterior samples"""
-        estimator = self.estimator
-        stan_model_name = self._stan_model_name
-
-        self._set_dynamic_data_attributes(df)
-        self._set_stan_data_input()
-
-        # estimator inputs
-        data_input = self._get_stan_data_input()
-        stan_init = self._get_stan_init()
-        model_param_names = self._get_model_param_names()
-
-        stan_extract = estimator.fit(
-            stan_model_name=stan_model_name,
-            model_param_names=model_param_names,
-            data_input=data_input,
-            stan_init=stan_init
-        )
-
-        self._posterior_samples = stan_extract
-
     def predict(self, df):
         # raise if model is not fitted
         if not self.is_fitted():
@@ -790,12 +792,77 @@ class LGTFull(BaseLGT):
         return aggregated_df
 
 
-class LGTAggregated(object):
+class LGTAggregated(BaseLGT):
+    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
+
     def __init__(self, aggregate_method='mean', **kwargs):
         super().__init__(**kwargs)
         self.aggregate_method = aggregate_method
 
+        # init aggregate posteriors
+        self._aggregate_posteriors = {
+            PredictMethod.MEAN.value: dict(),
+            PredictMethod.MEDIAN.value: dict(),
+        }
+
+        self._validate_aggregate_method()
+
+    def _validate_aggregate_method(self):
+        if self.aggregate_method not in list(self._aggregate_posteriors.keys()):
+            raise PredictionException("No aggregate method defined for: `{}`".format(self.aggregate_method))
+
+    def _set_aggregate_posteriors(self):
+        posterior_samples = self._posterior_samples
+
+        mean_posteriors = {}
+        median_posteriors = {}
+
+        # for each model param, aggregate using `method`
+        for param_name in self._model_param_names:
+            param_ndarray = posterior_samples[param_name]
+
+            mean_posteriors.update(
+                {param_name: np.mean(param_ndarray, axis=0, keepdims=True)},
+            )
+
+            median_posteriors.update(
+                {param_name: np.median(param_ndarray, axis=0, keepdims=True)},
+            )
+
+        self._aggregate_posteriors[PredictMethod.MEAN.value] = mean_posteriors
+        self._aggregate_posteriors[PredictMethod.MEDIAN.value] = median_posteriors
+
+    def fit(self, df):
+        """Fit model to data and set extracted posterior samples"""
+        super().fit(df)
+        self._set_aggregate_posteriors()
+
+    def predict(self, df, decompose=False):
+        # raise if model is not fitted
+        if not self.is_fitted():
+            raise PredictionException("Model is not fitted yet.")
+
+        aggregate_posteriors = self._aggregate_posteriors.get(self.aggregate_method)
+
+        predicted_dict = self._predict(
+            posterior_estimates=aggregate_posteriors,
+            df=df,
+            include_error=False,
+            decompose=decompose
+        )
+
+        # must flatten to convert to DataFrame
+        for k, v in predicted_dict.items():
+            predicted_dict[k] = v.flatten()
+
+        predicted_df = pd.DataFrame(predicted_dict)
+        predicted_df = self._prepend_date_column(predicted_df, df)
+
+        return predicted_df
+
 
 class LGTMAP(object):
+    _supported_estimator_types = [StanEstimatorMAP]
+
     def __init__(self, **kwargs):
         super().__init__(estimator_type=StanEstimatorMAP, **kwargs)
