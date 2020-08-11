@@ -5,7 +5,7 @@ import numpy as np
 from copy import copy
 import multiprocessing
 from .base_estimator import BaseEstimator
-
+from ..exceptions import EstimatorException
 from ..utils.stan import get_compiled_stan_model
 from ..utils.general import update_dict
 
@@ -235,4 +235,52 @@ class StanEstimatorVI(StanEstimator):
 
 class StanEstimatorMAP(StanEstimator):
     """Stan Estimator for MAP Posteriors"""
-    pass
+    def __init__(self, stan_map_args=None, **kwargs):
+        super().__init__(**kwargs)
+        self.stan_map_args = stan_map_args
+
+        # init computed args
+        self._stan_map_args = copy(self.stan_map_args)
+
+        # set defaults
+        self._set_computed_stan_map_configs()
+
+    def _set_computed_stan_map_configs(self):
+        default_stan_map_args = {}
+        self._stan_map_args = update_dict(default_stan_map_args, self._stan_map_args)
+
+    def fit(self, stan_model_name, model_param_names, data_input, stan_init=None):
+        compiled_stan_file = get_compiled_stan_model(stan_model_name)
+
+        #   passing callable from the model as seen in `initfun1()`
+        stan_init = stan_init or self.stan_init
+
+        # in case optimizing fails with given algorithm fallback to `Newton`
+        try:
+            stan_extract = compiled_stan_file.optimizing(
+                data=data_input,
+                init=stan_init,
+                seed=self.seed,
+                algorithm=self.algorithm,
+                **self._stan_map_args
+            )
+        except RuntimeError:
+            self.algorithm = 'Newton'
+            stan_extract = compiled_stan_file.optimizing(
+                data=data_input,
+                init=stan_init,
+                seed=self.seed,
+                algorithm=self.algorithm,
+                **self._stan_map_args
+            )
+
+        # make sure that model param names are a subset of stan extract keys
+        invalid_model_param = set(model_param_names) - set(list(stan_extract.keys()))
+        if invalid_model_param:
+            raise EstimatorException("Stan model definition does not contain required parameters")
+
+        # `stan.optimizing` automatically returns all defined parameters
+        # filter out unecessary keys
+        stan_extract = {param: stan_extract[param] for param in model_param_names}
+
+        return stan_extract
