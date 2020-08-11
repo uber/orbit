@@ -6,6 +6,7 @@ from orbit.lgt import LGT
 from orbit.exceptions import IllegalArgument, EstimatorException
 
 from orbit_v1.models.lgt import BaseLGT, LGTFull, LGTAggregated
+from orbit_v1.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI
 
 
 @pytest.mark.parametrize("infer_method", ["map", "vi", "mcmc"])
@@ -326,7 +327,8 @@ def test_base_lgt_init():
     assert not stan_init
 
 
-def test_lgt_full_univariate(synthetic_data):
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
+def test_lgt_full_univariate(synthetic_data, estimator_type):
     train_df, test_df, coef = synthetic_data
 
     lgt = LGTFull(
@@ -335,7 +337,8 @@ def test_lgt_full_univariate(synthetic_data):
         prediction_percentiles=[5, 95],
         seasonality=52,
         num_warmup=50,
-        verbose=False
+        verbose=False,
+        estimator_type=estimator_type
     )
 
     lgt.fit(train_df)
@@ -350,12 +353,14 @@ def test_lgt_full_univariate(synthetic_data):
     assert len(lgt._posterior_samples) == expected_num_parameters
 
 
-def test_lgt_non_seasonal_fit(synthetic_data):
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
+def test_lgt_non_seasonal_fit(synthetic_data, estimator_type):
     train_df, test_df, coef = synthetic_data
 
     lgt = LGTFull(
         response_col='response',
         date_col='week',
+        estimator_type=estimator_type
     )
 
     lgt.fit(train_df)
@@ -370,7 +375,8 @@ def test_lgt_non_seasonal_fit(synthetic_data):
     assert len(lgt._posterior_samples) == expected_num_parameters
 
 
-def test_lgt_aggregated_univariate(synthetic_data):
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
+def test_lgt_aggregated_univariate(synthetic_data, estimator_type):
     train_df, test_df, coef = synthetic_data
 
     lgt = LGTAggregated(
@@ -378,7 +384,8 @@ def test_lgt_aggregated_univariate(synthetic_data):
         date_col='week',
         seasonality=52,
         num_warmup=50,
-        verbose=False
+        verbose=False,
+        estimator_type=estimator_type
     )
 
     lgt.fit(train_df)
