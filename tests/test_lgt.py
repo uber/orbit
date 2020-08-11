@@ -386,7 +386,7 @@ def test_lgt_aggregated_univariate(synthetic_data):
 
     expected_columns = ['week', 'prediction']
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 11
+    expected_num_parameters = 13
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
