@@ -26,6 +26,7 @@ class BaseLGT(object):
     _data_input_mapper = lgt.DataInputMapper
     # stan model name (e.g. name of `*.stan` file in package)
     _stan_model_name = 'lgt'
+    _supported_estimator_types = None  # set for each model
 
     def __init__(self, response_col='y', date_col='ds', regressor_col=None,
                  seasonality=None, period=1., is_multiplicative=True,
@@ -195,6 +196,13 @@ class BaseLGT(object):
         self._set_static_regression_attributes()
         self._set_with_mcmc()
         self._set_stan_init()
+
+    def _validate_supported_estimator_type(self):
+        if self.estimator_type not in self._supported_estimator_types:
+            msg_template = "Model class: {} is incompatible with Estimator: {}"
+            model_class = type(self)
+            estimator_type = self.estimator_type
+            raise IllegalArgument(msg_template.format(model_class, estimator_type))
 
     def _set_training_df_meta(self, df):
         # Date Metadata
@@ -702,6 +710,9 @@ class LGTFull(BaseLGT):
         self._prediction_percentiles = None
         self._set_default_args()
 
+        # validator model / estimator compatibility
+        self._validate_supported_estimator_type()
+
     def _set_default_args(self):
         if not self.prediction_percentiles:
             self._prediction_percentiles = list()
@@ -807,6 +818,9 @@ class LGTAggregated(BaseLGT):
 
         self._validate_aggregate_method()
 
+        # validator model / estimator compatibility
+        self._validate_supported_estimator_type()
+
     def _validate_aggregate_method(self):
         if self.aggregate_method not in list(self._aggregate_posteriors.keys()):
             raise PredictionException("No aggregate method defined for: `{}`".format(self.aggregate_method))
@@ -865,12 +879,20 @@ class LGTMAP(BaseLGT):
     _supported_estimator_types = [StanEstimatorMAP]
 
     def __init__(self, **kwargs):
+        # estimator type is not an option for LGTMAP
+        self._validate_map_estimator_type(**kwargs)
         super().__init__(estimator_type=StanEstimatorMAP, **kwargs)
 
         # init aggregate posteriors
         self._aggregate_posteriors = {
             PredictMethod.MAP.value: dict(),
         }
+
+    def _validate_map_estimator_type(self, **kwargs):
+        if 'estimator_type' in kwargs.keys():
+            msg_template = "{} does not support `estimator_type` arg"
+            model_class = type(self)
+            raise IllegalArgument(msg_template.format(model_class))
 
     def _set_map_posterior(self):
         posterior_samples = self._posterior_samples
