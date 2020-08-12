@@ -15,13 +15,14 @@ from ..constants.constants import (
 )
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 from ..exceptions import IllegalArgument, LGTException, PredictionException
+from .base_model import BaseStanModel
 from ..utils.general import is_ordered_datetime
 
 
 # todo: docstrings for LGT model
 
 
-class BaseLGT(object):
+class BaseLGT(BaseStanModel):
     """Base LGT model object with shared functionality for Full, Aggregated, and MAP methods"""
     _data_input_mapper = lgt.DataInputMapper
     # stan model name (e.g. name of `*.stan` file in package)
@@ -33,7 +34,8 @@ class BaseLGT(object):
                  regressor_sign=None, regressor_beta_prior=None, regressor_sigma_prior=None,
                  regression_penalty='fixed_ridge', lasso_scale=0.5, auto_ridge_scale=0.5,
                  seasonality_sm_input=None, slope_sm_input=None, level_sm_input=None,
-                 estimator_type=StanEstimatorMCMC, **kwargs):
+                 **kwargs):
+        super().__init__(**kwargs)
         self.response_col = response_col
         self.date_col = date_col
         self.regressor_col = regressor_col
@@ -49,7 +51,6 @@ class BaseLGT(object):
         self.seasonality_sm_input = seasonality_sm_input
         self.slope_sm_input = slope_sm_input
         self.level_sm_input = level_sm_input
-        self.estimator_type = estimator_type
 
         # Set private var to arg value
         # if None set default in _set_default_base_args()
@@ -60,9 +61,6 @@ class BaseLGT(object):
         self._regressor_sign = self.regressor_sign
         self._regressor_beta_prior = self.regressor_beta_prior
         self._regressor_sigma_prior = self.regressor_sigma_prior
-
-        # create concrete estimator object
-        self.estimator = self.estimator_type(**kwargs)
 
         self._model_param_names = list()
         self._training_df_meta = None
