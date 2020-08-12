@@ -35,7 +35,7 @@ class BaseLGT(BaseStanModel):
                  regression_penalty='fixed_ridge', lasso_scale=0.5, auto_ridge_scale=0.5,
                  seasonality_sm_input=None, slope_sm_input=None, level_sm_input=None,
                  **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(**kwargs)  # create estimator in base class
         self.response_col = response_col
         self.date_col = date_col
         self.regressor_col = regressor_col
