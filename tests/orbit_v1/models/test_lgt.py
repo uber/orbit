@@ -113,3 +113,84 @@ def test_lgt_non_seasonal_fit(synthetic_data, estimator_type):
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
     assert len(lgt._posterior_samples) == expected_num_parameters
+
+
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
+@pytest.mark.parametrize(
+    "regressor_signs",
+    [
+        ["+", "+", "+", "+", "+", "+"],
+        ["=", "=", "=", "=", "=", "="],
+        ["+", "=", "+", "=", "+", "+"]
+    ],
+    ids=['positive_only', 'regular_only', 'mixed_signs']
+)
+def test_lgt_full_with_regression(synthetic_data, estimator_type, regressor_signs):
+    train_df, test_df, coef = synthetic_data
+
+    lgt = LGTFull(
+        response_col='response',
+        date_col='week',
+        regressor_col=train_df.columns.tolist()[2:],
+        regressor_sign=regressor_signs,
+        prediction_percentiles=[5, 95],
+        seasonality=52,
+        num_warmup=50,
+        verbose=False,
+        estimator_type=estimator_type
+    )
+
+    lgt.fit(train_df)
+    predict_df = lgt.predict(test_df)
+
+    regression_out = lgt.get_regression_coefs()
+    num_regressors = regression_out.shape[0]
+
+    expected_columns = ['week', 5, 'prediction', 95]
+    expected_shape = (51, len(expected_columns))
+    expected_regression_shape = (6, 3)
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+    assert regression_out.shape == expected_regression_shape
+    assert num_regressors == len(train_df.columns.tolist()[2:])
+
+
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
+@pytest.mark.parametrize(
+    "regressor_signs",
+    [
+        ["+", "+", "+", "+", "+", "+"],
+        ["=", "=", "=", "=", "=", "="],
+        ["+", "=", "+", "=", "+", "+"]
+    ],
+    ids=['positive_only', 'regular_only', 'mixed_signs']
+)
+def test_lgt_aggregated_with_regression(synthetic_data, estimator_type, regressor_signs):
+    train_df, test_df, coef = synthetic_data
+
+    lgt = LGTAggregated(
+        response_col='response',
+        date_col='week',
+        regressor_col=train_df.columns.tolist()[2:],
+        regressor_sign=regressor_signs,
+        seasonality=52,
+        num_warmup=50,
+        verbose=False,
+        estimator_type=estimator_type
+    )
+
+    lgt.fit(train_df)
+    predict_df = lgt.predict(test_df)
+
+    regression_out = lgt.get_regression_coefs()
+    num_regressors = regression_out.shape[0]
+
+    expected_columns = ['week', 'prediction']
+    expected_shape = (51, len(expected_columns))
+    expected_regression_shape = (6, 3)
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+    assert regression_out.shape == expected_regression_shape
+    assert num_regressors == len(train_df.columns.tolist()[2:])

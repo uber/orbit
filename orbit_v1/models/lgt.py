@@ -109,6 +109,12 @@ class BaseLGT(BaseStanModel):
         # init posterior samples
         # `_posterior_samples` is set by `fit()`
         self._posterior_samples = dict()
+
+        # init aggregate posteriors
+        self._aggregate_posteriors = {
+            PredictMethod.MEAN.value: dict(),
+            PredictMethod.MEDIAN.value: dict(),
+        }
         
     def _set_default_base_args(self):
         """Set default attributes for None
@@ -235,18 +241,18 @@ class BaseLGT(BaseStanModel):
         if self.response_col not in df_columns:
             raise LGTException("DataFrame does not contain `response_col`: {}".format(self.response_col))
 
-    def _set_regressor_matrix(self):
+    def _set_regressor_matrix(self, df):
         # init of regression matrix depends on length of response vector
         self._positive_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
         self._regular_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
 
         # update regression matrices
         if self._num_of_positive_regressors > 0:
-            self._positive_regressor_matrix = self.df.filter(
+            self._positive_regressor_matrix = df.filter(
                 items=self._positive_regressor_col,).values
 
         if self._num_of_regular_regressors > 0:
-            self._regular_regressor_matrix = self.df.filter(
+            self._regular_regressor_matrix = df.filter(
                 items=self._regular_regressor_col,).values
 
     def _log_transform_df(self, df, do_fit=False):
@@ -314,7 +320,7 @@ class BaseLGT(BaseStanModel):
 
         self._cauchy_sd = max(self._response) / 30.0
 
-        self._set_regressor_matrix()  # depends on _num_of_observations
+        self._set_regressor_matrix(df)  # depends on _num_of_observations
         self._set_stan_init()
         # TODO: maybe useful to calculate vanlia (adjusted) R-Squared
         # self._adjust_smoothing_with_regression()
@@ -672,6 +678,27 @@ class BaseLGT(BaseStanModel):
 
         return predicted_df
 
+    def _set_aggregate_posteriors(self):
+        posterior_samples = self._posterior_samples
+
+        mean_posteriors = {}
+        median_posteriors = {}
+
+        # for each model param, aggregate using `method`
+        for param_name in self._model_param_names:
+            param_ndarray = posterior_samples[param_name]
+
+            mean_posteriors.update(
+                {param_name: np.mean(param_ndarray, axis=0, keepdims=True)},
+            )
+
+            median_posteriors.update(
+                {param_name: np.median(param_ndarray, axis=0, keepdims=True)},
+            )
+
+        self._aggregate_posteriors[PredictMethod.MEAN.value] = mean_posteriors
+        self._aggregate_posteriors[PredictMethod.MEDIAN.value] = median_posteriors
+
     def fit(self, df):
         """Fit model to data and set extracted posterior samples"""
         estimator = self.estimator
@@ -693,6 +720,51 @@ class BaseLGT(BaseStanModel):
         )
 
         self._posterior_samples = stan_extract
+
+    def get_regression_coefs(self, aggregate_method):
+        """Return DataFrame regression coefficients
+
+        If PredictMethod is `full` return `mean` of coefficients instead
+        """
+        # init dataframe
+        reg_df = pd.DataFrame()
+
+        # end if no regressors
+        if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
+            return reg_df
+
+        pr_beta = self._aggregate_posteriors\
+            .get(aggregate_method)\
+            .get(lgt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+
+        rr_beta = self._aggregate_posteriors\
+            .get(aggregate_method)\
+            .get(lgt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+
+        # because `_conccat_regression_coefs` operates on torch tensors
+        pr_beta = torch.from_numpy(pr_beta) if pr_beta is not None else pr_beta
+        rr_beta = torch.from_numpy(rr_beta) if rr_beta is not None else rr_beta
+
+        regressor_betas = self._concat_regression_coefs(pr_beta, rr_beta)
+
+        # get column names
+        pr_cols = self._positive_regressor_col
+        rr_cols = self._regular_regressor_col
+
+        # note ordering here is not the same as `self.regressor_cols` because positive
+        # and negative do not have to be grouped on input
+        regressor_cols = pr_cols + rr_cols
+
+        # same note
+        regressor_signs \
+            = ["Positive"] * self._num_of_positive_regressors \
+            + ["Regular"] * self._num_of_regular_regressors
+
+        reg_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
+        reg_df[COEFFICIENT_DF_COLS.REGRESSOR_SIGN] = regressor_signs
+        reg_df[COEFFICIENT_DF_COLS.COEFFICIENT] = regressor_betas.flatten()
+
+        return reg_df
 
 
 class LGTFull(BaseLGT):
@@ -800,6 +872,10 @@ class LGTFull(BaseLGT):
 
         return aggregated_df
 
+    def get_regression_coefs(self, aggregate_method='mean'):
+        self._set_aggregate_posteriors()
+        return super().get_regression_coefs(aggregate_method=aggregate_method)
+
 
 class LGTAggregated(BaseLGT):
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
@@ -807,12 +883,6 @@ class LGTAggregated(BaseLGT):
     def __init__(self, aggregate_method='mean', **kwargs):
         super().__init__(**kwargs)
         self.aggregate_method = aggregate_method
-
-        # init aggregate posteriors
-        self._aggregate_posteriors = {
-            PredictMethod.MEAN.value: dict(),
-            PredictMethod.MEDIAN.value: dict(),
-        }
 
         self._validate_aggregate_method()
 
@@ -822,27 +892,6 @@ class LGTAggregated(BaseLGT):
     def _validate_aggregate_method(self):
         if self.aggregate_method not in list(self._aggregate_posteriors.keys()):
             raise PredictionException("No aggregate method defined for: `{}`".format(self.aggregate_method))
-
-    def _set_aggregate_posteriors(self):
-        posterior_samples = self._posterior_samples
-
-        mean_posteriors = {}
-        median_posteriors = {}
-
-        # for each model param, aggregate using `method`
-        for param_name in self._model_param_names:
-            param_ndarray = posterior_samples[param_name]
-
-            mean_posteriors.update(
-                {param_name: np.mean(param_ndarray, axis=0, keepdims=True)},
-            )
-
-            median_posteriors.update(
-                {param_name: np.median(param_ndarray, axis=0, keepdims=True)},
-            )
-
-        self._aggregate_posteriors[PredictMethod.MEAN.value] = mean_posteriors
-        self._aggregate_posteriors[PredictMethod.MEDIAN.value] = median_posteriors
 
     def fit(self, df):
         """Fit model to data and set extracted posterior samples"""
@@ -872,6 +921,9 @@ class LGTAggregated(BaseLGT):
 
         return predicted_df
 
+    def get_regression_coefs(self):
+        return super().get_regression_coefs(aggregate_method=self.aggregate_method)
+
 
 class LGTMAP(BaseLGT):
     _supported_estimator_types = [StanEstimatorMAP]
@@ -881,7 +933,7 @@ class LGTMAP(BaseLGT):
         self._validate_map_estimator_type(**kwargs)
         super().__init__(estimator_type=StanEstimatorMAP, **kwargs)
 
-        # init aggregate posteriors
+        # override init aggregate posteriors
         self._aggregate_posteriors = {
             PredictMethod.MAP.value: dict(),
         }
@@ -933,3 +985,6 @@ class LGTMAP(BaseLGT):
         predicted_df = self._prepend_date_column(predicted_df, df)
 
         return predicted_df
+
+    def get_regression_coefs(self):
+        return super().get_regression_coefs(aggregate_method=PredictMethod.MAP.value)
