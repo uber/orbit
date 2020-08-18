@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from copy import copy
 
 import pyro
 from pyro.infer import SVI, Trace_ELBO
@@ -8,7 +7,6 @@ from pyro.optim import ClippedAdam
 
 from .base_estimator import BaseEstimator
 from ..exceptions import EstimatorException
-from ..utils.general import update_dict
 from ..utils.pyro import get_pyro_model
 
 
