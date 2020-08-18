@@ -45,6 +45,7 @@ class PyroEstimatorVI(PyroEstimator):
         self._pyro_vi_args = update_dict(default_pyro_vi_args, self._pyro_vi_args)
 
     def fit(self, stan_model_name, model_param_names, data_input, stan_init=None):
+        # todo: refactor `stan_estimator` and `pyro_estimator` so `stan_model_name` = `model_name`
         verbose = self.verbose
         message = self.message
         learning_rate = self.learning_rate
