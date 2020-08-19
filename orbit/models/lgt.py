@@ -15,14 +15,14 @@ from ..constants.constants import (
 )
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 from ..exceptions import IllegalArgument, LGTException, PredictionException
-from .base_model import BaseStanModel
+from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
 
 
 # todo: docstrings for LGT model
 
 
-class BaseLGT(BaseStanModel):
+class BaseLGT(BaseModel):
     """Base LGT model object with shared functionality for Full, Aggregated, and MAP methods"""
     _data_input_mapper = lgt.DataInputMapper
     # stan model name (e.g. name of `*.stan` file in package)

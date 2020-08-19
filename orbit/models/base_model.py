@@ -1,7 +1,7 @@
 from ..estimators.stan_estimator import StanEstimatorMCMC
 
 
-class BaseStanModel(object):
+class BaseModel(object):
     # data input mapper to stan model
     _data_input_mapper = None
     # stan model name (e.g. name of `*.stan` file in package)
