@@ -23,14 +23,15 @@ class BaseSamplingParameters(Enum):
     """
     The stan output sampling parameters related with DLT base model.
     """
-    # ---------- Common Local Trend ---------- #
+    # ---------- Trend ---------- #
     LOCAL_TREND_LEVELS = 'l'
     LEVEL_SMOOTHING_FACTOR = 'l_sm'
-    # ---------- Noise Trend ---------- #
-    RESIDUAL_SIGMA = 'obs_sigma'
-    RESIDUAL_DEGREE_OF_FREEDOM = 'nu'
     GLOBAL_TREND_SLOPE = 'gb'
     GLOBAL_TREND = 'gt_sum'
+    # ---------- Noise ---------- #
+    RESIDUAL_SIGMA = 'obs_sigma'
+    RESIDUAL_DEGREE_OF_FREEDOM = 'nu'
+    # ---------- Prediction ---------- #
     YHAT = 'yhat'
 
 
@@ -39,4 +40,4 @@ class RegressionParameters(Enum):
     """
     REGRESSION_SMOOTHING_FACTOR = 'b_sm'
     REGRESSION_COEF = 'b'
-    REG = 'reg'
+    REGRESSION_COMPONENT = 'reg'

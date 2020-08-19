@@ -400,15 +400,25 @@ class Estimator(object):
                     **self.stan_mcmc_args
                 )
                 stan_extract = stan_mcmc_fit.extract(
-                    pars=self.model_param_names + ['lp__'],
-                    permuted=False
+                    pars=self.model_param_names,
+                    permuted=True
                 )
-                for key, val in stan_extract.items():
-                    if len(val.shape) == 2:
-                        # here `order` is important to make samples flattened by chain
-                        stan_extract[key] = val.flatten(order='F')
-                    else:
-                        stan_extract[key] = val.reshape(-1, val.shape[-1], order='F')
+                # for key, val in stan_extract.items():
+                #     if len(val.shape) == 2:
+                #         # here `order` is important to make samples flattened by chain
+                #         stan_extract[key] = val.flatten(order='F')
+                #     else:
+                #         stan_extract[key] = val.reshape(-1, val.shape[-1], order='F')
+                # stan_extract = stan_mcmc_fit.extract(
+                #     pars=self.model_param_names + ['lp__'],
+                #     permuted=False
+                # )
+                # for key, val in stan_extract.items():
+                #     if len(val.shape) == 2:
+                #         # here `order` is important to make samples flattened by chain
+                #         stan_extract[key] = val.flatten(order='F')
+                #     else:
+                #         stan_extract[key] = val.reshape(-1, val.shape[-1], order='F')
 
                 # set posterior samples instance var
                 self._set_aggregate_posteriors(extract=stan_extract)

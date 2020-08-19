@@ -114,19 +114,18 @@ class ESWR(Estimator):
         arbitrary_posterior_value = list(model.values())[0]
         num_sample = arbitrary_posterior_value.shape[0]
 
-        # seasonality components
-        seasonality_levels = model.get(
-            eswr.SeasonalitySamplingParameters.SEASONALITY_LEVELS.value)
-        seasonality_smoothing_factor = model.get(
-            eswr.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
-        )
+        # # seasonality components
+        # seasonality_levels = model.get(
+        #     eswr.SeasonalitySamplingParameters.SEASONALITY_LEVELS.value)
+        # seasonality_smoothing_factor = model.get(
+        #     eswr.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
+        # )
 
         # trend components
         level_smoothing_factor = model.get(
             eswr.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
         residual_sigma = model.get(eswr.BaseSamplingParameters.RESIDUAL_SIGMA.value)
         local_level = model.get(eswr.BaseSamplingParameters.LOCAL_TREND_LEVELS.value)
-        local_slope = model.get(eswr.BaseSamplingParameters.LOCAL_TREND_SLOPE.value)
 
         # global_trend_level = model.get(
         #     eswr.BaseSamplingParameters.GLOBAL_TREND_LEVEL.value).view(num_sample, )
@@ -187,20 +186,24 @@ class ESWR(Estimator):
             start = pd.Index(
                 training_df_meta['date_array']).get_loc(prediction_df_meta['prediction_start'])
 
+        # regressor_beta = self.get_regression_coefs()
+        regressor_coef = model.get(eswr.RegressionParameters.REGRESSION_COEF.value)
+        num_of_coef = regressor_coef.shape[-1]
+
         full_len = trained_len + n_forecast_steps
 
         ################################################################
         # Seasonality Component
         ################################################################
 
-        # calculate seasonality component
-        if self.seasonality > 1:
-            if full_len <= seasonality_levels.shape[1]:
-                seasonality_component = seasonality_levels[:, :full_len]
-            else:
-                seasonality_forecast_length = full_len - seasonality_levels.shape[1]
-                init_zeros = torch.zeros((num_sample, seasonality_forecast_length), dtype=torch.double)
-                seasonality_component = torch.cat((seasonality_levels, init_zeros), dim=1)
+        # # calculate seasonality component
+        # if self.seasonality > 1:
+        #     if full_len <= seasonality_levels.shape[1]:
+        #         seasonality_component = seasonality_levels[:, :full_len]
+        #     else:
+        #         seasonality_forecast_length = full_len - seasonality_levels.shape[1]
+        #         init_zeros = torch.zeros((num_sample, seasonality_forecast_length), dtype=torch.double)
+        #         seasonality_component = torch.cat((seasonality_levels, init_zeros), dim=1)
 
         ################################################################
         # Trend Component
@@ -210,7 +213,7 @@ class ESWR(Estimator):
         # However, if predicted end of period > training period, update with out-of-samples forecast
         if full_len <= local_level_len:
             global_trend = in_global_trend[:, :full_len]
-            local_trend = local_level[:, :full_len] + local_slope[:, full_len]
+            local_trend = local_level[:, :full_len]
             # # in-sample error are iids
             # if include_error:
             #     error_value = nct.rvs(
@@ -227,8 +230,7 @@ class ESWR(Estimator):
             trend_forecast_length = full_len - local_level_len
             # additional initial zeros to append
             init_zeros = torch.zeros((num_sample, trend_forecast_length), dtype=torch.double)
-            in_local_trend = local_level + local_slope
-            last_local_slope = local_slope[:, -1]
+            # in_local_trend = local_level
             # in-sample error are iids
             # if include_error:
             #     error_value = nct.rvs(
@@ -244,12 +246,16 @@ class ESWR(Estimator):
             #     trend_component += error_value
 
             # trend_forecast_matrix = torch.zeros((num_sample, n_forecast_steps - 1), dtype=torch.double)
-            local_trend = torch.cat((in_local_trend, init_zeros), dim=1)
+            local_trend = torch.cat((local_level, init_zeros), dim=1)
             global_trend = torch.cat((in_global_trend, init_zeros), dim=1)
 
+            init_zeros = torch.zeros((num_sample, trend_forecast_length, ), dtype=torch.double)
+
+            # regressor_beta = torch.cat((regressor_beta, init_zeros), dim=1)
+
             for idx in range(local_level_len, full_len):
-                last_local_slope = last_local_slope * self.damped_factor
-                local_trend[:, idx] = local_trend[:, idx-1] + last_local_slope
+                local_trend[:, idx] = local_trend[:, idx-1]
+                regressor_coef[:, idx, :] = regressor_coef[:, idx-1, :]
                 # global_trend[:, idx] = global_trend_slope * idx * self.time_delta
                 global_trend[:, idx] = global_trend_slope * idx
                 # if include_error:
@@ -263,8 +269,8 @@ class ESWR(Estimator):
                 #     error_value = torch.from_numpy(error_value).double()
                 #     trend_component[:, idx] += error_value
 
-                if self.seasonality > 1 and idx > seasonality_levels.shape[1]:
-                    seasonality_component[:, idx] = seasonality_component[:, idx - self.seasonality]
+                # if self.seasonality > 1 and idx > seasonality_levels.shape[1]:
+                #     seasonality_component[:, idx] = seasonality_component[:, idx - self.seasonality]
                     #     seasonality_component[:, idx + self.seasonality] = \
                 #         seasonality_smoothing_factor.flatten() \
                 #         * (trend_component[:, idx] + seasonality_component[:, idx] -
@@ -279,7 +285,7 @@ class ESWR(Estimator):
 
         # trim component with right start index
         trend_component = local_trend[:, start:] + global_trend[:, start:]
-        seasonality_component = seasonality_component[:, start:]
+        # seasonality_component = seasonality_component[:, start:]
 
         # sum components
         pred_array = trend_component + seasonality_component
@@ -306,3 +312,18 @@ class ESWR(Estimator):
             return decomp_dict
 
         return {'prediction': pred_array}
+
+    def get_regression_coefs(self):
+        """Return DataFrame regression coefficients
+
+        If PredictMethod is `full` return `mean` of coefficients instead
+        """
+        predict_method = PredictMethod.MEAN.value \
+            if self.predict_method == PredictMethod.FULL_SAMPLING.value \
+            else self.predict_method
+
+        regressor_coefs = self.aggregated_posteriors\
+            .get(predict_method)\
+            .get(eswr.RegressionParameters.REGRESSION_COEF.value)
+
+        return regressor_coefs
