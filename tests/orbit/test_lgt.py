@@ -70,6 +70,7 @@ def test_non_seasonal_fit(m3_monthly_data, seasonality_sm_input):
     assert len(mod.aggregated_posteriors['map']) == 10
     assert predicted_df.shape == (68, 2)
 
+
 @pytest.mark.parametrize("infer_method", ["map", "vi", "mcmc"])
 @pytest.mark.parametrize("predict_method", ["map", "mean", "median", "full"])
 @pytest.mark.parametrize(
