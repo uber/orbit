@@ -713,10 +713,10 @@ class BaseLGT(BaseStanModel):
         model_param_names = self._get_model_param_names()
 
         stan_extract = estimator.fit(
-            stan_model_name=stan_model_name,
+            model_name=stan_model_name,
             model_param_names=model_param_names,
             data_input=data_input,
-            stan_init=stan_init
+            init_values=stan_init
         )
 
         self._posterior_samples = stan_extract

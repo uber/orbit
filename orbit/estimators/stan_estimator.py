@@ -52,7 +52,7 @@ class StanEstimator(BaseEstimator):
             logging.info(msg)
 
     @abstractmethod
-    def fit(self, **kwargs):
+    def fit(self, model_name, model_param_names, data_input, init_values=None):
         raise NotImplementedError('Concrete fit() method must be implemented')
 
 
@@ -76,27 +76,27 @@ class StanEstimatorMCMC(StanEstimator):
     def _set_computed_stan_mcmc_configs(self):
         self._stan_mcmc_args = update_dict({}, self._stan_mcmc_args)
 
-    def fit(self, stan_model_name, model_param_names, data_input, stan_init=None):
+    def fit(self, model_name, model_param_names, data_input, init_values=None):
         """Estimate model posteriors with Stan
 
         Parameters
         ----------
-        stan_model_name : str
+        model_name : str
             name of stan model
         model_param_names : list
             list of strings of model parameters names to extract
         data_input : dict
             key-value pairs of data input as required by definition in stan model
-        stan_init : float or np.array
+        init_values : float or np.array
             initial sampler value. If None, 'random' is used
 
         """
-        compiled_stan_file = get_compiled_stan_model(stan_model_name)
+        compiled_stan_file = get_compiled_stan_model(model_name)
 
         #   passing callable from the model as seen in `initfun1()`
         #   https://pystan.readthedocs.io/en/latest/api.html
         #   if None, use default as defined in class variable
-        stan_init = stan_init or self.stan_init
+        init_values = init_values or self.stan_init
 
         stan_mcmc_fit = compiled_stan_file.sampling(
             data=data_input,
@@ -106,7 +106,7 @@ class StanEstimatorMCMC(StanEstimator):
             chains=self.chains,
             n_jobs=self.cores,
             # fall back to default if not provided by model payload
-            init=stan_init,
+            init=init_values,
             seed=self.seed,
             algorithm=self.algorithm,
             control=self.stan_mcmc_control,
@@ -210,18 +210,18 @@ class StanEstimatorVI(StanEstimator):
 
         return params
 
-    def fit(self, stan_model_name, model_param_names, data_input, stan_init=None):
-        compiled_stan_file = get_compiled_stan_model(stan_model_name)
+    def fit(self, model_name, model_param_names, data_input, init_values=None):
+        compiled_stan_file = get_compiled_stan_model(model_name)
 
         #   passing callable from the model as seen in `initfun1()`
         #   https://pystan.readthedocs.io/en/latest/api.html
         #   if None, use default as defined in class variable
-        stan_init = stan_init or self.stan_init
+        init_values = init_values or self.stan_init
 
         stan_vi_fit = compiled_stan_file.vb(
             data=data_input,
             pars=model_param_names,
-            init=stan_init,
+            init=init_values,
             seed=self.seed,
             algorithm=self.algorithm,
             output_samples=self.num_sample,
@@ -249,17 +249,17 @@ class StanEstimatorMAP(StanEstimator):
         default_stan_map_args = {}
         self._stan_map_args = update_dict(default_stan_map_args, self._stan_map_args)
 
-    def fit(self, stan_model_name, model_param_names, data_input, stan_init=None):
-        compiled_stan_file = get_compiled_stan_model(stan_model_name)
+    def fit(self, model_name, model_param_names, data_input, init_values=None):
+        compiled_stan_file = get_compiled_stan_model(model_name)
 
         #   passing callable from the model as seen in `initfun1()`
-        stan_init = stan_init or self.stan_init
+        init_values = init_values or self.stan_init
 
         # in case optimizing fails with given algorithm fallback to `Newton`
         try:
             stan_extract = compiled_stan_file.optimizing(
                 data=data_input,
-                init=stan_init,
+                init=init_values,
                 seed=self.seed,
                 algorithm=self.algorithm,
                 **self._stan_map_args
@@ -268,7 +268,7 @@ class StanEstimatorMAP(StanEstimator):
             self.algorithm = 'Newton'
             stan_extract = compiled_stan_file.optimizing(
                 data=data_input,
-                init=stan_init,
+                init=init_values,
                 seed=self.seed,
                 algorithm=self.algorithm,
                 **self._stan_map_args
