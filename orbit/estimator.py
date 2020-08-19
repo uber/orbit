@@ -408,7 +408,7 @@ class Estimator(object):
                         # here `order` is important to make samples flattened by chain
                         stan_extract[key] = val.flatten(order='F')
                     else:
-                        stan_extract[key] = val.reshape(-1, val.shape[-1], order='F')
+                        stan_extract[key] = val.reshape((-1, *val.shape[2:]), order='F')
 
                 # set posterior samples instance var
                 self._set_aggregate_posteriors(extract=stan_extract)
