@@ -1,6 +1,6 @@
 import pytest
-from orbit_v1.models.lgt import BaseLGT, LGTFull, LGTAggregated, LGTMAP
-from orbit_v1.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
+from orbit.models.lgt import BaseLGT, LGTFull, LGTAggregated, LGTMAP
+from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 
 
 def test_base_lgt_init():

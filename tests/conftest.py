@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import pkg_resources
 
-from orbit.utils.utils import make_synthetic_series
+from .utils.utils import make_synthetic_series
 
 
 @pytest.fixture
