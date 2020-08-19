@@ -1,4 +1,4 @@
-from orbit_v1.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
+from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 
 
 def test_stan_estimator_mcmc(stan_estimator_lgt_model_input):
