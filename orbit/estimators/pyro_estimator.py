@@ -21,7 +21,7 @@ class PyroEstimator(BaseEstimator):
         self.message = message
 
     @abstractmethod
-    def fit(self, stan_model_name, model_param_names, data_input, stan_init=None):
+    def fit(self, model_name, model_param_names, data_input, init_values=None):
         raise NotImplementedError('Concrete fit() method must be implemented')
 
 
@@ -30,7 +30,7 @@ class PyroEstimatorVI(PyroEstimator):
         super().__init__(**kwargs)
         self.num_sample = num_sample
 
-    def fit(self, stan_model_name, model_param_names, data_input, stan_init=None):
+    def fit(self, model_name, model_param_names, data_input, init_values=None):
         # todo: refactor `stan_estimator` and `pyro_estimator` so `stan_model_name` = `model_name`
         verbose = self.verbose
         message = self.message
@@ -40,7 +40,7 @@ class PyroEstimatorVI(PyroEstimator):
         num_steps = self.num_steps
 
         pyro.set_rng_seed(seed)
-        Model = get_pyro_model(stan_model_name)  # abstract
+        Model = get_pyro_model(model_name)  # abstract
         model = Model(data_input)  # concrete
 
         # Perform stochastic variational inference using an auto guide.
@@ -85,7 +85,7 @@ class PyroEstimatorMAP(PyroEstimator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def fit(self, stan_model_name, model_param_names, data_input, stan_init=None):
+    def fit(self, model_name, model_param_names, data_input, init_values=None):
         # todo: refactor `stan_estimator` and `pyro_estimator` so `stan_model_name` = `model_name`
         verbose = self.verbose
         message = self.message
@@ -94,7 +94,7 @@ class PyroEstimatorMAP(PyroEstimator):
         num_steps = self.num_steps
 
         pyro.set_rng_seed(seed)
-        Model = get_pyro_model(stan_model_name)  # abstract
+        Model = get_pyro_model(model_name)  # abstract
         model = Model(data_input)  # concrete
 
         # Perform MAP inference using an AutoDelta guide.

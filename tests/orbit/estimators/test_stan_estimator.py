@@ -8,11 +8,8 @@ def test_stan_estimator_mcmc(stan_estimator_lgt_model_input):
     mcmc_estimator = StanEstimatorMCMC()
 
     # extract posterior samples
-    stan_extract = mcmc_estimator.fit(
-        stan_model_name=stan_model_name,
-        model_param_names=model_param_names,
-        data_input=data_input
-    )
+    stan_extract = mcmc_estimator.fit(model_name=stan_model_name, model_param_names=model_param_names,
+                                      data_input=data_input)
 
     expected_extract_keys = model_param_names[:] + ['lp__']
 
@@ -26,11 +23,8 @@ def test_stan_estimator_vi(stan_estimator_lgt_model_input):
     vi_estimator = StanEstimatorVI()
 
     # extract posterior samples
-    stan_extract = vi_estimator.fit(
-        stan_model_name=stan_model_name,
-        model_param_names=model_param_names,
-        data_input=data_input
-    )
+    stan_extract = vi_estimator.fit(model_name=stan_model_name, model_param_names=model_param_names,
+                                    data_input=data_input)
 
     expected_extract_keys = model_param_names[:] + ['lp__']
 
@@ -44,11 +38,8 @@ def test_stan_estimator_map(stan_estimator_lgt_model_input):
     map_estimator = StanEstimatorMAP()
 
     # extract posterior samples
-    stan_extract = map_estimator.fit(
-        stan_model_name=stan_model_name,
-        model_param_names=model_param_names,
-        data_input=data_input
-    )
+    stan_extract = map_estimator.fit(model_name=stan_model_name, model_param_names=model_param_names,
+                                     data_input=data_input)
 
     expected_extract_keys = model_param_names[:]  # note no `lp__` for optimizing() method
 

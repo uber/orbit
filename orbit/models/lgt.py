@@ -3,7 +3,6 @@ import numpy as np
 from scipy.stats import nct
 import torch
 from copy import copy, deepcopy
-from functools import partial
 
 from ..constants import lgt
 from ..constants.constants import (
@@ -15,18 +14,18 @@ from ..constants.constants import (
 )
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 from ..exceptions import IllegalArgument, LGTException, PredictionException
-from .base_model import BaseStanModel
+from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
 
 
 # todo: docstrings for LGT model
 
 
-class BaseLGT(BaseStanModel):
+class BaseLGT(BaseModel):
     """Base LGT model object with shared functionality for Full, Aggregated, and MAP methods"""
     _data_input_mapper = lgt.DataInputMapper
-    # stan model name (e.g. name of `*.stan` file in package)
-    _stan_model_name = 'lgt'
+    # stan or pyro model name (e.g. name of `*.stan` file in package)
+    _model_name = 'lgt'
     _supported_estimator_types = None  # set for each model
 
     def __init__(self, response_col='y', date_col='ds', regressor_col=None,
@@ -64,7 +63,7 @@ class BaseLGT(BaseStanModel):
 
         self._model_param_names = list()
         self._training_df_meta = None
-        self._stan_data_input = dict()
+        self._model_data_input = dict()
 
         # init static data attributes
         # the following are set by `_set_static_data_attributes()`
@@ -84,7 +83,7 @@ class BaseLGT(BaseStanModel):
         self._regular_regressor_beta_prior = list()
         self._regular_regressor_sigma_prior = list()
         # depends on seasonality length
-        self._stan_init = None
+        self._init_values = None
         
         # set static data attributes
         self._set_static_data_attributes()
@@ -194,12 +193,12 @@ class BaseLGT(BaseStanModel):
             self._with_mcmc = 1
 
     def _set_static_data_attributes(self):
-        """Stan data input based on args at instatiation or computed from args at instantiation"""
+        """model data input based on args at instatiation or computed from args at instantiation"""
         self._set_default_base_args()
         self._set_regression_penalty()
         self._set_static_regression_attributes()
         self._set_with_mcmc()
-        self._set_stan_init()
+        self._set_init_values()
 
     def _validate_supported_estimator_type(self):
         if self.estimator_type not in self._supported_estimator_types:
@@ -277,32 +276,32 @@ class BaseLGT(BaseStanModel):
 
         return df
 
-    def _set_stan_init(self):
+    def _set_init_values(self):
         """Set Stan init as a callable
 
         See: https://pystan.readthedocs.io/en/latest/api.htm
         """
-        def stan_init_function(seasonality):
-            stan_init = dict()
+        def init_values_function(seasonality):
+            init_values = dict()
             if seasonality > 1:
                 seas_init = np.random.normal(loc=0, scale=0.05, size=seasonality - 1)
                 # catch cases with extreme values
                 seas_init[seas_init > 1.0] = 1.0
                 seas_init[seas_init < -1.0] = -1.0
-                stan_init['init_sea'] = seas_init
+                init_values['init_sea'] = seas_init
 
-            return stan_init
+            return init_values
 
         seasonality = self._seasonality
 
-        # stan_init_partial = partial(stan_init_callable, seasonality=seasonality)
+        # init_values_partial = partial(init_values_callable, seasonality=seasonality)
         # partialfunc does not work when passed to PyStan because PyStan uses
         # inspect.getargspec(func) which seems to raise an exception with keyword-only args
         # caused by using partialfunc
         # lambda as an alternative workaround
         if seasonality > 1:
-            stan_init_callable = lambda: stan_init_function(seasonality)  # noqa
-            self._stan_init = stan_init_callable
+            init_values_callable = lambda: init_values_function(seasonality)  # noqa
+            self._init_values = init_values_callable
 
     def _set_dynamic_data_attributes(self, df):
         """Stan data input based on input DataFrame, rather than at object instantiation"""
@@ -321,7 +320,7 @@ class BaseLGT(BaseStanModel):
         self._cauchy_sd = max(self._response) / 30.0
 
         self._set_regressor_matrix(df)  # depends on _num_of_observations
-        self._set_stan_init()
+        self._set_init_values()
         # TODO: maybe useful to calculate vanlia (adjusted) R-Squared
         # self._adjust_smoothing_with_regression()
 
@@ -346,7 +345,7 @@ class BaseLGT(BaseStanModel):
     def _get_model_param_names(self):
         return self._model_param_names
 
-    def _set_stan_data_input(self):
+    def _set_model_data_input(self):
         """Collects data attributes into a dict for `StanModel.sampling`"""
         data_inputs = dict()
 
@@ -355,19 +354,19 @@ class BaseLGT(BaseStanModel):
             key_lower = key.name.lower()
             input_value = getattr(self, key_lower, None)
             if input_value is None:
-                raise LGTException('{} is missing from stan input'.format(key_lower))
+                raise LGTException('{} is missing from data input'.format(key_lower))
             if isinstance(input_value, bool):
                 # stan accepts bool as int only
                 input_value = int(input_value)
             data_inputs[key.value] = input_value
 
-        self._stan_data_input = data_inputs
+        self._model_data_input = data_inputs
 
-    def _get_stan_data_input(self):
-        return self._stan_data_input
+    def _get_model_data_input(self):
+        return self._model_data_input
 
-    def _get_stan_init(self):
-        return self._stan_init
+    def _get_init_values(self):
+        return self._init_values
 
     def is_fitted(self):
         # if empty dict false, else true
@@ -702,24 +701,24 @@ class BaseLGT(BaseStanModel):
     def fit(self, df):
         """Fit model to data and set extracted posterior samples"""
         estimator = self.estimator
-        stan_model_name = self._stan_model_name
+        model_name = self._model_name
 
         self._set_dynamic_data_attributes(df)
-        self._set_stan_data_input()
+        self._set_model_data_input()
 
         # estimator inputs
-        data_input = self._get_stan_data_input()
-        stan_init = self._get_stan_init()
+        data_input = self._get_model_data_input()
+        init_values = self._get_init_values()
         model_param_names = self._get_model_param_names()
 
-        stan_extract = estimator.fit(
-            stan_model_name=stan_model_name,
+        model_extract = estimator.fit(
+            model_name=model_name,
             model_param_names=model_param_names,
             data_input=data_input,
-            stan_init=stan_init
+            init_values=init_values
         )
 
-        self._posterior_samples = stan_extract
+        self._posterior_samples = model_extract
 
     def get_regression_coefs(self, aggregate_method):
         """Return DataFrame regression coefficients
