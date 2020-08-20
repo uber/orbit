@@ -12,14 +12,6 @@ orbit.pyro.lgt module
    :undoc-members:
    :show-inheritance:
 
-orbit.pyro.wrapper module
--------------------------
-
-.. automodule:: orbit.pyro.wrapper
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 
 Module contents
 ---------------

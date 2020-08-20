@@ -22,7 +22,7 @@ copyright = '2020, Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang'
 author = 'Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang'
 
 # The full version, including alpha/beta/rc tags
-release = '0.4.0'
+release = '1.0.0'
 
 # -- General configuration ---------------------------------------------------
 
@@ -31,15 +31,16 @@ release = '0.4.0'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    # 'sphinx.ext.autosummary',
     # 'sphinx.ext.doctest',
     'sphinx.ext.mathjax',
     # 'sphinx.ext.viewcode',
     'sphinx.ext.napoleon'
 ]
 
-autodoc_mock_imports = [
-    'pandas', 'torch', 'pystan', 'tqdm', 'matplotlib.pyplot'
-    'pyro', 'matplotlib', 'seaborn', 'scipy', 'sklearn']
+# autodoc_mock_imports = [
+#     'pandas', 'torch', 'pystan', 'tqdm', 'matplotlib.pyplot'
+#     'pyro', 'matplotlib', 'seaborn', 'scipy', 'sklearn']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
