@@ -11,7 +11,21 @@ from ..utils.pyro import get_pyro_model
 
 
 class PyroEstimator(BaseEstimator):
-    """Pyro Estimator for interaction with Pyro"""
+    """"Abstract PyroEstimator with shared args for all PyroEstimator child classes
+
+    Parameters
+    ----------
+    num_steps : int
+        Number of estimator steps
+    learning_rate : float
+        Estimator learning rate
+    seed : int
+        Seed int
+    message :  int
+        Print to console every `message` number of steps
+    kwargs
+
+    """
     def __init__(self, num_steps=101, learning_rate=0.1, seed=8888,
                  message=100, **kwargs):
         super().__init__(**kwargs)
@@ -26,12 +40,20 @@ class PyroEstimator(BaseEstimator):
 
 
 class PyroEstimatorVI(PyroEstimator):
+    """Pyro Estimator for VI Sampling
+
+    Parameters
+    ----------
+    num_sample : int
+        Number of samples ot draw for inference, default 100
+
+    """
+
     def __init__(self, num_sample=100, **kwargs):
         super().__init__(**kwargs)
         self.num_sample = num_sample
 
     def fit(self, model_name, model_param_names, data_input, init_values=None):
-        # todo: refactor `stan_estimator` and `pyro_estimator` so `stan_model_name` = `model_name`
         verbose = self.verbose
         message = self.message
         learning_rate = self.learning_rate
@@ -82,11 +104,11 @@ class PyroEstimatorVI(PyroEstimator):
 
 
 class PyroEstimatorMAP(PyroEstimator):
+    """Pyro Estimator for MAP Posteriors"""
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def fit(self, model_name, model_param_names, data_input, init_values=None):
-        # todo: refactor `stan_estimator` and `pyro_estimator` so `stan_model_name` = `model_name`
         verbose = self.verbose
         message = self.message
         learning_rate = self.learning_rate
