@@ -11,7 +11,7 @@ from ..utils.pyro import get_pyro_model
 
 
 class PyroEstimator(BaseEstimator):
-    """"Abstract PyroEstimator with shared args for all PyroEstimator child classes
+    """Abstract PyroEstimator with shared args for all PyroEstimator child classes
 
     Parameters
     ----------
@@ -24,6 +24,7 @@ class PyroEstimator(BaseEstimator):
     message :  int
         Print to console every `message` number of steps
     kwargs
+        Additional BaseEstimator args
 
     """
     def __init__(self, num_steps=101, learning_rate=0.1, seed=8888,
@@ -46,6 +47,8 @@ class PyroEstimatorVI(PyroEstimator):
     ----------
     num_sample : int
         Number of samples ot draw for inference, default 100
+    kwargs
+        Additional `PyroEstimator` class args
 
     """
 

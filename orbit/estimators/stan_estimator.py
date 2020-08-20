@@ -30,6 +30,7 @@ class StanEstimator(BaseEstimator):
     algorithm : str
         If None, default to Stan defaults
     kwargs
+        Additional `BaseEstimator` class args
 
     """
     def __init__(self, num_warmup=900, num_sample=100, chains=4,
@@ -83,6 +84,8 @@ class StanEstimatorMCMC(StanEstimator):
         Supplemental stan control parameters to pass to PyStan.sampling()
     stan_mcmc_args : None
         Supplemental stan mcmc args to pass to PyStan.sampling()
+    kwargs
+        Additional `StanEstimator` class args
 
     """
     # is_mcmc boolean indicator -- some models are parameterized slightly different for
@@ -152,6 +155,8 @@ class StanEstimatorVI(StanEstimator):
     ----------
     stan_vi_args : None
         Supplemental stan vi args to pass to PyStan.vb()
+    kwargs
+        Additional `StanEstimator` class args
 
     """
     _is_mcmc_estimator = True
@@ -260,6 +265,8 @@ class StanEstimatorMAP(StanEstimator):
     ----------
     stan_map_args : None
         Supplemental stan vi args to pass to PyStan.optimizing()
+    kwargs
+        Additional `StanEstimator` class args
 
     """
 
