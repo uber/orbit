@@ -4,26 +4,26 @@ orbit.utils package
 Submodules
 ----------
 
-orbit.utils.constants module
-----------------------------
-
-.. automodule:: orbit.utils.constants
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-orbit.utils.metrics module
+orbit.utils.general module
 --------------------------
 
-.. automodule:: orbit.utils.metrics
+.. automodule:: orbit.utils.general
    :members:
    :undoc-members:
    :show-inheritance:
 
-orbit.utils.utils module
-------------------------
+orbit.utils.pyro module
+-----------------------
 
-.. automodule:: orbit.utils.utils
+.. automodule:: orbit.utils.pyro
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+orbit.utils.stan module
+-----------------------
+
+.. automodule:: orbit.utils.stan
    :members:
    :undoc-members:
    :show-inheritance:

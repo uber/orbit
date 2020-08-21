@@ -13,7 +13,26 @@ from ..utils.general import update_dict
 
 
 class StanEstimator(BaseEstimator):
-    """Stan Estimator for interaction with PyStan"""
+    """Abstract StanEstimator with shared args for all StanEstimator child classes
+
+    Parameters
+    ----------
+    num_warmup : int
+        Number of samples to discard, default 900
+    num_sample : int
+        Number of samples to return, default 100
+    chains : int
+        Number of chains in stan sampler, default 4
+    cores : int
+        Number of cores for parallel processing, default max(cores, multiprocessing.cpu_count())
+    seed : int
+        Seed int
+    algorithm : str
+        If None, default to Stan defaults
+    kwargs
+        Additional `BaseEstimator` class args
+
+    """
     def __init__(self, num_warmup=900, num_sample=100, chains=4,
                  cores=8, seed=8888, algorithm=None, **kwargs):
         super().__init__(**kwargs)
@@ -57,7 +76,18 @@ class StanEstimator(BaseEstimator):
 
 
 class StanEstimatorMCMC(StanEstimator):
-    """Stan Estimator for MCMC Sampling"""
+    """Stan Estimator for MCMC Sampling
+
+    Parameters
+    ----------
+    stan_mcmc_control : None
+        Supplemental stan control parameters to pass to PyStan.sampling()
+    stan_mcmc_args : None
+        Supplemental stan mcmc args to pass to PyStan.sampling()
+    kwargs
+        Additional `StanEstimator` class args
+
+    """
     # is_mcmc boolean indicator -- some models are parameterized slightly different for
     # MCMC estimator vs other estimators for convergence. Indicator let's model and estimator
     # to remain independent
@@ -77,20 +107,6 @@ class StanEstimatorMCMC(StanEstimator):
         self._stan_mcmc_args = update_dict({}, self._stan_mcmc_args)
 
     def fit(self, model_name, model_param_names, data_input, init_values=None):
-        """Estimate model posteriors with Stan
-
-        Parameters
-        ----------
-        model_name : str
-            name of stan model
-        model_param_names : list
-            list of strings of model parameters names to extract
-        data_input : dict
-            key-value pairs of data input as required by definition in stan model
-        init_values : float or np.array
-            initial sampler value. If None, 'random' is used
-
-        """
         compiled_stan_file = get_compiled_stan_model(model_name)
 
         #   passing callable from the model as seen in `initfun1()`
@@ -133,7 +149,16 @@ class StanEstimatorMCMC(StanEstimator):
 
 
 class StanEstimatorVI(StanEstimator):
-    """Stan Estimator for VI Sampling"""
+    """Stan Estimator for VI Sampling
+
+    Parameters
+    ----------
+    stan_vi_args : None
+        Supplemental stan vi args to pass to PyStan.vb()
+    kwargs
+        Additional `StanEstimator` class args
+
+    """
     _is_mcmc_estimator = True
 
     def __init__(self, stan_vi_args=None, **kwargs):
@@ -234,7 +259,17 @@ class StanEstimatorVI(StanEstimator):
 
 
 class StanEstimatorMAP(StanEstimator):
-    """Stan Estimator for MAP Posteriors"""
+    """Stan Estimator for MAP Posteriors
+
+    Parameters
+    ----------
+    stan_map_args : None
+        Supplemental stan vi args to pass to PyStan.optimizing()
+    kwargs
+        Additional `StanEstimator` class args
+
+    """
+
     def __init__(self, stan_map_args=None, **kwargs):
         super().__init__(**kwargs)
         self.stan_map_args = stan_map_args
