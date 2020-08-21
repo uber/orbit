@@ -230,23 +230,23 @@ class BaseDLT(BaseModel):
 
         # validate date_col
         if self.date_col not in df_columns:
-            raise LGTException("DataFrame does not contain `date_col`: {}".format(self.date_col))
+            raise DLTException("DataFrame does not contain `date_col`: {}".format(self.date_col))
 
         # validate ordering of time series
         date_array = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
         if not is_ordered_datetime(date_array):
-            raise LGTException('Datetime index must be ordered and not repeat')
+            raise DLTException('Datetime index must be ordered and not repeat')
 
         # validate regression columns
         if self.regressor_col is not None and \
                 not set(self.regressor_col).issubset(df_columns):
-            raise LGTException(
+            raise DLTException(
                 "DataFrame does not contain specified regressor colummn(s)."
             )
 
         # validate response variable is in df
         if self.response_col not in df_columns:
-            raise LGTException("DataFrame does not contain `response_col`: {}".format(self.response_col))
+            raise DLTException("DataFrame does not contain `response_col`: {}".format(self.response_col))
 
     def _set_regressor_matrix(self, df):
         # init of regression matrix depends on length of response vector
@@ -351,6 +351,9 @@ class BaseDLT(BaseModel):
             self._model_param_names += [
                 dlt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value]
 
+        if self._global_trend_option != dlt.GlobalTrendOption.flat.value:
+            self._model_param_names += [param.value for param in dlt.GlobalTrendSamplingParameters]
+
     def _get_model_param_names(self):
         return self._model_param_names
 
@@ -363,7 +366,7 @@ class BaseDLT(BaseModel):
             key_lower = key.name.lower()
             input_value = getattr(self, key_lower, None)
             if input_value is None:
-                raise LGTException('{} is missing from data input'.format(key_lower))
+                raise DLTException('{} is missing from data input'.format(key_lower))
             if isinstance(input_value, bool):
                 # stan accepts bool as int only
                 input_value = int(input_value)
@@ -416,15 +419,68 @@ class BaseDLT(BaseModel):
     def _predict(self, posterior_estimates, df=None, include_error=False, decompose=False):
 
         ################################################################
+        # Model Attributes
+        ################################################################
+
+        # get model attributes
+        model = deepcopy(posterior_estimates)
+
+        for k, v in model.items():
+            model[k] = torch.from_numpy(v)
+
+        # We can pull any arbitrary value from teh dictionary because we hold the
+        # safe assumption: the length of the first dimension is always the number of samples
+        # thus can be safely used to determine `num_sample`. If predict_method is anything
+        # other than full, the value here should be 1
+        arbitrary_posterior_value = list(model.values())[0]
+        num_sample = arbitrary_posterior_value.shape[0]
+
+        # seasonality components
+        seasonality_levels = model.get(
+            dlt.SeasonalitySamplingParameters.SEASONALITY_LEVELS.value)
+        seasonality_smoothing_factor = model.get(
+            dlt.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
+        )
+
+        # trend components
+        slope_smoothing_factor = model.get(
+            dlt.BaseSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
+        level_smoothing_factor = model.get(
+            dlt.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
+        local_trend_levels = model.get(dlt.BaseSamplingParameters.LOCAL_TREND_LEVELS.value)
+        local_trend_slopes = model.get(dlt.BaseSamplingParameters.LOCAL_TREND_SLOPES.value)
+        local_trend = model.get(dlt.BaseSamplingParameters.LOCAL_TREND.value)
+        residual_degree_of_freedom = model.get(
+            dlt.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
+        residual_sigma = model.get(dlt.BaseSamplingParameters.RESIDUAL_SIGMA.value)
+
+        # set an additional attribute for damped factor when it is fixed
+        # get it through user input field
+        damped_factor = torch.empty(num_sample, dtype=torch.double)
+        damped_factor.fill_(self.damped_factor)
+
+        if self._global_trend_option != dlt.GlobalTrendOption.flat.value:
+            global_trend_level = model.get(dlt.GlobalTrendSamplingParameters.GLOBAL_TREND_LEVEL.value).view(
+                num_sample, )
+            global_trend_slope = model.get(dlt.GlobalTrendSamplingParameters.GLOBAL_TREND_SLOPE.value).view(
+                num_sample, )
+            global_trend = model.get(dlt.GlobalTrendSamplingParameters.GLOBAL_TREND.value)
+        else:
+            global_trend = torch.zeros(local_trend.shape, dtype=torch.double)
+
+        # regression components
+        pr_beta = model.get(dlt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+        rr_beta = model.get(dlt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+        regressor_beta = self._concat_regression_coefs(pr_beta, rr_beta)
+
+        ################################################################
         # Prediction Attributes
         ################################################################
 
         # get training df meta
-        training_df_meta = self.training_df_meta
+        training_df_meta = self._training_df_meta
         # remove reference from original input
         df = df.copy()
-        if self.auto_scale:
-            df = self._scale_df(df, do_fit=False)
         # for multiplicative model
         if self.is_multiplicative:
             df = self._log_transform_df(df, do_fit=False)
@@ -469,61 +525,6 @@ class BaseDLT(BaseModel):
                 training_df_meta['date_array']).get_loc(prediction_df_meta['prediction_start'])
 
         full_len = trained_len + n_forecast_steps
-
-
-        ################################################################
-        # Model Attributes
-        ################################################################
-
-        # get model attributes
-        model = deepcopy(self._posterior_state)
-
-        for k, v in model.items():
-            model[k] = torch.from_numpy(v)
-
-        # We can pull any arbitrary value from teh dictionary because we hold the
-        # safe assumption: the length of the first dimension is always the number of samples
-        # thus can be safely used to determine `num_sample`. If predict_method is anything
-        # other than full, the value here should be 1
-        arbitrary_posterior_value = list(model.values())[0]
-        num_sample = arbitrary_posterior_value.shape[0]
-
-        # seasonality components
-        seasonality_levels = model.get(
-            dlt.SeasonalityStanSamplingParameters.SEASONALITY_LEVELS.value)
-        seasonality_smoothing_factor = model.get(
-            dlt.SeasonalityStanSamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
-        )
-
-        # trend components
-        slope_smoothing_factor = model.get(
-            dlt.BaseSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
-        level_smoothing_factor = model.get(
-            dlt.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
-        local_trend_levels = model.get(dlt.BaseSamplingParameters.LOCAL_TREND_LEVELS.value)
-        local_trend_slopes = model.get(dlt.BaseSamplingParameters.LOCAL_TREND_SLOPES.value)
-        local_trend = model.get(dlt.BaseSamplingParameters.LOCAL_TREND.value)
-        residual_degree_of_freedom = model.get(
-            dlt.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
-        residual_sigma = model.get(dlt.BaseSamplingParameters.RESIDUAL_SIGMA.value)
-
-        # set an additional attribute for damped factor when it is fixed
-        # get it through user input field
-        damped_factor = torch.empty(num_sample, dtype=torch.double)
-        damped_factor.fill_(self.damped_factor_fixed)
-
-        if self._global_trend_option != dlt.GlobalTrendOption.flat.value:
-            global_trend_level = model.get(dlt.GlobalTrendSamplingParameters.GLOBAL_TREND_LEVEL.value).view(num_sample, )
-            global_trend_slope = model.get(dlt.GlobalTrendSamplingParameters.GLOBAL_TREND_SLOPE.value).view(num_sample, )
-            global_trend = model.get(dlt.GlobalTrendSamplingParameters.GLOBAL_TREND.value)
-        else:
-            global_trend = torch.zeros((num_sample, trained_len), dtype=torch.double)
-
-        # regression components
-        pr_beta = model.get(dlt.RegressionStanSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
-        rr_beta = model.get(dlt.RegressionStanSamplingParameters.REGULAR_REGRESSOR_BETA.value)
-        regressor_beta = self._concat_regression_coefs(pr_beta, rr_beta)
-
 
         ################################################################
         # Regression Component
@@ -613,13 +614,13 @@ class BaseDLT(BaseModel):
                 # idx = time - 1
                 if self.global_trend_option == dlt.GlobalTrendOption.linear.name:
                     full_global_trend[:, idx] = \
-                        global_trend_level + global_trend_slope * idx * self.time_delta
+                        global_trend_level + global_trend_slope * idx * self._time_delta
                 elif self.global_trend_option == dlt.GlobalTrendOption.loglinear.name:
                     full_global_trend[:, idx] = \
-                        global_trend_level + torch.log(1 + global_trend_slope * idx * self.time_delta)
+                        global_trend_level + torch.log(1 + global_trend_slope * idx * self._time_delta)
                 elif self.global_trend_option == dlt.GlobalTrendOption.logistic.name:
                     full_global_trend[:, idx] = \
-                        global_trend_level / (1 + torch.exp(-1 * global_trend_slope * idx * self.time_delta))
+                        global_trend_level / (1 + torch.exp(-1 * global_trend_slope * idx * self._time_delta))
                 elif self._global_trend_option == dlt.GlobalTrendOption.flat.name:
                     full_global_trend[:, idx] = 0
 
@@ -675,16 +676,6 @@ class BaseDLT(BaseModel):
             trend_component = trend_component.numpy()
             seasonality_component = seasonality_component.numpy()
             regressor_component = regressor_component.numpy()
-
-        if self.auto_scale:
-            # work around response_min_max_scaler initial shape
-            init_shape = pred_array.shape
-            # enfroce a 2D array
-            pred_array = np.reshape(pred_array, (-1, 1))
-            pred_array = self.response_min_max_scaler.inverse_transform(pred_array)
-            pred_array = pred_array.reshape(init_shape)
-            # we assume the unit is based on trend component while others are multipliers
-            trend_component = self.response_min_max_scaler.inverse_transform(trend_component)
 
         # if decompose output dictionary of components
         if decompose:
@@ -964,7 +955,7 @@ class DLTMAP(BaseDLT):
     _supported_estimator_types = [StanEstimatorMAP]
 
     def __init__(self, **kwargs):
-        # estimator type is not an option for LGTMAP
+        # estimator type is not an option for DLTMAP
         self._validate_map_estimator_type(**kwargs)
         super().__init__(estimator_type=StanEstimatorMAP, **kwargs)
 
