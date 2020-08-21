@@ -14,6 +14,7 @@ class DataInputMapper(Enum):
     _SEASONALITY = 'SEASONALITY'
     _SEASONALITY_SM_INPUT = 'SEA_SM_INPUT'
     # ---------- LGT Global Trend ---------- #
+    _TIME_DELTA = 'TIME_DELTA'
     # GLOBAL_TREND_COEF_MIN = 'GT_COEF_MIN'
     # GLOBAL_TREND_COEF_MAX = 'GT_COEF_MAX'
     # GLOBAL_TREND_POW_MIN = 'GT_POW_MIN'
@@ -40,6 +41,7 @@ class DataInputMapper(Enum):
     AUTO_RIDGE_SCALE = 'AUTO_RIDGE_SCALE'
     LASSO_SCALE = 'LASSO_SCALE'
     _WITH_MCMC = 'WITH_MCMC'
+
 
 
 class BaseSamplingParameters(Enum):

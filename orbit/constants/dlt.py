@@ -8,41 +8,36 @@ class DataInputMapper(Enum):
     # All of the following have default defined in DEFAULT_SLGT_FIT_ATTRIBUTES
     # ----------  Data Input ---------- #
     # observation related
-    NUM_OF_OBSERVATIONS = 'NUM_OF_OBS'
-    RESPONSE = 'RESPONSE'
+    _NUM_OF_OBSERVATIONS = 'NUM_OF_OBS'
+    _RESPONSE = 'RESPONSE'
     # ---------- Seasonality ---------- #
-    SEASONALITY = 'SEASONALITY'
-    SEASONALITY_SM_INPUT = 'SEA_SM_INPUT'
+    _SEASONALITY = 'SEASONALITY'
+    _SEASONALITY_SM_INPUT = 'SEA_SM_INPUT'
     # ---------- Common Local Trend ---------- #
-    LEVEL_SM_INPUT = 'LEV_SM_INPUT'
-    SLOPE_SM_INPUT = 'SLP_SM_INPUT'
+    _LEVEL_SM_INPUT = 'LEV_SM_INPUT'
+    _SLOPE_SM_INPUT = 'SLP_SM_INPUT'
     # ---------- Global Trend ---------- #
     _GLOBAL_TREND_OPTION = 'GLOBAL_TREND_OPTION'
-    TIME_DELTA = 'TIME_DELTA'
+    _TIME_DELTA = 'TIME_DELTA'
     # ---------- Damped Trend ---------- #
-    DAMPED_FACTOR_MIN = 'DAMPED_FACTOR_MIN'
-    DAMPED_FACTOR_MAX = 'DAMPED_FACTOR_MAX'
-    DAMPED_FACTOR_FIXED = 'DAMPED_FACTOR_FIXED'
+    DAMPED_FACTOR = 'DAMPED_FACTOR'
     # ----------  Noise Distribution  ---------- #
-    MIN_NU = 'MIN_NU'
-    MAX_NU = 'MAX_NU'
-    CAUCHY_SD = 'CAUCHY_SD'
+    _MIN_NU = 'MIN_NU'
+    _MAX_NU = 'MAX_NU'
+    _CAUCHY_SD = 'CAUCHY_SD'
     # ----------  Regressions ---------- #
-    NUM_OF_POSITIVE_REGRESSORS = 'NUM_OF_PR'
-    POSITIVE_REGRESSOR_MATRIX = 'PR_MAT'
-    POSITIVE_REGRESSOR_BETA_PRIOR = 'PR_BETA_PRIOR'
-    POSITIVE_REGRESSOR_SIGMA_PRIOR = 'PR_SIGMA_PRIOR'
-    NUM_OF_REGULAR_REGRESSORS = 'NUM_OF_RR'
-    REGULAR_REGRESSOR_MATRIX = 'RR_MAT'
-    REGULAR_REGRESSOR_BETA_PRIOR = 'RR_BETA_PRIOR'
-    REGULAR_REGRESSOR_SIGMA_PRIOR = 'RR_SIGMA_PRIOR'
+    _NUM_OF_POSITIVE_REGRESSORS = 'NUM_OF_PR'
+    _POSITIVE_REGRESSOR_MATRIX = 'PR_MAT'
+    _POSITIVE_REGRESSOR_BETA_PRIOR = 'PR_BETA_PRIOR'
+    _POSITIVE_REGRESSOR_SIGMA_PRIOR = 'PR_SIGMA_PRIOR'
+    _NUM_OF_REGULAR_REGRESSORS = 'NUM_OF_RR'
+    _REGULAR_REGRESSOR_MATRIX = 'RR_MAT'
+    _REGULAR_REGRESSOR_BETA_PRIOR = 'RR_BETA_PRIOR'
+    _REGULAR_REGRESSOR_SIGMA_PRIOR = 'RR_SIGMA_PRIOR'
     _REGRESSION_PENALTY = 'REG_PENALTY_TYPE'
     AUTO_RIDGE_SCALE = 'AUTO_RIDGE_SCALE'
     LASSO_SCALE = 'LASSO_SCALE'
-    # Experimental; to avoid over-parameterization of latent variable vs. regression when
-    # they have similar marginal impact.  In that case, penalty kick in to reward more to explain variation with
-    # regression instead of latent variables.
-    # R_SQUARED_PENALTY = 'R_SQUARED_PENALTY'
+    _WITH_MCMC = 'WITH_MCMC'
 
 
 class GlobalTrendOption(Enum):
@@ -72,13 +67,6 @@ class GlobalTrendSamplingParameters(Enum):
     GLOBAL_TREND = 'gt_sum'
     GLOBAL_TREND_SLOPE = 'gb'
     GLOBAL_TREND_LEVEL = 'gl'
-
-
-class DampedTrendSamplingParameters(Enum):
-    """
-    The optional stan output sampling parameters applied when damped factor optimization required.
-    """
-    DAMPED_FACTOR = 'damped_factor'
 
 
 class SeasonalitySamplingParameters(Enum):
