@@ -164,7 +164,7 @@ class BaseLGT(BaseModel):
             self._regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * num_of_regressors
 
     def _set_computed_args(self):
-        self._time_delta = 1 / max(self.period, self.seasonality)
+        self._time_delta = 1 / max(self.period, self._seasonality)
 
     def _set_regression_penalty(self):
         regression_penalty = self.regression_penalty

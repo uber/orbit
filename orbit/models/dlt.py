@@ -168,7 +168,7 @@ class BaseDLT(BaseModel):
 
     def _set_computed_args(self):
         self._global_trend_option = getattr(dlt.GlobalTrendOption, self.global_trend_option).value
-        self._time_delta = 1 / max(self.period, self.seasonality)
+        self._time_delta = 1 / max(self.period, self._seasonality)
 
     def _set_regression_penalty(self):
         regression_penalty = self.regression_penalty
@@ -531,7 +531,7 @@ class BaseDLT(BaseModel):
         ################################################################
 
         # calculate regression component
-        if self.regressor_col is not None and len(self.regular_regressor_col) > 0:
+        if self.regressor_col is not None and len(self._regular_regressor_col) > 0:
             regressor_beta = regressor_beta.t()
             regressor_matrix = df[self.regressor_col].values
             regressor_torch = torch.from_numpy(regressor_matrix).double()
@@ -546,7 +546,7 @@ class BaseDLT(BaseModel):
         ################################################################
 
         # calculate seasonality component
-        if self.seasonality > 1:
+        if self._seasonality > 1:
             if full_len <= seasonality_levels.shape[1]:
                 seasonality_component = seasonality_levels[:, :full_len]
             else:
@@ -644,8 +644,8 @@ class BaseDLT(BaseModel):
                     slope_smoothing_factor * (new_local_trend_level - last_local_trend_level) \
                     + (1 - slope_smoothing_factor) * damped_factor.flatten() * last_local_trend_slope
 
-                if self.seasonality > 1 and idx + self.seasonality < full_len:
-                    seasonality_component[:, idx + self.seasonality] = \
+                if self._seasonality > 1 and idx + self._seasonality < full_len:
+                    seasonality_component[:, idx + self._seasonality] = \
                         seasonality_smoothing_factor.flatten() \
                         * (full_local_trend[:, idx] + seasonality_component[:, idx] -
                            new_local_trend_level) \
