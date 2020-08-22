@@ -29,7 +29,7 @@ class BaseLGT(BaseModel):
     _supported_estimator_types = None  # set for each model
 
     def __init__(self, response_col='y', date_col='ds', regressor_col=None,
-                 seasonality=None, period=1., is_multiplicative=True,
+                 seasonality=None, is_multiplicative=True,
                  regressor_sign=None, regressor_beta_prior=None, regressor_sigma_prior=None,
                  regression_penalty='fixed_ridge', lasso_scale=0.5, auto_ridge_scale=0.5,
                  seasonality_sm_input=None, slope_sm_input=None, level_sm_input=None,
@@ -39,7 +39,6 @@ class BaseLGT(BaseModel):
         self.date_col = date_col
         self.regressor_col = regressor_col
         self.seasonality = seasonality
-        self.period = period
         self.is_multiplicative = is_multiplicative
         self.regressor_sign = regressor_sign
         self.regressor_beta_prior = regressor_beta_prior
@@ -163,8 +162,6 @@ class BaseLGT(BaseModel):
         if self.regressor_sigma_prior is None:
             self._regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * num_of_regressors
 
-    def _set_computed_args(self):
-        self._time_delta = 1 / max(self.period, self._seasonality)
 
     def _set_regression_penalty(self):
         regression_penalty = self.regression_penalty
@@ -198,7 +195,6 @@ class BaseLGT(BaseModel):
     def _set_static_data_attributes(self):
         """model data input based on args at instatiation or computed from args at instantiation"""
         self._set_default_base_args()
-        self._set_computed_args()
         self._set_regression_penalty()
         self._set_static_regression_attributes()
         self._set_with_mcmc()
