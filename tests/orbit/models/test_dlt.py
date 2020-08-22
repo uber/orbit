@@ -166,8 +166,6 @@ def test_dlt_full_with_regression(synthetic_data, estimator_type, regressor_sign
     ],
     ids=['positive_only', 'regular_only', 'mixed_signs']
 )
-
-
 def test_dlt_aggregated_with_regression(synthetic_data, estimator_type, regressor_signs):
     train_df, test_df, coef = synthetic_data
 

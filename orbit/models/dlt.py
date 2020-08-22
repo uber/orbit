@@ -54,6 +54,10 @@ class BaseDLT(BaseModel):
         self.slope_sm_input = slope_sm_input
         self.level_sm_input = level_sm_input
 
+        # global trend related attributes
+        self._global_trend_option = None
+        self._time_delta = 1
+
         # set private var to arg value
         # if None set default in _set_default_base_args()
         self._seasonality = self.seasonality
@@ -75,6 +79,7 @@ class BaseDLT(BaseModel):
         # todo: should this be based on number of obs?
         self._min_nu = 5.
         self._max_nu = 40.
+
         # positive regressors
         self._num_of_positive_regressors = 0
         self._positive_regressor_col = list()
@@ -166,10 +171,6 @@ class BaseDLT(BaseModel):
         if self.regressor_sigma_prior is None:
             self._regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * num_of_regressors
 
-    def _set_computed_args(self):
-        self._global_trend_option = getattr(dlt.GlobalTrendOption, self.global_trend_option).value
-        self._time_delta = 1 / max(self.period, self._seasonality)
-
     def _set_regression_penalty(self):
         regression_penalty = self.regression_penalty
         self._regression_penalty = getattr(dlt.RegressionPenalty, regression_penalty).value
@@ -192,6 +193,10 @@ class BaseDLT(BaseModel):
                 self._regular_regressor_beta_prior.append(self._regressor_beta_prior[index])
                 self._regular_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
 
+    def _set_global_trend_attributes(self):
+        self._global_trend_option = getattr(dlt.GlobalTrendOption, self.global_trend_option).value
+        self._time_delta = 1 / max(self.period, self._seasonality, 1)
+
     def _set_with_mcmc(self):
         estimator_type = self.estimator_type
         # set `_with_mcmc` attribute based on estimator type
@@ -202,9 +207,9 @@ class BaseDLT(BaseModel):
     def _set_static_data_attributes(self):
         """model data input based on args at instatiation or computed from args at instantiation"""
         self._set_default_base_args()
-        self._set_computed_args()
         self._set_regression_penalty()
         self._set_static_regression_attributes()
+        self._set_global_trend_attributes()
         self._set_with_mcmc()
         self._set_init_values()
 
