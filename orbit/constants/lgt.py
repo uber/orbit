@@ -66,8 +66,6 @@ class SeasonalitySamplingParameters(Enum):
     The stan output sampling parameters related with seasonality component.
     """
     SEASONALITY_LEVELS = 's'
-    # we don't need initial seasonality
-    # INITIAL_SEASONALITY = 'init_sea'
     SEASONALITY_SMOOTHING_FACTOR = 'sea_sm'
 
 

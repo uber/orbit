@@ -4,7 +4,7 @@ from scipy.stats import nct
 import torch
 from copy import copy, deepcopy
 
-from ..constants import lgt
+from ..constants import dlt
 from ..constants.constants import (
     DEFAULT_REGRESSOR_SIGN,
     DEFAULT_REGRESSOR_BETA,
@@ -13,23 +13,24 @@ from ..constants.constants import (
     PredictMethod
 )
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
-from ..exceptions import IllegalArgument, LGTException, PredictionException
+from ..exceptions import IllegalArgument, DLTException, PredictionException
 from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
 
 
-# todo: docstrings for LGT model
+# todo: docstrings for DLT model
 
 
-class BaseLGT(BaseModel):
-    """Base LGT model object with shared functionality for Full, Aggregated, and MAP methods"""
-    _data_input_mapper = lgt.DataInputMapper
+class BaseDLT(BaseModel):
+    """Base DLT model object with shared functionality for Full, Aggregated, and MAP methods"""
+    _data_input_mapper = dlt.DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
-    _model_name = 'lgt'
+    _model_name = 'dlt'
     _supported_estimator_types = None  # set for each model
 
     def __init__(self, response_col='y', date_col='ds', regressor_col=None,
-                 seasonality=None, is_multiplicative=True,
+                 seasonality=None, period=1., is_multiplicative=True,
+                 damped_factor=0.8, global_trend_option='linear',
                  regressor_sign=None, regressor_beta_prior=None, regressor_sigma_prior=None,
                  regression_penalty='fixed_ridge', lasso_scale=0.5, auto_ridge_scale=0.5,
                  seasonality_sm_input=None, slope_sm_input=None, level_sm_input=None,
@@ -39,6 +40,9 @@ class BaseLGT(BaseModel):
         self.date_col = date_col
         self.regressor_col = regressor_col
         self.seasonality = seasonality
+        self.damped_factor = damped_factor
+        self.global_trend_option = global_trend_option
+        self.period = period
         self.is_multiplicative = is_multiplicative
         self.regressor_sign = regressor_sign
         self.regressor_beta_prior = regressor_beta_prior
@@ -49,6 +53,10 @@ class BaseLGT(BaseModel):
         self.seasonality_sm_input = seasonality_sm_input
         self.slope_sm_input = slope_sm_input
         self.level_sm_input = level_sm_input
+
+        # global trend related attributes
+        self._global_trend_option = None
+        self._time_delta = 1
 
         # set private var to arg value
         # if None set default in _set_default_base_args()
@@ -71,6 +79,7 @@ class BaseLGT(BaseModel):
         # todo: should this be based on number of obs?
         self._min_nu = 5.
         self._max_nu = 40.
+
         # positive regressors
         self._num_of_positive_regressors = 0
         self._positive_regressor_col = list()
@@ -83,7 +92,7 @@ class BaseLGT(BaseModel):
         self._regular_regressor_sigma_prior = list()
         # depends on seasonality length
         self._init_values = None
-        
+
         # set static data attributes
         self._set_static_data_attributes()
 
@@ -92,7 +101,7 @@ class BaseLGT(BaseModel):
         # on dynamic data (e.g actual data matrix, number of responses, etc) this should be
         # called after fit instead
         self._set_model_param_names()
-        
+
         # init dynamic data attributes
         # the following are set by `_set_dynamic_data_attributes()` and generally set during fit()
         # from input df
@@ -113,7 +122,7 @@ class BaseLGT(BaseModel):
             PredictMethod.MEAN.value: dict(),
             PredictMethod.MEDIAN.value: dict(),
         }
-        
+
     def _set_default_base_args(self):
         """Set default attributes for None
 
@@ -162,10 +171,9 @@ class BaseLGT(BaseModel):
         if self.regressor_sigma_prior is None:
             self._regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * num_of_regressors
 
-
     def _set_regression_penalty(self):
         regression_penalty = self.regression_penalty
-        self._regression_penalty = getattr(lgt.RegressionPenalty, regression_penalty).value
+        self._regression_penalty = getattr(dlt.RegressionPenalty, regression_penalty).value
 
     def _set_static_regression_attributes(self):
         # if no regressors, end here
@@ -185,6 +193,10 @@ class BaseLGT(BaseModel):
                 self._regular_regressor_beta_prior.append(self._regressor_beta_prior[index])
                 self._regular_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
 
+    def _set_global_trend_attributes(self):
+        self._global_trend_option = getattr(dlt.GlobalTrendOption, self.global_trend_option).value
+        self._time_delta = 1 / max(self.period, self._seasonality, 1)
+
     def _set_with_mcmc(self):
         estimator_type = self.estimator_type
         # set `_with_mcmc` attribute based on estimator type
@@ -197,6 +209,7 @@ class BaseLGT(BaseModel):
         self._set_default_base_args()
         self._set_regression_penalty()
         self._set_static_regression_attributes()
+        self._set_global_trend_attributes()
         self._set_with_mcmc()
         self._set_init_values()
 
@@ -222,23 +235,23 @@ class BaseLGT(BaseModel):
 
         # validate date_col
         if self.date_col not in df_columns:
-            raise LGTException("DataFrame does not contain `date_col`: {}".format(self.date_col))
+            raise DLTException("DataFrame does not contain `date_col`: {}".format(self.date_col))
 
         # validate ordering of time series
         date_array = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
         if not is_ordered_datetime(date_array):
-            raise LGTException('Datetime index must be ordered and not repeat')
+            raise DLTException('Datetime index must be ordered and not repeat')
 
         # validate regression columns
         if self.regressor_col is not None and \
                 not set(self.regressor_col).issubset(df_columns):
-            raise LGTException(
+            raise DLTException(
                 "DataFrame does not contain specified regressor colummn(s)."
             )
 
         # validate response variable is in df
         if self.response_col not in df_columns:
-            raise LGTException("DataFrame does not contain `response_col`: {}".format(self.response_col))
+            raise DLTException("DataFrame does not contain `response_col`: {}".format(self.response_col))
 
     def _set_regressor_matrix(self, df):
         # init of regression matrix depends on length of response vector
@@ -248,11 +261,11 @@ class BaseLGT(BaseModel):
         # update regression matrices
         if self._num_of_positive_regressors > 0:
             self._positive_regressor_matrix = df.filter(
-                items=self._positive_regressor_col,).values
+                items=self._positive_regressor_col, ).values
 
         if self._num_of_regular_regressors > 0:
             self._regular_regressor_matrix = df.filter(
-                items=self._regular_regressor_col,).values
+                items=self._regular_regressor_col, ).values
 
     def _log_transform_df(self, df, do_fit=False):
         # transform the response column
@@ -281,6 +294,7 @@ class BaseLGT(BaseModel):
 
         See: https://pystan.readthedocs.io/en/latest/api.htm
         """
+
         def init_values_function(seasonality):
             init_values = dict()
             if seasonality > 1:
@@ -326,21 +340,24 @@ class BaseLGT(BaseModel):
 
     def _set_model_param_names(self):
         """Model parameters to extract from Stan"""
-        self._model_param_names += [param.value for param in lgt.BaseSamplingParameters]
+        self._model_param_names += [param.value for param in dlt.BaseSamplingParameters]
 
         # append seasonality param names
         if self._seasonality > 1:
-            self._model_param_names += [param.value for param in lgt.SeasonalitySamplingParameters]
+            self._model_param_names += [param.value for param in dlt.SeasonalitySamplingParameters]
 
         # append positive regressors if any
         if self._num_of_positive_regressors > 0:
             self._model_param_names += [
-                lgt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
+                dlt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
 
         # append regular regressors if any
         if self._num_of_regular_regressors > 0:
             self._model_param_names += [
-                lgt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value]
+                dlt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value]
+
+        if self._global_trend_option != dlt.GlobalTrendOption.flat.value:
+            self._model_param_names += [param.value for param in dlt.GlobalTrendSamplingParameters]
 
     def _get_model_param_names(self):
         return self._model_param_names
@@ -354,7 +371,7 @@ class BaseLGT(BaseModel):
             key_lower = key.name.lower()
             input_value = getattr(self, key_lower, None)
             if input_value is None:
-                raise LGTException('{} is missing from data input'.format(key_lower))
+                raise DLTException('{} is missing from data input'.format(key_lower))
             if isinstance(input_value, bool):
                 # stan accepts bool as int only
                 input_value = int(input_value)
@@ -404,14 +421,15 @@ class BaseLGT(BaseModel):
 
         return regressor_beta
 
-    def _predict(self, posterior_estimates, df, include_error=False, decompose=False):
-        """Vectorized version of prediction math"""
+    def _predict(self, posterior_estimates, df=None, include_error=False, decompose=False):
 
         ################################################################
         # Model Attributes
         ################################################################
 
+        # get model attributes
         model = deepcopy(posterior_estimates)
+
         for k, v in model.items():
             model[k] = torch.from_numpy(v)
 
@@ -424,31 +442,40 @@ class BaseLGT(BaseModel):
 
         # seasonality components
         seasonality_levels = model.get(
-            lgt.SeasonalitySamplingParameters.SEASONALITY_LEVELS.value)
+            dlt.SeasonalitySamplingParameters.SEASONALITY_LEVELS.value)
         seasonality_smoothing_factor = model.get(
-            lgt.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
+            dlt.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
         )
 
         # trend components
         slope_smoothing_factor = model.get(
-            lgt.BaseSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
+            dlt.BaseSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
         level_smoothing_factor = model.get(
-            lgt.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
-        local_trend_levels = model.get(lgt.BaseSamplingParameters.LOCAL_TREND_LEVELS.value)
-        local_trend_slopes = model.get(lgt.BaseSamplingParameters.LOCAL_TREND_SLOPES.value)
+            dlt.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
+        local_trend_levels = model.get(dlt.BaseSamplingParameters.LOCAL_TREND_LEVELS.value)
+        local_trend_slopes = model.get(dlt.BaseSamplingParameters.LOCAL_TREND_SLOPES.value)
+        local_trend = model.get(dlt.BaseSamplingParameters.LOCAL_TREND.value)
         residual_degree_of_freedom = model.get(
-            lgt.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
-        residual_sigma = model.get(lgt.BaseSamplingParameters.RESIDUAL_SIGMA.value)
+            dlt.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
+        residual_sigma = model.get(dlt.BaseSamplingParameters.RESIDUAL_SIGMA.value)
 
-        local_trend_coef = model.get(lgt.BaseSamplingParameters.LOCAL_TREND_COEF.value)
-        global_trend_power = model.get(lgt.BaseSamplingParameters.GLOBAL_TREND_POWER.value)
-        global_trend_coef = model.get(lgt.BaseSamplingParameters.GLOBAL_TREND_COEF.value)
-        local_global_trend_sums = model.get(
-            lgt.BaseSamplingParameters.LOCAL_GLOBAL_TREND_SUMS.value)
+        # set an additional attribute for damped factor when it is fixed
+        # get it through user input field
+        damped_factor = torch.empty(num_sample, dtype=torch.double)
+        damped_factor.fill_(self.damped_factor)
+
+        if self._global_trend_option != dlt.GlobalTrendOption.flat.value:
+            global_trend_level = model.get(dlt.GlobalTrendSamplingParameters.GLOBAL_TREND_LEVEL.value).view(
+                num_sample, )
+            global_trend_slope = model.get(dlt.GlobalTrendSamplingParameters.GLOBAL_TREND_SLOPE.value).view(
+                num_sample, )
+            global_trend = model.get(dlt.GlobalTrendSamplingParameters.GLOBAL_TREND.value)
+        else:
+            global_trend = torch.zeros(local_trend.shape, dtype=torch.double)
 
         # regression components
-        pr_beta = model.get(lgt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
-        rr_beta = model.get(lgt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+        pr_beta = model.get(dlt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+        rr_beta = model.get(dlt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value)
         regressor_beta = self._concat_regression_coefs(pr_beta, rr_beta)
 
         ################################################################
@@ -496,7 +523,8 @@ class BaseLGT(BaseModel):
             # check if prediction df is a subset of training df
             # e.g. "negative" forecast steps
             n_forecast_steps = len(forecast_dates) or \
-                -(len(set(training_df_meta['date_array']) - set(prediction_df_meta['date_array'])))
+                               -(len(set(training_df_meta['date_array']) - set(
+                                   prediction_df_meta['date_array'])))
             # time index for prediction start
             start = pd.Index(
                 training_df_meta['date_array']).get_loc(prediction_df_meta['prediction_start'])
@@ -528,8 +556,8 @@ class BaseLGT(BaseModel):
                 seasonality_component = seasonality_levels[:, :full_len]
             else:
                 seasonality_forecast_length = full_len - seasonality_levels.shape[1]
-                seasonality_forecast_matrix \
-                    = torch.zeros((num_sample, seasonality_forecast_length), dtype=torch.double)
+                seasonality_forecast_matrix = \
+                    torch.zeros((num_sample, seasonality_forecast_length), dtype=torch.double)
                 seasonality_component = torch.cat(
                     (seasonality_levels, seasonality_forecast_matrix), dim=1)
         else:
@@ -542,7 +570,8 @@ class BaseLGT(BaseModel):
         # calculate level component.
         # However, if predicted end of period > training period, update with out-of-samples forecast
         if full_len <= trained_len:
-            trend_component = local_global_trend_sums[:, :full_len]
+            full_local_trend = local_trend[:, :full_len]
+            full_global_trend = global_trend[:, :full_len]
 
             # in-sample error are iids
             if include_error:
@@ -555,9 +584,14 @@ class BaseLGT(BaseModel):
                 )
 
                 error_value = torch.from_numpy(error_value.reshape(num_sample, full_len)).double()
-                trend_component += error_value
+                full_local_trend += error_value
         else:
-            trend_component = local_global_trend_sums
+            trend_forecast_length = full_len - trained_len
+            trend_forecast_init = torch.zeros((num_sample, trend_forecast_length), dtype=torch.double)
+            full_local_trend = local_trend[:, :full_len]
+            # for convenience, we lump error on local trend since the formula would
+            # yield the same as yhat + noise - global_trend - seasonality - regression
+            # equivalent with local_trend + noise
             # in-sample error are iids
             if include_error:
                 error_value = nct.rvs(
@@ -565,30 +599,35 @@ class BaseLGT(BaseModel):
                     nc=0,
                     loc=0,
                     scale=residual_sigma.unsqueeze(-1),
-                    size=(num_sample, local_global_trend_sums.shape[1])
+                    size=(num_sample, full_local_trend.shape[1])
                 )
 
                 error_value = torch.from_numpy(
-                    error_value.reshape(num_sample, local_global_trend_sums.shape[1])).double()
-                trend_component += error_value
+                    error_value.reshape(num_sample, full_local_trend.shape[1])).double()
+                full_local_trend += error_value
 
-            trend_forecast_matrix = torch.zeros((num_sample, n_forecast_steps), dtype=torch.double)
-            trend_component = torch.cat((trend_component, trend_forecast_matrix), dim=1)
-
+            full_local_trend = torch.cat((full_local_trend, trend_forecast_init), dim=1)
+            full_global_trend = torch.cat((global_trend[:, :full_len], trend_forecast_init), dim=1)
             last_local_trend_level = local_trend_levels[:, -1]
             last_local_trend_slope = local_trend_slopes[:, -1]
 
-            trend_component_zeros = torch.zeros_like(trend_component[:, 0])
-
             for idx in range(trained_len, full_len):
-                current_local_trend = local_trend_coef.flatten() * last_local_trend_slope
-                global_trend_power_term = torch.pow(
-                    torch.abs(last_local_trend_level),
-                    global_trend_power.flatten()
-                )
-                current_global_trend = global_trend_coef.flatten() * global_trend_power_term
-                trend_component[:, idx] \
-                    = last_local_trend_level + current_local_trend + current_global_trend
+                # based on model, split cases for trend update
+                curr_local_trend = \
+                    last_local_trend_level + damped_factor.flatten() * last_local_trend_slope
+                full_local_trend[:, idx] = curr_local_trend
+                # idx = time - 1
+                if self.global_trend_option == dlt.GlobalTrendOption.linear.name:
+                    full_global_trend[:, idx] = \
+                        global_trend_level + global_trend_slope * idx * self._time_delta
+                elif self.global_trend_option == dlt.GlobalTrendOption.loglinear.name:
+                    full_global_trend[:, idx] = \
+                        global_trend_level + torch.log(1 + global_trend_slope * idx * self._time_delta)
+                elif self.global_trend_option == dlt.GlobalTrendOption.logistic.name:
+                    full_global_trend[:, idx] = \
+                        global_trend_level / (1 + torch.exp(-1 * global_trend_slope * idx * self._time_delta))
+                elif self._global_trend_option == dlt.GlobalTrendOption.flat.name:
+                    full_global_trend[:, idx] = 0
 
                 if include_error:
                     error_value = nct.rvs(
@@ -599,31 +638,24 @@ class BaseLGT(BaseModel):
                         size=num_sample
                     )
                     error_value = torch.from_numpy(error_value).double()
-                    trend_component[:, idx] += error_value
+                    full_local_trend[:, idx] += error_value
 
-                # a 2d tensor of size (num_sample, 2) in which one of the elements
-                # is always zero. We can use this to torch.max() across the sample dimensions
-                trend_component_augmented = torch.cat(
-                    (trend_component[:, idx][:, None], trend_component_zeros[:, None]), dim=1)
-
-                max_value, _ = torch.max(trend_component_augmented, dim=1)
-
-                trend_component[:, idx] = max_value
-
+                # now full_local_trend contains the error term and hence we need to use
+                # curr_local_trend as a proxy of previous level index
                 new_local_trend_level = \
-                    level_smoothing_factor * trend_component[:, idx] \
-                    + (1 - level_smoothing_factor) * last_local_trend_level
-
+                    level_smoothing_factor * full_local_trend[:, idx] \
+                    + (1 - level_smoothing_factor) * curr_local_trend
                 last_local_trend_slope = \
                     slope_smoothing_factor * (new_local_trend_level - last_local_trend_level) \
-                    + (1 - slope_smoothing_factor) * last_local_trend_slope
+                    + (1 - slope_smoothing_factor) * damped_factor.flatten() * last_local_trend_slope
 
                 if self._seasonality > 1 and idx + self._seasonality < full_len:
                     seasonality_component[:, idx + self._seasonality] = \
                         seasonality_smoothing_factor.flatten() \
-                        * (trend_component[:, idx] + seasonality_component[:, idx] -
+                        * (full_local_trend[:, idx] + seasonality_component[:, idx] -
                            new_local_trend_level) \
-                        + (1 - seasonality_smoothing_factor.flatten()) * seasonality_component[:, idx]
+                        + (1 - seasonality_smoothing_factor.flatten()) * seasonality_component[:,
+                                                                         idx]
 
                 last_local_trend_level = new_local_trend_level
 
@@ -632,7 +664,7 @@ class BaseLGT(BaseModel):
         ################################################################
 
         # trim component with right start index
-        trend_component = trend_component[:, start:]
+        trend_component = full_global_trend[:, start:] + full_local_trend[:, start:]
         seasonality_component = seasonality_component[:, start:]
 
         # sum components
@@ -732,13 +764,13 @@ class BaseLGT(BaseModel):
         if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
             return reg_df
 
-        pr_beta = self._aggregate_posteriors\
-            .get(aggregate_method)\
-            .get(lgt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+        pr_beta = self._aggregate_posteriors \
+            .get(aggregate_method) \
+            .get(dlt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
 
-        rr_beta = self._aggregate_posteriors\
-            .get(aggregate_method)\
-            .get(lgt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+        rr_beta = self._aggregate_posteriors \
+            .get(aggregate_method) \
+            .get(dlt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value)
 
         # because `_conccat_regression_coefs` operates on torch tensors
         pr_beta = torch.from_numpy(pr_beta) if pr_beta is not None else pr_beta
@@ -757,7 +789,7 @@ class BaseLGT(BaseModel):
         # same note
         regressor_signs \
             = ["Positive"] * self._num_of_positive_regressors \
-            + ["Regular"] * self._num_of_regular_regressors
+              + ["Regular"] * self._num_of_regular_regressors
 
         reg_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
         reg_df[COEFFICIENT_DF_COLS.REGRESSOR_SIGN] = regressor_signs
@@ -766,7 +798,7 @@ class BaseLGT(BaseModel):
         return reg_df
 
 
-class LGTFull(BaseLGT):
+class DLTFull(BaseDLT):
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
 
     def __init__(self, n_bootstrap_draws=-1, prediction_percentiles=None, **kwargs):
@@ -876,7 +908,7 @@ class LGTFull(BaseLGT):
         return super().get_regression_coefs(aggregate_method=aggregate_method)
 
 
-class LGTAggregated(BaseLGT):
+class DLTAggregated(BaseDLT):
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
 
     def __init__(self, aggregate_method='mean', **kwargs):
@@ -924,11 +956,11 @@ class LGTAggregated(BaseLGT):
         return super().get_regression_coefs(aggregate_method=self.aggregate_method)
 
 
-class LGTMAP(BaseLGT):
+class DLTMAP(BaseDLT):
     _supported_estimator_types = [StanEstimatorMAP]
 
     def __init__(self, **kwargs):
-        # estimator type is not an option for LGTMAP
+        # estimator type is not an option for DLTMAP
         self._validate_map_estimator_type(**kwargs)
         super().__init__(estimator_type=StanEstimatorMAP, **kwargs)
 

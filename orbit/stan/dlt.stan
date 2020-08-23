@@ -56,10 +56,7 @@ data {
   real<lower=1> MIN_NU; real<lower=1> MAX_NU;
 
   // Damped Trend Hyper-Params
-  real<lower=0> DAMPED_FACTOR_MIN;
-  real<upper=1> DAMPED_FACTOR_MAX;
-  // -1 or 0 means not fixed
-  real DAMPED_FACTOR_FIXED;
+  real<lower=0,upper=1> DAMPED_FACTOR;
 
   // Seasonality Hyper-Params
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
@@ -71,7 +68,6 @@ transformed data {
   int IS_SEASONAL;
   // SIGMA_EPS is a offset to dodge lower boundary case;
   real SIGMA_EPS;
-  int DAMPED_FACTOR_SIZE;
   real GL_LOWER;
   real GB_LOWER;
   real GB_UPPER;
@@ -86,7 +82,6 @@ transformed data {
   SLP_SM_SIZE = 0;
   SEA_SM_SIZE = 0;
 
-  DAMPED_FACTOR_SIZE = 1;
   SIGMA_EPS = 1e-5;
   IS_SEASONAL = 0;
   GL_SIZE = 0;
@@ -94,14 +89,13 @@ transformed data {
   USE_VARY_SIGMA = 0;
 
   if (SEASONALITY > 1) IS_SEASONAL = 1;
-  # Only auto-ridge is using pr_sigma and rr_sigma
+  // Only auto-ridge is using pr_sigma and rr_sigma
   if (REG_PENALTY_TYPE == 2) USE_VARY_SIGMA = 1;
 
   if (LEV_SM_INPUT < 0) LEV_SM_SIZE = 1;
   if (SLP_SM_INPUT < 0) SLP_SM_SIZE = 1;
   if (SEA_SM_INPUT < 0) SEA_SM_SIZE = 1 * IS_SEASONAL;
 
-  if (DAMPED_FACTOR_FIXED > 0) DAMPED_FACTOR_SIZE = 0;
   if (GLOBAL_TREND_OPTION == 0) {
       GL_LOWER = negative_infinity();
       GB_LOWER = negative_infinity();
@@ -152,8 +146,6 @@ parameters {
   // global trend parameters
   real<lower=GL_LOWER> gl[GL_SIZE]; // global level
   real<lower=GB_LOWER,upper=GB_UPPER> gb[GB_SIZE]; // global slope
-  // damped factor parameters
-  real<lower=DAMPED_FACTOR_MIN,upper=DAMPED_FACTOR_MAX> damped_factor[DAMPED_FACTOR_SIZE];
 
   // initial seasonality
   vector<lower=-1,upper=1>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
@@ -246,14 +238,6 @@ transformed parameters {
   lt_sum[1] = l[1];
   yhat[1] = RESPONSE[1];
 
-  // sequential sampling on state variables
-  // a dummy for damped factor to split cases whether they are direct input or not;
-  if (DAMPED_FACTOR_SIZE > 0) {
-    damped_factor_dummy = damped_factor[1];
-  } else {
-    damped_factor_dummy = DAMPED_FACTOR_FIXED;
-  }
-
   for (t in 2:NUM_OF_OBS) {
     real s_t; // a transformed variable of seasonal component at time t
     if (IS_SEASONAL) {
@@ -262,12 +246,12 @@ transformed parameters {
         s_t = 0.0;
     }
     // forecast process
-    lt_sum[t] = l[t-1] + damped_factor_dummy * b[t-1];
+    lt_sum[t] = l[t-1] + DAMPED_FACTOR * b[t-1];
     yhat[t] = gt_sum[t] + lt_sum[t] + s_t + r[t];
 
     // update process
     l[t] = lev_sm * (RESPONSE[t] - gt_sum[t] - s_t - r[t]) + (1 - lev_sm) * lt_sum[t];
-    b[t] = slp_sm * (l[t] - l[t-1]) + (1 - slp_sm) * damped_factor_dummy * b[t-1];
+    b[t] = slp_sm * (l[t] - l[t-1]) + (1 - slp_sm) * DAMPED_FACTOR * b[t-1];
     // with parameterization as mentioned in 7.3 "Forecasting: Principles and Practice"
     // we can safely use "l[t]" instead of "l[t-1] + damped_factor_dummy * b[t-1]" where 0 < sea_sm < 1
     // otherwise with original one, use 0 < sea_sm < 1 - lev_sm

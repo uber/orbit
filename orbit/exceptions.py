@@ -9,6 +9,10 @@ class LGTException(Exception):
     pass
 
 
+class DLTException(Exception):
+    pass
+
+
 class IllegalArgument(Exception):
     pass
 
