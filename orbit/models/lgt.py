@@ -13,6 +13,7 @@ from ..constants.constants import (
     PredictMethod
 )
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
+from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
 from ..exceptions import IllegalArgument, LGTException, PredictionException
 from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
@@ -767,7 +768,7 @@ class BaseLGT(BaseModel):
 
 
 class LGTFull(BaseLGT):
-    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
+    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
 
     def __init__(self, n_bootstrap_draws=-1, prediction_percentiles=None, **kwargs):
         # todo: assert compatible estimator
@@ -877,7 +878,7 @@ class LGTFull(BaseLGT):
 
 
 class LGTAggregated(BaseLGT):
-    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
+    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
 
     def __init__(self, aggregate_method='mean', **kwargs):
         super().__init__(**kwargs)
