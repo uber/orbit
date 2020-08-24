@@ -926,23 +926,18 @@ class LGTAggregated(BaseLGT):
 
 
 class LGTMAP(BaseLGT):
-    _supported_estimator_types = [StanEstimatorMAP]
+    _supported_estimator_types = [StanEstimatorMAP, PyroEstimatorMAP]
 
-    def __init__(self, **kwargs):
-        # estimator type is not an option for LGTMAP
-        self._validate_map_estimator_type(**kwargs)
-        super().__init__(estimator_type=StanEstimatorMAP, **kwargs)
+    def __init__(self, estimator_type=StanEstimatorMAP, **kwargs):
+        super().__init__(estimator_type=estimator_type, **kwargs)
 
         # override init aggregate posteriors
         self._aggregate_posteriors = {
             PredictMethod.MAP.value: dict(),
         }
 
-    def _validate_map_estimator_type(self, **kwargs):
-        if 'estimator_type' in kwargs.keys():
-            msg_template = "{} does not support `estimator_type` arg"
-            model_class = type(self)
-            raise IllegalArgument(msg_template.format(model_class))
+        # validator model / estimator compatibility
+        self._validate_supported_estimator_type()
 
     def _set_map_posterior(self):
         posterior_samples = self._posterior_samples
