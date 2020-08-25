@@ -34,13 +34,12 @@ class StanEstimator(BaseEstimator):
 
     """
     def __init__(self, num_warmup=900, num_sample=100, chains=4,
-                 cores=8, seed=8888, algorithm=None, **kwargs):
+                 cores=8, algorithm=None, **kwargs):
         super().__init__(**kwargs)
         self.num_warmup = num_warmup
         self.num_sample = num_sample
         self.chains = chains
         self.cores = cores
-        self.seed = seed
         self.algorithm = algorithm
 
         # stan_init fallback if not provided in model

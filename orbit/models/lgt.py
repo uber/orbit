@@ -4,7 +4,7 @@ from scipy.stats import nct
 import torch
 from copy import copy, deepcopy
 
-from ..constants import lgt
+from ..constants import lgt as constants
 from ..constants.constants import (
     DEFAULT_REGRESSOR_SIGN,
     DEFAULT_REGRESSOR_BETA,
@@ -14,7 +14,7 @@ from ..constants.constants import (
 )
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
-from ..exceptions import IllegalArgument, LGTException, PredictionException
+from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
 
@@ -24,7 +24,7 @@ from ..utils.general import is_ordered_datetime
 
 class BaseLGT(BaseModel):
     """Base LGT model object with shared functionality for Full, Aggregated, and MAP methods"""
-    _data_input_mapper = lgt.DataInputMapper
+    _data_input_mapper = constants.DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
     _model_name = 'lgt'
     _supported_estimator_types = None  # set for each model
@@ -163,10 +163,9 @@ class BaseLGT(BaseModel):
         if self.regressor_sigma_prior is None:
             self._regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * num_of_regressors
 
-
     def _set_regression_penalty(self):
         regression_penalty = self.regression_penalty
-        self._regression_penalty = getattr(lgt.RegressionPenalty, regression_penalty).value
+        self._regression_penalty = getattr(constants.RegressionPenalty, regression_penalty).value
 
     def _set_static_regression_attributes(self):
         # if no regressors, end here
@@ -223,23 +222,23 @@ class BaseLGT(BaseModel):
 
         # validate date_col
         if self.date_col not in df_columns:
-            raise LGTException("DataFrame does not contain `date_col`: {}".format(self.date_col))
+            raise ModelException("DataFrame does not contain `date_col`: {}".format(self.date_col))
 
         # validate ordering of time series
         date_array = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
         if not is_ordered_datetime(date_array):
-            raise LGTException('Datetime index must be ordered and not repeat')
+            raise ModelException('Datetime index must be ordered and not repeat')
 
         # validate regression columns
         if self.regressor_col is not None and \
                 not set(self.regressor_col).issubset(df_columns):
-            raise LGTException(
+            raise ModelException(
                 "DataFrame does not contain specified regressor colummn(s)."
             )
 
         # validate response variable is in df
         if self.response_col not in df_columns:
-            raise LGTException("DataFrame does not contain `response_col`: {}".format(self.response_col))
+            raise ModelException("DataFrame does not contain `response_col`: {}".format(self.response_col))
 
     def _set_regressor_matrix(self, df):
         # init of regression matrix depends on length of response vector
@@ -327,21 +326,21 @@ class BaseLGT(BaseModel):
 
     def _set_model_param_names(self):
         """Model parameters to extract from Stan"""
-        self._model_param_names += [param.value for param in lgt.BaseSamplingParameters]
+        self._model_param_names += [param.value for param in constants.BaseSamplingParameters]
 
         # append seasonality param names
         if self._seasonality > 1:
-            self._model_param_names += [param.value for param in lgt.SeasonalitySamplingParameters]
+            self._model_param_names += [param.value for param in constants.SeasonalitySamplingParameters]
 
         # append positive regressors if any
         if self._num_of_positive_regressors > 0:
             self._model_param_names += [
-                lgt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
+                constants.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
 
         # append regular regressors if any
         if self._num_of_regular_regressors > 0:
             self._model_param_names += [
-                lgt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value]
+                constants.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value]
 
     def _get_model_param_names(self):
         return self._model_param_names
@@ -355,7 +354,7 @@ class BaseLGT(BaseModel):
             key_lower = key.name.lower()
             input_value = getattr(self, key_lower, None)
             if input_value is None:
-                raise LGTException('{} is missing from data input'.format(key_lower))
+                raise ModelException('{} is missing from data input'.format(key_lower))
             if isinstance(input_value, bool):
                 # stan accepts bool as int only
                 input_value = int(input_value)
@@ -425,31 +424,31 @@ class BaseLGT(BaseModel):
 
         # seasonality components
         seasonality_levels = model.get(
-            lgt.SeasonalitySamplingParameters.SEASONALITY_LEVELS.value)
+            constants.SeasonalitySamplingParameters.SEASONALITY_LEVELS.value)
         seasonality_smoothing_factor = model.get(
-            lgt.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
+            constants.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
         )
 
         # trend components
         slope_smoothing_factor = model.get(
-            lgt.BaseSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
+            constants.BaseSamplingParameters.SLOPE_SMOOTHING_FACTOR.value)
         level_smoothing_factor = model.get(
-            lgt.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
-        local_trend_levels = model.get(lgt.BaseSamplingParameters.LOCAL_TREND_LEVELS.value)
-        local_trend_slopes = model.get(lgt.BaseSamplingParameters.LOCAL_TREND_SLOPES.value)
+            constants.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
+        local_trend_levels = model.get(constants.BaseSamplingParameters.LOCAL_TREND_LEVELS.value)
+        local_trend_slopes = model.get(constants.BaseSamplingParameters.LOCAL_TREND_SLOPES.value)
         residual_degree_of_freedom = model.get(
-            lgt.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
-        residual_sigma = model.get(lgt.BaseSamplingParameters.RESIDUAL_SIGMA.value)
+            constants.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
+        residual_sigma = model.get(constants.BaseSamplingParameters.RESIDUAL_SIGMA.value)
 
-        local_trend_coef = model.get(lgt.BaseSamplingParameters.LOCAL_TREND_COEF.value)
-        global_trend_power = model.get(lgt.BaseSamplingParameters.GLOBAL_TREND_POWER.value)
-        global_trend_coef = model.get(lgt.BaseSamplingParameters.GLOBAL_TREND_COEF.value)
+        local_trend_coef = model.get(constants.BaseSamplingParameters.LOCAL_TREND_COEF.value)
+        global_trend_power = model.get(constants.BaseSamplingParameters.GLOBAL_TREND_POWER.value)
+        global_trend_coef = model.get(constants.BaseSamplingParameters.GLOBAL_TREND_COEF.value)
         local_global_trend_sums = model.get(
-            lgt.BaseSamplingParameters.LOCAL_GLOBAL_TREND_SUMS.value)
+            constants.BaseSamplingParameters.LOCAL_GLOBAL_TREND_SUMS.value)
 
         # regression components
-        pr_beta = model.get(lgt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
-        rr_beta = model.get(lgt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+        pr_beta = model.get(constants.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+        rr_beta = model.get(constants.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value)
         regressor_beta = self._concat_regression_coefs(pr_beta, rr_beta)
 
         ################################################################
@@ -735,11 +734,11 @@ class BaseLGT(BaseModel):
 
         pr_beta = self._aggregate_posteriors\
             .get(aggregate_method)\
-            .get(lgt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+            .get(constants.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
 
         rr_beta = self._aggregate_posteriors\
             .get(aggregate_method)\
-            .get(lgt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+            .get(constants.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value)
 
         # because `_conccat_regression_coefs` operates on torch tensors
         pr_beta = torch.from_numpy(pr_beta) if pr_beta is not None else pr_beta
