@@ -5,11 +5,7 @@ class EstimatorException(Exception):
     pass
 
 
-class LGTException(Exception):
-    pass
-
-
-class DLTException(Exception):
+class ModelException(Exception):
     pass
 
 
