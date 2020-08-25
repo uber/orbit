@@ -167,26 +167,26 @@ def test_lgt_non_seasonal_fit(synthetic_data, estimator_type):
     assert len(lgt._posterior_samples) == expected_num_parameters
 
 
-# def test_lgt_non_seasonal_fit_pyro(synthetic_data):
-#     train_df, test_df, coef = synthetic_data
-#
-#     lgt = LGTFull(
-#         response_col='response',
-#         date_col='week',
-#         estimator_type=PyroEstimatorVI,
-#         seasonality=1
-#     )
-#
-#     lgt.fit(train_df)
-#     predict_df = lgt.predict(test_df)
-#
-#     expected_columns = ['week', 'prediction']
-#     expected_shape = (51, len(expected_columns))
-#     expected_num_parameters = 10  # no `lp__` in pyro
-#
-#     assert predict_df.shape == expected_shape
-#     assert predict_df.columns.tolist() == expected_columns
-#     assert len(lgt._posterior_samples) == expected_num_parameters
+def test_lgt_non_seasonal_fit_pyro(synthetic_data):
+    train_df, test_df, coef = synthetic_data
+
+    lgt = LGTFull(
+        response_col='response',
+        date_col='week',
+        estimator_type=PyroEstimatorVI,
+        num_steps=10
+    )
+
+    lgt.fit(train_df)
+    predict_df = lgt.predict(test_df)
+
+    expected_columns = ['week', 'prediction']
+    expected_shape = (51, len(expected_columns))
+    expected_num_parameters = 10  # no `lp__` in pyro
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+    assert len(lgt._posterior_samples) == expected_num_parameters
 
 
 @pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI])

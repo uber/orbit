@@ -123,7 +123,7 @@ class Model:
                 s[t] = init_sea[..., t]
             s[self.seasonality] = init_sea[..., 0]
         else:
-            s = torch.zeros(num_of_obs)
+            s = [torch.tensor(0.)] * num_of_obs
 
         # states initial condition
         b[0] = torch.zeros_like(slp_sm)
