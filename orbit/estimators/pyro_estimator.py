@@ -27,12 +27,10 @@ class PyroEstimator(BaseEstimator):
         Additional BaseEstimator args
 
     """
-    def __init__(self, num_steps=101, learning_rate=0.1, seed=8888,
-                 message=100, **kwargs):
+    def __init__(self, num_steps=101, learning_rate=0.1, message=100, **kwargs):
         super().__init__(**kwargs)
         self.num_steps = num_steps
         self.learning_rate = learning_rate
-        self.seed = seed
         self.message = message
 
     @abstractmethod
