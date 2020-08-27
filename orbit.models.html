@@ -1,0 +1,335 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>orbit.models package &mdash; Orbit 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="orbit.pyro package" href="orbit.pyro.html" />
+    <link rel="prev" title="orbit.estimators package" href="orbit.estimators.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Orbit
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Intro</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Docs</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="orbit.html">orbit package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="orbit.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="orbit.constants.html">orbit.constants package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="orbit.diagnostics.html">orbit.diagnostics package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="orbit.estimators.html">orbit.estimators package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">orbit.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="orbit.pyro.html">orbit.pyro package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="orbit.utils.html">orbit.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="orbit.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="orbit.html#module-orbit.exceptions">orbit.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="orbit.html#module-orbit.orbit">orbit.orbit module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="orbit.html#module-orbit">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Orbit</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">API Docs</a> &raquo;</li>
+        
+          <li><a href="orbit.html">orbit package</a> &raquo;</li>
+        
+      <li>orbit.models package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/orbit.models.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="orbit-models-package">
+<h1>orbit.models package<a class="headerlink" href="#orbit-models-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-orbit.models.base_model">
+<span id="orbit-models-base-model-module"></span><h2>orbit.models.base_model module<a class="headerlink" href="#module-orbit.models.base_model" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="orbit.models.base_model.BaseModel">
+<em class="property">class </em><code class="sig-prename descclassname">orbit.models.base_model.</code><code class="sig-name descname">BaseModel</code><span class="sig-paren">(</span><em class="sig-param">estimator_type=&lt;class 'orbit.estimators.stan_estimator.StanEstimatorMCMC'&gt;</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.base_model.BaseModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-orbit.models.lgt">
+<span id="orbit-models-lgt-module"></span><h2>orbit.models.lgt module<a class="headerlink" href="#module-orbit.models.lgt" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="orbit.models.lgt.BaseLGT">
+<em class="property">class </em><code class="sig-prename descclassname">orbit.models.lgt.</code><code class="sig-name descname">BaseLGT</code><span class="sig-paren">(</span><em class="sig-param">response_col='y'</em>, <em class="sig-param">date_col='ds'</em>, <em class="sig-param">regressor_col=None</em>, <em class="sig-param">seasonality=None</em>, <em class="sig-param">is_multiplicative=True</em>, <em class="sig-param">regressor_sign=None</em>, <em class="sig-param">regressor_beta_prior=None</em>, <em class="sig-param">regressor_sigma_prior=None</em>, <em class="sig-param">regression_penalty='fixed_ridge'</em>, <em class="sig-param">lasso_scale=0.5</em>, <em class="sig-param">auto_ridge_scale=0.5</em>, <em class="sig-param">seasonality_sm_input=None</em>, <em class="sig-param">slope_sm_input=None</em>, <em class="sig-param">level_sm_input=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.BaseLGT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#orbit.models.base_model.BaseModel" title="orbit.models.base_model.BaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.base_model.BaseModel</span></code></a></p>
+<p>Base LGT model object with shared functionality for Full, Aggregated, and MAP methods</p>
+<dl class="method">
+<dt id="orbit.models.lgt.BaseLGT.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param">df</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.BaseLGT.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit model to data and set extracted posterior samples</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="orbit.models.lgt.BaseLGT.get_regression_coefs">
+<code class="sig-name descname">get_regression_coefs</code><span class="sig-paren">(</span><em class="sig-param">aggregate_method</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.BaseLGT.get_regression_coefs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return DataFrame regression coefficients</p>
+<p>If PredictMethod is <cite>full</cite> return <cite>mean</cite> of coefficients instead</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="orbit.models.lgt.BaseLGT.is_fitted">
+<code class="sig-name descname">is_fitted</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.BaseLGT.is_fitted" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="orbit.models.lgt.LGTAggregated">
+<em class="property">class </em><code class="sig-prename descclassname">orbit.models.lgt.</code><code class="sig-name descname">LGTAggregated</code><span class="sig-paren">(</span><em class="sig-param">aggregate_method='mean'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTAggregated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#orbit.models.lgt.BaseLGT" title="orbit.models.lgt.BaseLGT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.BaseLGT</span></code></a></p>
+<dl class="method">
+<dt id="orbit.models.lgt.LGTAggregated.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param">df</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTAggregated.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit model to data and set extracted posterior samples</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="orbit.models.lgt.LGTAggregated.get_regression_coefs">
+<code class="sig-name descname">get_regression_coefs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTAggregated.get_regression_coefs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return DataFrame regression coefficients</p>
+<p>If PredictMethod is <cite>full</cite> return <cite>mean</cite> of coefficients instead</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="orbit.models.lgt.LGTAggregated.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param">df</em>, <em class="sig-param">decompose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTAggregated.predict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="orbit.models.lgt.LGTFull">
+<em class="property">class </em><code class="sig-prename descclassname">orbit.models.lgt.</code><code class="sig-name descname">LGTFull</code><span class="sig-paren">(</span><em class="sig-param">n_bootstrap_draws=-1</em>, <em class="sig-param">prediction_percentiles=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTFull" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#orbit.models.lgt.BaseLGT" title="orbit.models.lgt.BaseLGT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.BaseLGT</span></code></a></p>
+<dl class="method">
+<dt id="orbit.models.lgt.LGTFull.get_regression_coefs">
+<code class="sig-name descname">get_regression_coefs</code><span class="sig-paren">(</span><em class="sig-param">aggregate_method='mean'</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTFull.get_regression_coefs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return DataFrame regression coefficients</p>
+<p>If PredictMethod is <cite>full</cite> return <cite>mean</cite> of coefficients instead</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="orbit.models.lgt.LGTFull.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param">df</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTFull.predict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="orbit.models.lgt.LGTMAP">
+<em class="property">class </em><code class="sig-prename descclassname">orbit.models.lgt.</code><code class="sig-name descname">LGTMAP</code><span class="sig-paren">(</span><em class="sig-param">estimator_type=&lt;class 'orbit.estimators.stan_estimator.StanEstimatorMAP'&gt;</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTMAP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#orbit.models.lgt.BaseLGT" title="orbit.models.lgt.BaseLGT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.BaseLGT</span></code></a></p>
+<dl class="method">
+<dt id="orbit.models.lgt.LGTMAP.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param">df</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTMAP.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit model to data and set extracted posterior samples</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="orbit.models.lgt.LGTMAP.get_regression_coefs">
+<code class="sig-name descname">get_regression_coefs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTMAP.get_regression_coefs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return DataFrame regression coefficients</p>
+<p>If PredictMethod is <cite>full</cite> return <cite>mean</cite> of coefficients instead</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="orbit.models.lgt.LGTMAP.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param">df</em>, <em class="sig-param">decompose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTMAP.predict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-orbit.models">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-orbit.models" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="orbit.pyro.html" class="btn btn-neutral float-right" title="orbit.pyro package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="orbit.estimators.html" class="btn btn-neutral float-left" title="orbit.estimators package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
