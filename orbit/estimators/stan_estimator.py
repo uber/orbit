@@ -142,7 +142,7 @@ class StanEstimatorMCMC(StanEstimator):
                 # here `order` is important to make samples flattened by chain
                 stan_extract[key] = val.flatten(order='F')
             else:
-                stan_extract[key] = val.reshape(-1, val.shape[-1], order='F')
+                stan_extract[key] = val.reshape((-1, *val.shape[2:]), order='F')
 
         return stan_extract
 
