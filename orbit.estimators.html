@@ -182,6 +182,14 @@
 <em class="property">class </em><code class="sig-prename descclassname">orbit.estimators.base_estimator.</code><code class="sig-name descname">BaseEstimator</code><span class="sig-paren">(</span><em class="sig-param">seed=8888</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.base_estimator.BaseEstimator" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Base Estimator class for both Stan and Pyro Estimator</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seed</strong> (<em>int</em>) – seed number for initial random values</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – If True, output all stan diagnostics messages</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="method">
 <dt id="orbit.estimators.base_estimator.BaseEstimator.fit">
 <em class="property">abstract </em><code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param">model_name</em>, <em class="sig-param">model_param_names</em>, <em class="sig-param">data_input</em>, <em class="sig-param">init_values=None</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.base_estimator.BaseEstimator.fit" title="Permalink to this definition">¶</a></dt>
@@ -330,7 +338,6 @@ and value is <cite>num_sample</cite> x posterior values</p>
 <li><p><strong>num_sample</strong> (<em>int</em>) – Number of samples to return, default 100</p></li>
 <li><p><strong>chains</strong> (<em>int</em>) – Number of chains in stan sampler, default 4</p></li>
 <li><p><strong>cores</strong> (<em>int</em>) – Number of cores for parallel processing, default max(cores, multiprocessing.cpu_count())</p></li>
-<li><p><strong>seed</strong> (<em>int</em>) – Seed int</p></li>
 <li><p><strong>algorithm</strong> (<em>str</em>) – If None, default to Stan defaults</p></li>
 <li><p><strong>kwargs</strong> – Additional <cite>BaseEstimator</cite> class args</p></li>
 </ul>
