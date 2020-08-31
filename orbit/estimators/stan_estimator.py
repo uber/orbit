@@ -25,8 +25,6 @@ class StanEstimator(BaseEstimator):
         Number of chains in stan sampler, default 4
     cores : int
         Number of cores for parallel processing, default max(cores, multiprocessing.cpu_count())
-    seed : int
-        Seed int
     algorithm : str
         If None, default to Stan defaults
     kwargs

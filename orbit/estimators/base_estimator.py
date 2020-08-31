@@ -3,7 +3,16 @@ import numpy as np
 
 
 class BaseEstimator(object):
-    """Base Estimator class for both Stan and Pyro Estimator"""
+    """Base Estimator class for both Stan and Pyro Estimator
+
+    Parameters
+    ----------
+    seed : int
+        seed number for initial random values
+    verbose : bool
+        If True, output all stan diagnostics messages
+
+    """
     def __init__(self, seed=8888, verbose=False):
         self.seed = seed
         self.verbose = verbose

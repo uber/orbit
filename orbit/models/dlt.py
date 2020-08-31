@@ -9,11 +9,28 @@ from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, Stan
 
 from ..utils.general import is_ordered_datetime
 
-# todo: dosctring for DLT model
-
 
 class BaseDLT(BaseLGT):
-    """Base DLT model object with shared functionality for Full, Aggregated, and MAP methods"""
+    """Base DLT model object with shared functionality for Full, Aggregated, and MAP methods
+
+    The model arguments are the same as `BaseLGT` with some additional arguments
+
+    Parameters
+    ----------
+    period : int
+        Used to set `time_delta` as `1 / max(period, seasonality)`. If None and no seasonality,
+        then `time_delta` == 1
+    damped_factor : float
+        Hyperparameter float value between [0, 1]. A smaller value further dampens the previous
+        global trend value. Default, 0.8
+    global_trend_option : { 'flat', 'linear', 'loglinear', 'logistic' }
+        Transformation function for the shape of the forecasted global trend.
+
+    See Also
+    --------
+    orbit.models.lgt.BaseLGT
+
+    """
     _data_input_mapper = constants.DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
     _model_name = 'dlt'
@@ -337,6 +354,15 @@ class BaseDLT(BaseLGT):
 
 
 class DLTFull(LGTFull, BaseDLT):
+    """Concrete DLT model for full prediction
+
+    The model arguments are the same as `LGTFull` with some additional arguments
+
+    See Also
+    --------
+    orbit.models.lgt.LGTFull
+
+    """
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
 
     def __init__(self, **kwargs):
@@ -344,6 +370,15 @@ class DLTFull(LGTFull, BaseDLT):
 
 
 class DLTAggregated(LGTAggregated, BaseDLT):
+    """Concrete DLT model for aggregated posterior prediction
+
+    The model arguments are the same as `LGTAggregated` with some additional arguments
+
+    See Also
+    --------
+    orbit.models.lgt.LGTAggregated
+
+    """
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
 
     def __init__(self, **kwargs):
@@ -351,6 +386,15 @@ class DLTAggregated(LGTAggregated, BaseDLT):
 
 
 class DLTMAP(LGTMAP, BaseDLT):
+    """Concrete DLT model for MAP (Maximum a Posteriori) prediction
+
+    The model arguments are the same as `LGTNAP` with some additional arguments
+
+    See Also
+    --------
+    orbit.models.lgt.LGTNAP
+
+    """
     _supported_estimator_types = [StanEstimatorMAP]
 
     def __init__(self, **kwargs):
