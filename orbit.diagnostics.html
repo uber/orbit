@@ -83,7 +83,7 @@
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="readme.html">Intro</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Docs</a><ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">orbit</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="orbit.html">orbit package</a><ul class="current">
 <li class="toctree-l3 current"><a class="reference internal" href="orbit.html#subpackages">Subpackages</a><ul class="current">
 <li class="toctree-l4"><a class="reference internal" href="orbit.constants.html">orbit.constants package</a></li>
@@ -147,7 +147,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-          <li><a href="modules.html">API Docs</a> &raquo;</li>
+          <li><a href="modules.html">orbit</a> &raquo;</li>
         
           <li><a href="orbit.html">orbit package</a> &raquo;</li>
         
@@ -172,6 +172,113 @@
             
   <div class="section" id="orbit-diagnostics-package">
 <h1>orbit.diagnostics package<a class="headerlink" href="#orbit-diagnostics-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-orbit.diagnostics.plot">
+<span id="orbit-diagnostics-plot-module"></span><h2>orbit.diagnostics.plot module<a class="headerlink" href="#module-orbit.diagnostics.plot" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="orbit.diagnostics.plot.metric_horizon_barplot">
+<code class="sig-prename descclassname">orbit.diagnostics.plot.</code><code class="sig-name descname">metric_horizon_barplot</code><span class="sig-paren">(</span><em class="sig-param">df</em>, <em class="sig-param">model_col='model'</em>, <em class="sig-param">pred_horizon_col='pred_horizon'</em>, <em class="sig-param">metric_col='smape'</em>, <em class="sig-param">bar_width=0.1</em>, <em class="sig-param">path=None</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.diagnostics.plot.metric_horizon_barplot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="orbit.diagnostics.plot.plot_posterior_params">
+<code class="sig-prename descclassname">orbit.diagnostics.plot.</code><code class="sig-name descname">plot_posterior_params</code><span class="sig-paren">(</span><em class="sig-param">mod</em>, <em class="sig-param">kind='density'</em>, <em class="sig-param">n_bins=20</em>, <em class="sig-param">ci_level=0.95</em>, <em class="sig-param">pair_type='scatter'</em>, <em class="sig-param">figsize=None</em>, <em class="sig-param">path=None</em>, <em class="sig-param">incl_trend_params=False</em>, <em class="sig-param">incl_smooth_params=False</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.diagnostics.plot.plot_posterior_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data Viz for posterior samples</p>
+<p>mod : orbit model object
+kind : str, {‘density’, ‘trace’, ‘pair’}</p>
+<blockquote>
+<div><p>which kind of plot to be made. Currently, trace plot may not represent the actual sample process for
+different chainse since this information is not stored in orbit model objects.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>n_bins<span class="classifier">int; default 20</span></dt><dd><p>number of bin, used in the histogram plotting</p>
+</dd>
+<dt>ci_level<span class="classifier">float, between 0 and 1</span></dt><dd><p>confidence interval level</p>
+</dd>
+<dt>pair_type<span class="classifier">str, {‘scatter’, ‘reg’}</span></dt><dd><p>dot plotting type for off-diagonal plots in pair plot</p>
+</dd>
+<dt>figsize<span class="classifier">tuple; optional</span></dt><dd><p>figure size</p>
+</dd>
+<dt>path<span class="classifier">str; optional</span></dt><dd><p>dir path to save the chart</p>
+</dd>
+<dt>incl_trend_params<span class="classifier">bool</span></dt><dd><p>if plot trend parameters; default False</p>
+</dd>
+<dt>incl_smooth_params<span class="classifier">bool</span></dt><dd><p>if plot smoothing parameters; default False</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>fig</strong></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>plt object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="orbit.diagnostics.plot.plot_predicted_components">
+<code class="sig-prename descclassname">orbit.diagnostics.plot.</code><code class="sig-name descname">plot_predicted_components</code><span class="sig-paren">(</span><em class="sig-param">predicted_df</em>, <em class="sig-param">date_col</em>, <em class="sig-param">figsize=None</em>, <em class="sig-param">path=None</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.diagnostics.plot.plot_predicted_components" title="Permalink to this definition">¶</a></dt>
+<dd><dl>
+<dt>Plot predicted componenets with the data frame of decomposed prediction where components</dt><dd><p>has been pre-defined as <cite>trend</cite>, <cite>seasonality</cite> and <cite>regression</cite>.
+Parameters
+———-
+predicted_df: pd.DataFrame</p>
+<blockquote>
+<div><p>predicted data response data frame. two columns required: actual_col and pred_col. If
+user provide pred_quantiles_col, it needs to include them as well.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>date_col: str</dt><dd><p>the date column name</p>
+</dd>
+<dt>figsize: tuple</dt><dd><p>figsize pass through to <cite>matplotlib.pyplot.figure()</cite></p>
+</dd>
+</dl>
+</dd>
+<dt>Returns</dt><dd><blockquote>
+<div><p>None.</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="orbit.diagnostics.plot.plot_predicted_data">
+<code class="sig-prename descclassname">orbit.diagnostics.plot.</code><code class="sig-name descname">plot_predicted_data</code><span class="sig-paren">(</span><em class="sig-param">training_actual_df</em>, <em class="sig-param">predicted_df</em>, <em class="sig-param">date_col</em>, <em class="sig-param">actual_col</em>, <em class="sig-param">pred_col</em>, <em class="sig-param">title=''</em>, <em class="sig-param">test_actual_df=None</em>, <em class="sig-param">pred_quantiles_col=[]</em>, <em class="sig-param">is_visible=True</em>, <em class="sig-param">figsize=None</em>, <em class="sig-param">path=None</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.diagnostics.plot.plot_predicted_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>plot training actual response together with predicted data; if actual response of predicted
+data is there, plot it too.
+:param training_actual_df: training actual response data frame. two columns required: actual_col and date_col
+:type training_actual_df: pd.DataFrame
+:param predicted_df: predicted data response data frame. two columns required: actual_col and pred_col. If</p>
+<blockquote>
+<div><p>user provide pred_quantiles_col, it needs to include them as well.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>date_col</strong> (<em>str</em>) – the date column name</p></li>
+<li><p><strong>actual_col</strong> (<em>str</em>) – </p></li>
+<li><p><strong>pred_col</strong> (<em>str</em>) – </p></li>
+<li><p><strong>title</strong> (<em>str</em>) – title of the plot</p></li>
+<li><p><strong>test_actual_df</strong> (<em>pd.DataFrame</em>) – test actual response dataframe. two columns required: actual_col and date_co</p></li>
+<li><p><strong>pred_quantiles_col</strong> (<em>list</em>) – a list of two strings for prediction inference where first one for lower quantile and
+the second one for upper quantile</p></li>
+<li><p><strong>is_visible</strong> (<em>boolean</em>) – whether we want to show the plot. If called from unittest, is_visible might = False.</p></li>
+<li><p><strong>figsize</strong> (<em>tuple</em>) – figsize pass through to <cite>matplotlib.pyplot.figure()</cite></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
 <div class="section" id="module-orbit.diagnostics">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-orbit.diagnostics" title="Permalink to this headline">¶</a></h2>
 </div>

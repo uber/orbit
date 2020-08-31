@@ -1,5 +1,5 @@
-API Docs
-========
+orbit
+=====
 
 .. toctree::
    :maxdepth: 4

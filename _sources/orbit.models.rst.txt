@@ -12,6 +12,14 @@ orbit.models.base\_model module
    :undoc-members:
    :show-inheritance:
 
+orbit.models.dlt module
+-----------------------
+
+.. automodule:: orbit.models.dlt
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 orbit.models.lgt module
 -----------------------
 

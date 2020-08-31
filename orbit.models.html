@@ -83,7 +83,7 @@
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="readme.html">Intro</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Docs</a><ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">orbit</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="orbit.html">orbit package</a><ul class="current">
 <li class="toctree-l3 current"><a class="reference internal" href="orbit.html#subpackages">Subpackages</a><ul class="current">
 <li class="toctree-l4"><a class="reference internal" href="orbit.constants.html">orbit.constants package</a></li>
@@ -147,7 +147,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-          <li><a href="modules.html">API Docs</a> &raquo;</li>
+          <li><a href="modules.html">orbit</a> &raquo;</li>
         
           <li><a href="orbit.html">orbit package</a> &raquo;</li>
         
@@ -190,6 +190,68 @@ the provided <cite>estimator_type</cite> is supported for that particular model.
 <dd class="field-odd"><p><strong>estimator_type</strong> (<em>orbit.BaseEstimator</em>) – Any subclass of <cite>orbit.BaseEstimator</cite></p>
 </dd>
 </dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-orbit.models.dlt">
+<span id="orbit-models-dlt-module"></span><h2>orbit.models.dlt module<a class="headerlink" href="#module-orbit.models.dlt" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="orbit.models.dlt.BaseDLT">
+<em class="property">class </em><code class="sig-prename descclassname">orbit.models.dlt.</code><code class="sig-name descname">BaseDLT</code><span class="sig-paren">(</span><em class="sig-param">period=1</em>, <em class="sig-param">damped_factor=0.8</em>, <em class="sig-param">global_trend_option='linear'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.dlt.BaseDLT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#orbit.models.lgt.BaseLGT" title="orbit.models.lgt.BaseLGT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.BaseLGT</span></code></a></p>
+<p>Base DLT model object with shared functionality for Full, Aggregated, and MAP methods</p>
+<p>The model arguments are the same as <cite>BaseLGT</cite> with some additional arguments</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>period</strong> (<em>int</em>) – Used to set <cite>time_delta</cite> as <cite>1 / max(period, seasonality)</cite>. If None and no seasonality,
+then <cite>time_delta</cite> == 1</p></li>
+<li><p><strong>damped_factor</strong> (<em>float</em>) – Hyperparameter float value between [0, 1]. A smaller value further dampens the previous
+global trend value. Default, 0.8</p></li>
+<li><p><strong>global_trend_option</strong> (<em>{ 'flat'</em><em>, </em><em>'linear'</em><em>, </em><em>'loglinear'</em><em>, </em><em>'logistic' }</em>) – Transformation function for the shape of the forecasted global trend.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#orbit.models.lgt.BaseLGT" title="orbit.models.lgt.BaseLGT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.BaseLGT</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="orbit.models.dlt.DLTAggregated">
+<em class="property">class </em><code class="sig-prename descclassname">orbit.models.dlt.</code><code class="sig-name descname">DLTAggregated</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.dlt.DLTAggregated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#orbit.models.lgt.LGTAggregated" title="orbit.models.lgt.LGTAggregated"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.LGTAggregated</span></code></a>, <a class="reference internal" href="#orbit.models.dlt.BaseDLT" title="orbit.models.dlt.BaseDLT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.dlt.BaseDLT</span></code></a></p>
+<p>Concrete DLT model for aggregated posterior prediction</p>
+<p>The model arguments are the same as <cite>LGTAggregated</cite> with some additional arguments</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#orbit.models.lgt.LGTAggregated" title="orbit.models.lgt.LGTAggregated"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.LGTAggregated</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="orbit.models.dlt.DLTFull">
+<em class="property">class </em><code class="sig-prename descclassname">orbit.models.dlt.</code><code class="sig-name descname">DLTFull</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.dlt.DLTFull" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#orbit.models.lgt.LGTFull" title="orbit.models.lgt.LGTFull"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.LGTFull</span></code></a>, <a class="reference internal" href="#orbit.models.dlt.BaseDLT" title="orbit.models.dlt.BaseDLT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.dlt.BaseDLT</span></code></a></p>
+<p>Concrete DLT model for full prediction</p>
+<p>The model arguments are the same as <cite>LGTFull</cite> with some additional arguments</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#orbit.models.lgt.LGTFull" title="orbit.models.lgt.LGTFull"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.LGTFull</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="class">
+<dt id="orbit.models.dlt.DLTMAP">
+<em class="property">class </em><code class="sig-prename descclassname">orbit.models.dlt.</code><code class="sig-name descname">DLTMAP</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.dlt.DLTMAP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#orbit.models.lgt.LGTMAP" title="orbit.models.lgt.LGTMAP"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.LGTMAP</span></code></a>, <a class="reference internal" href="#orbit.models.dlt.BaseDLT" title="orbit.models.dlt.BaseDLT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.dlt.BaseDLT</span></code></a></p>
+<p>Concrete DLT model for MAP (Maximum a Posteriori) prediction</p>
+<p>The model arguments are the same as <cite>LGTNAP</cite> with some additional arguments</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.LGTNAP</span></code></p>
+</div>
 </dd></dl>
 
 </div>
