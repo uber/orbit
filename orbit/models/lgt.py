@@ -19,11 +19,55 @@ from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
 
 
-# todo: docstrings for LGT model
-
-
 class BaseLGT(BaseModel):
-    """Base LGT model object with shared functionality for Full, Aggregated, and MAP methods"""
+    """Base LGT model object with shared functionality for Full, Aggregated, and MAP methods
+
+    Parameters
+    ----------
+    response_col : str
+        Name of response variable column, default 'y'
+    date_col : str
+        Name of date variable column, default 'ds'
+    regressor_col : list
+        Names of regressor columns, if any
+    seasonality : int
+        Length of seasonality
+    is_multiplicative : bool
+        Boolean indicator if model is multiplicative, default True.
+        If True, model will apply `np.log` to all values before fitting and
+        return prediction at original scale with `np.exp`
+    regressor_sign :  list
+        list with values { '+', '=' }. '+' indicates regressor coefficient estimates are
+        constrained to [0, inf). '=' indicates regressor coefficient estimates
+        can be any value between (-inf, inf). The length of `regressor_sign` must be
+        the same length as `regressor_col`. If None, all elements of list will be set
+        to '='.
+    regressor_beta_prior : list
+        list of prior float values for regressor coefficient betas. The length of `regressor_beta_prior`
+        must be the same length as `regressor_col`. If None, use non-informative priors.
+    regressor_sigma_prior : list
+        list of prior float values for regressor coefficient sigmas. The length of `regressor_sigma_prior`
+        must be the same length as `regressor_col`. If None, use non-informative priors.
+    regression_penalty : { 'fixed_ridge', 'lasso', 'auto_ridge' }
+        regression penalty method
+    lasso_scale : float
+        float value between [0, 1], applicable only if `regression_penalty` == 'lasso'
+    auto_ridge_scale : float
+        float value between [0, 1], applicable only if `regression_penalty` == 'auto_ridge'
+    seasonality_sm_input : float
+        float value between [0, 1], applicable only if `seasonality` > 1. A larger value puts
+        more weight on the current seasonality.
+        If None, the model will estimate this value.
+    slope_sm_input : float
+        float value between [0, 1]. A larger value puts more weight on the current slope.
+        If None, the model will estimate this value.
+    level_sm_input : float
+        float value between [0, 1]. A larger value puts more weight on the current level.
+        If None, the model will estimate this value.
+    kwargs
+        To specify `estimator_type` or additional args for the specified `estimator_type`
+
+    """
     _data_input_mapper = constants.DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
     _model_name = 'lgt'
@@ -767,9 +811,27 @@ class BaseLGT(BaseModel):
 
 
 class LGTFull(BaseLGT):
+    """Concrete LGT model for full prediction
+
+    In full prediction, the prediction occurs as a function of each parameter posterior sample,
+    and the prediction results are aggregated after prediction. Prediction will
+    always return the median (aka 50th percentile) along with any additional percentiles that
+    are specified.
+
+    Parameters
+    ----------
+    n_bootstrap_draws : int
+        Number of bootstrap samples to draw from the initial MCMC or VI posterior samples.
+        If None, use the original posterior draws.
+    prediction_percentiles : list
+        List of integers of prediction percentiles that should be returned on prediction.
+    kwargs
+        Additional args to pass to parent classes.
+
+    """
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
 
-    def __init__(self, n_bootstrap_draws=-1, prediction_percentiles=None, **kwargs):
+    def __init__(self, n_bootstrap_draws=None, prediction_percentiles=None, **kwargs):
         # todo: assert compatible estimator
         super().__init__(**kwargs)
         self.n_bootstrap_draws = n_bootstrap_draws
@@ -777,6 +839,7 @@ class LGTFull(BaseLGT):
 
         # set default args
         self._prediction_percentiles = None
+        self._n_bootstrap_draws = self.n_bootstrap_draws
         self._set_default_args()
 
         # validator model / estimator compatibility
@@ -787,6 +850,9 @@ class LGTFull(BaseLGT):
             self._prediction_percentiles = list()
         else:
             self._prediction_percentiles = copy(self.prediction_percentiles)
+
+        if not self.n_bootstrap_draws:
+            self._n_bootstrap_draws = -1
 
     def _bootstrap(self, n):
         """Draw `n` number of bootstrap samples from the posterior_samples.
@@ -850,13 +916,14 @@ class LGTFull(BaseLGT):
         return aggregate_df
 
     def predict(self, df):
+        """Return model predictions as a function of fitted model and df"""
         # raise if model is not fitted
         if not self.is_fitted():
             raise PredictionException("Model is not fitted yet.")
 
         # if bootstrap draws, replace posterior samples with bootstrap
-        posterior_samples = self._bootstrap(self.n_bootstrap_draws) \
-            if self.n_bootstrap_draws > 1 \
+        posterior_samples = self._bootstrap(self._n_bootstrap_draws) \
+            if self._n_bootstrap_draws > 1 \
             else self._posterior_samples
 
         predictions_array = self._predict(
@@ -877,6 +944,17 @@ class LGTFull(BaseLGT):
 
 
 class LGTAggregated(BaseLGT):
+    """Concrete LGT model for aggregated posterior prediction
+
+    In aggregated prediction, the parameter posterior samples are reduced using `aggregate_method`
+    before performing a single prediction.
+
+    Parameters
+    ----------
+    aggregate_method : { 'mean', 'median' }
+        Method used to reduce parameter posterior samples
+
+    """
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
 
     def __init__(self, aggregate_method='mean', **kwargs):
@@ -925,6 +1003,14 @@ class LGTAggregated(BaseLGT):
 
 
 class LGTMAP(BaseLGT):
+    """Concrete LGT model for MAP (Maximum a Posteriori) prediction
+
+    Similar to `LGTAggregated` but predition is based on Maximum a Posteriori (aka Mode)
+    of the posterior.
+
+    This model only supports MAP estimating `estimator_type`s
+
+    """
     _supported_estimator_types = [StanEstimatorMAP, PyroEstimatorMAP]
 
     def __init__(self, estimator_type=StanEstimatorMAP, **kwargs):
