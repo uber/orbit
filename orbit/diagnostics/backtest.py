@@ -13,6 +13,7 @@ from orbit.constants.palette import QualitativePalette
 
 class TimeSeriesSplitter(object):
     """ Split time series observations into train-test style
+
     """
 
     def __init__(self, df, min_train_len, incremental_len, forecast_len, n_splits=None,
@@ -198,67 +199,104 @@ class TimeSeriesSplitter(object):
         return ax
 
 
-class Evaluator(object):
-    """Evaluator for Orbit Model
-
-    Parameters
-    ----------
-    model : Orbit
-        Fitted Orbit model on which to evaluate
-    test_df : pd.DataFrame
-        DataFrame with actuals and predictions for test period
-    train_df : pd.DataFrame
-        DataFrame with actuals and predictions for training period.
-        For evaluations that require distinction between train and test period [optional]
-
-    """
-    def __init__(self, model, test_df, metric='smape', train_df=None):
-        self.model = model
-        self.test_df = test_df
-        self.metric = metric
-        self.train_df = train_df
-
-    def score_by_time(self):
-        """Returns a DataFrame with scores for each time steps
-
-        This method is only applicable for metrics in which non-aggregated metrics is meaningful.
-        For example, MASE cannot reveal metrics at each time step, only in aggregate.
-        """
-        pass
-
-    def score(self):
-        """Returns a scalar evaluation metric"""
-        pass
-
-
 class Backtester(object):
-    """Evaluator for each split
+    """Used to iteratively fit model on a given data splitter
 
-    Parameters
-    ----------
-    model : Orbit
-        An initialized orbit model (not fitted)
-    splitter : TimeSeriesSplitter
-        A timeseries data splitter object
-    metrics : list
-        List of metrics on which to return results. If None, default value
-        is
-        ['smape', 'mape']
     """
-    def __init__(self, model, splitter, metrics=None):
+    def __init__(self, model, df, **splitter_kwargs):
         self.model = model
-        self.splitter = splitter
+        self.df = df
 
-        # default metrics if not specified
-        if metrics is None:
-            self.metrics = ['smape', 'mape']
-        else:
-            self.metrics = metrics
+        self._splitter_args = splitter_kwargs
 
-    def score_by_time(self):
-        """Returns scores at each time step for each split for each metric"""
-        pass
+        # create splitter object to split data
+        self._splitter = None
+        self._set_splitter()
 
-    def score(self):
-        """Returns scalar evaluation metric for each split for each metric"""
-        pass
+        # init private vars
+        self._n_splits = 0
+        self._set_n_splits()
+
+        self._score_df = pd.DataFrame(
+            {}, columns=['split_key', 'training_data', 'actuals', 'prediction']
+        )
+
+        # self._train_actuals = list()
+        # self._test_actuals = list()
+        # self._train_predictions = list()
+        # self._test_predictions = list()
+        self._fitted_models = list()
+        self._splitter_scheme = list()
+
+    def _make_splitter(self):
+        df = self.df
+        date_col = self.model.date_col
+        splitter_args = self._splitter_args
+        splitter = TimeSeriesSplitter(df=df, date_col=date_col, **splitter_args)
+        return splitter
+
+    def _set_splitter(self):
+        self._splitter = self._make_splitter()
+
+    def get_splitter(self):
+        return self._splitter
+
+    def _set_n_splits(self):
+        split_scheme = self._splitter.get_scheme()
+        n_splits = len(split_scheme.keys())
+        self._n_splits = n_splits
+
+    def fit_score(self):
+        splitter = self._splitter
+        model = self.model
+        response_col = model.response_col
+        for train_df, test_df, scheme, key in splitter.split():
+            model_copy = deepcopy(model)
+            model_copy.fit(train_df)
+            train_predictions = model_copy.predict(train_df)
+            test_predictions = model_copy.predict(test_df)
+
+            # set attributes
+            self._fitted_models.append(model_copy)
+            self._splitter_scheme.append(scheme)
+
+            # set df attribute
+            # join train
+            train_response = train_df[response_col].rename('actuals', axis='columns')
+            train_values = pd.concat((train_response, train_predictions['prediction']), axis=1)
+            train_values['training_data'] = True
+            # join test
+            test_response = test_df[response_col].rename('actuals', axis='columns')
+            test_values = pd.concat((test_response, test_predictions['prediction']), axis=1)
+            test_values['training_data'] = False
+            # union train/test
+            both_values = pd.concat((train_values, test_values), axis=0)
+            both_values['split_key'] = key
+            # union each splits
+            self._score_df = pd.concat((self._score_df, both_values), axis=0).reset_index(drop=True)
+
+    def get_score_df(self):
+        return self._score_df
+
+    def get_fitted_model(self):
+        return self._fitted_models
+
+    def get_scheme(self):
+        return self._splitter_scheme
+
+    @staticmethod
+    def score(metric, *args, **kwargs):
+        """Run arbitrary evaluation metrics
+
+        Parameters
+        ----------
+        metric : callable
+        args : positional args for callable
+        kwargs: keyword args for callable
+
+        Returns
+        -------
+        callable's native output
+
+        """
+        return metric(*args, **kwargs)
