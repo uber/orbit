@@ -1,24 +1,8 @@
 import numpy as np
 EPS = 1e-5
 
-# utilities/loss to evaluate model performance
-
 
 def smape(actual, predicted):
-    ''' calculate symmetric mape
-
-    Parameters
-    ----------
-    actual: array-like
-        true values
-    pred: array-like
-        prediction values
-
-    Returns
-    -------
-    float
-        symmetric mape value
-    '''
     filtered = (np.abs(actual) > EPS) & (np.abs(predicted) > EPS)
     actual = actual[filtered]
     predicted = predicted[filtered]
@@ -26,20 +10,6 @@ def smape(actual, predicted):
 
 
 def mape(actual, predicted):
-    ''' calculate mape metric
-
-    Parameters
-    ----------
-    actual: array-like
-        true values
-    pred: array-like
-        prediction values
-
-    Returns
-    -------
-    float
-        mape value
-    '''
     filtered = np.abs(actual) > EPS
     actual = actual[filtered]
     predicted = predicted[filtered]
@@ -47,20 +17,6 @@ def mape(actual, predicted):
 
 
 def wmape(actual, predicted):
-    ''' calculate weighted mape metric
-
-    Parameters
-    ----------
-    actual: array-like
-        true values
-    pred: array-like
-        prediction values
-
-    Returns
-    -------
-    float
-        wmape value
-    '''
     filtered = np.abs(actual) > EPS
     actual = actual[filtered]
     predicted = predicted[filtered]
@@ -68,41 +24,37 @@ def wmape(actual, predicted):
     return np.sum(weights * np.abs((actual - predicted) / actual))
 
 
+def mae(actual, predicted):
+    return np.mean(np.abs(actual - predicted))
+
+
 def mse(actual, predicted):
-    ''' calculate mse metric
-
-    Parameters
-    ----------
-    actual: array-like
-        true values
-    pred: array-like
-        prediction values
-
-    Returns
-    -------
-    float
-        mse value
-    '''
-
     return np.mean(np.square(actual - predicted))
 
 
-def mse_naive(observed, exclude_leading_zeros=True):
-    ''' calculate mse using last observed value as predictor
-    Parameters
-    ----------
-    actual: array-like
-        observed values
-    Returns
-    -------
-    float
-        mse value
-    '''
-    actual = observed[1:]
-    predicted = observed[:-1]
-    if exclude_leading_zeros:
-        first_non_zero = np.min(np.nonzero(predicted))
-        actual = actual[first_non_zero:]
-        predicted = predicted[first_non_zero:]
+def rmsse(test_actual, test_predicted, train_actual):
+    """Computes Root Mean Squared Scaled Error (RMSSE)
 
-    return mse(actual, predicted)
+    A variant of the well-known Mean Absolute Scaled Error (MASE) proposed by Hyndman and Koehler (2006)
+
+    Intuitively, the general idea is to measure additional value added by the model
+    compared to a naive lag-1 predictor.
+
+    .. math::
+        \sqrt{\frac{1}{h}\frac{\sum^{n+h}_{t=n+1}(Y_t-\hat{Y}_t)^2}{\frac{1}{n-1}\sum^{n}_{t=2}{(Y_t-Y_{t-1})^2}
+
+    Notes
+    -----
+    Reference from https://mofc.unic.ac.cy/m5-guidelines/
+
+    """
+
+    # exclude leading zeros for training
+    first_nz = np.min(np.flatnonzero(train_actual))
+    train_actual = test_actual[first_nz:]
+
+    lag1_mse = mse(train_actual[1:], train_actual[:-1])
+
+    forecast_mse = mse(test_actual, test_predicted)
+
+    return np.sqrt(forecast_mse / lag1_mse)

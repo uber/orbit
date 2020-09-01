@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 
 from orbit.diagnostics.backtest import TimeSeriesSplitter, Backtester
+from orbit.diagnostics.metrics import smape, wmape, mape, mse, mae, rmsse
 from orbit.models.lgt import LGTMAP
 
 
@@ -39,6 +40,10 @@ def test_backtester(iclaims_training_data):
         forecast_len=20,
     )
 
-    backtester.fit_score()
+    backtester.fit_predict()
+    eval_out = backtester.score()
+    evaluated_metrics = set(eval_out['metric_name'].tolist())
 
-    assert True
+    expected_metrics = [x.__name__ for x in backtester._default_metrics]
+
+    assert set(expected_metrics) == evaluated_metrics

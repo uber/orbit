@@ -2,13 +2,12 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy
+import inspect
 
-# from orbit.utils.metrics import (
-#     smape, wmape, mape, mse,
-# )
-from orbit.exceptions import BacktestException
-from orbit.constants.constants import TimeSeriesSplitSchemeNames
-from orbit.constants.palette import QualitativePalette
+from .metrics import smape, wmape, mape, mse, mae, rmsse
+from ..exceptions import BacktestException
+from ..constants.constants import TimeSeriesSplitSchemeNames
+from ..constants.palette import QualitativePalette
 
 
 class TimeSeriesSplitter(object):
@@ -200,9 +199,9 @@ class TimeSeriesSplitter(object):
 
 
 class Backtester(object):
-    """Used to iteratively fit model on a given data splitter
+    """Used to iteratively fit model on a given data splitter"""
+    _default_metrics = [smape, wmape, mape, mse, mae, rmsse]
 
-    """
     def __init__(self, model, df, **splitter_kwargs):
         self.model = model
         self.df = df
@@ -216,15 +215,19 @@ class Backtester(object):
         # init private vars
         self._n_splits = 0
         self._set_n_splits()
+        self._test_actual = None
+        self._test_predicted = None
+        self._train_actual = None
+        self._train_predicted = None
 
-        self._score_df = pd.DataFrame(
+        # init df for actuals and predictions
+        self._predicted_df = pd.DataFrame(
             {}, columns=['split_key', 'training_data', 'actuals', 'prediction']
         )
 
-        # self._train_actuals = list()
-        # self._test_actuals = list()
-        # self._train_predictions = list()
-        # self._test_predictions = list()
+        # score df
+        self._score_df = pd.DataFrame()
+
         self._fitted_models = list()
         self._splitter_scheme = list()
 
@@ -246,7 +249,17 @@ class Backtester(object):
         n_splits = len(split_scheme.keys())
         self._n_splits = n_splits
 
-    def fit_score(self):
+    def fit_predict(self):
+        """Fit and predict on each data split and set predicted_df
+
+        Since this part of the backtesting is generally the most expensive, Backtester
+        breaks up fit/predict and scoring into two separate calls
+
+        Returns
+        -------
+        None
+
+        """
         splitter = self._splitter
         model = self.model
         response_col = model.response_col
@@ -259,6 +272,10 @@ class Backtester(object):
             # set attributes
             self._fitted_models.append(model_copy)
             self._splitter_scheme.append(scheme)
+            self._test_actual = test_df[response_col].to_numpy()
+            self._test_predicted = test_predictions['prediction'].to_numpy()
+            self._train_actual = train_df[response_col].to_numpy()
+            self._train_predicted = train_predictions['prediction'].to_numpy()
 
             # set df attribute
             # join train
@@ -273,30 +290,84 @@ class Backtester(object):
             both_values = pd.concat((train_values, test_values), axis=0)
             both_values['split_key'] = key
             # union each splits
-            self._score_df = pd.concat((self._score_df, both_values), axis=0).reset_index(drop=True)
+            self._predicted_df = pd.concat((self._predicted_df, both_values), axis=0).reset_index(drop=True)
 
-    def get_score_df(self):
-        return self._score_df
+    def get_predicted_df(self):
+        return self._predicted_df
 
-    def get_fitted_model(self):
+    def get_fitted_models(self):
         return self._fitted_models
 
     def get_scheme(self):
         return self._splitter_scheme
 
+    def _combine_train_and_test(self):
+        # todo: concatenate train and test to evaluate metrics collectively on both training and test data
+        pass
+
     @staticmethod
-    def score(metric, *args, **kwargs):
-        """Run arbitrary evaluation metrics
+    def _get_metric_callable_signature(metric_callable):
+        metric_args = inspect.getfullargspec(metric_callable)
+        args = metric_args.args
+        return set(args)
+
+    def _validate_metric_callables(self, metrics):
+        for metric in metrics:
+            metric_signature = self._get_metric_callable_signature(metric)
+            if metric_signature == {'actual', 'predicted'}:
+                continue
+            elif metric_signature.issubset({'test_actual', 'test_predicted', 'train_actual', 'train_predicted'}):
+                continue
+            else:
+                raise BacktestException("metric callable does not have a supported function signature")
+
+    def _evaluate_metric(self, metric):
+        # signature already validated in `self._validate_metric_callable()` so the following
+        # values for metric_signature already are only for valid signatures
+        metric_signature = self._get_metric_callable_signature(metric)
+        if metric_signature == {'actual', 'predicted'}:
+            eval_out = metric(actual=self._test_actual, predicted=self._test_predicted)
+        else:
+            # get signature
+            _valid_args = ['_' + x for x in metric_signature]  # add leading underscore to found signatures
+            valid_arg_vals = [getattr(self, x) for x in _valid_args]  # get private variable eg `self._test_actual`
+            # dictionary of metric args and arg value
+            valid_kwargs = {k: v for k, v in zip(metric_signature, valid_arg_vals)}
+            eval_out = metric(**valid_kwargs)
+
+        return eval_out
+
+    def score(self, metrics=None):
+        """Scores predictions using the provided list of metrics
+
+        The following criteria must be met to be a valid callable
+
+        1. All metric callables are required to have `actual` and `predicted` as its input signature. In the case
+        that the metric relies on both data from training and testing, it must have `test_actual` and `test_predicted`
+        as its input signature and optionally `train_actual` and/or `train_predicted`.
+
+        2. All callables must return a scalar evaluation value
 
         Parameters
         ----------
-        metric : callable
-        args : positional args for callable
-        kwargs: keyword args for callable
-
-        Returns
-        -------
-        callable's native output
+        metrics : list
+            list of callables for metric evaluation. If None, default to using all
+            built-in Backtester metrics. See `Backtester._default_metrics`
 
         """
-        return metric(*args, **kwargs)
+        if metrics is None:
+            metrics = self._default_metrics
+
+        self._validate_metric_callables(metrics)
+
+        # for test metrics
+        eval_out_list = list()
+        for metric in metrics:
+            eval_out = self._evaluate_metric(metric)
+            eval_out_list.append(eval_out)
+
+        metrics_str = [x.__name__ for x in metrics]  # metric names string
+        self._score_df = pd.DataFrame(metrics_str, columns=['metric_name'])
+        self._score_df['metric_values'] = eval_out_list
+
+        return self._score_df
