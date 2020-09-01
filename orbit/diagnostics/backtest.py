@@ -11,9 +11,7 @@ from ..constants.palette import QualitativePalette
 
 
 class TimeSeriesSplitter(object):
-    """ Split time series observations into train-test style
-
-    """
+    """Cross validation splitter for time series data"""
 
     def __init__(self, df, min_train_len, incremental_len, forecast_len, n_splits=None,
                  window_type='expanding', date_col=None):
@@ -198,7 +196,7 @@ class TimeSeriesSplitter(object):
         return ax
 
 
-class Backtester(object):
+class BackTester(object):
     """Used to iteratively fit model on a given data splitter"""
     _default_metrics = [smape, wmape, mape, mse, mae, rmsse]
 
@@ -222,7 +220,7 @@ class Backtester(object):
 
         # init df for actuals and predictions
         self._predicted_df = pd.DataFrame(
-            {}, columns=['split_key', 'training_data', 'actuals', 'prediction']
+            {}, columns=['date', 'split_key', 'training_data', 'actuals', 'prediction']
         )
 
         # score df
@@ -252,7 +250,7 @@ class Backtester(object):
     def fit_predict(self):
         """Fit and predict on each data split and set predicted_df
 
-        Since this part of the backtesting is generally the most expensive, Backtester
+        Since this part of the backtesting is generally the most expensive, BackTester
         breaks up fit/predict and scoring into two separate calls
 
         Returns
@@ -263,6 +261,7 @@ class Backtester(object):
         splitter = self._splitter
         model = self.model
         response_col = model.response_col
+        date_col = model.date_col
         for train_df, test_df, scheme, key in splitter.split():
             model_copy = deepcopy(model)
             model_copy.fit(train_df)
@@ -279,12 +278,14 @@ class Backtester(object):
 
             # set df attribute
             # join train
+            train_dates = train_df[date_col].rename('date', axis='columns')
             train_response = train_df[response_col].rename('actuals', axis='columns')
-            train_values = pd.concat((train_response, train_predictions['prediction']), axis=1)
+            train_values = pd.concat((train_dates, train_response, train_predictions['prediction']), axis=1)
             train_values['training_data'] = True
             # join test
+            test_dates = test_df[date_col].rename('date', axis='columns')
             test_response = test_df[response_col].rename('actuals', axis='columns')
-            test_values = pd.concat((test_response, test_predictions['prediction']), axis=1)
+            test_values = pd.concat((test_dates, test_response, test_predictions['prediction']), axis=1)
             test_values['training_data'] = False
             # union train/test
             both_values = pd.concat((train_values, test_values), axis=0)
@@ -302,8 +303,9 @@ class Backtester(object):
         return self._splitter_scheme
 
     def _combine_train_and_test(self):
-        # todo: concatenate train and test to evaluate metrics collectively on both training and test data
-        pass
+        train_and_test_actual = np.concatenate((self._train_actual, self._test_actual), axis=0)
+        train_and_test_predicted = np.concatenate((self._train_predicted, self._test_predicted), axis=0)
+        return train_and_test_actual, train_and_test_predicted
 
     @staticmethod
     def _get_metric_callable_signature(metric_callable):
@@ -321,7 +323,7 @@ class Backtester(object):
             else:
                 raise BacktestException("metric callable does not have a supported function signature")
 
-    def _evaluate_metric(self, metric):
+    def _evaluate_test_metric(self, metric):
         # signature already validated in `self._validate_metric_callable()` so the following
         # values for metric_signature already are only for valid signatures
         metric_signature = self._get_metric_callable_signature(metric)
@@ -337,7 +339,7 @@ class Backtester(object):
 
         return eval_out
 
-    def score(self, metrics=None):
+    def score(self, metrics=None, include_train=False):
         """Scores predictions using the provided list of metrics
 
         The following criteria must be met to be a valid callable
@@ -352,7 +354,11 @@ class Backtester(object):
         ----------
         metrics : list
             list of callables for metric evaluation. If None, default to using all
-            built-in Backtester metrics. See `Backtester._default_metrics`
+            built-in BackTester metrics. See `BackTester._default_metrics`
+        include_train : bool
+            If True, include training data in metric evaluation. Evaluation will only include
+            metric callables with `actual` and `predicted` args and will ignore callables with extended args.
+            Default, False.
 
         """
         if metrics is None:
@@ -360,11 +366,24 @@ class Backtester(object):
 
         self._validate_metric_callables(metrics)
 
-        # for test metrics
-        eval_out_list = list()
-        for metric in metrics:
-            eval_out = self._evaluate_metric(metric)
-            eval_out_list.append(eval_out)
+        # for metric evaluation with test data only (default)
+        if not include_train:
+            eval_out_list = list()
+
+            for metric in metrics:
+                eval_out = self._evaluate_test_metric(metric)
+                eval_out_list.append(eval_out)
+
+        # for metric evaluation with combined train and test
+        else:
+            train_and_test_actual, train_and_test_predicted = self._combine_train_and_test()
+
+            # only supports simple metrics function signature
+            metrics = list(filter(lambda x: self._get_metric_callable_signature(x) == {'actual', 'predicted'}, metrics))
+            eval_out_list = list()
+            for metric in metrics:
+                eval_out = metric(actual=train_and_test_actual, predicted=train_and_test_predicted)
+                eval_out_list.append(eval_out)
 
         metrics_str = [x.__name__ for x in metrics]  # metric names string
         self._score_df = pd.DataFrame(metrics_str, columns=['metric_name'])
