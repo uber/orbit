@@ -387,6 +387,6 @@ class BackTester(object):
             train_score_df['metric_values'] = train_eval_out_list
             train_score_df['is_training_metric'] = True
 
-            self._score_df = pd.concat((self._score_df, train_score_df), axis=0)
+            self._score_df = pd.concat((self._score_df, train_score_df), axis=0).reset_index(drop=True)
 
         return self._score_df
