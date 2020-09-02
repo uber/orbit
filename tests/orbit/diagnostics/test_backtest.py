@@ -68,7 +68,7 @@ def test_backtester_with_training_data(iclaims_training_data):
     )
 
     backtester.fit_predict()
-    eval_out = backtester.score(include_train=True)
+    eval_out = backtester.score(include_training_metrics=True)
     evaluated_test_metrics = set(eval_out.loc[~eval_out['is_training_metric'], 'metric_name'].tolist())
     evaluated_train_metrics = set(eval_out.loc[eval_out['is_training_metric'], 'metric_name'].tolist())
 
