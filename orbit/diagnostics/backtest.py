@@ -334,7 +334,7 @@ class BackTester(object):
 
         return eval_out
 
-    def score(self, metrics=None, include_train=False):
+    def score(self, metrics=None, include_training_metrics=False):
         """Scores predictions using the provided list of metrics
 
         The following criteria must be met to be a valid callable
@@ -350,8 +350,8 @@ class BackTester(object):
         metrics : list
             list of callables for metric evaluation. If None, default to using all
             built-in BackTester metrics. See `BackTester._default_metrics`
-        include_train : bool
-            If True, include training data in metric evaluation. Evaluation will only include
+        include_training_metrics : bool
+            If True, also perform metrics evaluation on training data. Evaluation will only include
             metric callables with `actual` and `predicted` args and will ignore callables with extended args.
             Default, False.
 
@@ -374,7 +374,7 @@ class BackTester(object):
         self._score_df['is_training_metric'] = False
 
         # for metric evaluation with combined train and test
-        if include_train:
+        if include_training_metrics:
             # only supports simple metrics function signature
             metrics = list(filter(lambda x: self._get_metric_callable_signature(x) == {'actual', 'predicted'}, metrics))
             train_eval_out_list = list()
