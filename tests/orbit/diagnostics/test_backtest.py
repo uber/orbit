@@ -69,11 +69,15 @@ def test_backtester_with_training_data(iclaims_training_data):
 
     backtester.fit_predict()
     eval_out = backtester.score(include_train=True)
-    evaluated_metrics = set(eval_out['metric_name'].tolist())
+    evaluated_test_metrics = set(eval_out.loc[~eval_out['is_training_metric'], 'metric_name'].tolist())
+    evaluated_train_metrics = set(eval_out.loc[eval_out['is_training_metric'], 'metric_name'].tolist())
 
-    expected_metrics = list(filter(
+    expected_test_metrics = [x.__name__ for x in backtester._default_metrics]
+
+    expected_train_metrics = list(filter(
         lambda x: backtester._get_metric_callable_signature(x) == {'actual', 'predicted'}, backtester._default_metrics)
     )
-    expected_metrics = [x.__name__ for x in expected_metrics]
+    expected_train_metrics = [x.__name__ for x in expected_train_metrics]
 
-    assert set(expected_metrics) == evaluated_metrics
+    assert set(expected_test_metrics) == evaluated_test_metrics
+    assert set(expected_train_metrics) == evaluated_train_metrics

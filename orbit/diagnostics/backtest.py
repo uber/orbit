@@ -302,11 +302,6 @@ class BackTester(object):
     def get_scheme(self):
         return self._splitter_scheme
 
-    def _combine_train_and_test(self):
-        train_and_test_actual = np.concatenate((self._train_actual, self._test_actual), axis=0)
-        train_and_test_predicted = np.concatenate((self._train_predicted, self._test_predicted), axis=0)
-        return train_and_test_actual, train_and_test_predicted
-
     @staticmethod
     def _get_metric_callable_signature(metric_callable):
         metric_args = inspect.getfullargspec(metric_callable)
@@ -366,27 +361,32 @@ class BackTester(object):
 
         self._validate_metric_callables(metrics)
 
-        # for metric evaluation with test data only (default)
-        if not include_train:
-            eval_out_list = list()
+        # test data metrics
+        eval_out_list = list()
 
-            for metric in metrics:
-                eval_out = self._evaluate_test_metric(metric)
-                eval_out_list.append(eval_out)
-
-        # for metric evaluation with combined train and test
-        else:
-            train_and_test_actual, train_and_test_predicted = self._combine_train_and_test()
-
-            # only supports simple metrics function signature
-            metrics = list(filter(lambda x: self._get_metric_callable_signature(x) == {'actual', 'predicted'}, metrics))
-            eval_out_list = list()
-            for metric in metrics:
-                eval_out = metric(actual=train_and_test_actual, predicted=train_and_test_predicted)
-                eval_out_list.append(eval_out)
+        for metric in metrics:
+            eval_out = self._evaluate_test_metric(metric)
+            eval_out_list.append(eval_out)
 
         metrics_str = [x.__name__ for x in metrics]  # metric names string
         self._score_df = pd.DataFrame(metrics_str, columns=['metric_name'])
         self._score_df['metric_values'] = eval_out_list
+        self._score_df['is_training_metric'] = False
+
+        # for metric evaluation with combined train and test
+        if include_train:
+            # only supports simple metrics function signature
+            metrics = list(filter(lambda x: self._get_metric_callable_signature(x) == {'actual', 'predicted'}, metrics))
+            train_eval_out_list = list()
+            for metric in metrics:
+                eval_out = metric(actual=self._train_actual, predicted=self._train_predicted)
+                train_eval_out_list.append(eval_out)
+
+            metrics_str = [x.__name__ for x in metrics]  # metric names string
+            train_score_df = pd.DataFrame(metrics_str, columns=['metric_name'])
+            train_score_df['metric_values'] = train_eval_out_list
+            train_score_df['is_training_metric'] = True
+
+            self._score_df = pd.concat((self._score_df, train_score_df), axis=0)
 
         return self._score_df
