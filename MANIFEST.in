@@ -5,7 +5,7 @@ include requirements.txt
 include requirements-test.txt
 include orbit/stan/*.stan
 
-prune orbit/stan_model
+prune orbit/stan_compiled
 
 recursive-include tests *
 recursive-exclude * __pycache__

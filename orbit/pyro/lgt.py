@@ -7,7 +7,7 @@ import pyro.distributions as dist
 torch.set_default_tensor_type('torch.DoubleTensor')
 
 
-class LGTModel:
+class Model:
     max_plate_nesting = 1  # max number of plates nested in model
 
     def __init__(self, data):
@@ -123,7 +123,7 @@ class LGTModel:
                 s[t] = init_sea[..., t]
             s[self.seasonality] = init_sea[..., 0]
         else:
-            s = torch.zeros(num_of_obs)
+            s = [torch.tensor(0.)] * num_of_obs
 
         # states initial condition
         b[0] = torch.zeros_like(slp_sm)
@@ -166,4 +166,3 @@ class LGTModel:
 
         extra_out.update({'b': b, 'l': l, 's': s, 'lgt_sum': lgt_sum})
         return extra_out
-

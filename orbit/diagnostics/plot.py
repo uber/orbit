@@ -10,7 +10,7 @@ import numpy as np
 from copy import deepcopy
 
 from orbit.constants.constants import PredictedComponents
-from orbit.utils.utils import is_empty_dataframe
+from orbit.utils.general import is_empty_dataframe
 from orbit.constants.palette import QualitativePalette
 
 
@@ -203,21 +203,21 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     """
     if not 'orbit' in str(mod.__class__):
         raise Exception("This plotting utility works for orbit model object only.")
-    if mod.infer_method != 'mcmc':
-        raise Exception("This plotting utility works for mcmc inference only.")
+    # if mod.infer_method != 'mcmc':
+    #     raise Exception("This plotting utility works for mcmc inference only.")
     if kind not in ['density', 'trace', 'pair']:
         raise Exception("kind must be one of 'density', 'trace', or 'pair'.")
 
-    posterior_samples = deepcopy(mod.posterior_samples)
+    posterior_samples = deepcopy(mod._posterior_samples)
 
-    if len(mod.positive_regressor_col) > 0:
-        for i, regressor in enumerate(mod.positive_regressor_col):
+    if len(mod._positive_regressor_col) > 0:
+        for i, regressor in enumerate(mod._positive_regressor_col):
             posterior_samples[regressor] = posterior_samples['pr_beta'][:,i]
-    if len(mod.regular_regressor_col) > 0:
-        for i, regressor in enumerate(mod.regular_regressor_col):
+    if len(mod._regular_regressor_col) > 0:
+        for i, regressor in enumerate(mod._regular_regressor_col):
             posterior_samples[regressor] = posterior_samples['rr_beta'][:, i]
 
-    params_ = mod.positive_regressor_col + mod.regular_regressor_col + ['obs_sigma']
+    params_ = mod._positive_regressor_col + mod._regular_regressor_col + ['obs_sigma']
     if incl_trend_params:
         # trend params in LGT or DLT
         params_ += ['gt_pow', 'lt_coef', 'gt_coef', 'gb', 'gl']
@@ -263,13 +263,13 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         for i, param in enumerate(params_):
             samples = posterior_samples[param]
             # chain order is preserved in the posterior samples
-            chained_samples = np.array_split(samples, mod.chains)
+            chained_samples = np.array_split(samples, mod.estimator.chains)
             # mean = np.mean(samples)
             # median = np.median(samples)
             # cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level)/2), \
             #                         np.percentile(samples, 100 * (1 + ci_level)/2)
 
-            for k in range(mod.chains):
+            for k in range(mod.estimator.chains):
                 axes[i].plot(chained_samples[k], lw=1, alpha=.5, label=f'chain {k+1}')
             axes[i].set_ylabel(param)
             # axes[i].legend()

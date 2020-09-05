@@ -6,28 +6,15 @@ Subpackages
 
 .. toctree::
 
-   orbit.backtest
+   orbit.constants
+   orbit.diagnostics
+   orbit.estimators
+   orbit.models
    orbit.pyro
    orbit.utils
 
 Submodules
 ----------
-
-orbit.dlt module
-----------------
-
-.. automodule:: orbit.dlt
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-orbit.estimator module
-----------------------
-
-.. automodule:: orbit.estimator
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 orbit.exceptions module
 -----------------------
@@ -37,18 +24,10 @@ orbit.exceptions module
    :undoc-members:
    :show-inheritance:
 
-orbit.lgt module
-----------------
+orbit.orbit module
+------------------
 
-.. automodule:: orbit.lgt
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-orbit.models module
--------------------
-
-.. automodule:: orbit.models
+.. automodule:: orbit.orbit
    :members:
    :undoc-members:
    :show-inheritance:

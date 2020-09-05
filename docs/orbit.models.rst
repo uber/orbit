@@ -1,29 +1,29 @@
-orbit.utils package
-===================
+orbit.models package
+====================
 
 Submodules
 ----------
 
-orbit.utils.general module
---------------------------
+orbit.models.base\_model module
+-------------------------------
 
-.. automodule:: orbit.utils.general
+.. automodule:: orbit.models.base_model
    :members:
    :undoc-members:
    :show-inheritance:
 
-orbit.utils.pyro module
+orbit.models.dlt module
 -----------------------
 
-.. automodule:: orbit.utils.pyro
+.. automodule:: orbit.models.dlt
    :members:
    :undoc-members:
    :show-inheritance:
 
-orbit.utils.stan module
+orbit.models.lgt module
 -----------------------
 
-.. automodule:: orbit.utils.stan
+.. automodule:: orbit.models.lgt
    :members:
    :undoc-members:
    :show-inheritance:
@@ -32,7 +32,7 @@ orbit.utils.stan module
 Module contents
 ---------------
 
-.. automodule:: orbit.utils
+.. automodule:: orbit.models
    :members:
    :undoc-members:
    :show-inheritance:

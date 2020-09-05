@@ -15,7 +15,7 @@ def compile_stan_model(stan_model_name):
     )
     compiled_model = pkg_resources.resource_filename(
         'orbit',
-        'stan_model/{}.pkl'.format(stan_model_name)
+        'stan_compiled/{}.pkl'.format(stan_model_name)
     )
 
     # updated for py3
@@ -45,7 +45,7 @@ def get_compiled_stan_model(stan_model_name):
 
     model_file = pkg_resources.resource_filename(
         'orbit',
-        'stan_model/{}.pkl'.format(stan_model_name)
+        'stan_compiled/{}.pkl'.format(stan_model_name)
     )
     with open(model_file, 'rb') as f:
         return pickle.load(f)

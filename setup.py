@@ -19,7 +19,7 @@ AUTHOR = '''Edwin Ng <edwinng@uber.com>, Steve Yang <steve.yang@uber.com>,
             Huigang Chen <huigang@uber.com>, Zhishi Wang <zhishiw@uber.com>'''
 
 
-def read_long_description(filename="README.md"):
+def read_long_description(filename="README.rst"):
     with open(filename) as f:
         return f.read().strip()
 
