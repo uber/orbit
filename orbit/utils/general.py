@@ -23,7 +23,7 @@ def is_empty_dataframe(df):
     Parameters
     ----------
     df: pd.DataFrame
-        given input dataframe
+        Input dataframe
 
     Returns
     -------
@@ -47,3 +47,28 @@ def get_parent_path(current_file_path):
     """
 
     return os.path.abspath(os.path.join(current_file_path, os.pardir))
+
+
+def get_binary_col(df, columns=None):
+    """
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Input dataframe
+    columns: list
+        list of column labels to be checked
+
+    Returns:
+    -------
+        list
+        a subset list of column labels from the input set where their values are set([0,1])
+    """
+    result = []
+    binary_set = {0, 1}
+
+    if columns is None:
+        columns = df.columns.tolist()
+    for col in columns:
+        if set(df[col].values) == binary_set:
+            result.append(col)
+    return result

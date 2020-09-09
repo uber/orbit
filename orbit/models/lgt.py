@@ -17,6 +17,7 @@ from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
+from ..utils.general import get_binary_col
 
 
 class BaseLGT(BaseModel):
@@ -104,6 +105,7 @@ class BaseLGT(BaseModel):
         self._regressor_sign = self.regressor_sign
         self._regressor_beta_prior = self.regressor_beta_prior
         self._regressor_sigma_prior = self.regressor_sigma_prior
+        self._binary_regressor_col = None
 
         self._model_param_names = list()
         self._training_df_meta = None
@@ -299,24 +301,21 @@ class BaseLGT(BaseModel):
                 items=self._regular_regressor_col,).values
 
     def _log_transform_df(self, df, do_fit=False):
-        # transform the response column
-        if do_fit:
-            data_cols = [self.response_col] + self.regressor_col \
-                if self.regressor_col is not None \
-                else [self.response_col]
-            # make sure values are > 0
-            if np.any(df[data_cols] <= 0):
-                raise IllegalArgument('Response and Features must be a positive number')
-
-            df[self.response_col] = df[self.response_col].apply(np.log)
-
-        # transform the regressor columns if exist
+        # transform the required column(s)
         if self.regressor_col is not None:
+            # transform non-binary regressor
+            transform_regressor = [set(self.regressor_col) - set(self._binary_regressor_col)]
             # make sure values are > 0
-            if np.any(df[self.regressor_col] <= 0):
-                raise IllegalArgument('Features must be a positive number')
+            if np.any(df[transform_regressor] <= 0):
+                raise IllegalArgument('Non-binary features must be a positive number')
+            df[transform_regressor] = df[transform_regressor].apply(np.log)
 
-            df[self.regressor_col] = df[self.regressor_col].apply(np.log)
+        # if fit, also transform response
+        if do_fit:
+            # make sure values are > 0
+            if np.any(df[self.response_col] <= 0):
+                raise IllegalArgument('Response must be a positive number')
+            df[self.response_col] = df[self.response_col].apply(np.log)
 
         return df
 
@@ -365,8 +364,7 @@ class BaseLGT(BaseModel):
 
         self._set_regressor_matrix(df)  # depends on _num_of_observations
         self._set_init_values()
-        # TODO: maybe useful to calculate vanlia (adjusted) R-Squared
-        # self._adjust_smoothing_with_regression()
+        self._binary_regressor_col = get_binary_col(df, columns=self.regressor_col)
 
     def _set_model_param_names(self):
         """Model parameters to extract from Stan"""
