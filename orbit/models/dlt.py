@@ -4,7 +4,7 @@ import torch
 from copy import deepcopy
 
 from ..constants import dlt as constants
-from ..exceptions import IllegalArgument
+from ..exceptions import IllegalArgument, PredictionException
 from ..models.lgt import BaseLGT, LGTFull, LGTAggregated, LGTMAP
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 
