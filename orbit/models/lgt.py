@@ -34,8 +34,8 @@ class BaseLGT(BaseModel):
         Length of seasonality
     is_multiplicative : bool
         Boolean indicator if model is multiplicative, default True.
-        If True, model will apply `np.log` to all values before fitting and
-        return prediction at original scale with `np.exp`
+        If True, model will apply `np.log1p` to all values before fitting and
+        return prediction at original scale with `np.expm1`
     regressor_sign :  list
         list with values { '+', '=' }. '+' indicates regressor coefficient estimates are
         constrained to [0, inf). '=' indicates regressor coefficient estimates
@@ -299,24 +299,21 @@ class BaseLGT(BaseModel):
                 items=self._regular_regressor_col,).values
 
     def _log_transform_df(self, df, do_fit=False):
-        # transform the response column
-        if do_fit:
-            data_cols = [self.response_col] + self.regressor_col \
-                if self.regressor_col is not None \
-                else [self.response_col]
-            # make sure values are > 0
-            if np.any(df[data_cols] <= 0):
-                raise IllegalArgument('Response and Features must be a positive number')
-
-            df[self.response_col] = df[self.response_col].apply(np.log)
-
         # transform the regressor columns if exist
         if self.regressor_col is not None:
             # make sure values are > 0
             if np.any(df[self.regressor_col] <= 0):
                 raise IllegalArgument('Features must be a positive number')
 
-            df[self.regressor_col] = df[self.regressor_col].apply(np.log)
+            df[self.regressor_col] = df[self.regressor_col].apply(np.log1p)
+
+        # transform the response column during fitting
+        if do_fit:
+            # make sure values are > 0
+            if np.any(df[self.response_col] <= 0):
+                raise IllegalArgument('Response must be a positive number')
+
+            df[self.response_col] = df[self.response_col].apply(np.log1p)
 
         return df
 
