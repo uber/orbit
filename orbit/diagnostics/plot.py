@@ -70,30 +70,30 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
 
     ax.scatter(_training_actual_df[date_col].values,
                _training_actual_df[actual_col].values,
-               marker='.', color='black', alpha=0.5, s=70.0,
-               label=actual_col)
+               marker='.', color='black', alpha=0.8, s=70.0,
+               label='train response')
     ax.plot(_predicted_df[date_col].values,
             _predicted_df[pred_col].values,
-            marker=None, color='#12939A', label='prediction')
+            marker=None, color='#12939A', lw=2, label='prediction')
 
     if test_actual_df is not None:
         test_actual_df=test_actual_df.copy()
         test_actual_df[date_col] = pd.to_datetime(test_actual_df[date_col])
         ax.scatter(test_actual_df[date_col].values,
                    test_actual_df[actual_col].values,
-                   marker='.', color='#FF8C00', alpha=0.5, s=70.0,
-                   label=actual_col)
+                   marker='.', color='#FF8C00', alpha=0.8, s=70.0,
+                   label='test response')
 
     # prediction intervals
     if pred_quantiles_col:
         ax.fill_between(_predicted_df[date_col].values,
                         _predicted_df[pred_quantiles_col[1]].values,
                         _predicted_df[pred_quantiles_col[0]].values,
-                        facecolor='#42999E', alpha=0.2)
+                        facecolor='#42999E', alpha=0.5)
 
     ax.set_title(title, fontsize=16)
     ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
-    ax.legend()
+    ax.legend(loc='best')
     if path:
         plt.savefig(path)
     if is_visible:
@@ -128,7 +128,7 @@ def plot_predicted_components(predicted_df, date_col, figsize=None, path=None):
         x = predicted_df[date_col].dt.to_pydatetime()
         y = predicted_df[comp].values
         ax.plot(x, y, marker=None, color='#12939A')
-        ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.2)
+        ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
         ax.set_title(comp, fontsize=16)
     fig.tight_layout()
     if path:
