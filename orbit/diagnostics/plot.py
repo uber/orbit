@@ -20,7 +20,7 @@ if os.environ.get('DISPLAY', '') == '':
 
 
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, pred_col,
-                        title="", test_actual_df=None, pred_quantiles_col=[],
+                        title="", test_actual_df=None, pred_percentiles_col=[],
                         is_visible=True, figsize=None, path=None):
     """
     plot training actual response together with predicted data; if actual response of predicted
@@ -31,7 +31,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
         training actual response data frame. two columns required: actual_col and date_col
     predicted_df: pd.DataFrame
         predicted data response data frame. two columns required: actual_col and pred_col. If
-        user provide pred_quantiles_col, it needs to include them as well.
+        user provide pred_percentiles_col, it needs to include them as well.
     date_col: str
         the date column name
     actual_col: str
@@ -40,7 +40,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
         title of the plot
     test_actual_df: pd.DataFrame
        test actual response dataframe. two columns required: actual_col and date_co
-    pred_quantiles_col: list
+    pred_percentiles_col: list
         a list of two strings for prediction inference where first one for lower quantile and
         the second one for upper quantile
     is_visible: boolean
@@ -54,9 +54,9 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
 
     if is_empty_dataframe(training_actual_df) or is_empty_dataframe(predicted_df):
         raise ValueError("No prediction data or training response to plot.")
-    if len(pred_quantiles_col) != 2 and len(pred_quantiles_col) != 0:
-        raise ValueError("pred_quantiles_col must be either empty or length of 2.")
-    if not set([pred_col] + pred_quantiles_col).issubset(predicted_df.columns):
+    if len(pred_percentiles_col) != 2 and len(pred_percentiles_col) != 0:
+        raise ValueError("pred_percentiles_col must be either empty or length of 2.")
+    if not set([pred_col] + pred_percentiles_col).issubset(predicted_df.columns):
         raise ValueError("Prediction column(s) not found in predicted df.")
     _training_actual_df = training_actual_df.copy()
     _predicted_df=predicted_df.copy()
@@ -85,10 +85,10 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
                    label='test response')
 
     # prediction intervals
-    if pred_quantiles_col:
+    if pred_percentiles_col:
         ax.fill_between(_predicted_df[date_col].values,
-                        _predicted_df[pred_quantiles_col[1]].values,
-                        _predicted_df[pred_quantiles_col[0]].values,
+                        _predicted_df[pred_percentiles_col[1]].values,
+                        _predicted_df[pred_percentiles_col[0]].values,
                         facecolor='#42999E', alpha=0.5)
 
     ax.set_title(title, fontsize=16)
@@ -107,7 +107,7 @@ def plot_predicted_components(predicted_df, date_col, figsize=None, path=None):
     ----------
     predicted_df: pd.DataFrame
         predicted data response data frame. two columns required: actual_col and pred_col. If
-        user provide pred_quantiles_col, it needs to include them as well.
+        user provide pred_percentiles_col, it needs to include them as well.
     date_col: str
         the date column name
     figsize: tuple
