@@ -302,15 +302,13 @@ class BaseLGT(BaseModel):
         # transform the regressor columns if exist
         if self.regressor_col is not None:
             if np.any(df[self.regressor_col] <= -1):
-                raise IllegalArgument('Features must be greater than 1')
-
+                raise IllegalArgument('Features must be greater than -1')
             df[self.regressor_col] = df[self.regressor_col].apply(np.log1p)
 
         # transform the response column during fitting
         if do_fit:
-            if np.any(df[self.response_col] <= -1):
-                raise IllegalArgument('Response must be greater than 1')
-
+            if np.any(df[self.response_col] <= 0):
+                raise IllegalArgument('Response must be greater than 0')
             df[self.response_col] = df[self.response_col].apply(np.log1p)
 
         return df

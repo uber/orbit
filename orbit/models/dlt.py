@@ -1,6 +1,7 @@
 import pandas as pd
 from scipy.stats import nct
 import torch
+import numpy as np
 from copy import deepcopy
 
 from ..constants import dlt as constants
@@ -78,6 +79,22 @@ class BaseDLT(BaseLGT):
 
         if self._global_trend_option != constants.GlobalTrendOption.flat.value:
             self._model_param_names += [param.value for param in constants.GlobalTrendSamplingParameters]
+
+    # this overrides the LGT._log_transform_df since criteria slightly differs
+    def _log_transform_df(self, df, do_fit=False):
+        # transform the regressor columns if exist
+        if self.regressor_col is not None:
+            if np.any(df[self.regressor_col] <= -1):
+                raise IllegalArgument('Features must be greater than -1')
+            df[self.regressor_col] = df[self.regressor_col].apply(np.log1p)
+
+        # transform the response column during fitting
+        if do_fit:
+            if np.any(df[self.response_col] <= -1):
+                raise IllegalArgument('Response must be greater than -1')
+            df[self.response_col] = df[self.response_col].apply(np.log1p)
+
+        return df
 
     def _predict(self, posterior_estimates, df=None, include_error=False, decompose=False):
 
