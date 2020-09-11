@@ -347,7 +347,8 @@ class BaseDLT(BaseLGT):
 
         # for the multiplicative case
         if self.is_multiplicative:
-            pred_array = (torch.exp(pred_array)).numpy()
+            pred_array = (torch.expm1(pred_array)).numpy()
+            # the components below now will be approximate since we use expm1 in response transform
             trend_component = (torch.exp(trend_component)).numpy()
             seasonality_component = (torch.exp(seasonality_component)).numpy()
             regressor_component = (torch.exp(regressor_component)).numpy()
