@@ -80,22 +80,6 @@ class BaseDLT(BaseLGT):
         if self._global_trend_option != constants.GlobalTrendOption.flat.value:
             self._model_param_names += [param.value for param in constants.GlobalTrendSamplingParameters]
 
-    # this overrides the LGT._log_transform_df since criteria slightly differs
-    def _log_transform_df(self, df, do_fit=False):
-        # transform the regressor columns if exist
-        if self.regressor_col is not None:
-            if np.any(df[self.regressor_col] <= -1):
-                raise IllegalArgument('Features must be greater than -1')
-            df[self.regressor_col] = df[self.regressor_col].apply(np.log1p)
-
-        # transform the response column during fitting
-        if do_fit:
-            if np.any(df[self.response_col] <= -1):
-                raise IllegalArgument('Response must be greater than -1')
-            df[self.response_col] = df[self.response_col].apply(np.log1p)
-
-        return df
-
     def _predict(self, posterior_estimates, df=None, include_error=False, decompose=False):
 
         ################################################################
@@ -161,10 +145,6 @@ class BaseDLT(BaseLGT):
         training_df_meta = self._training_df_meta
         # remove reference from original input
         df = df.copy()
-        # for multiplicative model
-        if self.is_multiplicative:
-            df = self._log_transform_df(df, do_fit=False)
-
         # get prediction df meta
         prediction_df_meta = {
             'date_array': pd.to_datetime(df[self.date_col]).reset_index(drop=True),
@@ -345,18 +325,10 @@ class BaseDLT(BaseLGT):
         # sum components
         pred_array = trend_component + seasonality_component + regressor_component
 
-        # for the multiplicative case
-        if self.is_multiplicative:
-            pred_array = (torch.expm1(pred_array)).numpy()
-            # the components below now will be approximate since we use expm1 in response transform
-            trend_component = (torch.exp(trend_component)).numpy()
-            seasonality_component = (torch.exp(seasonality_component)).numpy()
-            regressor_component = (torch.exp(regressor_component)).numpy()
-        else:
-            pred_array = pred_array.numpy()
-            trend_component = trend_component.numpy()
-            seasonality_component = seasonality_component.numpy()
-            regressor_component = regressor_component.numpy()
+        pred_array = pred_array.numpy()
+        trend_component = trend_component.numpy()
+        seasonality_component = seasonality_component.numpy()
+        regressor_component = regressor_component.numpy()
 
         # if decompose output dictionary of components
         if decompose:

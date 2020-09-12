@@ -32,10 +32,6 @@ class BaseLGT(BaseModel):
         Names of regressor columns, if any
     seasonality : int
         Length of seasonality
-    is_multiplicative : bool
-        Boolean indicator if model is multiplicative, default True.
-        If True, model will apply `np.log1p` to all values before fitting and
-        return prediction at original scale with `np.expm1`
     regressor_sign :  list
         list with values { '+', '=' }. '+' indicates regressor coefficient estimates are
         constrained to [0, inf). '=' indicates regressor coefficient estimates
@@ -74,7 +70,7 @@ class BaseLGT(BaseModel):
     _supported_estimator_types = None  # set for each model
 
     def __init__(self, response_col='y', date_col='ds', regressor_col=None,
-                 seasonality=None, is_multiplicative=True,
+                 seasonality=None,
                  regressor_sign=None, regressor_beta_prior=None, regressor_sigma_prior=None,
                  regression_penalty='fixed_ridge', lasso_scale=0.5, auto_ridge_scale=0.5,
                  seasonality_sm_input=None, slope_sm_input=None, level_sm_input=None,
@@ -84,7 +80,6 @@ class BaseLGT(BaseModel):
         self.date_col = date_col
         self.regressor_col = regressor_col
         self.seasonality = seasonality
-        self.is_multiplicative = is_multiplicative
         self.regressor_sign = regressor_sign
         self.regressor_beta_prior = regressor_beta_prior
         self.regressor_sigma_prior = regressor_sigma_prior
@@ -298,21 +293,6 @@ class BaseLGT(BaseModel):
             self._regular_regressor_matrix = df.filter(
                 items=self._regular_regressor_col,).values
 
-    def _log_transform_df(self, df, do_fit=False):
-        # transform the regressor columns if exist
-        if self.regressor_col is not None:
-            if np.any(df[self.regressor_col] <= -1):
-                raise IllegalArgument('Features must be greater than -1')
-            df[self.regressor_col] = df[self.regressor_col].apply(np.log1p)
-
-        # transform the response column during fitting
-        if do_fit:
-            if np.any(df[self.response_col] <= 0):
-                raise IllegalArgument('Response must be greater than 0')
-            df[self.response_col] = df[self.response_col].apply(np.log1p)
-
-        return df
-
     def _set_init_values(self):
         """Set Stan init as a callable
 
@@ -346,9 +326,6 @@ class BaseLGT(BaseModel):
 
         self._validate_training_df(df)
         self._set_training_df_meta(df)
-
-        if self.is_multiplicative:
-            df = self._log_transform_df(df, do_fit=True)
 
         # a few of the following are related with training data.
         self._response = df[self.response_col].values
@@ -496,9 +473,6 @@ class BaseLGT(BaseModel):
         training_df_meta = self._training_df_meta
         # remove reference from original input
         df = df.copy()
-        # for multiplicative model
-        if self.is_multiplicative:
-            df = self._log_transform_df(df, do_fit=False)
 
         # get prediction df meta
         prediction_df_meta = {
@@ -675,18 +649,11 @@ class BaseLGT(BaseModel):
         # sum components
         pred_array = trend_component + seasonality_component + regressor_component
 
-        # for the multiplicative case
-        if self.is_multiplicative:
-            pred_array = (torch.expm1(pred_array)).numpy()
-            # the components below now will be approximate since we use expm1 in response transform
-            trend_component = (torch.exp(trend_component)).numpy()
-            seasonality_component = (torch.exp(seasonality_component)).numpy()
-            regressor_component = (torch.exp(regressor_component)).numpy()
-        else:
-            pred_array = pred_array.numpy()
-            trend_component = trend_component.numpy()
-            seasonality_component = seasonality_component.numpy()
-            regressor_component = regressor_component.numpy()
+
+        pred_array = pred_array.numpy()
+        trend_component = trend_component.numpy()
+        seasonality_component = seasonality_component.numpy()
+        regressor_component = regressor_component.numpy()
 
         # if decompose output dictionary of components
         if decompose:
