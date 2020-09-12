@@ -1,10 +1,11 @@
 import pandas as pd
 from scipy.stats import nct
 import torch
+import numpy as np
 from copy import deepcopy
 
 from ..constants import dlt as constants
-from ..exceptions import IllegalArgument
+from ..exceptions import IllegalArgument, PredictionException
 from ..models.lgt import BaseLGT, LGTFull, LGTAggregated, LGTMAP
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 
@@ -144,10 +145,6 @@ class BaseDLT(BaseLGT):
         training_df_meta = self._training_df_meta
         # remove reference from original input
         df = df.copy()
-        # for multiplicative model
-        if self.is_multiplicative:
-            df = self._log_transform_df(df, do_fit=False)
-
         # get prediction df meta
         prediction_df_meta = {
             'date_array': pd.to_datetime(df[self.date_col]).reset_index(drop=True),
@@ -328,17 +325,10 @@ class BaseDLT(BaseLGT):
         # sum components
         pred_array = trend_component + seasonality_component + regressor_component
 
-        # for the multiplicative case
-        if self.is_multiplicative:
-            pred_array = (torch.exp(pred_array)).numpy()
-            trend_component = (torch.exp(trend_component)).numpy()
-            seasonality_component = (torch.exp(seasonality_component)).numpy()
-            regressor_component = (torch.exp(regressor_component)).numpy()
-        else:
-            pred_array = pred_array.numpy()
-            trend_component = trend_component.numpy()
-            seasonality_component = seasonality_component.numpy()
-            regressor_component = regressor_component.numpy()
+        pred_array = pred_array.numpy()
+        trend_component = trend_component.numpy()
+        seasonality_component = seasonality_component.numpy()
+        regressor_component = regressor_component.numpy()
 
         # if decompose output dictionary of components
         if decompose:
