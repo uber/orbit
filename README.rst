@@ -73,7 +73,7 @@ Local-Global-Trend (LGT) Model with FULL Bayesian Prediction
         pred_col=50, test_actual_df=test_df
     )
 
-.. image:: img/lgt-mcmc-pred.png
+.. image:: docs/img/lgt-mcmc-pred.png
 
 
 Installation
