@@ -1,7 +1,8 @@
 import pytest
-from orbit.models.lgt import BaseLGT, LGTFull, LGTAggregated, LGTMAP
-from orbit.estimators.stan_estimator import StanEstimator, StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
+
 from orbit.estimators.pyro_estimator import PyroEstimator, PyroEstimatorVI, PyroEstimatorMAP
+from orbit.estimators.stan_estimator import StanEstimator, StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
+from orbit.models.lgt import BaseLGT, LGTFull, LGTAggregated, LGTMAP
 
 
 def test_base_lgt_init():
@@ -37,7 +38,7 @@ def test_lgt_full_univariate(synthetic_data, estimator_type):
     lgt.fit(train_df)
     predict_df = lgt.predict(test_df)
 
-    expected_columns = ['week', 5, 'prediction', 95]
+    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 13
 
@@ -62,7 +63,7 @@ def test_lgt_full_univariate_pyro(synthetic_data):
     lgt.fit(train_df)
     predict_df = lgt.predict(test_df)
 
-    expected_columns = ['week', 5, 'prediction', 95]
+    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 12  # no `lp__` in pyro
 
@@ -233,7 +234,7 @@ def test_lgt_full_with_regression(synthetic_data, estimator_type, regressor_sign
     regression_out = lgt.get_regression_coefs()
     num_regressors = regression_out.shape[0]
 
-    expected_columns = ['week', 5, 'prediction', 95]
+    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
     expected_shape = (51, len(expected_columns))
     expected_regression_shape = (6, 3)
 

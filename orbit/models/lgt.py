@@ -850,9 +850,9 @@ class LGTFull(BaseLGT):
         array: np.ndarray
             A 2d numpy array of shape (`num_samples`, prediction df length)
         percentiles: list
-            A sorted list of three percentiles which will be used to label output dataframe columns
+            A sorted list of one or three percentile(s) which will be used to aggregate lower, mid and upper values
         label: str
-            A string used for labeling columns
+            A string used for labeling output dataframe columns
         Returns
         -------
         pd.DataFrame
@@ -861,7 +861,12 @@ class LGTFull(BaseLGT):
         """
 
         aggregated_array = np.percentile(array, percentiles, axis=0)
-        aggregate_df = pd.DataFrame(aggregated_array.T, columns=[label + "_lower", label, label + "_upper"])
+        if len(percentiles) == 1:
+            aggregate_df = pd.DataFrame(aggregated_array.T, columns=[label])
+        elif len(percentiles) == 3:
+            aggregate_df = pd.DataFrame(aggregated_array.T, columns=[label + "_lower", label, label + "_upper"])
+        else:
+            raise PredictionException("Invalid input percentiles.")
 
         return aggregate_df
 
