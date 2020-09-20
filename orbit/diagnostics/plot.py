@@ -20,7 +20,7 @@ if os.environ.get('DISPLAY', '') == '':
 
 
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, pred_col,
-                        title="", test_actual_df=None, pred_percentiles_col=[],
+                        title="", test_actual_df=None,
                         is_visible=True, figsize=None, path=None):
     """
     plot training actual response together with predicted data; if actual response of predicted
@@ -40,13 +40,12 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
         title of the plot
     test_actual_df: pd.DataFrame
        test actual response dataframe. two columns required: actual_col and date_co
-    pred_percentiles_col: list
-        a list of two strings for prediction inference where first one for lower quantile and
-        the second one for upper quantile
     is_visible: boolean
         whether we want to show the plot. If called from unittest, is_visible might = False.
     figsize: tuple
         figsize pass through to `matplotlib.pyplot.figure()`
+    path: str
+        path to save the figure
     Returns
     -------
         None.
@@ -54,10 +53,13 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
 
     if is_empty_dataframe(training_actual_df) or is_empty_dataframe(predicted_df):
         raise ValueError("No prediction data or training response to plot.")
-    if len(pred_percentiles_col) != 2 and len(pred_percentiles_col) != 0:
-        raise ValueError("pred_percentiles_col must be either empty or length of 2.")
-    if not set([pred_col] + pred_percentiles_col).issubset(predicted_df.columns):
-        raise ValueError("Prediction column(s) not found in predicted df.")
+
+    plot_confid = False
+    # labels for confidence intervals
+    confid_cols = [pred_col + "_lower", pred_col + "_upper"]
+    if set(confid_cols).issubset(predicted_df.columns):
+        plot_confid = True
+
     _training_actual_df = training_actual_df.copy()
     _predicted_df=predicted_df.copy()
     _training_actual_df[date_col] = pd.to_datetime(_training_actual_df[date_col])
@@ -85,15 +87,15 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
                    label='test response')
 
     # prediction intervals
-    if pred_percentiles_col:
+    if plot_confid:
         ax.fill_between(_predicted_df[date_col].values,
-                        _predicted_df[pred_percentiles_col[1]].values,
-                        _predicted_df[pred_percentiles_col[0]].values,
+                        _predicted_df[confid_cols[0]],
+                        _predicted_df[confid_cols[1]],
                         facecolor='#42999E', alpha=0.5)
 
     ax.set_title(title, fontsize=16)
     ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
-    ax.legend(loc='best')
+    ax.legend()
     if path:
         plt.savefig(path)
     if is_visible:
@@ -110,12 +112,19 @@ def plot_predicted_components(predicted_df, date_col, figsize=None, path=None):
         user provide pred_percentiles_col, it needs to include them as well.
     date_col: str
         the date column name
+    title: str
+        title of the plot
     figsize: tuple
         figsize pass through to `matplotlib.pyplot.figure()`
+    path: str
+        path to save the figure
    Returns
     -------
         None.
     """
+
+    _predicted_df=predicted_df.copy()
+    _predicted_df[date_col] = pd.to_datetime(_predicted_df[date_col])
     plot_components = [PredictedComponents.TREND.value,
                        PredictedComponents.SEASONALITY.value,
                        PredictedComponents.REGRESSION.value]
@@ -125,12 +134,18 @@ def plot_predicted_components(predicted_df, date_col, figsize=None, path=None):
 
     fig, axes = plt.subplots(n_panels, 1, facecolor='w', figsize=figsize)
     for ax, comp in zip(axes, plot_components):
-        x = predicted_df[date_col].dt.to_pydatetime()
         y = predicted_df[comp].values
-        ax.plot(x, y, marker=None, color='#12939A')
+        ax.plot(_predicted_df[date_col], y, marker=None, color='#12939A')
+        confid_cols = [comp + "_lower", comp + "_upper"]
+        if set(confid_cols).issubset(predicted_df.columns):
+            ax.fill_between(_predicted_df[date_col].values,
+                            _predicted_df[confid_cols[0]],
+                            _predicted_df[confid_cols[1]],
+                            facecolor='#42999E', alpha=0.5)
         ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
         ax.set_title(comp, fontsize=16)
     fig.tight_layout()
+
     if path:
         plt.savefig(path)
 
