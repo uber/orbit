@@ -842,41 +842,35 @@ class LGTFull(BaseLGT):
 
         return bootstrap_samples_dict
 
-    def _aggregate_full_predictions(self, predictions_array):
+    def _aggregate_full_predictions(self, array, label, percentiles):
         """Aggregates the mcmc prediction to a point estimate
 
         Args
         ----
-        predictions_array : np.ndarray
+        array: np.ndarray
             A 2d numpy array of shape (`num_samples`, prediction df length)
-        percentiles : list
-            The percentiles at which to aggregate the predictions
-
+        percentiles: list
+            A sorted list of one or three percentile(s) which will be used to aggregate lower, mid and upper values
+        label: str
+            A string used for labeling output dataframe columns
         Returns
         -------
         pd.DataFrame
-            The aggregated across mcmc samples with columns for `mean`, `50` aka median
+            The aggregated across mcmc samples with columns for `50` aka median
             and all other percentiles specified in `percentiles`.
-
         """
 
-        # MUST copy, or else instance var persists in memory
-        percentiles = copy(self._prediction_percentiles)
-
-        percentiles += [50]  # always find median
-        percentiles.sort()
-
-        # mean_prediction = np.mean(predictions_array, axis=0)
-        percentiles_prediction = np.percentile(predictions_array, percentiles, axis=0)
-
-        aggregate_df = pd.DataFrame(percentiles_prediction.T, columns=percentiles)
-
-        # rename `50` to `prediction`
-        aggregate_df.rename(columns={50: 'prediction'}, inplace=True)
+        aggregated_array = np.percentile(array, percentiles, axis=0)
+        if len(percentiles) == 1:
+            aggregate_df = pd.DataFrame(aggregated_array.T, columns=[label])
+        elif len(percentiles) == 3:
+            aggregate_df = pd.DataFrame(aggregated_array.T, columns=[label + "_lower", label, label + "_upper"])
+        else:
+            raise PredictionException("Invalid input percentiles.")
 
         return aggregate_df
 
-    def predict(self, df):
+    def predict(self, df, decompose=False):
         """Return model predictions as a function of fitted model and df"""
         # raise if model is not fitted
         if not self.is_fitted():
@@ -887,16 +881,29 @@ class LGTFull(BaseLGT):
             if self._n_bootstrap_draws > 1 \
             else self._posterior_samples
 
-        predictions_array = self._predict(
+        predicted_dict = self._predict(
             posterior_estimates=posterior_samples,
             df=df,
-            include_error=True
-        )['prediction']
+            include_error=True,
+            decompose=decompose,
+        )
 
-        aggregated_df = self._aggregate_full_predictions(predictions_array)
+        # MUST copy, or else instance var persists in memory
+        percentiles = copy(self._prediction_percentiles)
+        percentiles += [50]  # always find median
+        percentiles = list(set(percentiles))  # unique set
+        percentiles.sort()
 
+        for k, v in predicted_dict.items():
+            predicted_dict[k] = self._aggregate_full_predictions(
+                array=v,
+                label=k,
+                percentiles=percentiles,
+            )
+
+        aggregated_df = pd.concat(predicted_dict, axis=1)
+        aggregated_df.columns = aggregated_df.columns.droplevel()
         aggregated_df = self._prepend_date_column(aggregated_df, df)
-
         return aggregated_df
 
     def get_regression_coefs(self, aggregate_method='mean'):
