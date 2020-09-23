@@ -40,8 +40,13 @@ Load data
     import pandas as pd
     import numpy as np
 
-    DATA_FILE = "data/iclaims_example.csv"
-    df = pd.read_csv(DATA_FILE, parse_dates=['week'])
+    DATA_FILE = "./data/iclaims_example.csv"
+    df_raw = pd.read_csv(DATA_FILE, parse_dates=['week'])
+    df = df_raw.copy()
+
+    # log-transform for additive model
+    df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']] = \
+    df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']].apply(np.log)
 
     test_size=52
     train_df=df[:-test_size]
@@ -52,7 +57,7 @@ Local-Global-Trend (LGT) Model with FULL Bayesian Prediction
 
 .. code:: python
 
-    from orbit.model.lgt import LGTFull
+    from orbit.models.lgt import LGTFull
     from orbit.diagnostics.plot import plot_predicted_data
 
     lgt_full = LGTFull(
@@ -61,16 +66,23 @@ Local-Global-Trend (LGT) Model with FULL Bayesian Prediction
         regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
         seasonality=52,
     )
-    lgt_mcmc.fit(df=train_df)
+    lgt_full.fit(df=train_df)
 
     # predicted df
-    predicted_df = lgt_mcmc.predict(df=test_df)
+    predicted_df = lgt_full.predict(df=test_df)
+
+    # transform back to the original scale
+    train_df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']] = \
+    train_df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']].apply(np.exp)
+    test_df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']] = \
+    test_df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']].apply(np.exp)
+    predicted_df['prediction'] = predicted_df['prediction'].apply(np.exp)
 
     # plot predictions
     plot_predicted_data(
         training_actual_df=train_df, predicted_df=predicted_df,
-        date_col=lgt_mcmc.date_col, actual_col=lgt_mcmc.response_col,
-        pred_col=50, test_actual_df=test_df
+        date_col=lgt_full.date_col, actual_col=lgt_full.response_col,
+        pred_col='prediction', test_actual_df=test_df
     )
 
 .. image:: docs/img/lgt-mcmc-pred.png
