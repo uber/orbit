@@ -1,7 +1,6 @@
-.. image:: docs/img/orbit-icon.png
-    :width: 100
+.. image:: docs/img/orbit-icon-small.png
 
-
+-------------------------------------------
 
 **Disclaimer: This project may contain experimental code and may not be
 ready for general use. Support and/or new releases may be limited.**
