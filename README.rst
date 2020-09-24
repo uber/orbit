@@ -1,5 +1,5 @@
 .. image:: docs/img/orbit-icon.png
-    :width: 300
+    :width: 100
 
 
 
