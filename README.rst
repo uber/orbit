@@ -1,3 +1,6 @@
+.. image:: docs/img/orbit-icon.png
+    :width: 450
+
 **Disclaimer: This project may contain experimental code and may not be
 ready for general use. Support and/or new releases may be limited.**
 
@@ -40,13 +43,10 @@ Load data
     import pandas as pd
     import numpy as np
 
-    DATA_FILE = "./data/iclaims_example.csv"
-    df_raw = pd.read_csv(DATA_FILE, parse_dates=['week'])
-    df = df_raw.copy()
-
-    # log-transform for additive model
-    df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']] = \
-    df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']].apply(np.log)
+    DATA_FILE = "./examples/data/iclaims_example.csv"
+    df = pd.read_csv(DATA_FILE, parse_dates=['week'])
+    df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']] =\
+        df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']].apply(np.log)
 
     test_size=52
     train_df=df[:-test_size]
@@ -60,23 +60,17 @@ Local-Global-Trend (LGT) Model with FULL Bayesian Prediction
     from orbit.models.lgt import LGTFull
     from orbit.diagnostics.plot import plot_predicted_data
 
-    lgt_full = LGTFull(
+    lgt = LGTFull(
         response_col='claims',
         date_col='week',
         regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
         seasonality=52,
+        prediction_percentiles=[5, 95],
     )
-    lgt_full.fit(df=train_df)
+    lgt.fit(df=train_df)
 
     # predicted df
-    predicted_df = lgt_full.predict(df=test_df)
-
-    # transform back to the original scale
-    train_df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']] = \
-    train_df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']].apply(np.exp)
-    test_df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']] = \
-    test_df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']].apply(np.exp)
-    predicted_df['prediction'] = predicted_df['prediction'].apply(np.exp)
+    predicted_df = lgt.predict(df=test_df)
 
     # plot predictions
     plot_predicted_data(
