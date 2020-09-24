@@ -1,8 +1,7 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8">
   
@@ -12,12 +11,18 @@
   
 
   
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
   
   
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -29,10 +34,6 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="API Docs" href="modules.html" />
@@ -50,7 +51,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> Orbit
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> Orbit
           
 
           
@@ -73,6 +74,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -100,6 +102,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -138,7 +141,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>About</li>
     
@@ -197,8 +200,13 @@ distribution</p></li>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="n">DATA_FILE</span> <span class="o">=</span> <span class="s2">&quot;data/iclaims_example.csv&quot;</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">DATA_FILE</span><span class="p">,</span> <span class="n">parse_dates</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;week&#39;</span><span class="p">])</span>
+<span class="n">DATA_FILE</span> <span class="o">=</span> <span class="s2">&quot;./data/iclaims_example.csv&quot;</span>
+<span class="n">df_raw</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">DATA_FILE</span><span class="p">,</span> <span class="n">parse_dates</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;week&#39;</span><span class="p">])</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df_raw</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+<span class="c1"># log-transform for additive model</span>
+<span class="n">df</span><span class="p">[[</span><span class="s1">&#39;claims&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]]</span> <span class="o">=</span> \
+<span class="n">df</span><span class="p">[[</span><span class="s1">&#39;claims&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">)</span>
 
 <span class="n">test_size</span><span class="o">=</span><span class="mi">52</span>
 <span class="n">train_df</span><span class="o">=</span><span class="n">df</span><span class="p">[:</span><span class="o">-</span><span class="n">test_size</span><span class="p">]</span>
@@ -208,7 +216,7 @@ distribution</p></li>
 </div>
 <div class="section" id="local-global-trend-lgt-model-with-full-bayesian-prediction">
 <h2>Local-Global-Trend (LGT) Model with FULL Bayesian Prediction<a class="headerlink" href="#local-global-trend-lgt-model-with-full-bayesian-prediction" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">orbit.model.lgt</span> <span class="kn">import</span> <span class="n">LGTFull</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">orbit.models.lgt</span> <span class="kn">import</span> <span class="n">LGTFull</span>
 <span class="kn">from</span> <span class="nn">orbit.diagnostics.plot</span> <span class="kn">import</span> <span class="n">plot_predicted_data</span>
 
 <span class="n">lgt_full</span> <span class="o">=</span> <span class="n">LGTFull</span><span class="p">(</span>
@@ -217,20 +225,27 @@ distribution</p></li>
     <span class="n">regressor_col</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">],</span>
     <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">lgt_mcmc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">)</span>
+<span class="n">lgt_full</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">)</span>
 
 <span class="c1"># predicted df</span>
-<span class="n">predicted_df</span> <span class="o">=</span> <span class="n">lgt_mcmc</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">test_df</span><span class="p">)</span>
+<span class="n">predicted_df</span> <span class="o">=</span> <span class="n">lgt_full</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">test_df</span><span class="p">)</span>
+
+<span class="c1"># transform back to the original scale</span>
+<span class="n">train_df</span><span class="p">[[</span><span class="s1">&#39;claims&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]]</span> <span class="o">=</span> \
+<span class="n">train_df</span><span class="p">[[</span><span class="s1">&#39;claims&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">)</span>
+<span class="n">test_df</span><span class="p">[[</span><span class="s1">&#39;claims&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]]</span> <span class="o">=</span> \
+<span class="n">test_df</span><span class="p">[[</span><span class="s1">&#39;claims&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">)</span>
+<span class="n">predicted_df</span><span class="p">[</span><span class="s1">&#39;prediction&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">predicted_df</span><span class="p">[</span><span class="s1">&#39;prediction&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">)</span>
 
 <span class="c1"># plot predictions</span>
 <span class="n">plot_predicted_data</span><span class="p">(</span>
     <span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
-    <span class="n">date_col</span><span class="o">=</span><span class="n">lgt_mcmc</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">lgt_mcmc</span><span class="o">.</span><span class="n">response_col</span><span class="p">,</span>
-    <span class="n">pred_col</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">test_actual_df</span><span class="o">=</span><span class="n">test_df</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">lgt_full</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">lgt_full</span><span class="o">.</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">pred_col</span><span class="o">=</span><span class="s1">&#39;prediction&#39;</span><span class="p">,</span> <span class="n">test_actual_df</span><span class="o">=</span><span class="n">test_df</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-<img alt="_images/lgt-mcmc-pred.png" src="_images/lgt-mcmc-pred.png" />
+<img alt="docs/img/lgt-mcmc-pred.png" src="docs/img/lgt-mcmc-pred.png" />
 </div>
 </div>
 <div class="section" id="installation">
@@ -271,11 +286,19 @@ pip install .
 
   <div role="contentinfo">
     <p>
+        
         &copy; Copyright 2020, Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -286,7 +309,6 @@ pip install .
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {
