@@ -213,10 +213,10 @@ class BackTester(object):
         # init private vars
         self._n_splits = 0
         self._set_n_splits()
-        self._test_actual = None
-        self._test_predicted = None
-        self._train_actual = None
-        self._train_predicted = None
+        self._test_actual = []
+        self._test_predicted = []
+        self._train_actual = []
+        self._train_predicted = []
 
         # init df for actuals and predictions
         self._predicted_df = pd.DataFrame(
@@ -271,10 +271,10 @@ class BackTester(object):
             # set attributes
             self._fitted_models.append(model_copy)
             self._splitter_scheme.append(scheme)
-            self._test_actual = test_df[response_col].to_numpy()
-            self._test_predicted = test_predictions['prediction'].to_numpy()
-            self._train_actual = train_df[response_col].to_numpy()
-            self._train_predicted = train_predictions['prediction'].to_numpy()
+            self._test_actual = np.concatenate((self._test_actual, test_df[response_col].to_numpy()))
+            self._test_predicted = np.concatenate((self._test_predicted, test_predictions['prediction'].to_numpy()))
+            self._train_actual = np.concatenate((self._train_actual, train_df[response_col].to_numpy()))
+            self._train_predicted = np.concatenate((self._train_predicted, train_predictions['prediction'].to_numpy()))
 
             # set df attribute
             # join train
