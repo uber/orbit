@@ -3,7 +3,7 @@ EPS = 1e-5
 
 
 def smape(actual, predicted):
-    filtered = (np.abs(actual) > EPS) & (np.abs(predicted) > EPS)
+    filtered = np.abs(actual) > EPS
     actual = actual[filtered]
     predicted = predicted[filtered]
     return 2 * np.mean(np.abs(actual - predicted) / (np.abs(actual) + np.abs(predicted)))
