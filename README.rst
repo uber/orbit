@@ -76,7 +76,7 @@ Local-Global-Trend (LGT) Model with FULL Bayesian Prediction
     # plot predictions
     plot_predicted_data(
         training_actual_df=train_df, predicted_df=predicted_df,
-        date_col=lgt_full.date_col, actual_col=lgt_full.response_col,
+        date_col=lgt.date_col, actual_col=lgt.response_col,
         pred_col='prediction', test_actual_df=test_df
     )
 
