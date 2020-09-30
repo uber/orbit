@@ -12,7 +12,8 @@
 // --- Code Style for .stan ---
 // Upper case for Input
 // lower case for intermediate variables and parameters to draw
-
+functions {
+}
 data {
   // indicator of which method stan using
   int<lower=0,upper=1> WITH_MCMC;
@@ -57,7 +58,7 @@ data {
 transformed data {
   int<lower=0,upper=1>  IS_SEASONAL;
   // SIGMA_EPS is a offset to dodge lower boundary case;
-  real SIGMA_EPS;
+  real<lower=0> SIGMA_EPS;
   int USE_VARY_SIGMA;
   int<lower=0,upper=1> LEV_SM_SIZE;
   int<lower=0,upper=1> SLP_SM_SIZE;
@@ -194,7 +195,7 @@ transformed parameters {
     // l[t] update equation with l[t-1] ONLY by excluding b[t-1];
     // It is intentionally different from the Holt-Winter form
     // The change is suggested from Slawek's original SLGT model
-    l[t] = lev_sm * (RESPONSE[t] - s_t - r[t]) + (1 - lev_sm) * l[t-1];
+    l[t] = fmax(lev_sm * (RESPONSE[t] - s_t - r[t]) + (1 - lev_sm) * l[t-1], 0);
     b[t] = slp_sm * (l[t] - l[t-1]) + (1 - slp_sm) * b[t-1];
     // with parameterization as mentioned in 7.3 "Forecasting: Principles and Practice"
     // we can safely use "l[t]" instead of "l[t-1] + b[t-1]" where 0 < sea_sm < 1
