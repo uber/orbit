@@ -13,7 +13,7 @@ from setuptools.command.test import test as test_command
 # #   https://bugs.python.org/issue23102
 # dist.Distribution().fetch_build_eggs(['cython'])
 
-VERSION = '1.0.3'
+VERSION = '1.0.4'
 DESCRIPTION = "Orbit is a package for bayesian time series modeling and inference."
 AUTHOR = '''Edwin Ng <edwinng@uber.com>, Steve Yang <steve.yang@uber.com>,
             Huigang Chen <huigang@uber.com>, Zhishi Wang <zhishiw@uber.com>'''
