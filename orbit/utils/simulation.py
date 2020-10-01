@@ -88,8 +88,8 @@ def make_seasonality(series_len, seasonality, order=3, duration=1, scale=.05, me
     return seas
 
 
-def make_regression(series_len, coefs, loc=0.0, scale=1.0, cov=None,
-                    noise_scale=1.0, relevance=1.0, sparsity=0.5, seed=1):
+def make_regression(series_len, coefs, loc=0.0, scale=0.5, cov=None,
+                    noise_scale=1.0, relevance=1.0, sparsity=0.2, seed=1):
     """ Module to generate multiplicative time-series with trend, seasonality and regression components
     Parameters
     ----------

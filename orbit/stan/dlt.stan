@@ -38,7 +38,7 @@ data {
 
   // Regression Hyper Params
   // 0 As Fixed Ridge Penalty, 1 As Lasso, 2 As Auto-Ridge
-  int <lower=0,upper=2> REG_PENALTY_TYPE;
+  int <lower=0,upper=3> REG_PENALTY_TYPE;
   real<lower=0> AUTO_RIDGE_SCALE;
   real<lower=0> LASSO_SCALE;
   // Test penalty scale parameter to avoid regression and smoothing over-mixed
@@ -63,6 +63,11 @@ data {
 
   // 0 As linear, 1 As log-linear, 2 As logistic, 3 As flat
   int <lower=0,upper=3> GLOBAL_TREND_OPTION;
+  
+  // horeshoe prior inputs
+  real<lower=0, upper=NUM_OF_RR> EXPECTED_SIZE;
+  real<lower=1e-3, upper=1> GLOBAL_SHRINKAGE_FACTOR;
+
 }
 transformed data {
   int IS_SEASONAL;
@@ -77,6 +82,7 @@ transformed data {
   int<lower=0,upper=1> LEV_SM_SIZE;
   int<lower=0,upper=1> SLP_SM_SIZE;
   int<lower=0,upper=1> SEA_SM_SIZE;
+  int USE_HORSESHOE;
 
   LEV_SM_SIZE = 0;
   SLP_SM_SIZE = 0;
@@ -117,12 +123,18 @@ transformed data {
   }
 
   if (REG_PENALTY_TYPE == 2) USE_VARY_SIGMA = 1;
+  USE_HORSESHOE = 0;
+  // TAU = 0.0;
+  if (REG_PENALTY_TYPE == 3) {
+    USE_HORSESHOE = 1;
+  }
 }
 parameters {
   // regression parameters
   real<lower=0> pr_sigma[NUM_OF_PR * (USE_VARY_SIGMA)];
   real<lower=0> rr_sigma[NUM_OF_RR * (USE_VARY_SIGMA)];
   vector<lower=0>[NUM_OF_PR] pr_beta;
+  // vector[NUM_OF_RR] rr_beta_dummy;
   vector[NUM_OF_RR] rr_beta;
 
   // smoothing parameters
@@ -141,7 +153,7 @@ parameters {
   // - 0.2 is made to dodge boundary case (tanh(pi/2 - 0.2) roughly equals 5 to be
   // consistent with MAP estimation)
   real<lower=0, upper=pi()/2 - 0.2> obs_sigma_unif_dummy[WITH_MCMC];
-  real<lower=MIN_NU,upper=MAX_NU> nu;
+  real<lower=MIN_NU,upper=MAX_NU> nu[1 - USE_HORSESHOE];
 
   // global trend parameters
   real<lower=GL_LOWER> gl[GL_SIZE]; // global level
@@ -149,7 +161,9 @@ parameters {
 
   // initial seasonality
   vector<lower=-1,upper=1>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
-
+  
+  // horseshoe prior test
+  vector<lower=0>[NUM_OF_RR * USE_HORSESHOE] lambda;
 }
 transformed parameters {
   real<lower=SIGMA_EPS, upper=5*CAUCHY_SD> obs_sigma;
@@ -168,7 +182,10 @@ transformed parameters {
   real<lower=0,upper=1> lev_sm;
   real<lower=0,upper=1> slp_sm;
   real<lower=0,upper=1> sea_sm;
-
+  // horseshoe
+  // vector[NUM_OF_RR] rr_beta;
+  real<lower=0> tau;
+  
   if (LEV_SM_SIZE > 0) {
     lev_sm = lev_sm_dummy[1];
   } else {
@@ -187,6 +204,20 @@ transformed parameters {
     }
   } else {
     sea_sm = 0.0;
+  }
+  
+  // needs to be above horseshoe prior setting
+  if (WITH_MCMC) {
+    // eqv. to obs_sigma ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, ];
+    obs_sigma = SIGMA_EPS + CAUCHY_SD * tan(obs_sigma_unif_dummy[1]);
+  } else {
+    obs_sigma = obs_sigma_dummy[1];
+  }
+  
+  if (USE_HORSESHOE) {
+    tau = EXPECTED_SIZE / (NUM_OF_RR - EXPECTED_SIZE) * obs_sigma / sqrt(NUM_OF_OBS * GLOBAL_SHRINKAGE_FACTOR);
+  } else {
+    tau = 0.0;
   }
 
   // compute regression
@@ -258,22 +289,21 @@ transformed parameters {
     if (IS_SEASONAL)
         s[t + SEASONALITY] = sea_sm * (RESPONSE[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm) * s_t;
   }
-
-  if (WITH_MCMC) {
-    // eqv. to obs_sigma ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, ];
-    obs_sigma = SIGMA_EPS + CAUCHY_SD * tan(obs_sigma_unif_dummy[1]);
-  } else {
-    obs_sigma = obs_sigma_dummy[1];
-  }
 }
 model {
-  //prior for residuals
+  //prior for residuals dist.
   if (WITH_MCMC == 0) {
-    // for MAP, set finite boundary
+    // for MAP, set finite boundary else use uniform with transformation
     obs_sigma_dummy[1] ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, 5 * CAUCHY_SD];
   }
-  for (t in 2:NUM_OF_OBS) {
-    RESPONSE[t] ~ student_t(nu, yhat[t], obs_sigma);
+  if (!USE_HORSESHOE) {
+    for (t in 2:NUM_OF_OBS) {
+      RESPONSE[t] ~ student_t(nu[1], yhat[t], obs_sigma);
+    }
+  } else {
+    for (t in 2:NUM_OF_OBS) {
+      RESPONSE[t] ~ normal(yhat[t], obs_sigma);
+    }
   }
 
   // prior for seasonality
@@ -293,9 +323,6 @@ model {
   }
 
   // regression prior
-  // see these references for details
-  // 1. https://jrnold.github.io/bayesian_notes/shrinkage-and-regularized-regression.html
-  // 2. https://betanalpha.github.io/assets/case_studies/bayes_sparse_regression.html#33_wide_weakly_informative_prior
   if (NUM_OF_PR > 0) {
     if (REG_PENALTY_TYPE== 0) {
       // fixed penalty ridge
@@ -327,7 +354,10 @@ model {
         rr_sigma[i] ~ cauchy(0, AUTO_RIDGE_SCALE) T[0,];
       }
       //weak prior for betas
-      rr_beta ~ normal(RR_BETA_PRIOR, rr_sigma);
+      rr_beta  ~ normal(RR_BETA_PRIOR, rr_sigma);
+    } else if (REG_PENALTY_TYPE == 3) {
+      lambda ~ cauchy(0, RR_SIGMA_PRIOR);
+      rr_beta ~ normal(0, lambda * tau);
     }
   }
 }

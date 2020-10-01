@@ -38,10 +38,13 @@ class BaseDLT(BaseLGT):
     _model_name = 'dlt'
     _supported_estimator_types = None  # set for each model
 
-    def __init__(self, period=1, damped_factor=0.8, global_trend_option='linear', **kwargs):
+    def __init__(self, period=1, damped_factor=0.8, expected_size=None, global_shrinkage_factor=0.3,
+                 global_trend_option='linear', **kwargs):
         self.damped_factor = damped_factor
         self.global_trend_option = global_trend_option
         self.period = period
+        self.expected_size = expected_size
+        self.global_shrinkage_factor = global_shrinkage_factor
 
         # global trend related attributes
         self._global_trend_option = None
@@ -76,6 +79,10 @@ class BaseDLT(BaseLGT):
         if self._num_of_regular_regressors > 0:
             self._model_param_names += [
                 constants.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value]
+            if self.expected_size is None:
+                self.expected_size = self._num_of_regular_regressors
+        else:
+            self.expected_size = 0.0
 
         if self._global_trend_option != constants.GlobalTrendOption.flat.value:
             self._model_param_names += [param.value for param in constants.GlobalTrendSamplingParameters]

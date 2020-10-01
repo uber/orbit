@@ -38,6 +38,9 @@ class DataInputMapper(Enum):
     AUTO_RIDGE_SCALE = 'AUTO_RIDGE_SCALE'
     LASSO_SCALE = 'LASSO_SCALE'
     _WITH_MCMC = 'WITH_MCMC'
+    # --------- experimental: horsesho prior input --------- #
+    EXPECTED_SIZE = 'EXPECTED_SIZE'
+    GLOBAL_SHRINKAGE_FACTOR = 'GLOBAL_SHRINKAGE_FACTOR'
 
 
 class GlobalTrendOption(Enum):
@@ -89,3 +92,4 @@ class RegressionPenalty(Enum):
     fixed_ridge = 0
     lasso = 1
     auto_ridge = 2
+    horseshoe = 3
