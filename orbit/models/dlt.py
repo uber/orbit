@@ -122,7 +122,7 @@ class BaseDLT(BaseLGT):
         local_trend_slopes = model.get(constants.BaseSamplingParameters.LOCAL_TREND_SLOPES.value)
         local_trend = model.get(constants.BaseSamplingParameters.LOCAL_TREND.value)
         residual_degree_of_freedom = model.get(
-            constants.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
+            constants.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value).squeeze(-1)
         residual_sigma = model.get(constants.BaseSamplingParameters.RESIDUAL_SIGMA.value)
 
         # set an additional attribute for damped factor when it is fixed
