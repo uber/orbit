@@ -62,6 +62,26 @@ class BaseDLT(BaseLGT):
         super()._set_static_data_attributes()
         self._set_global_trend_attributes()
 
+    # override regression penalty validation from LGT
+    def _set_regression_penalty(self):
+        regression_penalty = self.regression_penalty
+        # to dodge other penalty type except horseshoe
+        if self.expected_size is None:
+            self._expected_size = 0.0
+        else:
+            self._expected_size = self.expected_size
+
+        if regression_penalty == 'horseshoe':
+            if self._num_of_regular_regressors > 0:
+                if (self._num_of_regular_regressors > self._expected_size) & (self._expected_size > 0):
+                    self._regression_penalty = getattr(constants.RegressionPenalty, regression_penalty).value
+                    # dodge further set for _regression_penalty
+                    return
+                raise IllegalArgument('Invalid horseshoe prior related inputs. Check "expected_size".')
+            raise IllegalArgument('Invalid horseshoe prior related inputs.')
+
+        self._regression_penalty = getattr(constants.RegressionPenalty, regression_penalty).value
+
     def _set_model_param_names(self):
         """Model parameters to extract from Stan"""
         self._model_param_names += [param.value for param in constants.BaseSamplingParameters]
@@ -79,13 +99,11 @@ class BaseDLT(BaseLGT):
         if self._num_of_regular_regressors > 0:
             self._model_param_names += [
                 constants.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value]
-            if self.expected_size is None:
-                self.expected_size = self._num_of_regular_regressors
-        else:
-            self.expected_size = 0.0
 
         if self._global_trend_option != constants.GlobalTrendOption.flat.value:
             self._model_param_names += [param.value for param in constants.GlobalTrendSamplingParameters]
+
+
 
     def _predict(self, posterior_estimates, df=None, include_error=False, decompose=False):
 

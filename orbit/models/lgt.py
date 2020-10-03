@@ -234,8 +234,8 @@ class BaseLGT(BaseModel):
     def _set_static_data_attributes(self):
         """model data input based on args at instatiation or computed from args at instantiation"""
         self._set_default_base_args()
-        self._set_regression_penalty()
         self._set_static_regression_attributes()
+        self._set_regression_penalty()
         self._set_with_mcmc()
         self._set_init_values()
 

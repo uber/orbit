@@ -39,7 +39,7 @@ class DataInputMapper(Enum):
     LASSO_SCALE = 'LASSO_SCALE'
     _WITH_MCMC = 'WITH_MCMC'
     # --------- experimental: horsesho prior input --------- #
-    EXPECTED_SIZE = 'EXPECTED_SIZE'
+    _EXPECTED_SIZE = 'EXPECTED_SIZE'
     GLOBAL_SHRINKAGE_FACTOR = 'GLOBAL_SHRINKAGE_FACTOR'
 
 
