@@ -55,7 +55,7 @@ setup(
         'test': PyTest,
     },
     test_suite='orbit.tests',
-    license='closed',
+    license='Apache License 2.0',
     long_description=read_long_description(),
     name='orbit-ml',
     packages=find_packages(),
