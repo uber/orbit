@@ -86,6 +86,7 @@ __pycache__
 build/
 dist/
 orbit.egg-info/
+orbit_ml.egg-info/
 orbit/stan_model/
 orbit/stan_compiled/
 env_docs/

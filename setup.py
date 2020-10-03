@@ -57,9 +57,9 @@ setup(
     test_suite='orbit.tests',
     license='closed',
     long_description=read_long_description(),
-    name='orbit',
+    name='orbit-ml',
     packages=find_packages(),
-    url='git@github.com:uber/orbit.git',
+    url='https://uber.github.io/orbit/',
     version=VERSION,
     zip_safe=False,
     classifiers=[
