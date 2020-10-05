@@ -57,7 +57,6 @@ Install from GitHub:
 
 Quick Start
 ===========
-
 Load data
 ---------
 
