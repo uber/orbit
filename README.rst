@@ -93,7 +93,7 @@ Install from PyPi:
 
 .. code:: bash
 
-    pip install orbit
+    pip install orbit-ml
 
 Install from GitHub:
 
