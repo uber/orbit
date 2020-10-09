@@ -17,12 +17,12 @@ import matplotlib
 
 # -- Project information -----------------------------------------------------
 
-project = 'Orbit'
+project = 'orbit-ml'
 copyright = '2020, Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang'
 author = 'Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang'
 
 # The full version, including alpha/beta/rc tags
-release = '1.0.0'
+release = '1.0.4'
 
 # -- General configuration ---------------------------------------------------
 
