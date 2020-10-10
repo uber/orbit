@@ -93,6 +93,9 @@ env_docs/
 docs/_build/
 docs/_static
 docs/_templates
+
+tutorial/_build/
+
 *.pyc
 
 .*
