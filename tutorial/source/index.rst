@@ -3,15 +3,15 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to orbit-tutorial's documentation!
+Welcome to Orbit's Tutorial!
 ==========================================
 
 .. toctree::
-   :maxdepth: 2  
-   :caption: Introduction:
+   :maxdepth: 1  
+   :caption: Contents:
 
+   lgt_example
    dlt_example
-
 
 
 Indices and tables

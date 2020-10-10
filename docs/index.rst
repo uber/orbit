@@ -10,7 +10,7 @@ Welcome to Orbit's documentation!
    :maxdepth: 1
    :caption: Contents:
 
-   readme
+   getting_started
    modules
 
 

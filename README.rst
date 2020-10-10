@@ -33,6 +33,28 @@ model estimation:
    distribution
 
 
+Installation
+============
+
+Prerequisites
+-------------
+
+Install from PyPi:
+
+.. code:: bash
+
+    pip install orbit-ml
+
+Install from GitHub:
+
+.. code:: bash
+
+    git clone https://github.com/uber/orbit.git
+    cd orbit
+    pip install -r requirements.txt
+    pip install .
+
+
 Quick Start
 ===========
 
@@ -81,25 +103,3 @@ Local-Global-Trend (LGT) Model with FULL Bayesian Prediction
     )
 
 .. image:: docs/img/lgt-mcmc-pred.png
-
-
-Installation
-============
-
-Prerequisites
--------------
-
-Install from PyPi:
-
-.. code:: bash
-
-    pip install orbit
-
-Install from GitHub:
-
-.. code:: bash
-
-    git clone https://github.com/uber/orbit.git
-    cd orbit
-    pip install -r requirements.txt
-    pip install .
