@@ -21,7 +21,7 @@ Install from GitHub:
 
 Tutorials
 ---------
-To learn more, please dive in the `tutorials <https://uber.github.io/orbit/tutorials>`_.
+To learn more, please dive in the `tutorials <https://uber.github.io/orbit/tutorial>`_.
 
 
 
