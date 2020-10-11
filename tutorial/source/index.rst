@@ -7,8 +7,8 @@ Welcome to Orbit's Tutorial!
 ==========================================
 
 .. toctree::
-   :maxdepth: 1  
-   :caption: Contents:
+   :maxdepth: 1
+   :caption: Core Examples:
 
    lgt_example
    dlt_example
