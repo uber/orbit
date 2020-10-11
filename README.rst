@@ -107,12 +107,14 @@ References
 Documentation
 -------------
 
-- Orbit API documentation
-- Orbit tutorials and examples
+- `Orbit API documentation <https://uber.github.io/orbit/>` __
+- `Orbit tutorials and examples <https://uber.github.io/orbit/tutorial>` __
 
 Citation
 --------
+
 To cite Orbit in publications, you can refer to the following sources:
+
 Whitepaper: `Orbit: Probabilistic Forecast with Exponential Smoothing <https://arxiv.org/abs/2004.08492>`__
 
 
