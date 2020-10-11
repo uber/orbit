@@ -16,13 +16,14 @@
 
 
 # -- Project information -----------------------------------------------------
+import orbit
 
-project = 'orbit-tutorial'
+project = 'orbit'
 copyright = '2020, Edwin Ng, Zhishi Wang and Steve Yang'
 author = 'Edwin Ng, Zhishi Wang and Steve Yang'
 
 # The full version, including alpha/beta/rc tags
-release = 'orbit-ml'
+release = orbit.__version__
 
 
 # -- General configuration ---------------------------------------------------
