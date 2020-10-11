@@ -10,8 +10,7 @@ Welcome to Orbit's Tutorial!
    :maxdepth: 1
    :caption: Core Examples:
 
-   lgt_example
-   dlt_example
+   quick_start
 
 
 Indices and tables
