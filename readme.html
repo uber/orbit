@@ -1,18 +1,15 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>About &mdash; orbit-ml 1.0.4 documentation</title>
+  <title>Installation &mdash; Orbit 1.0.0 documentation</title>
   
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
 
   
   
@@ -20,9 +17,7 @@
   
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -34,10 +29,12 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="API Docs" href="modules.html" />
-    <link rel="prev" title="Welcome to Orbit’s documentation!" href="index.html" /> 
+    <link rel="search" title="Search" href="search.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -51,7 +48,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> orbit-ml
+            <a href="index.html" class="icon icon-home"> Orbit
           
 
           
@@ -74,7 +71,6 @@
           
         </div>
 
-        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -83,26 +79,13 @@
             
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">About</a><ul class="simple">
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="#quick-start">Quick Start</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#load-data">Load data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#local-global-trend-lgt-model-with-full-bayesian-prediction">Local-Global-Trend (LGT) Model with FULL Bayesian Prediction</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="#installation">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
-</ul>
-</li>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">API Docs</a></li>
 </ul>
 
             
           
         </div>
-        
       </div>
     </nav>
 
@@ -112,7 +95,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">orbit-ml</a>
+          <a href="index.html">Orbit</a>
         
       </nav>
 
@@ -141,9 +124,9 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>About</li>
+      <li>Installation</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -162,41 +145,22 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="about">
-<h1>About<a class="headerlink" href="#about" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
+  <div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
+<p>Install from PyPi:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install orbit
+</pre></div>
 </div>
-<img alt="_images/orbit-icon-small.png" src="_images/orbit-icon-small.png" />
-<hr class="docutils" />
-<p><strong>Disclaimer: This project may contain experimental code and may not be
-ready for general use. Support and/or new releases may be limited.</strong></p>
-<p><strong>Disclaimer: Orbit requires PyStan as a system dependency. PyStan is
-licensed under</strong> <a class="reference external" href="https://www.gnu.org/licenses/gpl-3.0.html">GPLv3</a> <strong>,
-which is a free, copyleft license for software.</strong></p>
-<p>Orbit is a Python package for time series modeling and inference
-using Bayesian sampling methods for model estimation. It provides a
-familiar and intuitive initialize-fit-predict interface for working with
-time series tasks, while utilizing probabilistic modeling under
-the hood.</p>
-<p>The initial release supports concrete implementation for the following
-models:</p>
-<ul class="simple">
-<li><p>Local Global Trend (LGT)</p></li>
-<li><p>Damped Local Trend (DLT)</p></li>
-</ul>
-<p>Both models, which are variants of exponential smoothing, support
-seasonality and exogenous (time-independent) features.</p>
-<p>The initial release also supports the following sampling methods for
-model estimation:</p>
-<ul class="simple">
-<li><p>Markov-Chain Monte Carlo (MCMC) as a full sampling method</p></li>
-<li><p>Maximum a Posteriori (MAP) as a point estimate method</p></li>
-<li><p>Variational Inference (VI) as a hybrid-sampling method on approximate
-distribution</p></li>
-</ul>
+<p>Install from GitHub:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/uber/orbit.git
+<span class="nb">cd</span> orbit
+pip install -r requirements.txt
+pip install .
+</pre></div>
 </div>
-<div class="section" id="quick-start">
-<h1>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h1>
+</div>
 <div class="section" id="load-data">
 <h2>Load data<a class="headerlink" href="#load-data" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -238,25 +202,12 @@ distribution</p></li>
 <span class="p">)</span>
 </pre></div>
 </div>
-<img alt="_images/lgt-mcmc-pred.png" src="_images/lgt-mcmc-pred.png" />
+<img alt="docs/img/lgt-mcmc-pred.png" src="docs/img/lgt-mcmc-pred.png" />
 </div>
 </div>
-<div class="section" id="installation">
-<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="prerequisites">
-<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
-<p>Install from PyPi:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install orbit-ml
-</pre></div>
-</div>
-<p>Install from GitHub:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/uber/orbit.git
-<span class="nb">cd</span> orbit
-pip install -r requirements.txt
-pip install .
-</pre></div>
-</div>
-</div>
+<div class="section" id="tutorials">
+<h1>Tutorials<a class="headerlink" href="#tutorials" title="Permalink to this headline">¶</a></h1>
+<p>To learn more, please dive in the _tutorials.</p>
 </div>
 
 
@@ -265,33 +216,16 @@ pip install .
           </div>
           <footer>
   
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="modules.html" class="btn btn-neutral float-right" title="API Docs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to Orbit’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
-    </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
         &copy; Copyright 2020, Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang
 
     </p>
   </div>
-    
-    
-    
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -302,6 +236,7 @@ pip install .
 
   </div>
   
+
 
   <script type="text/javascript">
       jQuery(function () {
