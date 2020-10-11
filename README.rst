@@ -35,7 +35,6 @@ model estimation:
 
 Installation
 ============
-
 Prerequisites
 -------------
 
@@ -102,3 +101,24 @@ Local-Global-Trend (LGT) Model with FULL Bayesian Prediction
     )
 
 .. image:: docs/img/lgt-mcmc-pred.png
+
+References
+===========
+Documentation
+-------------
+
+- Orbit API documentation
+- Orbit tutorials and examples
+
+Citation
+--------
+To cite Orbit in publications, you can refer to the following sources:
+Whitepaper: `Orbit: Probabilistic Forecast with Exponential Smoothing <https://arxiv.org/abs/2004.08492>`__
+
+
+Papers
+------
+
+
+Related projects
+----------------
