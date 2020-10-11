@@ -14,6 +14,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 import matplotlib
+import orbit
 
 # -- Project information -----------------------------------------------------
 
@@ -22,7 +23,7 @@ copyright = '2020, Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang'
 author = 'Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang'
 
 # The full version, including alpha/beta/rc tags
-release = '1.0.4'
+release = orbit.__version__
 
 # -- General configuration ---------------------------------------------------
 
