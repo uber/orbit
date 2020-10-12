@@ -4,12 +4,12 @@
    contain the root `toctree` directive.
 
 
-Orbit Documentation
+Orbit-ml Documentation
 
 
 .. toctree::
    :maxdepth: 1
-   :caption: Orbit Core:
+   :caption: Orbit-ml Core:
 
    getting_started
    modules
