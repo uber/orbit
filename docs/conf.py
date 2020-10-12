@@ -18,10 +18,12 @@ import orbit
 
 # -- Project information -----------------------------------------------------
 
-project = 'orbit'
+project = 'orbit-ml'
 copyright = '2020, Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang'
 author = 'Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang'
 
+# The short X.Y version.
+version = orbit.__version__
 # The full version, including alpha/beta/rc tags
 release = orbit.__version__
 
