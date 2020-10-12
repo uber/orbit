@@ -121,25 +121,18 @@ To cite Orbit in publications, refer to the following Whitepaper:
 Papers
 ------
 
-- Hyndman, R., Koehler, A. B., Ord, J. K., and Snyder, R. D.
-Forecasting with exponential smoothing: the state space
-approach. Springer Science & Business Media, 2008.
+- Hyndman, R., Koehler, A. B., Ord, J. K., and Snyder, R. D. Forecasting with exponential smoothing: the state space approach. Springer Science & Business Media, 2008.
 
-- Bingham, E., Chen, J. P., Jankowiak, M., Obermeyer, F.,
-Pradhan, N., Karaletsos, T., Singh, R., Szerlip, P., Horsfall, P., and Goodman, N. D. Pyro: Deep universal probabilistic programming. The Journal of Machine Learning
-Research, 20(1):973–978, 2019.
+- Bingham, E., Chen, J. P., Jankowiak, M., Obermeyer, F., Pradhan, N., Karaletsos, T., Singh, R., Szerlip, P., Horsfall, P., and Goodman, N. D. Pyro: Deep universal probabilistic programming. The Journal of Machine Learning Research, 20(1):973–978, 2019.
 
 - Taylor, S. J. and Letham, B. Forecasting at scale. The American Statistician, 72(1):37–45, 2018.
 
-- Hewamalage, H., Bergmeir, C., and Bandara, K. Recurrent
-neural networks for time series forecasting: Current status
-and future directions. arXiv preprint arXiv:1909.00590,
-2019.
+- Hewamalage, H., Bergmeir, C., and Bandara, K. Recurrent neural networks for time series forecasting: Current status and future directions. arXiv preprint arXiv:1909.00590, 2019.
 
 
 Related projects
 ----------------
 
-`Pyro <https://github.com/pyro-ppl/pyro>`__
-`Stan <https://github.com/stan-dev/stan>`__
-`Rlgt <https://cran.r-project.org/web/packages/Rlgt/index.html>`__
+- `Pyro <https://github.com/pyro-ppl/pyro>`__
+- `Stan <https://github.com/stan-dev/stan>`__
+- `Rlgt <https://cran.r-project.org/web/packages/Rlgt/index.html>`__
