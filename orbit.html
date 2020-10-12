@@ -1,15 +1,18 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>orbit package &mdash; orbit 1.0.4 documentation</title>
+  <title>orbit package &mdash; orbit-ml 1.0.4 documentation</title>
   
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
 
   
   
@@ -17,7 +20,9 @@
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -29,10 +34,6 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="orbit.constants package" href="orbit.constants.html" />
@@ -50,7 +51,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> orbit
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> orbit-ml
           
 
           
@@ -58,6 +59,10 @@
 
           
             
+            
+              <div class="version">
+                1.0.4
+              </div>
             
           
 
@@ -73,6 +78,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -80,7 +86,7 @@
               
             
             
-              <p class="caption"><span class="caption-text">Orbit Core:</span></p>
+              <p class="caption"><span class="caption-text">Orbit-ml Core:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Docs</a><ul class="current">
@@ -107,6 +113,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -116,7 +123,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">orbit</a>
+          <a href="index.html">orbit-ml</a>
         
       </nav>
 
@@ -145,7 +152,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
           <li><a href="modules.html">API Docs</a> &raquo;</li>
         
@@ -228,32 +235,32 @@
 <div class="section" id="module-orbit.exceptions">
 <span id="orbit-exceptions-module"></span><h2>orbit.exceptions module<a class="headerlink" href="#module-orbit.exceptions" title="Permalink to this headline">¶</a></h2>
 <dl class="py exception">
-<dt id="orbit.exceptions.backtestexception">
-<span id="orbit.exceptions.BacktestException"></span><em class="property">exception </em><code class="sig-prename descclassname">orbit.exceptions.</code><code class="sig-name descname">BacktestException</code><a class="headerlink" href="#orbit.exceptions.backtestexception" title="Permalink to this definition">¶</a></dt>
+<dt id="orbit.exceptions.BacktestException">
+<em class="property">exception </em><code class="sig-prename descclassname">orbit.exceptions.</code><code class="sig-name descname">BacktestException</code><a class="headerlink" href="#orbit.exceptions.BacktestException" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 </dd></dl>
 
 <dl class="py exception">
-<dt id="orbit.exceptions.estimatorexception">
-<span id="orbit.exceptions.EstimatorException"></span><em class="property">exception </em><code class="sig-prename descclassname">orbit.exceptions.</code><code class="sig-name descname">EstimatorException</code><a class="headerlink" href="#orbit.exceptions.estimatorexception" title="Permalink to this definition">¶</a></dt>
+<dt id="orbit.exceptions.EstimatorException">
+<em class="property">exception </em><code class="sig-prename descclassname">orbit.exceptions.</code><code class="sig-name descname">EstimatorException</code><a class="headerlink" href="#orbit.exceptions.EstimatorException" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 </dd></dl>
 
 <dl class="py exception">
-<dt id="orbit.exceptions.illegalargument">
-<span id="orbit.exceptions.IllegalArgument"></span><em class="property">exception </em><code class="sig-prename descclassname">orbit.exceptions.</code><code class="sig-name descname">IllegalArgument</code><a class="headerlink" href="#orbit.exceptions.illegalargument" title="Permalink to this definition">¶</a></dt>
+<dt id="orbit.exceptions.IllegalArgument">
+<em class="property">exception </em><code class="sig-prename descclassname">orbit.exceptions.</code><code class="sig-name descname">IllegalArgument</code><a class="headerlink" href="#orbit.exceptions.IllegalArgument" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 </dd></dl>
 
 <dl class="py exception">
-<dt id="orbit.exceptions.modelexception">
-<span id="orbit.exceptions.ModelException"></span><em class="property">exception </em><code class="sig-prename descclassname">orbit.exceptions.</code><code class="sig-name descname">ModelException</code><a class="headerlink" href="#orbit.exceptions.modelexception" title="Permalink to this definition">¶</a></dt>
+<dt id="orbit.exceptions.ModelException">
+<em class="property">exception </em><code class="sig-prename descclassname">orbit.exceptions.</code><code class="sig-name descname">ModelException</code><a class="headerlink" href="#orbit.exceptions.ModelException" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 </dd></dl>
 
 <dl class="py exception">
-<dt id="orbit.exceptions.predictionexception">
-<span id="orbit.exceptions.PredictionException"></span><em class="property">exception </em><code class="sig-prename descclassname">orbit.exceptions.</code><code class="sig-name descname">PredictionException</code><a class="headerlink" href="#orbit.exceptions.predictionexception" title="Permalink to this definition">¶</a></dt>
+<dt id="orbit.exceptions.PredictionException">
+<em class="property">exception </em><code class="sig-prename descclassname">orbit.exceptions.</code><code class="sig-name descname">PredictionException</code><a class="headerlink" href="#orbit.exceptions.PredictionException" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 </dd></dl>
 
@@ -262,8 +269,8 @@
 <span id="orbit-orbit-module"></span><h2>orbit.orbit module<a class="headerlink" href="#module-orbit.orbit" title="Permalink to this headline">¶</a></h2>
 <p>Top level Orbit class</p>
 <dl class="py class">
-<dt id="orbit.orbit.orbit">
-<span id="orbit.orbit.Orbit"></span><em class="property">class </em><code class="sig-prename descclassname">orbit.orbit.</code><code class="sig-name descname">Orbit</code><a class="headerlink" href="#orbit.orbit.orbit" title="Permalink to this definition">¶</a></dt>
+<dt id="orbit.orbit.Orbit">
+<em class="property">class </em><code class="sig-prename descclassname">orbit.orbit.</code><code class="sig-name descname">Orbit</code><a class="headerlink" href="#orbit.orbit.Orbit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 </dd></dl>
 
@@ -293,11 +300,19 @@
 
   <div role="contentinfo">
     <p>
+        
         &copy; Copyright 2020, Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -308,7 +323,6 @@
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {
