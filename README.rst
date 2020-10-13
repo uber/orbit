@@ -118,7 +118,8 @@ To cite Orbit in publications, refer to the following whitepaper:
 `Orbit: Probabilistic Forecast with Exponential Smoothing <https://arxiv.org/abs/2004.08492>`__
 
 Bibtex:
->>> @misc{ng2020orbit, title={Orbit: Probabilistic Forecast with Exponential Smoothing}, author={Edwin Ng, Zhishi Wang, Huigang Chen, Steve Yang, Slawek Smyl}, year={2020}, eprint={2004.08492}, archivePrefix={arXiv}, primaryClass={stat.CO}}
+
+  @misc{ng2020orbit, title={Orbit: Probabilistic Forecast with Exponential Smoothing}, author={Edwin Ng, Zhishi Wang, Huigang Chen, Steve Yang, Slawek Smyl}, year={2020}, eprint={2004.08492}, archivePrefix={arXiv}, primaryClass={stat.CO}}
 
 Papers
 ------
