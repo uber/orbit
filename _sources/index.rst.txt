@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 
-Orbit Documentation
+Welcome to Orbit's Documentation!
 ======================
 
 .. toctree::
