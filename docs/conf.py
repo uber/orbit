@@ -18,7 +18,7 @@ import orbit
 
 # -- Project information -----------------------------------------------------
 
-project = 'orbit-ml'
+project = 'orbit'
 copyright = '2020, Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang'
 author = 'Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang'
 
