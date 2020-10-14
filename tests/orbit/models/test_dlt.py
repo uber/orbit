@@ -239,10 +239,10 @@ def test_dlt_predict_all_positive_reg(iclaims_training_data):
     df = iclaims_training_data
 
     dlt = DLTMAP(
-        response_col='response',
+        response_col='claims',
         date_col='week',
         regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
-        regressor_sign=['+','+', '+'],
+        regressor_sign=['+', '+', '+'],
         seasonality=52,
         seed=8888,
     )
