@@ -8,9 +8,15 @@ Welcome to Orbit's Tutorial!
 
 .. toctree::
    :maxdepth: 1
-   :caption: Core Examples:
+   :caption: Core Examples
 
-   quick_start
+   Quick Start
+   LGT Model
+   DLT Model
+   Regressions with Orbit
+   Pyro in Orbit
+   Diagnostics
+   Backtest Orbit Model
 
 
 Indices and tables
