@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Load data &mdash; orbit 1.0.4 documentation</title>
+  <title>Backtest Orbit Model &mdash; orbit 1.0.4 documentation</title>
   
 
   
@@ -96,17 +96,20 @@
 <li class="toctree-l1"><a class="reference internal" href="Regressions%20with%20Orbit.html">Regression with Orbit</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Pyro%20in%20Orbit.html">Pyro in Orbit</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Diagnostics.html">Diagnostic</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Load data</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#Create-a-TimeSeriesSplitter">Create a TimeSeriesSplitter</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#Expanding-window">Expanding window</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Rolling-window">Rolling window</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Specifying-number-of-splits">Specifying number of splits</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Backtest Orbit Model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Load-data">Load data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Create-a-TimeSeriesSplitter">Create a TimeSeriesSplitter</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Expanding-window">Expanding window</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Rolling-window">Rolling window</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Specifying-number-of-splits">Specifying number of splits</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="#Create-a-BackTester">Create a BackTester</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#Backtest-fit-and-predict">Backtest fit and predict</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#Backtest-Scoring">Backtest Scoring</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#Backtest-Get-Models">Backtest Get Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Create-a-BackTester">Create a BackTester</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Backtest-fit-and-predict">Backtest fit and predict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Backtest-Scoring">Backtest Scoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Backtest-Get-Models">Backtest Get Models</a></li>
+</ul>
+</li>
 </ul>
 
             
@@ -153,7 +156,7 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Load data</li>
+      <li>Backtest Orbit Model</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -427,7 +430,8 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<p>Backtest Orbit Model</p>
+<div class="section" id="Backtest-Orbit-Model">
+<h1>Backtest Orbit Model<a class="headerlink" href="#Backtest-Orbit-Model" title="Permalink to this headline">¶</a></h1>
 <p>The way to gauge the performance of a time-series model is through re-training models with different historic periods and check their forecast within certain steps. This is similar to a time-based style cross-validation. More often, we called it <code class="docutils literal notranslate"><span class="pre">backtest</span></code> in time-series modeling.</p>
 <p>The purpose of this notebook is to illustrate how to do ‘backtest’ on a single model using <code class="docutils literal notranslate"><span class="pre">BackTester</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">BackTester</span></code> will compose a <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code> within it, but <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code> is useful as a standalone, in case there are other tasks to perform that requires splitting but not backtesting. You can also retrieve the composed <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code> object from <code class="docutils literal notranslate"><span class="pre">BackTester</span></code> to utilize the additional methods in <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code></p>
@@ -454,7 +458,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <div class="section" id="Load-data">
-<h1>Load data<a class="headerlink" href="#Load-data" title="Permalink to this headline">¶</a></h1>
+<h2>Load data<a class="headerlink" href="#Load-data" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
@@ -468,9 +472,9 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <div class="section" id="Create-a-TimeSeriesSplitter">
-<h1>Create a TimeSeriesSplitter<a class="headerlink" href="#Create-a-TimeSeriesSplitter" title="Permalink to this headline">¶</a></h1>
+<h2>Create a TimeSeriesSplitter<a class="headerlink" href="#Create-a-TimeSeriesSplitter" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="Expanding-window">
-<h2>Expanding window<a class="headerlink" href="#Expanding-window" title="Permalink to this headline">¶</a></h2>
+<h3>Expanding window<a class="headerlink" href="#Expanding-window" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
@@ -554,7 +558,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="section" id="Rolling-window">
-<h2>Rolling window<a class="headerlink" href="#Rolling-window" title="Permalink to this headline">¶</a></h2>
+<h3>Rolling window<a class="headerlink" href="#Rolling-window" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
@@ -592,7 +596,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="section" id="Specifying-number-of-splits">
-<h2>Specifying number of splits<a class="headerlink" href="#Specifying-number-of-splits" title="Permalink to this headline">¶</a></h2>
+<h3>Specifying number of splits<a class="headerlink" href="#Specifying-number-of-splits" title="Permalink to this headline">¶</a></h3>
 <p>User can also define number of splits using <code class="docutils literal notranslate"><span class="pre">n_splits</span></code> instead of specifying minimum training length. That way, minimum training length will be automatically calculated.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
@@ -632,7 +636,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="section" id="Create-a-BackTester">
-<h1>Create a BackTester<a class="headerlink" href="#Create-a-BackTester" title="Permalink to this headline">¶</a></h1>
+<h2>Create a BackTester<a class="headerlink" href="#Create-a-BackTester" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
@@ -665,7 +669,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="section" id="Backtest-fit-and-predict">
-<h1>Backtest fit and predict<a class="headerlink" href="#Backtest-fit-and-predict" title="Permalink to this headline">¶</a></h1>
+<h2>Backtest fit and predict<a class="headerlink" href="#Backtest-fit-and-predict" title="Permalink to this headline">¶</a></h2>
 <p>The most expensive portion of backtesting is fitting the model iteratively. Thus, we separate the api calls for <code class="docutils literal notranslate"><span class="pre">fit_predict</span></code> and <code class="docutils literal notranslate"><span class="pre">score</span></code> to avoid redundant computation for multiple metrics or scoring methods</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
@@ -959,7 +963,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="section" id="Backtest-Scoring">
-<h1>Backtest Scoring<a class="headerlink" href="#Backtest-Scoring" title="Permalink to this headline">¶</a></h1>
+<h2>Backtest Scoring<a class="headerlink" href="#Backtest-Scoring" title="Permalink to this headline">¶</a></h2>
 <p>The main purpose of <code class="docutils literal notranslate"><span class="pre">BackTester</span></code> are the evaluation metrics. Some of the most widely used metrics are implemented and built into the <code class="docutils literal notranslate"><span class="pre">BackTester</span></code> API.</p>
 <p>The default metric list is <strong>smape, wmape, mape, mse, mae, rmsse</strong>.</p>
 <div class="nbinput docutils container">
@@ -1224,7 +1228,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="section" id="Backtest-Get-Models">
-<h1>Backtest Get Models<a class="headerlink" href="#Backtest-Get-Models" title="Permalink to this headline">¶</a></h1>
+<h2>Backtest Get Models<a class="headerlink" href="#Backtest-Get-Models" title="Permalink to this headline">¶</a></h2>
 <p>In cases where <code class="docutils literal notranslate"><span class="pre">BackTester</span></code> doesn’t cut it or for more custom use-cases, there’s an interface to export the <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code> and predicted data, as shown earlier. It’s also possible to get each of the fitted models for deeper diving</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
@@ -1331,6 +1335,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span>
 </pre></div>
+</div>
 </div>
 </div>
 </div>
