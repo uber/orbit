@@ -294,3 +294,20 @@ def test_lgt_aggregated_with_regression(synthetic_data, estimator_type, regresso
     assert predict_df.columns.tolist() == expected_columns
     assert regression_out.shape == expected_regression_shape
     assert num_regressors == len(train_df.columns.tolist()[2:])
+
+def test_lgt_predict_all_positive_reg(iclaims_training_data):
+    df = iclaims_training_data
+
+    lgt = LGTMAP(
+        response_col='claims',
+        date_col='week',
+        regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
+        regressor_sign=['+', '+', '+'],
+        seasonality=52,
+        seed=8888,
+    )
+
+    lgt.fit(df)
+    predicted_df = lgt.predict(df, decompose=True)
+
+    assert any(predicted_df['regression'].values)

@@ -234,3 +234,20 @@ def test_dlt_map_global_trend(synthetic_data, global_trend_option):
     expected_shape = (51, len(expected_columns))
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
+
+def test_dlt_predict_all_positive_reg(iclaims_training_data):
+    df = iclaims_training_data
+
+    dlt = DLTMAP(
+        response_col='claims',
+        date_col='week',
+        regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
+        regressor_sign=['+', '+', '+'],
+        seasonality=52,
+        seed=8888,
+    )
+
+    dlt.fit(df)
+    predicted_df = dlt.predict(df, decompose=True)
+
+    assert any(predicted_df['regression'].values)
