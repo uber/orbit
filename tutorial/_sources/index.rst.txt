@@ -10,7 +10,7 @@ Welcome to Orbit's Tutorial!
    :maxdepth: 1
    :caption: Core Examples
 
-   Quick Start
+   quick_start
    LGT Model
    DLT Model
    Regressions with Orbit

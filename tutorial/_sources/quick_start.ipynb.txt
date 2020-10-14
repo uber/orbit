@@ -12,8 +12,8 @@
    "execution_count": 1,
    "metadata": {
     "ExecuteTime": {
-     "end_time": "2020-10-14T02:22:16.732485Z",
-     "start_time": "2020-10-14T02:22:09.689287Z"
+     "end_time": "2020-08-28T20:52:03.342828Z",
+     "start_time": "2020-08-28T20:52:01.428005Z"
     }
    },
    "outputs": [],
@@ -47,8 +47,8 @@
    "execution_count": 2,
    "metadata": {
     "ExecuteTime": {
-     "end_time": "2020-10-14T02:22:16.741775Z",
-     "start_time": "2020-10-14T02:22:16.734431Z"
+     "end_time": "2020-08-28T20:52:04.058734Z",
+     "start_time": "2020-08-28T20:52:04.056067Z"
     }
    },
    "outputs": [],
@@ -62,8 +62,8 @@
    "execution_count": 3,
    "metadata": {
     "ExecuteTime": {
-     "end_time": "2020-10-14T02:22:16.747507Z",
-     "start_time": "2020-10-14T02:22:16.744231Z"
+     "end_time": "2020-08-28T20:52:04.891345Z",
+     "start_time": "2020-08-28T20:52:04.887233Z"
     }
    },
    "outputs": [],
@@ -83,21 +83,8 @@
   {
    "cell_type": "code",
    "execution_count": 4,
-   "metadata": {
-    "ExecuteTime": {
-     "end_time": "2020-10-14T02:23:11.053790Z",
-     "start_time": "2020-10-14T02:22:18.316234Z"
-    }
-   },
-   "outputs": [
-    {
-     "name": "stderr",
-     "output_type": "stream",
-     "text": [
-      "INFO:pystan:COMPILING THE C++ CODE FOR MODEL anon_model_e3c37ca0adcdb861bca79a20c503522f NOW.\n"
-     ]
-    }
-   ],
+   "metadata": {},
+   "outputs": [],
    "source": [
     "lgt=LGTMAP(\n",
     "    response_col=\"claims\",\n",
@@ -112,12 +99,7 @@
   {
    "cell_type": "code",
    "execution_count": 5,
-   "metadata": {
-    "ExecuteTime": {
-     "end_time": "2020-10-14T02:23:11.291607Z",
-     "start_time": "2020-10-14T02:23:11.055687Z"
-    }
-   },
+   "metadata": {},
    "outputs": [
     {
      "data": {
@@ -148,8 +130,8 @@
    "execution_count": 6,
    "metadata": {
     "ExecuteTime": {
-     "end_time": "2020-10-14T02:23:17.942356Z",
-     "start_time": "2020-10-14T02:23:11.294563Z"
+     "end_time": "2020-08-28T20:52:05.634776Z",
+     "start_time": "2020-08-28T20:52:05.631660Z"
     }
    },
    "outputs": [
@@ -180,8 +162,8 @@
    "execution_count": 7,
    "metadata": {
     "ExecuteTime": {
-     "end_time": "2020-10-14T02:23:18.159214Z",
-     "start_time": "2020-10-14T02:23:17.944684Z"
+     "end_time": "2020-08-28T20:52:06.854224Z",
+     "start_time": "2020-08-28T20:52:06.628440Z"
     }
    },
    "outputs": [
@@ -201,20 +183,13 @@
     "                    date_col=\"week\", actual_col=\"claims\", pred_col=\"prediction\", \n",
     "                    test_actual_df=test_df)"
    ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": []
   }
  ],
  "metadata": {
   "kernelspec": {
-   "display_name": "Python 3",
+   "display_name": "orbit",
    "language": "python",
-   "name": "python3"
+   "name": "orbit"
   },
   "language_info": {
    "codemirror_mode": {
@@ -226,14 +201,14 @@
    "name": "python",
    "nbconvert_exporter": "python",
    "pygments_lexer": "ipython3",
-   "version": "3.7.7"
+   "version": "3.6.8"
   },
   "toc": {
    "base_numbering": 1,
    "nav_menu": {},
    "number_sections": true,
    "sideBar": true,
-   "skip_h1_title": false,
+   "skip_h1_title": true,
    "title_cell": "Table of Contents",
    "title_sidebar": "Contents",
    "toc_cell": false,
