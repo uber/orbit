@@ -123,7 +123,7 @@ class BaseLGT(BaseModel):
         self._regular_regressor_sigma_prior = list()
         # depends on seasonality length
         self._init_values = None
-        
+
         # set static data attributes
         self._set_static_data_attributes()
 
@@ -132,7 +132,7 @@ class BaseLGT(BaseModel):
         # on dynamic data (e.g actual data matrix, number of responses, etc) this should be
         # called after fit instead
         self._set_model_param_names()
-        
+
         # init dynamic data attributes
         # the following are set by `_set_dynamic_data_attributes()` and generally set during fit()
         # from input df
@@ -153,7 +153,7 @@ class BaseLGT(BaseModel):
             PredictMethod.MEAN.value: dict(),
             PredictMethod.MEDIAN.value: dict(),
         }
-        
+
     def _set_default_base_args(self):
         """Set default attributes for None
 
@@ -519,7 +519,7 @@ class BaseLGT(BaseModel):
         ################################################################
 
         # calculate regression component
-        if self.regressor_col is not None and len(self._regular_regressor_col) > 0:
+        if self.regressor_col is not None and len(self.regressor_col) > 0:
             regressor_beta = regressor_beta.t()
             regressor_matrix = df[self.regressor_col].values
             regressor_torch = torch.from_numpy(regressor_matrix).double()
