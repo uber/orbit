@@ -11,10 +11,9 @@ Welcome to Orbit's Documentation!
    :maxdepth: 1
    :caption: Orbit Core
 
-   getting_started
-   modules
+   installation
    tutorials
-
+   modules
 
 Indices and tables
 ==================

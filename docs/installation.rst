@@ -1,8 +1,5 @@
-
-Getting Started
-===============
 Installation
-------------
+============
 Install from PyPi:
 
 .. code:: bash
@@ -17,13 +14,6 @@ Install from GitHub:
     cd orbit
     pip install -r requirements.txt
     pip install .
-
-
-Tutorials
----------
-To learn more, please dive in the `tutorials <https://uber.github.io/orbit/tutorial>`_.
-
-
 
 
 
