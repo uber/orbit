@@ -5,7 +5,7 @@
 
 
 Welcome to Orbit's Documentation!
-======================
+=================================
 
 .. toctree::
    :maxdepth: 1
@@ -13,7 +13,7 @@ Welcome to Orbit's Documentation!
 
    getting_started
    modules
-
+   tutorials
 
 
 Indices and tables

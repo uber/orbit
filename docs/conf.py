@@ -39,7 +39,8 @@ extensions = [
     # 'sphinx.ext.doctest',
     'sphinx.ext.mathjax',
     # 'sphinx.ext.viewcode',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'nbsphinx',
 ]
 
 # autodoc_mock_imports = [
@@ -69,3 +70,5 @@ html_static_path = ['_static']
 
 napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = True
+
+nbsphinx_kernel_name = 'python3'
