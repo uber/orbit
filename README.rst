@@ -107,8 +107,7 @@ References
 Documentation
 -------------
 
-- `Orbit API documentation <https://uber.github.io/orbit/>`__
-- `Orbit tutorials and examples  <https://uber.github.io/orbit/tutorial>`__
+- `Orbit API Documentation and Examples <https://uber.github.io/orbit/>`__
 
 Citation
 --------
