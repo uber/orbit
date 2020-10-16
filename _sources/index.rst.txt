@@ -5,16 +5,15 @@
 
 
 Welcome to Orbit's Documentation!
-======================
+=================================
 
 .. toctree::
    :maxdepth: 1
    :caption: Orbit Core
 
-   getting_started
+   installation
+   tutorials
    modules
-
-
 
 Indices and tables
 ==================
