@@ -216,7 +216,7 @@ class BaseDLT(BaseLGT):
         ################################################################
 
         # calculate regression component
-        if self.regressor_col is not None and len(self._regular_regressor_col) > 0:
+        if self.regressor_col is not None and len(self.regressor_col) > 0:
             regressor_beta = regressor_beta.t()
             regressor_matrix = df[self.regressor_col].values
             regressor_torch = torch.from_numpy(regressor_matrix).double()
