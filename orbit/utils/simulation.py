@@ -7,7 +7,6 @@ from orbit.exceptions import IllegalArgument
 
 def make_trend(series_len, rw_loc=0.001, rw_scale=0.1, type='rw', seed=1):
     """ Module to generate time-series trend with different methods
-
     Parameters
     ----------
     series_len: int
@@ -117,7 +116,6 @@ def make_ts_multiplicative(series_len=200, seasonality=-1, coefs=None, regressor
     seas_scale: float
     response_col: str
     seed: int
-
     Notes
     ------
         Some ideas are from https://scikit-learn.org/stable/auto_examples/linear_model/plot_bayesian_ridge.html
