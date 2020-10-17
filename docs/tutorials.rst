@@ -5,9 +5,9 @@ Tutorials
    :maxdepth: 1
 
    tutorials/quick_start
-   tutorials/lgt_model
-   tutorials/dlt_model
+   tutorials/lgt
+   tutorials/dlt
    tutorials/regression
-   tutorials/pyro
+   tutorials/pyro_basic
    tutorials/diagnostics
-   tutorials/backtest_orbit_model
+   tutorials/backtest
