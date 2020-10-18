@@ -92,7 +92,6 @@
    "source": [
     "df = pd.read_csv(\"../../examples/data/iclaims_example.csv\", parse_dates=[\"week\"])\n",
     "df[\"claims\"] = np.log(df[\"claims\"])\n",
-    "\n",
     "date_col = 'week'\n",
     "response_col = 'claims'"
    ]
@@ -298,7 +297,6 @@
    ],
    "source": [
     "predicted_df = lgt.predict(df=test_df)\n",
-    "\n",
     "plot_predicted_data(training_actual_df=train_df, predicted_df=predicted_df, \n",
     "                    date_col=lgt.date_col, actual_col=lgt.response_col, pred_col='prediction', \n",
     "                    test_actual_df=test_df)"

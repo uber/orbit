@@ -1,8 +1,7 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8">
   
@@ -12,12 +11,18 @@
   
 
   
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
   
   
   
 
   
-  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -26,18 +31,16 @@
         <script src="../_static/doctools.js"></script>
         <script src="../_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     
     <script type="text/javascript" src="../_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" /> 
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Backtest Orbit Model" href="backtest.html" />
+    <link rel="prev" title="Regression with Orbit" href="regression.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -51,7 +54,7 @@
           
 
           
-            <a href="../index.html" class="icon icon-home"> orbit
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> orbit
           
 
           
@@ -78,6 +81,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -86,15 +90,29 @@
             
             
               <p class="caption"><span class="caption-text">Orbit Core</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="quick_start.html">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lgt.html">LGT Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dlt.html">DLT Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html">Regression with Orbit</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Pyro in Orbit</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Data">Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#MAP-Fit-and-Predict">MAP Fit and Predict</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#VI-Fit-and-Predict">VI Fit and Predict</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="backtest.html">Backtest Orbit Model</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../modules.html">API Docs</a></li>
 </ul>
 
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -133,7 +151,9 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="../index.html">Docs</a> &raquo;</li>
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../tutorials.html">Tutorials</a> &raquo;</li>
         
       <li>Pyro in Orbit</li>
     
@@ -622,16 +642,33 @@ Wall time: 12.1 s
           </div>
           <footer>
   
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="backtest.html" class="btn btn-neutral float-right" title="Backtest Orbit Model" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="regression.html" class="btn btn-neutral float-left" title="Regression with Orbit" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
+        
         &copy; Copyright 2020, Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -642,7 +679,6 @@ Wall time: 12.1 s
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {
