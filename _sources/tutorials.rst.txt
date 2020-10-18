@@ -4,10 +4,10 @@ Tutorials
 .. toctree::
    :maxdepth: 1
 
-   tutorials/Quick Start
-   tutorials/LGT Model
-   tutorials/DLT Model
-   tutorials/Regressions with Orbit
-   tutorials/Pyro in Orbit
-   tutorials/Diagnostics
-   tutorials/Backtest Orbit Model
+   tutorials/quick_start
+   tutorials/lgt
+   tutorials/dlt
+   tutorials/regression
+   tutorials/pyro_basic
+   tutorials/diagnostics
+   tutorials/backtest
