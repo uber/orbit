@@ -10,5 +10,5 @@ Tutorials
    tutorials/regression
    tutorials/decompose_prediction
    tutorials/pyro_basic
-   tutorials/diagnostics
+   tutorials/model_diagnostics
    tutorials/backtest
