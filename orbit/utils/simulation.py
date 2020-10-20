@@ -24,7 +24,8 @@ def make_trend(series_len,  method='rw', arma=[.25, .6], rw_loc=0.0, rw_scale=0.
         seed passed into `np.random.default_rng()`
     Returns
     -------
-        np.array-llike with length equals `series_len`
+    np.array-llike
+        Simulated trend with length equals `series_len`
 
     Notes
     -----
@@ -68,7 +69,8 @@ def make_seasonality(series_len, seasonality, method='discrete', order=3, durati
         seed passed into `np.random.default_rng()`
     Returns
     -------
-        np.array-llike with length equals `series_len`
+    np.array-llike
+        Simulated seasonliaty with length equals `series_len`
 
     Notes
     -----
@@ -128,9 +130,13 @@ def make_regression(series_len, coefs, loc=0.0, scale=0.5, cov=None, noise_scale
 
     Returns
     -------
-    x: 2-D array like of shape (series_len, num_of_regressors); regressors simulated
-    y: 1-D array like derived by product of X and coefficients plus noise
-    coefs: coefficients modified; if sparsity=0, it should be identical to coefs inputted by user
+    x: 2-D array like
+        Regressors simulated array. Should be with shape (series_len, num_of_regressors);
+    y: 1-D array like
+        Regression derived by product of X and coefficients plus noise
+    coefs: float
+        Coefficients modified in the process due to sparsity; if sparsity=0, it should be
+        identical to coefs inputted by user
     """
 
     num_of_regressors = len(coefs)
