@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from datetime import datetime
-
+from orbit.exceptions import IllegalArgument
 
 def make_fourier_series(dates, period, order=3):
     """ Given dates array, cyclical period and order.  Return a set of fourier series.
@@ -41,9 +41,9 @@ def make_fourier_series_df(df, date_col, period, order=3):
     Parameters
     ----------
     df: pd.DataFrame
-        Input dataframe to supply datetime array in order to
+        Input dataframe to supply datetime array for generating fourier series
     date_col: str
-        Label of the date column supply for generating series
+        Label of the date column supply for generating fourier series
     Returns
     -------
     out: pd.DataFrame
@@ -65,12 +65,36 @@ def make_fourier_series_df(df, date_col, period, order=3):
 
 
 def make_seasonal_dummies(df, date_col, freq, sparse=True, drop_first=True):
+    """
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Input dataframe to supply datetime array for generating series of indicators
+    date_col: str
+        Label of the date column supply for generating series
+    freq: str ['weekday', 'month', 'week']
+        Options to pick the right frequency for generating dummies
+    Returns
+    -------
+    out: pd.DataFrame
+        data with computed fourier series attached
+    fs_cols: list
+        list of labels derived from fourier series
+    Notes
+    -----
+        This is calling :func:`pd.get_dummies`
+    """
     if freq == 'weekday':
         dummies = pd.get_dummies(df[date_col].dt.weekday, prefix='wd', sparse=sparse, drop_first=drop_first)
     elif freq == 'month':
         dummies = pd.get_dummies(df[date_col].dt.month, prefix='m', sparse=sparse, drop_first=drop_first)
     elif freq == 'week':
         dummies = pd.get_dummies(df[date_col].dt.week, prefix='w', sparse=sparse, drop_first=drop_first)
+    else:
+        raise IllegalArgument("Invalid argument of freq.")
+
     cols = dummies.columns.tolist()
     out = pd.concat([df, dummies], axis=1)
     return out, cols
+
+
