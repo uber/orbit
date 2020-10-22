@@ -3,6 +3,7 @@
 ## Description
 
 Please include a summary of the change and which issue is fixed.
+
 Fixes # (issue)
 
 ## Type of change
@@ -16,4 +17,4 @@ Please delete options that are not relevant.
 
 ## How Has This Been Tested?
 
-Please explain how this patch was tested. E.g. unit tests, integration tests, manual tests).
+Please explain how this patch was tested. E.g. unit tests, integration tests, manual tests.
