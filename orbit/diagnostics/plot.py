@@ -19,9 +19,8 @@ if os.environ.get('DISPLAY', '') == '':
     matplotlib.use('Agg')
 
 
-def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, pred_col,
-                        title="", test_actual_df=None,
-                        is_visible=True, figsize=None, path=None):
+def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, pred_col='prediction',
+                        title="", test_actual_df=None, is_visible=True, figsize=(16, 8), path=None):
     """
     plot training actual response together with predicted data; if actual response of predicted
     data is there, plot it too.
@@ -48,7 +47,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
         path to save the figure
     Returns
     -------
-        None.
+        None
     """
 
     if is_empty_dataframe(training_actual_df) or is_empty_dataframe(predicted_df):
@@ -64,9 +63,6 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
     _predicted_df=predicted_df.copy()
     _training_actual_df[date_col] = pd.to_datetime(_training_actual_df[date_col])
     _predicted_df[date_col] = pd.to_datetime(_predicted_df[date_col])
-
-    if not figsize:
-        figsize=(16, 8)
 
     fig, ax = plt.subplots(facecolor='w', figsize=figsize)
 
@@ -97,7 +93,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
     ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
     ax.legend()
     if path:
-        plt.savefig(path)
+        fig.savefig(path)
     if is_visible:
         plt.show()
 
@@ -120,7 +116,7 @@ def plot_predicted_components(predicted_df, date_col, figsize=None, path=None):
         path to save the figure
    Returns
     -------
-        None.
+        None
     """
 
     _predicted_df=predicted_df.copy()
@@ -148,6 +144,8 @@ def plot_predicted_components(predicted_df, date_col, figsize=None, path=None):
 
     if path:
         plt.savefig(path)
+
+    return fig
 
 
 def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon',
@@ -214,7 +212,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
 
     Returns
     -------
-    fig : plt object
+    fig: plt object
     """
     if not 'orbit' in str(mod.__class__):
         raise Exception("This plotting utility works for orbit model object only.")

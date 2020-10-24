@@ -792,7 +792,7 @@ class LGTFull(BaseLGT):
     """
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
 
-    def __init__(self, n_bootstrap_draws=None, prediction_percentiles=None, **kwargs):
+    def __init__(self, n_bootstrap_draws=None, prediction_percentiles=[5, 95], **kwargs):
         # todo: assert compatible estimator
         super().__init__(**kwargs)
         self.n_bootstrap_draws = n_bootstrap_draws
