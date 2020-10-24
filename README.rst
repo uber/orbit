@@ -2,9 +2,6 @@
 
 -------------------------------------------
 
-**Disclaimer: This project may contain experimental code and may not be
-ready for general use. Support and/or new releases may be limited.**
-
 **Disclaimer: Orbit requires PyStan as a system dependency. PyStan is
 licensed under** `GPLv3 <https://www.gnu.org/licenses/gpl-3.0.html>`__ **,
 which is a free, copyleft license for software.**
