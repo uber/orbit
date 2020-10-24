@@ -106,7 +106,7 @@ def test_dlt_non_seasonal_fit(synthetic_data, estimator_type):
     dlt.fit(train_df)
     predict_df = dlt.predict(test_df)
 
-    expected_columns = ['week', 'prediction']
+    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 11
 
@@ -234,6 +234,7 @@ def test_dlt_map_global_trend(synthetic_data, global_trend_option):
     expected_shape = (51, len(expected_columns))
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
+
 
 def test_dlt_predict_all_positive_reg(iclaims_training_data):
     df = iclaims_training_data
