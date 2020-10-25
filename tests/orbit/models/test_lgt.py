@@ -159,7 +159,7 @@ def test_lgt_non_seasonal_fit(synthetic_data, estimator_type):
     lgt.fit(train_df)
     predict_df = lgt.predict(test_df)
 
-    expected_columns = ['week', 'prediction']
+    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 11
 
@@ -181,7 +181,7 @@ def test_lgt_non_seasonal_fit_pyro(synthetic_data):
     lgt.fit(train_df)
     predict_df = lgt.predict(test_df)
 
-    expected_columns = ['week', 'prediction']
+    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 10  # no `lp__` in pyro
 
