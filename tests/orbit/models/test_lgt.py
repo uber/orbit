@@ -38,7 +38,7 @@ def test_lgt_full_univariate(synthetic_data, estimator_type):
     lgt.fit(train_df)
     predict_df = lgt.predict(test_df)
 
-    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 13
 
@@ -63,7 +63,7 @@ def test_lgt_full_univariate_pyro(synthetic_data):
     lgt.fit(train_df)
     predict_df = lgt.predict(test_df)
 
-    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 12  # no `lp__` in pyro
 
@@ -159,7 +159,7 @@ def test_lgt_non_seasonal_fit(synthetic_data, estimator_type):
     lgt.fit(train_df)
     predict_df = lgt.predict(test_df)
 
-    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 11
 
@@ -181,7 +181,7 @@ def test_lgt_non_seasonal_fit_pyro(synthetic_data):
     lgt.fit(train_df)
     predict_df = lgt.predict(test_df)
 
-    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 10  # no `lp__` in pyro
 
@@ -234,7 +234,7 @@ def test_lgt_full_with_regression(synthetic_data, estimator_type, regressor_sign
     regression_out = lgt.get_regression_coefs()
     num_regressors = regression_out.shape[0]
 
-    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_regression_shape = (6, 3)
 

@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 from orbit.exceptions import IllegalArgument
 
+
 def make_fourier_series(dates, period, order=3):
     """ Given dates array, cyclical period and order.  Return a set of fourier series.
     Parameters
@@ -36,7 +37,7 @@ def make_fourier_series(dates, period, order=3):
     return out
 
 
-def make_fourier_series_df(df, date_col, period, order=3):
+def make_fourier_series_df(df, date_col, period, order=3, prefix=''):
     """ Given a data-frame, cyclical period and order.  Return a set of fourier series in a dataframe.
     Parameters
     ----------
@@ -57,8 +58,8 @@ def make_fourier_series_df(df, date_col, period, order=3):
     fs = make_fourier_series(df[date_col], period, order=order)
     fs_cols = []
     for i in range(1, order + 1):
-        fs_cols.append('fs_cos{}'.format(i))
-        fs_cols.append('fs_sin{}'.format(i))
+        fs_cols.append('{}_fs_cos{}'.format(prefix, i))
+        fs_cols.append('{}_fs_sin{}'.format(prefix, i))
     fs_df = pd.DataFrame(fs, columns=fs_cols)
     out = pd.concat([df.reset_index(drop=True), fs_df], axis=1)
     return out, fs_cols

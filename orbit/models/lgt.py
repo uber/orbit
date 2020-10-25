@@ -792,7 +792,7 @@ class LGTFull(BaseLGT):
     """
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
 
-    def __init__(self, n_bootstrap_draws=None, prediction_percentiles=[5, 95], **kwargs):
+    def __init__(self, n_bootstrap_draws=None, prediction_percentiles=None, **kwargs):
         # todo: assert compatible estimator
         super().__init__(**kwargs)
         self.n_bootstrap_draws = n_bootstrap_draws
@@ -807,8 +807,8 @@ class LGTFull(BaseLGT):
         self._validate_supported_estimator_type()
 
     def _set_default_args(self):
-        if not self.prediction_percentiles:
-            self._prediction_percentiles = list()
+        if self.prediction_percentiles is None:
+            self._prediction_percentiles = [5, 95]
         else:
             self._prediction_percentiles = copy(self.prediction_percentiles)
 
@@ -861,13 +861,8 @@ class LGTFull(BaseLGT):
         """
 
         aggregated_array = np.percentile(array, percentiles, axis=0)
-        if len(percentiles) == 1:
-            aggregate_df = pd.DataFrame(aggregated_array.T, columns=[label])
-        elif len(percentiles) == 3:
-            aggregate_df = pd.DataFrame(aggregated_array.T, columns=[label + "_lower", label, label + "_upper"])
-        else:
-            raise PredictionException("Invalid input percentiles.")
-
+        columns = [label + "_" + str(p) if p != 50 else label for p in percentiles]
+        aggregate_df = pd.DataFrame(aggregated_array.T, columns=columns)
         return aggregate_df
 
     def predict(self, df, decompose=False):

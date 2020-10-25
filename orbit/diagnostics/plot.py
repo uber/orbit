@@ -19,7 +19,8 @@ if os.environ.get('DISPLAY', '') == '':
     matplotlib.use('Agg')
 
 
-def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, pred_col='prediction',
+def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
+                        pred_col='prediction', prediction_percentiles=None,
                         title="", test_actual_df=None, is_visible=True, figsize=(16, 8), path=None):
     """
     plot training actual response together with predicted data; if actual response of predicted
@@ -30,15 +31,18 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
         training actual response data frame. two columns required: actual_col and date_col
     predicted_df: pd.DataFrame
         predicted data response data frame. two columns required: actual_col and pred_col. If
-        user provide pred_percentiles_col, it needs to include them as well.
+        user provide prediction_percentiles, it needs to include them as well.
     date_col: str
         the date column name
     actual_col: str
     pred_col: str
+    prediction_percentiles: list
+        a list should consist exact two elements which will be used to plot as lower and upper bound of
+        confidence interval
     title: str
         title of the plot
     test_actual_df: pd.DataFrame
-       test actual response dataframe. two columns required: actual_col and date_co
+       test actual response dataframe. two columns required: actual_col and date_col
     is_visible: boolean
         whether we want to show the plot. If called from unittest, is_visible might = False.
     figsize: tuple
@@ -54,8 +58,17 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
         raise ValueError("No prediction data or training response to plot.")
 
     plot_confid = False
-    # labels for confidence intervals
-    confid_cols = [pred_col + "_lower", pred_col + "_upper"]
+    if prediction_percentiles is None:
+        _pred_percentiles = [5, 95]
+    else:
+        _pred_percentiles = prediction_percentiles
+
+    if len(_pred_percentiles) != 2:
+        raise ValueError("prediction_percentiles has to be None or a list with length=2.")
+
+    confid_cols = ['prediction_{}'.format(_pred_percentiles[0]),
+                   'prediction_{}'.format(_pred_percentiles[1])]
+
     if set(confid_cols).issubset(predicted_df.columns):
         plot_confid = True
 
@@ -98,7 +111,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
         plt.show()
 
 
-def plot_predicted_components(predicted_df, date_col, figsize=None, path=None):
+def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, figsize=None, path=None):
     """ Plot predicted componenets with the data frame of decomposed prediction where components
     has been pre-defined as `trend`, `seasonality` and `regression`.
     Parameters
@@ -108,6 +121,9 @@ def plot_predicted_components(predicted_df, date_col, figsize=None, path=None):
         user provide pred_percentiles_col, it needs to include them as well.
     date_col: str
         the date column name
+    prediction_percentiles: list
+        a list should consist exact two elements which will be used to plot as lower and upper bound of
+        confidence interval
     title: str
         title of the plot
     figsize: tuple
@@ -128,11 +144,19 @@ def plot_predicted_components(predicted_df, date_col, figsize=None, path=None):
     if not figsize:
         figsize=(16, 8)
 
+    if prediction_percentiles is None:
+        _pred_percentiles = [5, 95]
+    else:
+        _pred_percentiles = prediction_percentiles
+
+    if len(_pred_percentiles) != 2:
+        raise ValueError("prediction_percentiles has to be None or a list with length=2.")
+
     fig, axes = plt.subplots(n_panels, 1, facecolor='w', figsize=figsize)
     for ax, comp in zip(axes, plot_components):
         y = predicted_df[comp].values
         ax.plot(_predicted_df[date_col], y, marker=None, color='#12939A')
-        confid_cols = [comp + "_lower", comp + "_upper"]
+        confid_cols = ["{}_{}".format(comp, _pred_percentiles[0]), "{}_{}".format(comp, _pred_percentiles[1])]
         if set(confid_cols).issubset(predicted_df.columns):
             ax.fill_between(_predicted_df[date_col].values,
                             _predicted_df[confid_cols[0]],
@@ -144,8 +168,6 @@ def plot_predicted_components(predicted_df, date_col, figsize=None, path=None):
 
     if path:
         plt.savefig(path)
-
-    return fig
 
 
 def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon',

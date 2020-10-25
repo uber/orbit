@@ -36,7 +36,7 @@ def test_dlt_full_univariate(synthetic_data, estimator_type):
     dlt.fit(train_df)
     predict_df = dlt.predict(test_df)
 
-    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 13
 
@@ -106,7 +106,7 @@ def test_dlt_non_seasonal_fit(synthetic_data, estimator_type):
     dlt.fit(train_df)
     predict_df = dlt.predict(test_df)
 
-    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 11
 
@@ -146,7 +146,7 @@ def test_dlt_full_with_regression(synthetic_data, estimator_type, regressor_sign
     regression_out = dlt.get_regression_coefs()
     num_regressors = regression_out.shape[0]
 
-    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_regression_shape = (6, 3)
 
