@@ -3,6 +3,7 @@ from pystan import StanModel
 import pickle
 import pkg_resources
 import os
+import numpy as np
 
 
 def compile_stan_model(stan_model_name):
@@ -49,3 +50,31 @@ def get_compiled_stan_model(stan_model_name):
     )
     with open(model_file, 'rb') as f:
         return pickle.load(f)
+
+
+def estimate_level_smoothing(x, horizon, n_diff):
+    """ Improving estimation of level smoothing by running a simple smoothing on differenced data
+        Parameters
+    ----------
+    x: 1-D array-like
+        Input of observations
+    horizon: int
+        Forecast horizon used to test robustness of estimation
+    n_diff: int
+        Order of differencing.  In general, use the highest seasonal order describing the
+        input observations
+    Returns
+    -------
+    float:
+        estimated level smoothing parameters
+    """
+    compiled_stan_model = get_compiled_stan_model('simple_smoothing')
+    x_diff = x[n_diff:] - x[:-n_diff]
+    data = {
+        'N_OBS': len(x_diff),
+        'RESPONSE': x_diff,
+        'HORIZON': horizon,
+        'SDY': np.std(x_diff)
+    }
+    op = compiled_stan_model.optimizing(data)
+    return op['lev_sm']
