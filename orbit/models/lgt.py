@@ -785,7 +785,8 @@ class LGTFull(BaseLGT):
         Number of bootstrap samples to draw from the initial MCMC or VI posterior samples.
         If None, use the original posterior draws.
     prediction_percentiles : list
-        List of integers of prediction percentiles that should be returned on prediction.
+        List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
+        confident intervals, pass an empty list
     kwargs
         Additional args to pass to parent classes.
 
@@ -807,8 +808,8 @@ class LGTFull(BaseLGT):
         self._validate_supported_estimator_type()
 
     def _set_default_args(self):
-        if not self.prediction_percentiles:
-            self._prediction_percentiles = list()
+        if self.prediction_percentiles is None:
+            self._prediction_percentiles = [5, 95]
         else:
             self._prediction_percentiles = copy(self.prediction_percentiles)
 

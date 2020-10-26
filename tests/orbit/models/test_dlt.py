@@ -106,7 +106,7 @@ def test_dlt_non_seasonal_fit(synthetic_data, estimator_type):
     dlt.fit(train_df)
     predict_df = dlt.predict(test_df)
 
-    expected_columns = ['week', 'prediction']
+    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 11
 

@@ -19,7 +19,7 @@ if os.environ.get('DISPLAY', '') == '':
     matplotlib.use('Agg')
 
 
-def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, pred_col,
+def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, pred_col='prediction',
                         title="", test_actual_df=None,
                         is_visible=True, figsize=None, path=None):
     """
