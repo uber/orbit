@@ -52,7 +52,7 @@ def get_compiled_stan_model(stan_model_name):
         return pickle.load(f)
 
 
-def estimate_level_smoothing(x, horizon, n_diff):
+def estimate_level_smoothing(x, seasonality=1, horizon=None):
     """ Improving estimation of level smoothing by running a simple smoothing on differenced data
         Parameters
     ----------
@@ -60,8 +60,8 @@ def estimate_level_smoothing(x, horizon, n_diff):
         Input of observations
     horizon: int
         Forecast horizon used to test robustness of estimation
-    n_diff: int
-        Order of differencing.  In general, use the highest seasonal order describing the
+    seasonality: int
+        The highest seasonal order describing the
         input observations
     Returns
     -------
@@ -69,12 +69,14 @@ def estimate_level_smoothing(x, horizon, n_diff):
         estimated level smoothing parameters
     """
     compiled_stan_model = get_compiled_stan_model('simple_smoothing')
-    x_diff = x[n_diff:] - x[:-n_diff]
+    if not horizon:
+        horizon = seasonality
     data = {
-        'N_OBS': len(x_diff),
-        'RESPONSE': x_diff,
+        'N_OBS': len(x),
+        'RESPONSE': x,
         'HORIZON': horizon,
-        'SDY': np.std(x_diff)
+        'SDY': np.std(x),
+        'SEASONALITY': seasonality,
     }
     op = compiled_stan_model.optimizing(data)
     return op['lev_sm']
