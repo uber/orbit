@@ -17,7 +17,7 @@ from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
-from orbit.utils.stan import estimate_level_smoothing
+
 
 class BaseLGT(BaseModel):
     """Base LGT model object with shared functionality for Full, Aggregated, and MAP methods
@@ -710,16 +710,6 @@ class BaseLGT(BaseModel):
 
         self._set_dynamic_data_attributes(df)
         self._set_model_data_input()
-
-        if self._seasonality > 1:
-            lev_sms = list()
-            lev_sms.append(estimate_level_smoothing(df[self.response_col].values, self.seasonality, horizon=self.seasonality - 5))
-            lev_sms.append(estimate_level_smoothing(df[self.response_col].values, self.seasonality, horizon=self.seasonality - 2))
-            lev_sms.append(estimate_level_smoothing(df[self.response_col].values, self.seasonality, horizon=self.seasonality))
-            lev_sms.append(estimate_level_smoothing(df[self.response_col].values, self.seasonality, horizon=self.seasonality + 2))
-            lev_sms.append(estimate_level_smoothing(df[self.response_col].values, self.seasonality, horizon=self.seasonality + 5))
-        self._level_sm_input = np.mean(np.array(lev_sms))
-        self._slope_sm_input = np.mean(np.array(lev_sms))
 
         # estimator inputs
         data_input = self._get_model_data_input()
