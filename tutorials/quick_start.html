@@ -505,7 +505,7 @@ INFO:pystan:COMPILING THE C++ CODE FOR MODEL anon_model_e3c37ca0adcdb861bca79a20
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
-                    <span class="n">date_col</span><span class="o">=</span><span class="s2">&quot;week&quot;</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="s2">&quot;claims&quot;</span><span class="p">,</span> <span class="n">pred_col</span><span class="o">=</span><span class="s2">&quot;prediction&quot;</span><span class="p">,</span>
+                    <span class="n">date_col</span><span class="o">=</span><span class="s2">&quot;week&quot;</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="s2">&quot;claims&quot;</span><span class="p">,</span>
                     <span class="n">test_actual_df</span><span class="o">=</span><span class="n">test_df</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -530,7 +530,6 @@ INFO:pystan:COMPILING THE C++ CODE FOR MODEL anon_model_e3c37ca0adcdb861bca79a20
     <span class="n">date_col</span><span class="o">=</span><span class="s2">&quot;week&quot;</span><span class="p">,</span>
     <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
     <span class="n">seed</span><span class="o">=</span><span class="mi">2020</span><span class="p">,</span>
-    <span class="n">prediction_percentiles</span><span class="o">=</span><span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">95</span><span class="p">],</span>
 <span class="p">)</span>
 <span class="n">lgt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">)</span>
 <span class="n">predicted_df</span> <span class="o">=</span> <span class="n">lgt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">test_df</span><span class="p">)</span>
@@ -552,7 +551,7 @@ To run all diagnostics call pystan.check_hmc_diagnostics(fit)
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
-                    <span class="n">date_col</span><span class="o">=</span><span class="s2">&quot;week&quot;</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="s2">&quot;claims&quot;</span><span class="p">,</span> <span class="n">pred_col</span><span class="o">=</span><span class="s2">&quot;prediction&quot;</span><span class="p">,</span>
+                    <span class="n">date_col</span><span class="o">=</span><span class="s2">&quot;week&quot;</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="s2">&quot;claims&quot;</span><span class="p">,</span>
                     <span class="n">test_actual_df</span><span class="o">=</span><span class="n">test_df</span><span class="p">)</span>
 </pre></div>
 </div>

@@ -545,7 +545,7 @@ Wall time: 10 s
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">lgt_map</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">test_df</span><span class="p">)</span>
 <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
-                    <span class="n">date_col</span><span class="o">=</span><span class="n">lgt_map</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">lgt_map</span><span class="o">.</span><span class="n">response_col</span><span class="p">,</span> <span class="n">pred_col</span><span class="o">=</span><span class="s1">&#39;prediction&#39;</span><span class="p">,</span>
+                    <span class="n">date_col</span><span class="o">=</span><span class="n">lgt_map</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">lgt_map</span><span class="o">.</span><span class="n">response_col</span><span class="p">,</span>
                     <span class="n">test_actual_df</span><span class="o">=</span><span class="n">test_df</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -576,7 +576,6 @@ Wall time: 10 s
     <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
     <span class="n">n_bootstrap_draws</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
     <span class="n">estimator_type</span><span class="o">=</span><span class="n">PyroEstimatorVI</span><span class="p">,</span>
-    <span class="n">prediction_percentiles</span><span class="o">=</span><span class="p">[</span><span class="mi">5</span><span class="p">,</span><span class="mi">95</span><span class="p">],</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -623,7 +622,7 @@ Wall time: 12.1 s
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
-                    <span class="n">date_col</span><span class="o">=</span><span class="n">lgt_vi</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">lgt_vi</span><span class="o">.</span><span class="n">response_col</span><span class="p">,</span> <span class="n">pred_col</span><span class="o">=</span><span class="s1">&#39;prediction&#39;</span><span class="p">,</span>
+                    <span class="n">date_col</span><span class="o">=</span><span class="n">lgt_vi</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">lgt_vi</span><span class="o">.</span><span class="n">response_col</span><span class="p">,</span>
                     <span class="n">test_actual_df</span><span class="o">=</span><span class="n">test_df</span><span class="p">)</span>
 </pre></div>
 </div>

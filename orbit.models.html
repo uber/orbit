@@ -393,7 +393,8 @@ are specified.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n_bootstrap_draws</strong> (<em>int</em>) – Number of bootstrap samples to draw from the initial MCMC or VI posterior samples.
 If None, use the original posterior draws.</p></li>
-<li><p><strong>prediction_percentiles</strong> (<em>list</em>) – List of integers of prediction percentiles that should be returned on prediction.</p></li>
+<li><p><strong>prediction_percentiles</strong> (<em>list</em>) – List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
+confident intervals, pass an empty list</p></li>
 <li><p><strong>kwargs</strong> – Additional args to pass to parent classes.</p></li>
 </ul>
 </dd>
