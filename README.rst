@@ -83,7 +83,6 @@ Local-Global-Trend (LGT) Model with FULL Bayesian Prediction
         date_col='week',
         regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
         seasonality=52,
-        prediction_percentiles=[5, 95],
     )
     lgt.fit(df=train_df)
 
@@ -94,7 +93,7 @@ Local-Global-Trend (LGT) Model with FULL Bayesian Prediction
     plot_predicted_data(
         training_actual_df=train_df, predicted_df=predicted_df,
         date_col=lgt.date_col, actual_col=lgt.response_col,
-        pred_col='prediction', test_actual_df=test_df
+        test_actual_df=test_df
     )
 
 .. image:: docs/img/lgt-mcmc-pred.png
@@ -126,7 +125,7 @@ Papers
 
 - Taylor, S. J. and Letham, B. Forecasting at scale. The American Statistician, 72(1):37–45, 2018.
 
-- Hewamalage, H., Bergmeir, C., and Bandara, K. Recurrent neural networks for time series forecasting: Current status and future directions. arXiv preprint arXiv:1909.00590, 2019.
+- Hoffman, M.D. and Gelman, A. The No-U-Turn sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. J. Mach. Learn. Res., 15(1), pp.1593-1623, 2014.
 
 
 Related projects
