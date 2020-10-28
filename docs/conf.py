@@ -19,7 +19,7 @@ import orbit
 # -- Project information -----------------------------------------------------
 
 project = 'orbit'
-copyright = '2020, Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang'
+copyright = '2020, Uber Technologies, Inc'
 author = 'Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang'
 
 # The short X.Y version.
