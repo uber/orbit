@@ -735,8 +735,8 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="section" id="MCMC-Fit-and-Predictict">
 <h2>MCMC Fit and Predictict<a class="headerlink" href="#MCMC-Fit-and-Predictict" title="Permalink to this headline">¶</a></h2>
-<p>Now let’s instantiate a DLT model with MCMC inference.</p>
-<div class="nbinput nblast docutils container">
+<p>DLT also supports full mcmc sampling.</p>
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
@@ -748,19 +748,13 @@ div.rendered_html tbody tr:hover {
     <span class="n">seed</span><span class="o">=</span><span class="mi">2020</span><span class="p">,</span>
     <span class="n">global_trend_option</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+<span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">future_df</span><span class="p">)</span>
+<span class="n">predicted_df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
+<div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area stderr docutils container">
@@ -769,31 +763,60 @@ WARNING:pystan:Maximum (flat) parameter count (1000) exceeded: skipping diagnost
 To run all diagnostics call pystan.check_hmc_diagnostics(fit)
 </pre></div></div>
 </div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">future_df</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
-                    <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
 <div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
 </div>
-<div class="output_area docutils container">
-<img alt="../_images/tutorials_dlt_39_0.png" src="../_images/tutorials_dlt_39_0.png" />
-</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>week</th>
+      <th>prediction_lower</th>
+      <th>prediction</th>
+      <th>prediction_upper</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2018-07-01</td>
+      <td>12.232436</td>
+      <td>12.331000</td>
+      <td>12.416812</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2018-07-08</td>
+      <td>12.355895</td>
+      <td>12.460182</td>
+      <td>12.549029</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2018-07-15</td>
+      <td>12.251374</td>
+      <td>12.341858</td>
+      <td>12.429283</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
 </div>
 </div>
 </div>
