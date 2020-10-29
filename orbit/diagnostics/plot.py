@@ -76,7 +76,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col, 
                label='train response')
     ax.plot(_predicted_df[date_col].values,
             _predicted_df[pred_col].values,
-            marker=None, color='#12939A', lw=2, label='prediction')
+            marker=None, color='#12939A', lw=2, alpha=0.8, label='prediction')
 
     if test_actual_df is not None:
         test_actual_df=test_actual_df.copy()

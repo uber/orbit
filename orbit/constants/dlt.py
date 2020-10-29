@@ -38,6 +38,8 @@ class DataInputMapper(Enum):
     AUTO_RIDGE_SCALE = 'AUTO_RIDGE_SCALE'
     LASSO_SCALE = 'LASSO_SCALE'
     _WITH_MCMC = 'WITH_MCMC'
+    # EXPERIMENTAL
+    _LEVEL_UPDATE_INDICATOR = 'LEV_UPDATE_INDICATOR'
 
 
 class GlobalTrendOption(Enum):

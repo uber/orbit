@@ -50,6 +50,7 @@ data {
   real<upper=1> SEA_SM_INPUT;
   // step size
   real<lower=0> TIME_DELTA;
+  vector[NUM_OF_OBS] LEV_UPDATE_INDICATOR;
 
   // Residuals Tuning Hyper-Params
   real<lower=0> CAUCHY_SD; // derived by MAX(RESPONSE)/constant
@@ -127,11 +128,11 @@ parameters {
 
   // smoothing parameters
   //level smoothing parameter
-  real<lower=0,upper=1> lev_sm_dummy[LEV_SM_SIZE];
+  real<lower=0,upper=0.8> lev_sm_dummy[LEV_SM_SIZE];
   //slope smoothing parameter
-  real<lower=0,upper=1> slp_sm_dummy[SLP_SM_SIZE];
+  real<lower=0,upper=0.8> slp_sm_dummy[SLP_SM_SIZE];
   //seasonality smoothing parameter
-  real<lower=0,upper=1> sea_sm_dummy[SEA_SM_SIZE];
+  real<lower=0,upper=0.8> sea_sm_dummy[SEA_SM_SIZE];
 
   // residual tuning parameters
   // use 5*CAUCHY_SD to dodge upper boundary case
@@ -165,9 +166,9 @@ transformed parameters {
   vector[(NUM_OF_OBS + SEASONALITY) * IS_SEASONAL] s;
   real damped_factor_dummy;
   // smoothing parameters
-  real<lower=0,upper=1> lev_sm;
-  real<lower=0,upper=1> slp_sm;
-  real<lower=0,upper=1> sea_sm;
+  real<lower=0,upper=0.8> lev_sm;
+  real<lower=0,upper=0.8> slp_sm;
+  real<lower=0,upper=0.8> sea_sm;
 
   if (LEV_SM_SIZE > 0) {
     lev_sm = lev_sm_dummy[1];
@@ -243,20 +244,28 @@ transformed parameters {
     if (IS_SEASONAL) {
       s_t = s[t];
     } else {
-        s_t = 0.0;
+      s_t = 0.0;
     }
-    // forecast process
-    lt_sum[t] = l[t-1] + DAMPED_FACTOR * b[t-1];
-    yhat[t] = gt_sum[t] + lt_sum[t] + s_t + r[t];
 
     // update process
-    l[t] = lev_sm * (RESPONSE[t] - gt_sum[t] - s_t - r[t]) + (1 - lev_sm) * lt_sum[t];
-    b[t] = slp_sm * (l[t] - l[t-1]) + (1 - slp_sm) * DAMPED_FACTOR * b[t-1];
+    if (LEV_UPDATE_INDICATOR[t] > 0) {
+      lt_sum[t] = l[t-1] + DAMPED_FACTOR * b[t-1];
+      l[t] = lev_sm * (RESPONSE[t] - gt_sum[t] - s_t - r[t]) + (1 - lev_sm) * lt_sum[t];
+      b[t] = slp_sm * (l[t] - l[t-1]) + (1 - slp_sm) * DAMPED_FACTOR * b[t-1];
+    } else {
+      lt_sum[t] = l[t-1];
+      l[t] = lt_sum[t];
+      b[t] = b[t-1];
+    }
+
     // with parameterization as mentioned in 7.3 "Forecasting: Principles and Practice"
     // we can safely use "l[t]" instead of "l[t-1] + damped_factor_dummy * b[t-1]" where 0 < sea_sm < 1
     // otherwise with original one, use 0 < sea_sm < 1 - lev_sm
     if (IS_SEASONAL)
-        s[t + SEASONALITY] = sea_sm * (RESPONSE[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm) * s_t;
+      s[t + SEASONALITY] = sea_sm * (RESPONSE[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm) * s_t;
+      
+    // forecast process  
+    yhat[t] = gt_sum[t] + lt_sum[t] + s_t + r[t];
   }
 
   if (WITH_MCMC) {

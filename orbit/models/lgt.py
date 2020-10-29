@@ -90,6 +90,10 @@ class BaseLGT(BaseModel):
         self.slope_sm_input = slope_sm_input
         self.level_sm_input = level_sm_input
 
+        # to normalize moothing parameters on time; we setup a threshold relying on frequency
+        self._level_update_skip = 1
+        self._level_update_indicator = None
+
         # set private var to arg value
         # if None set default in _set_default_base_args()
         self._seasonality = self.seasonality
@@ -108,7 +112,7 @@ class BaseLGT(BaseModel):
         # the following are set by `_set_static_data_attributes()`
         self._regression_penalty = None
         self._with_mcmc = 0
-        # todo: should this be based on number of obs?
+
         self._min_nu = 5.
         self._max_nu = 40.
         # positive regressors
@@ -121,6 +125,7 @@ class BaseLGT(BaseModel):
         self._regular_regressor_col = list()
         self._regular_regressor_beta_prior = list()
         self._regular_regressor_sigma_prior = list()
+
         # depends on seasonality length
         self._init_values = None
 
@@ -249,9 +254,11 @@ class BaseLGT(BaseModel):
     def _set_training_df_meta(self, df):
         # Date Metadata
         # TODO: use from constants for dict key
+        date_array = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
         self._training_df_meta = {
-            'date_array': pd.to_datetime(df[self.date_col]).reset_index(drop=True),
-            'df_length': len(df.index),
+            'date_array': date_array,
+            'df_length': len(date_array),
+            'date_diff': (date_array[1] - date_array[0]) / np.timedelta64(1, 'D'),
             'training_start': df[self.date_col].iloc[0],
             'training_end': df[self.date_col].iloc[-1]
         }
@@ -332,11 +339,38 @@ class BaseLGT(BaseModel):
         self._num_of_observations = len(self._response)
 
         self._cauchy_sd = max(self._response) / 30.0
+        # Experimental: rule base to derive _level_update_skip
+        # scheme 1
+        # if self._training_df_meta['date_diff'] * self._training_df_meta['df_length'] < 700:
+        #     # # shorter than 2 years of data
+        #     # if self._training_df_meta['date_diff'] < 7:
+        #     #     # shorter than weekly data; update in weekly basis
+        #     self._level_update_skip = round(7.0 / self._training_df_meta['date_diff'])
+        # elif self._training_df_meta['date_diff'] * self._training_df_meta['df_length'] < 1500:
+        #     # # longer than 2 year data
+        #     # if self._training_df_meta['date_diff'] < 7:
+        #     # shorter than weekly data; update of each 30 days
+        #     self._level_update_skip = round(30.0 / self._training_df_meta['date_diff'])
+        #     # else:
+        # else:
+        #     self._level_update_skip = round(90.0 / self._training_df_meta['date_diff'])
+
+        # scheme 2
+        if self._training_df_meta['date_diff'] < 7 and self.regressor_col:
+            if self._training_df_meta['date_diff'] * self._training_df_meta['df_length'] < 720:
+                self._level_update_skip = round(7.0 / self._training_df_meta['date_diff'])
+            elif self._training_df_meta['date_diff'] * self._training_df_meta['df_length'] < 1500:
+                self._level_update_skip = round(30.0 / self._training_df_meta['date_diff'])
+            else:
+                self._level_update_skip = round(90.0 / self._training_df_meta['date_diff'])
+
+        # need to pre-derive a update indicator
+        self._level_update_indicator = np.resize(np.array(
+            [0.0] * (self._level_update_skip - 1) + [1.0]
+        ), self._training_df_meta['df_length'])
 
         self._set_regressor_matrix(df)  # depends on _num_of_observations
         self._set_init_values()
-        # TODO: maybe useful to calculate vanlia (adjusted) R-Squared
-        # self._adjust_smoothing_with_regression()
 
     def _set_model_param_names(self):
         """Model parameters to extract from Stan"""
@@ -473,11 +507,11 @@ class BaseLGT(BaseModel):
         training_df_meta = self._training_df_meta
         # remove reference from original input
         df = df.copy()
-
+        date_array = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
         # get prediction df meta
         prediction_df_meta = {
-            'date_array': pd.to_datetime(df[self.date_col]).reset_index(drop=True),
-            'df_length': len(df.index),
+            'date_array': date_array,
+            'df_length': len(date_array),
             'prediction_start': df[self.date_col].iloc[0],
             'prediction_end': df[self.date_col].iloc[-1]
         }

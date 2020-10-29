@@ -1,6 +1,8 @@
 import pytest
 from orbit.models.dlt import BaseDLT, DLTFull, DLTAggregated, DLTMAP
 from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
+from orbit.utils.features import make_fourier_series_df
+import numpy as np
 
 
 def test_base_dlt_init():
@@ -235,6 +237,7 @@ def test_dlt_map_global_trend(synthetic_data, global_trend_option):
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
 
+
 def test_dlt_predict_all_positive_reg(iclaims_training_data):
     df = iclaims_training_data
 
@@ -251,3 +254,30 @@ def test_dlt_predict_all_positive_reg(iclaims_training_data):
     predicted_df = dlt.predict(df, decompose=True)
 
     assert any(predicted_df['regression'].values)
+
+
+def test_dlt_complex_seasonality(m5_agg_data):
+    df = m5_agg_data[-1000:]
+    regressor_col = ["Christmas", "Halloween", "LaborDay", "Thanksgiving", "Mother's day", "PresidentsDay", "NewYear"]
+    df, fs_cols = make_fourier_series_df(df, 'date', period=365.25, order=3)
+    m = df['sales'][0]
+    df['y'] = np.log(df['sales'] / m)
+
+    dlt = DLTMAP(
+        response_col='y',
+        date_col='date',
+        seasonality=7,
+        seed=2020,
+        regressor_col=fs_cols + regressor_col,
+    )
+
+    dlt.fit(df)
+    predicted_df = dlt.predict(df)
+    predicted_df['prediction'] = np.exp(predicted_df['prediction']) * m
+    err = np.mean(np.abs(predicted_df['prediction'] - df['sales'])/df['sales'])
+    expected_shape = (len(df.index), 2)
+    assert predicted_df.shape == expected_shape
+    # in-sample mape less than 50%
+    assert err < 0.5
+
+

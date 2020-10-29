@@ -58,6 +58,7 @@ class BaseDLT(BaseLGT):
     def _set_static_data_attributes(self):
         super()._set_static_data_attributes()
         self._set_global_trend_attributes()
+        # we use smoothing update as weekly as a threshold
 
     def _set_model_param_names(self):
         """Model parameters to extract from Stan"""
@@ -228,7 +229,7 @@ class BaseDLT(BaseLGT):
             full_local_trend = local_trend[:, :full_len]
             full_global_trend = global_trend[:, :full_len]
 
-            # in-sample error are iids
+            # since in-sample error are iids, vectorize errors sampling
             if include_error:
                 error_value = nct.rvs(
                     df=residual_degree_of_freedom.unsqueeze(-1),
@@ -240,6 +241,7 @@ class BaseDLT(BaseLGT):
 
                 error_value = torch.from_numpy(error_value.reshape(num_sample, full_len)).double()
                 full_local_trend += error_value
+        # out-of-samples prediction
         else:
             trend_forecast_length = full_len - trained_len
             trend_forecast_init = torch.zeros((num_sample, trend_forecast_length), dtype=torch.double)
@@ -247,7 +249,7 @@ class BaseDLT(BaseLGT):
             # for convenience, we lump error on local trend since the formula would
             # yield the same as yhat + noise - global_trend - seasonality - regression
             # equivalent with local_trend + noise
-            # in-sample error are iids
+            # since in-sample error are iids, vectorize errors sampling
             if include_error:
                 error_value = nct.rvs(
                     df=residual_degree_of_freedom.unsqueeze(-1),
@@ -256,7 +258,6 @@ class BaseDLT(BaseLGT):
                     scale=residual_sigma.unsqueeze(-1),
                     size=(num_sample, full_local_trend.shape[1])
                 )
-
                 error_value = torch.from_numpy(
                     error_value.reshape(num_sample, full_local_trend.shape[1])).double()
                 full_local_trend += error_value
@@ -266,12 +267,15 @@ class BaseDLT(BaseLGT):
             last_local_trend_level = local_trend_levels[:, -1]
             last_local_trend_slope = local_trend_slopes[:, -1]
 
+            # also update the update and skip indicator
+            level_update_indicator = np.resize(
+                np.array([0] * (self._level_update_skip - 1) + [1]),
+                full_local_trend.shape[-1]
+            )
+
             for idx in range(trained_len, full_len):
                 # based on model, split cases for trend update
-                curr_local_trend = \
-                    last_local_trend_level + damped_factor.flatten() * last_local_trend_slope
-                full_local_trend[:, idx] = curr_local_trend
-                # idx = time - 1
+                # note that with python convention: idx = time - 1
                 if self.global_trend_option == constants.GlobalTrendOption.linear.name:
                     full_global_trend[:, idx] = \
                         global_trend_level + global_trend_slope * idx * self._time_delta
@@ -284,6 +288,14 @@ class BaseDLT(BaseLGT):
                 elif self._global_trend_option == constants.GlobalTrendOption.flat.name:
                     full_global_trend[:, idx] = 0
 
+                # forecast process
+                if level_update_indicator[idx] > 0:
+                    curr_local_trend = \
+                        last_local_trend_level + damped_factor.flatten() * last_local_trend_slope
+                else:
+                    curr_local_trend = last_local_trend_level
+                full_local_trend[:, idx] = curr_local_trend
+
                 if include_error:
                     error_value = nct.rvs(
                         df=residual_degree_of_freedom,
@@ -295,15 +307,21 @@ class BaseDLT(BaseLGT):
                     error_value = torch.from_numpy(error_value).double()
                     full_local_trend[:, idx] += error_value
 
-                # now full_local_trend contains the error term and hence we need to use
-                # curr_local_trend as a proxy of previous level index
-                new_local_trend_level = \
-                    level_smoothing_factor * full_local_trend[:, idx] \
-                    + (1 - level_smoothing_factor) * curr_local_trend
-                last_local_trend_slope = \
-                    slope_smoothing_factor * (new_local_trend_level - last_local_trend_level) \
-                    + (1 - slope_smoothing_factor) * damped_factor.flatten() * last_local_trend_slope
+                # update process
+                # skip update if we don't see positive indicator
+                if level_update_indicator[idx] > 0:
+                    # now full_local_trend contains the error term and hence we need to use
+                    # curr_local_trend as a proxy of previous level index
+                    new_local_trend_level = \
+                        level_smoothing_factor * full_local_trend[:, idx] \
+                        + (1 - level_smoothing_factor) * curr_local_trend
+                    last_local_trend_slope = \
+                        slope_smoothing_factor * (new_local_trend_level - last_local_trend_level) \
+                        + (1 - slope_smoothing_factor) * damped_factor.flatten() * last_local_trend_slope
+                else:
+                    new_local_trend_level = last_local_trend_level
 
+                # seasonality update
                 if self._seasonality > 1 and idx + self._seasonality < full_len:
                     seasonality_component[:, idx + self._seasonality] = \
                         seasonality_smoothing_factor.flatten() \

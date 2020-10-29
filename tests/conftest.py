@@ -33,6 +33,18 @@ def m3_monthly_data():
 
 
 @pytest.fixture
+def m5_agg_data():
+    test_file = pkg_resources.resource_filename(
+        'tests',
+        'resources/m5_agg_demand.csv'
+    )
+    df = pd.read_csv(
+        test_file,
+        parse_dates=['date']
+    )
+    return df
+
+@pytest.fixture
 def synthetic_data():
     df, coef = make_synthetic_series(seed=127)
 
