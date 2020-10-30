@@ -3,7 +3,7 @@ import pytest
 from orbit.estimators.pyro_estimator import PyroEstimator, PyroEstimatorVI, PyroEstimatorMAP
 from orbit.estimators.stan_estimator import StanEstimator, StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 from orbit.models.lgt import BaseLGT, LGTFull, LGTAggregated, LGTMAP
-
+from orbit.constants.constants import PredictedComponents
 
 def test_base_lgt_init():
     lgt = BaseLGT()
@@ -38,7 +38,7 @@ def test_lgt_full_univariate(synthetic_data, estimator_type):
     lgt.fit(train_df)
     predict_df = lgt.predict(test_df)
 
-    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 13
 
@@ -63,7 +63,7 @@ def test_lgt_full_univariate_pyro(synthetic_data):
     lgt.fit(train_df)
     predict_df = lgt.predict(test_df)
 
-    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 12  # no `lp__` in pyro
 
@@ -159,7 +159,7 @@ def test_lgt_non_seasonal_fit(synthetic_data, estimator_type):
     lgt.fit(train_df)
     predict_df = lgt.predict(test_df)
 
-    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
+    expected_columns =    ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 11
 
@@ -181,7 +181,7 @@ def test_lgt_non_seasonal_fit_pyro(synthetic_data):
     lgt.fit(train_df)
     predict_df = lgt.predict(test_df)
 
-    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 10  # no `lp__` in pyro
 
@@ -234,7 +234,7 @@ def test_lgt_full_with_regression(synthetic_data, estimator_type, regressor_sign
     regression_out = lgt.get_regression_coefs()
     num_regressors = regression_out.shape[0]
 
-    expected_columns = ['week', 'prediction_lower', 'prediction', 'prediction_upper']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_regression_shape = (6, 3)
 
@@ -295,6 +295,7 @@ def test_lgt_aggregated_with_regression(synthetic_data, estimator_type, regresso
     assert regression_out.shape == expected_regression_shape
     assert num_regressors == len(train_df.columns.tolist()[2:])
 
+
 def test_lgt_predict_all_positive_reg(iclaims_training_data):
     df = iclaims_training_data
 
@@ -311,3 +312,44 @@ def test_lgt_predict_all_positive_reg(iclaims_training_data):
     predicted_df = lgt.predict(df, decompose=True)
 
     assert any(predicted_df['regression'].values)
+
+
+@pytest.mark.parametrize("prediction_percentiles", [None, [5, 10, 95]])
+def test_prediction_percentiles(iclaims_training_data, prediction_percentiles):
+    df = iclaims_training_data
+
+    lgt = LGTFull(
+        response_col='claims',
+        date_col='week',
+        seasonality=52,
+        seed=8888,
+        prediction_percentiles=prediction_percentiles,
+    )
+
+    if not prediction_percentiles:
+        p_labels  = ['_5', '', '_95']
+    else:
+        p_labels = ['_5', '_10', '', '_95']
+
+    lgt.fit(df)
+    predicted_df = lgt.predict(df)
+    expected_columns = ['week'] + ["prediction" + p for p in p_labels]
+    assert predicted_df.columns.tolist() == expected_columns
+    assert predicted_df.shape[0] == df.shape[0]
+
+    predicted_df = lgt.predict(df, decompose=True)
+    plot_components = [
+        'prediction',
+        PredictedComponents.TREND.value,
+        PredictedComponents.SEASONALITY.value,
+        PredictedComponents.REGRESSION.value]
+
+    expected_columns = ['week']
+    for pc in plot_components:
+        for p in p_labels:
+            expected_columns.append(pc + p)
+    assert predicted_df.columns.tolist() == expected_columns
+    assert predicted_df.shape[0] == df.shape[0]
+
+
+
