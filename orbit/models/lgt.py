@@ -845,7 +845,6 @@ class LGTFull(BaseLGT):
 
     def _aggregate_full_predictions(self, array, label, percentiles):
         """Aggregates the mcmc prediction to a point estimate
-
         Args
         ----
         array: np.ndarray
@@ -862,13 +861,8 @@ class LGTFull(BaseLGT):
         """
 
         aggregated_array = np.percentile(array, percentiles, axis=0)
-        if len(percentiles) == 1:
-            aggregate_df = pd.DataFrame(aggregated_array.T, columns=[label])
-        elif len(percentiles) == 3:
-            aggregate_df = pd.DataFrame(aggregated_array.T, columns=[label + "_lower", label, label + "_upper"])
-        else:
-            raise PredictionException("Invalid input percentiles.")
-
+        columns = [label + "_" + str(p) if p != 50 else label for p in percentiles]
+        aggregate_df = pd.DataFrame(aggregated_array.T, columns=columns)
         return aggregate_df
 
     def predict(self, df, decompose=False):
