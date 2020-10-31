@@ -90,10 +90,6 @@ class BaseLGT(BaseModel):
         self.slope_sm_input = slope_sm_input
         self.level_sm_input = level_sm_input
 
-        # to normalize moothing parameters on time; we setup a threshold relying on frequency
-        self._level_update_skip = 1
-        self._level_update_indicator = None
-
         # set private var to arg value
         # if None set default in _set_default_base_args()
         self._seasonality = self.seasonality
@@ -258,7 +254,6 @@ class BaseLGT(BaseModel):
         self._training_df_meta = {
             'date_array': date_array,
             'df_length': len(date_array),
-            'date_diff': (date_array[1] - date_array[0]) / np.timedelta64(1, 'D'),
             'training_start': df[self.date_col].iloc[0],
             'training_end': df[self.date_col].iloc[-1]
         }
@@ -339,35 +334,6 @@ class BaseLGT(BaseModel):
         self._num_of_observations = len(self._response)
 
         self._cauchy_sd = max(self._response) / 30.0
-        # Experimental: rule base to derive _level_update_skip
-        # scheme 1
-        # if self._training_df_meta['date_diff'] * self._training_df_meta['df_length'] < 700:
-        #     # # shorter than 2 years of data
-        #     # if self._training_df_meta['date_diff'] < 7:
-        #     #     # shorter than weekly data; update in weekly basis
-        #     self._level_update_skip = round(7.0 / self._training_df_meta['date_diff'])
-        # elif self._training_df_meta['date_diff'] * self._training_df_meta['df_length'] < 1500:
-        #     # # longer than 2 year data
-        #     # if self._training_df_meta['date_diff'] < 7:
-        #     # shorter than weekly data; update of each 30 days
-        #     self._level_update_skip = round(30.0 / self._training_df_meta['date_diff'])
-        #     # else:
-        # else:
-        #     self._level_update_skip = round(90.0 / self._training_df_meta['date_diff'])
-
-        # scheme 2
-        if self._training_df_meta['date_diff'] < 7 and self.regressor_col:
-            if self._training_df_meta['date_diff'] * self._training_df_meta['df_length'] < 720:
-                self._level_update_skip = round(7.0 / self._training_df_meta['date_diff'])
-            elif self._training_df_meta['date_diff'] * self._training_df_meta['df_length'] < 1500:
-                self._level_update_skip = round(30.0 / self._training_df_meta['date_diff'])
-            else:
-                self._level_update_skip = round(90.0 / self._training_df_meta['date_diff'])
-
-        # need to pre-derive a update indicator
-        self._level_update_indicator = np.resize(np.array(
-            [0.0] * (self._level_update_skip - 1) + [1.0]
-        ), self._training_df_meta['df_length'])
 
         self._set_regressor_matrix(df)  # depends on _num_of_observations
         self._set_init_values()
@@ -682,7 +648,6 @@ class BaseLGT(BaseModel):
 
         # sum components
         pred_array = trend_component + seasonality_component + regressor_component
-
 
         pred_array = pred_array.numpy()
         trend_component = trend_component.numpy()
@@ -1052,7 +1017,6 @@ class LGTMAP(BaseLGT):
             raise PredictionException("Model is not fitted yet.")
 
         aggregate_posteriors = self._aggregate_posteriors.get(PredictMethod.MAP.value)
-
         predicted_dict = self._predict(
             posterior_estimates=aggregate_posteriors,
             df=df,

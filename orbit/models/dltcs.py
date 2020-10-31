@@ -6,79 +6,81 @@ from copy import deepcopy
 
 from ..constants import dlt as constants
 from ..exceptions import IllegalArgument, PredictionException
-from ..models.lgt import BaseLGT, LGTFull, LGTAggregated, LGTMAP
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
-
 from ..utils.general import is_ordered_datetime
+from ..models.dlt import BaseDLT, DLTMAP
 
 
-class BaseDLT(BaseLGT):
-    """Base DLT model object with shared functionality for Full, Aggregated, and MAP methods
-
-    The model arguments are the same as `BaseLGT` with some additional arguments
-
-    Parameters
-    ----------
-    period : int
-        Used to set `time_delta` as `1 / max(period, seasonality)`. If None and no seasonality,
-        then `time_delta` == 1
-    damped_factor : float
-        Hyperparameter float value between [0, 1]. A smaller value further dampens the previous
-        global trend value. Default, 0.8
-    global_trend_option : { 'flat', 'linear', 'loglinear', 'logistic' }
-        Transformation function for the shape of the forecasted global trend.
-
-    See Also
-    --------
-    orbit.models.lgt.BaseLGT
-
+class BaseDLTCS(BaseDLT):
+    """
     """
     _data_input_mapper = constants.DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
-    _model_name = 'dlt'
+    # special case here we want to use dlt for now with special case of regressors
+    _model_name = 'dltcs'
     _supported_estimator_types = None  # set for each model
 
-    def __init__(self, period=1, damped_factor=0.8, global_trend_option='linear', **kwargs):
-        self.damped_factor = damped_factor
-        self.global_trend_option = global_trend_option
-        self.period = period
-
-        # global trend related attributes
-        self._global_trend_option = None
-        self._time_delta = 1
-
-        # order matters and super constructor called after attributes are set
-        # since we override _set_static_data_attributes()
+    def __init__(self, complex_seasonality=None, level_update_skip='auto', **kwargs):
+        if not isinstance(complex_seasonality, list) or len(complex_seasonality) < 2:
+            raise IllegalArgument('len(seasonality) has to greater than 1.  Otherwise, please use DLT.')
+        # seasonality should be taken care under this?
+        complex_seasonality = complex_seasonality.sort()
+        # use DLT convenience, the first seasonality is done by smoothing
+        self._seasonality= complex_seasonality[0]
         super().__init__(**kwargs)
 
-    def _set_global_trend_attributes(self):
-        self._global_trend_option = getattr(constants.GlobalTrendOption, self.global_trend_option).value
-        self._time_delta = 1 / max(self.period, self._seasonality, 1)
+        self.level_update_skip = level_update_skip
+        self._level_update_skip = None
+        self._level_update_indicator = None
 
-    def _set_static_data_attributes(self):
-        super()._set_static_data_attributes()
-        self._set_global_trend_attributes()
+    def _set_training_df_meta(self, df):
+        # Date Metadata
+        # TODO: use from constants for dict key
+        date_array = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
+        self._training_df_meta = {
+            'date_array': date_array,
+            'df_length': len(date_array),
+            'date_diff': (date_array[1] - date_array[0]) / np.timedelta64(1, 'D'),
+            'training_start': df[self.date_col].iloc[0],
+            'training_end': df[self.date_col].iloc[-1]
+        }
 
-    def _set_model_param_names(self):
-        """Model parameters to extract from Stan"""
-        self._model_param_names += [param.value for param in constants.BaseSamplingParameters]
+    def _set_dynamic_data_attributes(self, df):
+        super()._set_dynamic_data_attributes(df)
+        # Experimental: rule base to derive _level_update_skip
+        # scheme 1
+        # if self._training_df_meta['date_diff'] * self._training_df_meta['df_length'] < 700:
+        #     # # shorter than 2 years of data
+        #     # if self._training_df_meta['date_diff'] < 7:
+        #     #     # shorter than weekly data; update in weekly basis
+        #     self._level_update_skip = round(7.0 / self._training_df_meta['date_diff'])
+        # elif self._training_df_meta['date_diff'] * self._training_df_meta['df_length'] < 1500:
+        #     # # longer than 2 year data
+        #     # if self._training_df_meta['date_diff'] < 7:
+        #     # shorter than weekly data; update of each 30 days
+        #     self._level_update_skip = round(30.0 / self._training_df_meta['date_diff'])
+        #     # else:
+        # else:
+        #     self._level_update_skip = round(90.0 / self._training_df_meta['date_diff'])
 
-        # append seasonality param names
-        if self._seasonality > 1:
-            self._model_param_names += [param.value for param in constants.SeasonalitySamplingParameters]
+        # scheme 2
+        if self.level_update_skip == 'auto':
+            if self._training_df_meta['date_diff'] < 7 and self.regressor_col:
+                if self._training_df_meta['date_diff'] * self._training_df_meta['df_length'] < 720:
+                    self._level_update_skip = round(7.0 / self._training_df_meta['date_diff'])
+                elif self._training_df_meta['date_diff'] * self._training_df_meta['df_length'] < 1500:
+                    self._level_update_skip = round(30.0 / self._training_df_meta['date_diff'])
+                else:
+                    self._level_update_skip = round(90.0 / self._training_df_meta['date_diff'])
+            else:
+                self._level_update_skip = 1
+        else:
+            self._level_update_skip = int(self.level_update_skip)
 
-        # append positive regressors if any
-        if self._num_of_positive_regressors > 0:
-            self._model_param_names += [
-                constants.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
-
-        # append regular regressors if any
-        if self._num_of_regular_regressors > 0:
-            self._model_param_names += [
-                constants.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value]
-
-        if self._global_trend_option != constants.GlobalTrendOption.flat.value:
-            self._model_param_names += [param.value for param in constants.GlobalTrendSamplingParameters]
+            # need to pre-derive a update indicator
+        self._level_update_indicator = np.resize(
+            np.array([0.0] * (self._level_update_skip - 1) + [1.0]
+        ), self._training_df_meta['df_length'])
 
     def _predict(self, posterior_estimates, df=None, include_error=False, decompose=False):
 
@@ -361,39 +363,7 @@ class BaseDLT(BaseLGT):
         return {'prediction': pred_array}
 
 
-class DLTFull(LGTFull, BaseDLT):
-    """Concrete DLT model for full prediction
-
-    The model arguments are the same as `LGTFull` with some additional arguments
-
-    See Also
-    --------
-    orbit.models.lgt.LGTFull
-
-    """
-    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
-class DLTAggregated(LGTAggregated, BaseDLT):
-    """Concrete DLT model for aggregated posterior prediction
-
-    The model arguments are the same as `LGTAggregated` with some additional arguments
-
-    See Also
-    --------
-    orbit.models.lgt.LGTAggregated
-
-    """
-    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
-class DLTMAP(LGTMAP, BaseDLT):
+class DLTCSMAP(DLTMAP, BaseDLTCS):
     """Concrete DLT model for MAP (Maximum a Posteriori) prediction
 
     The model arguments are the same as `LGTNAP` with some additional arguments
