@@ -259,7 +259,6 @@ class BaseGAM(BaseModel):
         if self.regressor_latent_scale_prior is None:
             self._regressor_latent_scale_prior = [DEFAULT_REGRESSOR_SIGMA] * num_of_regressors
 
-
     def _set_static_regression_attributes(self):
         # if no regressors, end here
         if self.regressor_col is None:
@@ -277,7 +276,6 @@ class BaseGAM(BaseModel):
                 self._regular_regressor_col.append(self.regressor_col[index])
                 self._regular_regressor_latent_loc_prior.append(self._regressor_latent_loc_prior[index])
                 self._regular_regressor_latent_scale_prior.append(self._regressor_latent_scale_prior[index])
-
 
     def _set_static_data_attributes(self):
         """model data input based on args at instatiation or computed from args at instantiation"""
@@ -339,12 +337,15 @@ class BaseGAM(BaseModel):
                 items=self._regular_regressor_col,).values
 
     def _set_kernel_matrix(self):
-        width_level = round(self._span_level * self._num_of_observations)
-        width_regressor = round(self._span_regressor * self._num_of_observations)
-
         tp = np.arange(1, self._num_of_observations + 1) / self._num_of_observations
-        self._knots_level = np.arange(1, self._num_of_observations + 1, width_level) / self._num_of_observations
-        self._knots_regressor =  np.arange(1, self._num_of_observations + 1, width_regressor) / self._num_of_observations
+        # this approach put knots in full range
+        self._cutoff = self._num_of_observations
+        # cutoff last 20%
+        # self._cutoff = round(0.2 * self._num_of_observations)
+        width_level = round(self._span_level * self._cutoff)
+        width_regressor = round(self._span_regressor * self._cutoff)
+        self._knots_level = np.arange(1, self._cutoff + 1, width_level) / self._num_of_observations
+        self._knots_regressor = np.arange(1, self._cutoff + 1, width_regressor) / self._num_of_observations
 
         # Kernel here is used to determine mean
         kernel_level = gauss_kernel(tp, self._knots_level, rho=self._rho_level)
@@ -356,7 +357,6 @@ class BaseGAM(BaseModel):
         self._num_knots_regressor = len(self._knots_regressor)
         self._kernel_level = kernel_level
         self._kernel_regressor = kernel_regressor
-
 
     def _set_dynamic_data_attributes(self, df):
         """Stan data input based on input DataFrame, rather than at object instantiation"""
@@ -373,7 +373,6 @@ class BaseGAM(BaseModel):
 
         self._set_regressor_matrix(df)
         self._set_kernel_matrix()
-
 
     def _set_model_param_names(self):
         """Model parameters to extract from Stan"""
@@ -614,8 +613,8 @@ class BaseGAM(BaseModel):
         if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
             return reg_df
 
-        regressor_betas = self._aggregate_posteriors\
-            .get(aggregate_method)\
+        regressor_betas = self._aggregate_posteriors \
+            .get(aggregate_method) \
             .get(constants.RegressionSamplingParameters.REGRESSOR_BETA.value)
         regressor_betas = np.squeeze(regressor_betas, axis=0)
 
@@ -807,10 +806,11 @@ class GAMFull(BaseGAM):
                               ylim=None):
         if include_ci:
             coef_df, coef_df_lower, coef_df_upper = self.get_regression_coefs(
-                                                            aggregate_method=aggregate_method,
-                                                            include_ci=True
-                                                        )
-        else: coef_df = self.get_regression_coefs(aggregate_method=aggregate_method)
+                aggregate_method=aggregate_method,
+                include_ci=True
+            )
+        else:
+            coef_df = self.get_regression_coefs(aggregate_method=aggregate_method)
         nrow = math.ceil((coef_df.shape[1] - 1) / ncol)
         fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False)
         regressor_col = coef_df.columns.tolist()[1:]

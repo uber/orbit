@@ -6,6 +6,7 @@ import pyro.distributions as dist
 
 torch.set_default_tensor_type('torch.DoubleTensor')
 
+
 class Model:
     max_plate_nesting = 1
 
@@ -63,6 +64,12 @@ class Model:
                 ).to_event(1)
             )
             rr_beta = (rr_lat @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+
+        # data-drive pooling effect
+        # pr_beta_lat_scale = pyro.sample(
+        #     "pr_beta_lat_scale",
+        #     dist.LogNormal(-5.0, 1.5).expand([num_pr])
+        # )
 
         # positive regressor sampling
         if num_pr > 0:
