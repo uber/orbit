@@ -9,20 +9,20 @@ import matplotlib.dates as mdates
 
 from ..constants import gam as constants
 from ..constants.constants import (
-    DEFAULT_REGRESSOR_SIGN,
-    DEFAULT_REGRESSOR_BETA,
-    DEFAULT_REGRESSOR_SIGMA,
     # COEFFICIENT_DF_COLS,
     PredictMethod
 )
 from ..constants.gam import (
-    DEFAULT_LEVEL_SIGMA,
-    DEFAULT_PR_STEP_SCALE,
+    DEFAULT_LEVEL_KNOT_SCALE,
+    DEFAULT_PR_KNOT_POOL_SCALE,
     DEFAULT_SPAN_LEVEL,
-    DEFAULT_SPAN_REGRESSOR,
+    DEFAULT_SPAN_COEFFICIENTS,
     DEFAULT_RHO_LEVEL,
-    DEFAULT_RHO_REGRESSOR,
-
+    DEFAULT_RHO_COEFFICIENTS,
+    DEFAULT_REGRESSOR_SIGN,
+    DEFAULT_COEFFICIENTS_LOC,
+    DEFAULT_COEFFICIENTS_SCALE,
+    DEFAULT_DEGREE_OF_FREEDOM,
 )
 
 from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
@@ -57,22 +57,6 @@ class BaseGAM(BaseModel):
     regressor_sigma_prior : list
         list of prior float values for regressor coefficient sigmas. The length of `regressor_sigma_prior`
         must be the same length as `regressor_col`. If None, use non-informative priors.
-    regression_penalty : { 'fixed_ridge', 'lasso', 'auto_ridge' }
-        regression penalty method
-    lasso_scale : float
-        float value between [0, 1], applicable only if `regression_penalty` == 'lasso'
-    auto_ridge_scale : float
-        float value between [0, 1], applicable only if `regression_penalty` == 'auto_ridge'
-    seasonality_sm_input : float
-        float value between [0, 1], applicable only if `seasonality` > 1. A larger value puts
-        more weight on the current seasonality.
-        If None, the model will estimate this value.
-    slope_sm_input : float
-        float value between [0, 1]. A larger value puts more weight on the current slope.
-        If None, the model will estimate this value.
-    level_sm_input : float
-        float value between [0, 1]. A larger value puts more weight on the current level.
-        If None, the model will estimate this value.
     kwargs
         To specify `estimator_type` or additional args for the specified `estimator_type`
 
@@ -85,16 +69,16 @@ class BaseGAM(BaseModel):
     def __init__(self,
                  response_col='y',
                  date_col='ds',
-                 level_latent_sigma=None,
+                 level_knot_scale=None,
                  regressor_col=None,
                  regressor_sign=None,
-                 regressor_latent_loc_prior=None,
-                 regressor_latent_scale_prior=None,
-                 positive_regressor_step_scale_prior=None,
+                 regressor_knot_loc=None,
+                 regressor_knot_scale=None,
+                 positive_regressor_knot_pooling_scale=None,
                  span_level=None,
-                 span_regressor=None,
+                 span_coefficients=None,
                  rho_level=None,
-                 rho_regressor=None,
+                 rho_coefficients=None,
                  # response_sd=None,
                  insert_prior_idx=None,
                  insert_prior_tp_idx=None,
@@ -104,16 +88,16 @@ class BaseGAM(BaseModel):
         super().__init__(**kwargs)  # create estimator in base class
         self.response_col = response_col
         self.date_col = date_col
-        self.level_latent_sigma = level_latent_sigma
+        self.level_knot_scale = level_knot_scale
         self.regressor_col = regressor_col
         self.regressor_sign = regressor_sign
-        self.regressor_latent_loc_prior = regressor_latent_loc_prior
-        self.regressor_latent_scale_prior = regressor_latent_scale_prior
-        self.positive_regressor_step_scale_prior = positive_regressor_step_scale_prior
+        self.regressor_knot_loc = regressor_knot_loc
+        self.regressor_knot_scale = regressor_knot_scale
+        self.positive_regressor_knot_pooling_scale = positive_regressor_knot_pooling_scale
         self.span_level = span_level
-        self.span_regressor = span_regressor
+        self.span_coefficients = span_coefficients
         self.rho_level = rho_level
-        self.rho_regressor = rho_regressor
+        self.rho_coefficients = rho_coefficients
         self.insert_prior_idx = insert_prior_idx
         self.insert_prior_tp_idx = insert_prior_tp_idx
         self.insert_prior_mean = insert_prior_mean
@@ -121,15 +105,16 @@ class BaseGAM(BaseModel):
 
         # set private var to arg value
         # if None set default in _set_default_base_args()
-        self._level_latent_sigma = self.level_latent_sigma
+        self._level_knot_scale = self.level_knot_scale
         self._regressor_sign = self.regressor_sign
-        self._regressor_latent_loc_prior = self.regressor_latent_loc_prior
-        self._regressor_latent_scale_prior = self.regressor_latent_scale_prior
-        self._positive_regressor_step_scale_prior = self.positive_regressor_step_scale_prior
+        self._regressor_knot_loc = self.regressor_knot_loc
+        self._regressor_knot_scale = self.regressor_knot_scale
         self._span_level = self.span_level
-        self._span_regressor = self.span_regressor
+        self._span_coefficients = self.span_coefficients
         self._rho_level = self.rho_level
-        self._rho_regressor = self.rho_regressor
+        self._rho_coefficients = self.rho_coefficients
+        self._positive_regressor_knot_pooling_scale = self.positive_regressor_knot_pooling_scale
+        self._degree_of_freedom = DEFAULT_DEGREE_OF_FREEDOM
         self._insert_prior_idx = self.insert_prior_idx
         self._insert_prior_tp_idx = self.insert_prior_tp_idx
         self._insert_prior_mean = self.insert_prior_mean
@@ -142,14 +127,15 @@ class BaseGAM(BaseModel):
         # positive regressors
         self._num_of_positive_regressors = 0
         self._positive_regressor_col = list()
-        self._positive_regressor_latent_loc_prior = list()
-        self._positive_regressor_latent_scale_prior = list()
+        self._positive_regressor_knot_pooling_loc = list()
+        # self._positive_regressor_knot_pooling_scale = list()
+        self._positive_regressor_knot_scale = list()
         # self._positive_regressor_latent_sale_prior = list()
         # regular regressors
         self._num_of_regular_regressors = 0
         self._regular_regressor_col = list()
-        self._regular_regressor_latent_loc_prior = list()
-        self._regular_regressor_latent_scale_prior = list()
+        self._regular_regressor_knot_loc = list()
+        self._regular_regressor_knot_scale = list()
 
         # set static data attributes
         self._set_static_data_attributes()
@@ -169,9 +155,9 @@ class BaseGAM(BaseModel):
         self._response_sd = None
         self._num_insert_prior = None
         self._num_knots_level = None
-        self._num_knots_regressor = None
-        self._knots_level = None
-        self._knots_regressor = None
+        self._num_knots_coefficients = None
+        self._knots_tp_level = None
+        self.n_knots_coefficients = None
         # regression data
         self._positive_regressor_matrix = None
         self._regular_regressor_matrix = None
@@ -192,18 +178,18 @@ class BaseGAM(BaseModel):
         Stan requires static data types so data must be cast to the correct type
         """
 
-        if self.level_latent_sigma is None:
-            self._level_latent_sigma = DEFAULT_LEVEL_SIGMA
-        if self.positive_regressor_step_scale_prior is None:
-            self._positive_regressor_step_scale_prior = DEFAULT_PR_STEP_SCALE
+        if self.level_knot_scale is None:
+            self._level_knot_scale = DEFAULT_LEVEL_KNOT_SCALE
+        if self.positive_regressor_knot_pooling_scale is None:
+            self._positive_regressor_knot_pooling_scale = DEFAULT_PR_KNOT_POOL_SCALE
         if self.span_level is None:
             self._span_level = DEFAULT_SPAN_LEVEL
-        if self.span_regressor is None:
-            self._span_regressor = DEFAULT_SPAN_REGRESSOR
+        if self.span_coefficients is None:
+            self._span_coefficients = DEFAULT_SPAN_COEFFICIENTS
         if self.rho_level is None:
             self._rho_level = DEFAULT_RHO_LEVEL
-        if self.rho_regressor is None:
-            self._rho_regressor = DEFAULT_RHO_REGRESSOR
+        if self.rho_coefficients is None:
+            self._rho_coefficients = DEFAULT_RHO_COEFFICIENTS
 
         if self.insert_prior_idx is None:
             self._insert_prior_idx = list()
@@ -221,8 +207,8 @@ class BaseGAM(BaseModel):
             # regardless of what args are set for these, if regressor_col is None
             # these should all be empty lists
             self._regressor_sign = list()
-            self._regressor_latent_loc_prior = list()
-            self._regressor_latent_scale_prior = list()
+            self._regressor_knot_loc = list()
+            self._regressor_knot_scale = list()
 
             return
 
@@ -244,7 +230,7 @@ class BaseGAM(BaseModel):
         num_of_regressors = len(self.regressor_col)
 
         _validate(
-            [self.regressor_sign, self.regressor_latent_loc_prior, self.regressor_latent_scale_prior],
+            [self.regressor_sign, self.regressor_knot_loc, self.regressor_knot_scale],
             num_of_regressors
         )
         _validate_insert_prior([self.insert_prior_idx, self.insert_prior_tp_idx,
@@ -253,11 +239,11 @@ class BaseGAM(BaseModel):
         if self.regressor_sign is None:
             self._regressor_sign = [DEFAULT_REGRESSOR_SIGN] * num_of_regressors
 
-        if self.regressor_latent_scale_prior is None:
-            self._regressor_latent_loc_prior = [DEFAULT_REGRESSOR_BETA] * num_of_regressors
+        if self.regressor_knot_loc is None:
+            self._regressor_knot_loc = [DEFAULT_COEFFICIENTS_LOC] * num_of_regressors
 
-        if self.regressor_latent_scale_prior is None:
-            self._regressor_latent_scale_prior = [DEFAULT_REGRESSOR_SIGMA] * num_of_regressors
+        if self.regressor_knot_scale is None:
+            self._regressor_knot_scale = [DEFAULT_COEFFICIENTS_SCALE] * num_of_regressors
 
     def _set_static_regression_attributes(self):
         # if no regressors, end here
@@ -269,13 +255,13 @@ class BaseGAM(BaseModel):
             if reg_sign == '+':
                 self._num_of_positive_regressors += 1
                 self._positive_regressor_col.append(self.regressor_col[index])
-                self._positive_regressor_latent_loc_prior.append(self._regressor_latent_loc_prior[index])
-                self._positive_regressor_latent_scale_prior.append(self._regressor_latent_scale_prior[index])
+                self._positive_regressor_knot_pooling_loc.append(self._regressor_knot_loc[index])
+                self._positive_regressor_knot_scale.append(self._regressor_knot_scale[index])
             else:
                 self._num_of_regular_regressors += 1
                 self._regular_regressor_col.append(self.regressor_col[index])
-                self._regular_regressor_latent_loc_prior.append(self._regressor_latent_loc_prior[index])
-                self._regular_regressor_latent_scale_prior.append(self._regressor_latent_scale_prior[index])
+                self._regular_regressor_knot_loc.append(self._regressor_knot_loc[index])
+                self._regular_regressor_knot_scale.append(self._regressor_knot_scale[index])
 
     def _set_static_data_attributes(self):
         """model data input based on args at instatiation or computed from args at instantiation"""
@@ -343,20 +329,20 @@ class BaseGAM(BaseModel):
         # cutoff last 20%
         # self._cutoff = round(0.2 * self._num_of_observations)
         width_level = round(self._span_level * self._cutoff)
-        width_regressor = round(self._span_regressor * self._cutoff)
-        self._knots_level = np.arange(1, self._cutoff + 1, width_level) / self._num_of_observations
-        self._knots_regressor = np.arange(1, self._cutoff + 1, width_regressor) / self._num_of_observations
+        width_coefficients = round(self._span_coefficients * self._cutoff)
+        self._knots_tp_level = np.arange(1, self._cutoff + 1, width_level) / self._num_of_observations
+        self.n_knots_coefficients = np.arange(1, self._cutoff + 1, width_coefficients) / self._num_of_observations
 
         # Kernel here is used to determine mean
-        kernel_level = gauss_kernel(tp, self._knots_level, rho=self._rho_level)
-        kernel_regressor = gauss_kernel(tp, self._knots_regressor, rho=self._rho_regressor)
+        kernel_level = gauss_kernel(tp, self._knots_tp_level, rho=self._rho_level)
+        kernel_coefficients = gauss_kernel(tp, self.n_knots_coefficients, rho=self._rho_coefficients)
         kernel_level = kernel_level/np.sum(kernel_level, axis=1, keepdims=True)
-        kernel_regressor = kernel_regressor / np.sum(kernel_regressor, axis=1, keepdims=True)
+        kernel_coefficients = kernel_coefficients / np.sum(kernel_coefficients, axis=1, keepdims=True)
 
-        self._num_knots_level = len(self._knots_level)
-        self._num_knots_regressor = len(self._knots_regressor)
+        self._num_knots_level = len(self._knots_tp_level)
+        self._num_knots_coefficients = len(self.n_knots_coefficients)
         self._kernel_level = kernel_level
-        self._kernel_regressor = kernel_regressor
+        self._kernel_coefficients = kernel_coefficients
 
     def _set_dynamic_data_attributes(self, df):
         """Stan data input based on input DataFrame, rather than at object instantiation"""
@@ -508,15 +494,15 @@ class BaseGAM(BaseModel):
 
         new_tp = np.arange(1 + gap_int, output_len + gap_int + 1)
         new_tp = new_tp / trained_len
-        kernel_level = gauss_kernel(new_tp, self._knots_level, rho=self._rho_level)
-        kernel_regressor = gauss_kernel(new_tp, self._knots_regressor, rho=self._rho_regressor)
+        kernel_level = gauss_kernel(new_tp, self._knots_tp_level, rho=self._rho_level)
+        kernel_coefficients = gauss_kernel(new_tp, self.n_knots_coefficients, rho=self._rho_coefficients)
         kernel_level = kernel_level/np.sum(kernel_level, axis=1, keepdims=True)
-        kernel_regressor = kernel_regressor / np.sum(kernel_regressor, axis=1, keepdims=True)
+        kernel_coefficients = kernel_coefficients / np.sum(kernel_coefficients, axis=1, keepdims=True)
 
-        level_latent = model.get(constants.BaseSamplingParameters.LEVEL_LATENT.value)
-        beta_latent = model.get(constants.RegressionSamplingParameters.REGRESSOR_LATENT_BETA.value)
-        obs_sigma = model.get(constants.BaseSamplingParameters.OBS_SIGMA.value)
-        obs_sigma = obs_sigma.reshape(-1, 1)
+        lev_knot = model.get(constants.BaseSamplingParameters.LEVEL_KNOT.value)
+        coef_knot = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+        obs_scale = model.get(constants.BaseSamplingParameters.OBS_SCALE.value)
+        obs_scale = obs_scale.reshape(-1, 1)
 
         # init of regression matrix depends on length of response vector
         pred_positive_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
@@ -532,14 +518,14 @@ class BaseGAM(BaseModel):
         pred_regressor_matrix = np.concatenate([pred_regular_regressor_matrix,
                                                 pred_positive_regressor_matrix], axis=-1)
 
-        level_sim = np.matmul(level_latent, kernel_level.transpose(1, 0))
-        beta_sim = np.sum(np.matmul(beta_latent, kernel_regressor.transpose(1, 0)) * \
-                          pred_regressor_matrix.transpose(1, 0), axis=-2)
+        trend = np.matmul(lev_knot, kernel_level.transpose(1, 0))
+        regression = np.sum(np.matmul(coef_knot, kernel_coefficients.transpose(1, 0)) * \
+                            pred_regressor_matrix.transpose(1, 0), axis=-2)
         if include_error:
-            epsilon = nct.rvs(30, nc=0, loc=0, scale=obs_sigma, size=(num_sample, len(new_tp)))
-            pred_array = level_sim + beta_sim + epsilon
+            epsilon = nct.rvs(self._degree_of_freedom, nc=0, loc=0, scale=obs_scale, size=(num_sample, len(new_tp)))
+            pred_array = trend + regression + epsilon
         else:
-            pred_array = level_sim + beta_sim
+            pred_array = trend + regression
 
         return {'prediction': pred_array}
 
@@ -615,7 +601,7 @@ class BaseGAM(BaseModel):
 
         regressor_betas = self._aggregate_posteriors \
             .get(aggregate_method) \
-            .get(constants.RegressionSamplingParameters.REGRESSOR_BETA.value)
+            .get(constants.RegressionSamplingParameters.COEFFICIENTS.value)
         regressor_betas = np.squeeze(regressor_betas, axis=0)
 
         # pr_beta = self._aggregate_posteriors\
@@ -645,17 +631,17 @@ class BaseGAM(BaseModel):
 
         if include_ci:
             posterior_samples = self._posterior_samples
-            param_ndarray = posterior_samples.get(constants.RegressionSamplingParameters.REGRESSOR_BETA.value)
-            regressor_betas_lower = np.quantile(param_ndarray, [0.05], axis=0)
-            regressor_betas_upper = np.quantile(param_ndarray, [0.95], axis=0)
-            regressor_betas_lower = np.squeeze(regressor_betas_lower, axis=0)
-            regressor_betas_upper = np.squeeze(regressor_betas_upper, axis=0)
+            param_ndarray = posterior_samples.get(constants.RegressionSamplingParameters.COEFFICIENTS.value)
+            coefficients_lower = np.quantile(param_ndarray, [0.05], axis=0)
+            coefficients_upper = np.quantile(param_ndarray, [0.95], axis=0)
+            coefficients_lower = np.squeeze(coefficients_lower, axis=0)
+            coefficients_upper = np.squeeze(coefficients_upper, axis=0)
 
             reg_df_lower = reg_df.copy()
             reg_df_upper = reg_df.copy()
             for idx, col in enumerate(regressor_col):
-                reg_df_lower[col] = regressor_betas_lower[:, idx]
-                reg_df_upper[col] = regressor_betas_upper[:, idx]
+                reg_df_lower[col] = coefficients_lower[:, idx]
+                reg_df_upper[col] = coefficients_upper[:, idx]
             return reg_df, reg_df_lower, reg_df_upper
 
         return reg_df
