@@ -444,6 +444,7 @@ div.rendered_html tbody tr:hover {
 
 <span class="kn">from</span> <span class="nn">orbit.models.dlt</span> <span class="kn">import</span> <span class="n">DLTMAP</span><span class="p">,</span> <span class="n">DLTFull</span>
 <span class="kn">from</span> <span class="nn">orbit.diagnostics.plot</span> <span class="kn">import</span> <span class="n">plot_predicted_data</span>
+<span class="kn">from</span> <span class="nn">orbit.utils.dataset</span> <span class="kn">import</span> <span class="n">load_iclaims</span>
 </pre></div>
 </div>
 </div>
@@ -456,7 +457,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;../../examples/data/iclaims_example.csv&quot;</span><span class="p">,</span> <span class="n">parse_dates</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;week&quot;</span><span class="p">])</span>
+<span></span><span class="n">df</span> <span class="o">=</span> <span class="n">load_iclaims</span><span class="p">()</span>
 <span class="n">df</span><span class="p">[</span><span class="s2">&quot;claims&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;claims&quot;</span><span class="p">])</span>
 </pre></div>
 </div>

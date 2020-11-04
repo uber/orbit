@@ -30,7 +30,8 @@
     "from orbit.models.lgt import LGTMAP, LGTAggregated, LGTFull\n",
     "from orbit.models.dlt import DLTMAP, DLTAggregated, DLTFull\n",
     "from orbit.diagnostics.plot import plot_predicted_data\n",
-    "from orbit.diagnostics.plot import plot_predicted_components"
+    "from orbit.diagnostics.plot import plot_predicted_components\n",
+    "from orbit.utils.dataset import load_iclaims"
    ]
   },
   {
@@ -51,7 +52,7 @@
    },
    "outputs": [],
    "source": [
-    "df = pd.read_csv(\"../../examples/data/iclaims_example.csv\", parse_dates=[\"week\"])\n",
+    "df = load_iclaims()\n",
     "df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']] = \\\n",
     "    np.log(df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']])"
    ]
@@ -687,7 +688,7 @@
    "name": "python",
    "nbconvert_exporter": "python",
    "pygments_lexer": "ipython3",
-   "version": "3.6.8"
+   "version": "3.7.7"
   },
   "toc": {
    "base_numbering": 1,
