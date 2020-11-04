@@ -60,9 +60,9 @@ Load data
 
     import pandas as pd
     import numpy as np
+    from orbit.utils.dataset import load_iclaims
 
-    DATA_FILE = "./examples/data/iclaims_example.csv"
-    df = pd.read_csv(DATA_FILE, parse_dates=['week'])
+    df = load_iclaims()
     df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']] =\
         df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job']].apply(np.log)
 
@@ -75,28 +75,28 @@ Local-Global-Trend (LGT) Model with FULL Bayesian Prediction
 
 .. code:: python
 
-    from orbit.models.lgt import LGTFull
+    from orbit.models.dlt import DLTFull
     from orbit.diagnostics.plot import plot_predicted_data
 
-    lgt = LGTFull(
+    dlt = DLTFull(
         response_col='claims',
         date_col='week',
         regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
         seasonality=52,
     )
-    lgt.fit(df=train_df)
+    dlt.fit(df=train_df)
 
     # predicted df
-    predicted_df = lgt.predict(df=test_df)
+    predicted_df = dlt.predict(df=test_df)
 
     # plot predictions
     plot_predicted_data(
         training_actual_df=train_df, predicted_df=predicted_df,
-        date_col=lgt.date_col, actual_col=lgt.response_col,
+        date_col=dlt.date_col, actual_col=dlt.response_col,
         test_actual_df=test_df
     )
 
-.. image:: docs/img/lgt-mcmc-pred.png
+.. image:: docs/img/dlt-mcmc-pred.png
 
 References
 ===========
