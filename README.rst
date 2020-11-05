@@ -70,7 +70,7 @@ Load data
     train_df=df[:-test_size]
     test_df=df[-test_size:]
 
-Local-Global-Trend (LGT) Model with FULL Bayesian Prediction
+Damped-Local-Trend (DLT) Model with FULL Bayesian Prediction
 ------------------------------------------------------------
 
 .. code:: python
