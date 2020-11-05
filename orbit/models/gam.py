@@ -255,7 +255,9 @@ class BaseGAM(BaseModel):
             if reg_sign == '+':
                 self._num_of_positive_regressors += 1
                 self._positive_regressor_col.append(self.regressor_col[index])
+                # used for 'pr_knot_loc' sampling in pyro
                 self._positive_regressor_knot_pooling_loc.append(self._regressor_knot_loc[index])
+                # used for 'pr_knot' sampling in pyro
                 self._positive_regressor_knot_scale.append(self._regressor_knot_scale[index])
             else:
                 self._num_of_regular_regressors += 1
@@ -646,6 +648,34 @@ class BaseGAM(BaseModel):
 
         return reg_df
 
+    def plot_regression_coefs(self,
+                              coef_df,
+                              coef_df_lower=None,
+                              coef_df_upper=None,
+                              ncol=2,
+                              figsize=None,
+                              ylim=None):
+        nrow = math.ceil((coef_df.shape[1] - 1) / ncol)
+        fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False)
+        regressor_col = coef_df.columns.tolist()[1:]
+
+        for idx, col in enumerate(regressor_col):
+            row_idx = idx // ncol
+            col_idx = idx % ncol
+            coef = coef_df[col]
+            axes[row_idx, col_idx].plot(coef, alpha=.8)  # label?
+            if coef_df_lower is not None and coef_df_upper is not None:
+                coef_lower = coef_df_lower[col]
+                coef_upper = coef_df_upper[col]
+                axes[row_idx, col_idx].fill_between(np.arange(0, coef_df.shape[0]), coef_lower, coef_upper, alpha=.3)
+            if ylim is not None: axes[row_idx, col_idx].set_ylim(ylim)
+            # regressor_col_names = ['intercept'] + self.regressor_col if self.intercept else self.regressor_col
+            axes[row_idx, col_idx].set_title('{}'.format(col))
+            axes[row_idx, col_idx].ticklabel_format(useOffset=False)
+        plt.tight_layout()
+
+        return fig
+
 
 class GAMFull(BaseGAM):
     """Concrete LGT model for full prediction
@@ -782,40 +812,151 @@ class GAMFull(BaseGAM):
         aggregated_df = self._prepend_date_column(aggregated_df, df)
         return aggregated_df
 
-    def get_regression_coefs(self, aggregate_method='median', include_ci=False):
+    def get_regression_coefs(self, aggregate_method='mean', include_ci=False):
         self._set_aggregate_posteriors()
-        return super().get_regression_coefs(aggregate_method=aggregate_method, include_ci=include_ci)
+        return super().get_regression_coefs(aggregate_method=aggregate_method,
+                                            include_ci=include_ci)
 
-    def plot_regression_coefs(self, ncol=2, figsize=None,
-                              aggregate_method='median',
-                              include_ci=False,
-                              ylim=None):
+    def plot_regression_coefs(self, aggregate_method='mean', include_ci=False, **kwargs):
         if include_ci:
             coef_df, coef_df_lower, coef_df_upper = self.get_regression_coefs(
                 aggregate_method=aggregate_method,
                 include_ci=True
             )
         else:
-            coef_df = self.get_regression_coefs(aggregate_method=aggregate_method)
-        nrow = math.ceil((coef_df.shape[1] - 1) / ncol)
-        fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False)
-        regressor_col = coef_df.columns.tolist()[1:]
+            coef_df = self.get_regression_coefs(aggregate_method=aggregate_method, include_ci=False)
+            coef_df_lower = None
+            coef_df_upper = None
 
-        for idx, col in enumerate(regressor_col):
-            row_idx = idx // ncol
-            col_idx = idx % ncol
-            coef = coef_df[col]
-            axes[row_idx, col_idx].plot(coef, alpha=.8)  # label?
-            if include_ci:
-                coef_lower = coef_df_lower[col]
-                coef_upper = coef_df_upper[col]
-                axes[row_idx, col_idx].fill_between(np.arange(0, coef_df.shape[0]), coef_lower, coef_upper, alpha=.3)
-            if ylim is not None: axes[row_idx, col_idx].set_ylim(ylim)
-            # regressor_col_names = ['intercept'] + self.regressor_col if self.intercept else self.regressor_col
-            axes[row_idx, col_idx].set_title('{}'.format(col))
-            axes[row_idx, col_idx].ticklabel_format(useOffset=False)
-        plt.tight_layout()
+        return super().plot_regression_coefs(coef_df=coef_df,
+                                             coef_df_lower=coef_df_lower,
+                                             coef_df_upper=coef_df_upper,
+                                             **kwargs)
 
-        return fig
+class GAMAggregated(BaseGAM):
+    """Concrete LGT model for aggregated posterior prediction
+    In aggregated prediction, the parameter posterior samples are reduced using `aggregate_method`
+    before performing a single prediction.
+    Parameters
+    ----------
+    aggregate_method : { 'mean', 'median' }
+        Method used to reduce parameter posterior samples
+    """
+    _supported_estimator_types = [PyroEstimatorVI]
+
+    def __init__(self, aggregate_method='mean', **kwargs):
+        super().__init__(**kwargs)
+        self.aggregate_method = aggregate_method
+
+        self._validate_aggregate_method()
+
+        # validator model / estimator compatibility
+        self._validate_supported_estimator_type()
+
+    def _validate_aggregate_method(self):
+        if self.aggregate_method not in list(self._aggregate_posteriors.keys()):
+            raise PredictionException("No aggregate method defined for: `{}`".format(self.aggregate_method))
+
+    def fit(self, df):
+        """Fit model to data and set extracted posterior samples"""
+        super().fit(df)
+        self._set_aggregate_posteriors()
+
+    def predict(self, df):
+        # raise if model is not fitted
+        if not self.is_fitted():
+            raise PredictionException("Model is not fitted yet.")
+
+        aggregate_posteriors = self._aggregate_posteriors.get(self.aggregate_method)
+
+        predicted_dict = self._predict(
+            posterior_estimates=aggregate_posteriors,
+            df=df,
+            include_error=False,
+        )
+
+        # must flatten to convert to DataFrame
+        for k, v in predicted_dict.items():
+            predicted_dict[k] = v.flatten()
+
+        predicted_df = pd.DataFrame(predicted_dict)
+        predicted_df = self._prepend_date_column(predicted_df, df)
+
+        return predicted_df
+
+    def get_regression_coefs(self):
+        return super().get_regression_coefs(aggregate_method=self.aggregate_method, include_ci=False)
+
+    def plot_regression_coefs(self, **kwargs):
+        coef_df = self.get_regression_coefs()
+        return super().plot_regression_coefs(coef_df=coef_df,
+                                             **kwargs)
 
 
+class GAMMAP(BaseGAM):
+    """Concrete LGT model for MAP (Maximum a Posteriori) prediction
+    Similar to `LGTAggregated` but predition is based on Maximum a Posteriori (aka Mode)
+    of the posterior.
+    This model only supports MAP estimating `estimator_type`s
+    """
+    _supported_estimator_types = [PyroEstimatorMAP]
+
+    def __init__(self, estimator_type=PyroEstimatorMAP, **kwargs):
+        super().__init__(estimator_type=estimator_type, **kwargs)
+
+        # override init aggregate posteriors
+        self._aggregate_posteriors = {
+            PredictMethod.MAP.value: dict(),
+        }
+
+        # validator model / estimator compatibility
+        self._validate_supported_estimator_type()
+
+    def _set_map_posterior(self):
+        posterior_samples = self._posterior_samples
+
+        map_posterior = {}
+        for param_name in self._model_param_names:
+            param_array = posterior_samples[param_name]
+            # add dimension so it works with vector math in `_predict`
+            param_array = np.expand_dims(param_array, axis=0)
+            map_posterior.update(
+                {param_name: param_array}
+            )
+
+        self._aggregate_posteriors[PredictMethod.MAP.value] = map_posterior
+
+    def fit(self, df):
+        """Fit model to data and set extracted posterior samples"""
+        super().fit(df)
+        self._set_map_posterior()
+
+    def predict(self, df):
+        # raise if model is not fitted
+        if not self.is_fitted():
+            raise PredictionException("Model is not fitted yet.")
+
+        aggregate_posteriors = self._aggregate_posteriors.get(PredictMethod.MAP.value)
+
+        predicted_dict = self._predict(
+            posterior_estimates=aggregate_posteriors,
+            df=df,
+            include_error=False,
+        )
+
+        # must flatten to convert to DataFrame
+        for k, v in predicted_dict.items():
+            predicted_dict[k] = v.flatten()
+
+        predicted_df = pd.DataFrame(predicted_dict)
+        predicted_df = self._prepend_date_column(predicted_df, df)
+
+        return predicted_df
+
+    def get_regression_coefs(self):
+        return super().get_regression_coefs(aggregate_method=PredictMethod.MAP.value)
+
+    def plot_regression_coefs(self, **kwargs):
+        coef_df = self.get_regression_coefs()
+        return super().plot_regression_coefs(coef_df=coef_df,
+                                             **kwargs)
