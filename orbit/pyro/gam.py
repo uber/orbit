@@ -23,7 +23,7 @@ class Model:
         -----
         Labeling system:
         1. for kernel level of parameters such as rho, span, nkots, kerenel etc.,
-        use suffix _lev and _reg for levels and regression to partition
+        use suffix _lev and _coef for levels and regression to partition
         2. for knots level of parameters such as coef, loc and scale priors,
         use prefix _lev and _rr _pr for levels, regular and positive regressors to partition
         3. reduce ambigious by replacing all greeks by labels more intuitive
