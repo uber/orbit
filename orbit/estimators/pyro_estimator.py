@@ -16,21 +16,27 @@ class PyroEstimator(BaseEstimator):
     Parameters
     ----------
     num_steps : int
-        Number of estimator steps
+        Number of estimator steps in optimization
     learning_rate : float
         Estimator learning rate
+    learning_rate_total_decay: float
+        :class:`~pyro.optim.optim.DCTAdam`. Note this is the total decay
+        over all ``num_steps``, not the per-step decay factor.
     seed : int
         Seed int
     message :  int
         Print to console every `message` number of steps
     kwargs
         Additional BaseEstimator args
-
+    Notes
+    -----
+        See http://docs.pyro.ai/en/stable/_modules/pyro/optim/clipped_adam.html for optimizer details
     """
-    def __init__(self, num_steps=101, learning_rate=0.1, message=100, **kwargs):
+    def __init__(self, num_steps=101, learning_rate=0.1, learning_rate_total_decay=0.1, message=100, **kwargs):
         super().__init__(**kwargs)
         self.num_steps = num_steps
         self.learning_rate = learning_rate
+        self.learning_rate_total_decay = learning_rate_total_decay
         self.message = message
 
     @abstractmethod
@@ -45,19 +51,24 @@ class PyroEstimatorVI(PyroEstimator):
     ----------
     num_sample : int
         Number of samples ot draw for inference, default 100
+    num_particles : int
+        Number of particles used in the pyro.infer.Trace_ELBO modules for SVI optimization
     kwargs
         Additional `PyroEstimator` class args
 
     """
 
-    def __init__(self, num_sample=100, **kwargs):
+    def __init__(self, num_sample=100, num_particles=100, **kwargs):
         super().__init__(**kwargs)
         self.num_sample = num_sample
+        self.num_particles = num_particles
 
     def fit(self, model_name, model_param_names, data_input, init_values=None):
+        # verbose is passed through from orbit.models.base_estimator
         verbose = self.verbose
         message = self.message
         learning_rate = self.learning_rate
+        learning_rate_total_decay = self.learning_rate_total_decay
         num_sample = self.num_sample
         seed = self.seed
         num_steps = self.num_steps
@@ -69,8 +80,11 @@ class PyroEstimatorVI(PyroEstimator):
         # Perform stochastic variational inference using an auto guide.
         pyro.clear_param_store()
         guide = AutoLowRankMultivariateNormal(model)
-        optim = ClippedAdam({"lr": learning_rate})
-        elbo = Trace_ELBO(num_particles=100, vectorize_particles=True)
+        optim = ClippedAdam({
+            "lr": learning_rate,
+            "lrd": learning_rate_total_decay ** (1 / num_steps)
+        })
+        elbo = Trace_ELBO(num_particles=self.num_particles, vectorize_particles=True)
         svi = SVI(model, guide, optim, elbo)
 
         for step in range(num_steps):
@@ -115,6 +129,7 @@ class PyroEstimatorMAP(PyroEstimator):
         learning_rate = self.learning_rate
         seed = self.seed
         num_steps = self.num_steps
+        learning_rate_total_decay = self.learning_rate_total_decay
 
         pyro.set_rng_seed(seed)
         Model = get_pyro_model(model_name)  # abstract
@@ -123,7 +138,11 @@ class PyroEstimatorMAP(PyroEstimator):
         # Perform MAP inference using an AutoDelta guide.
         pyro.clear_param_store()
         guide = AutoDelta(model)
-        optim = ClippedAdam({"lr": learning_rate, "betas": (0.5, 0.8)})
+        optim = ClippedAdam({
+            "lr": learning_rate,
+            "lrd": learning_rate_total_decay ** (1 / num_steps),
+            "betas": (0.5, 0.8)
+        })
         elbo = Trace_ELBO()
         svi = SVI(model, guide, optim, elbo)
         for step in range(num_steps):
