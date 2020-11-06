@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 from orbit.exceptions import IllegalArgument
 
+
 def make_fourier_series(dates, period, order=3):
     """ Given dates array, cyclical period and order.  Return a set of fourier series.
     Parameters
@@ -36,7 +37,7 @@ def make_fourier_series(dates, period, order=3):
     return out
 
 
-def make_fourier_series_df(df, date_col, period, order=3):
+def make_fourier_series_df(df, date_col, period, order=3, prefix='', suffix=''):
     """ Given a data-frame, cyclical period and order.  Return a set of fourier series in a dataframe.
     Parameters
     ----------
@@ -44,6 +45,14 @@ def make_fourier_series_df(df, date_col, period, order=3):
         Input dataframe to supply datetime array for generating fourier series
     date_col: str
         Label of the date column supply for generating fourier series
+    period: int
+        Number of days of the period.
+    order: int
+        Number of components for each sin() or cos() series.
+    prefix: str
+        prefix of output columns label
+    suffix: str
+        suffix of output columns label
     Returns
     -------
     out: pd.DataFrame
@@ -57,8 +66,8 @@ def make_fourier_series_df(df, date_col, period, order=3):
     fs = make_fourier_series(df[date_col], period, order=order)
     fs_cols = []
     for i in range(1, order + 1):
-        fs_cols.append('fs_cos{}'.format(i))
-        fs_cols.append('fs_sin{}'.format(i))
+        fs_cols.append('{}fs_cos{}{}'.format(prefix, i, suffix))
+        fs_cols.append('{}fs_sin{}{}'.format(prefix, i, suffix))
     fs_df = pd.DataFrame(fs, columns=fs_cols)
     out = pd.concat([df.reset_index(drop=True), fs_df], axis=1)
     return out, fs_cols
@@ -74,6 +83,10 @@ def make_seasonal_dummies(df, date_col, freq, sparse=True, drop_first=True):
         Label of the date column supply for generating series
     freq: str ['weekday', 'month', 'week']
         Options to pick the right frequency for generating dummies
+    sparse: bool
+        argument passed into `pd.get_dummies`
+    drop_first: bool
+        argument passed into `pd.get_dummies`
     Returns
     -------
     out: pd.DataFrame
