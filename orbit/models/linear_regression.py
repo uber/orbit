@@ -407,7 +407,7 @@ class BaseLinearRegression(BaseModel):
 
 
 class LinearRegressionFull(BaseLinearRegression):
-    """Concrete LGT model for full prediction
+    """Concrete Linear Regression model for full prediction
 
     In full prediction, the prediction occurs as a function of each parameter posterior sample,
     and the prediction results are aggregated after prediction. Prediction will
