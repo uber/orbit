@@ -107,7 +107,7 @@ def load_air_passengers():
 
     url = 'https://raw.githubusercontent.com/facebook/prophet/master/examples/example_air_passengers.csv'
     df = pd.read_csv(url, parse_dates=['ds'])
-    
+
     return df
 
 
