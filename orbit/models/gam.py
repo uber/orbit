@@ -440,7 +440,7 @@ class BaseGAM(BaseModel):
 
         return regressor_beta
 
-    def _predict(self, posterior_estimates, df, include_error=False):
+    def _predict(self, posterior_estimates, df, include_error=False, decompose=False):
         """Vectorized version of prediction math"""
 
         ################################################################
@@ -528,6 +528,16 @@ class BaseGAM(BaseModel):
             pred_array = trend + regression + epsilon
         else:
             pred_array = trend + regression
+
+        # if decompose output dictionary of components
+        if decompose:
+            decomp_dict = {
+                'prediction': pred_array,
+                'trend': trend,
+                'regression': regression
+            }
+
+            return decomp_dict
 
         return {'prediction': pred_array}
 
@@ -751,7 +761,6 @@ class GAMFull(BaseGAM):
 
     def _aggregate_full_predictions(self, array, label, percentiles):
         """Aggregates the mcmc prediction to a point estimate
-
         Args
         ----
         array: np.ndarray
@@ -768,16 +777,11 @@ class GAMFull(BaseGAM):
         """
 
         aggregated_array = np.percentile(array, percentiles, axis=0)
-        if len(percentiles) == 1:
-            aggregate_df = pd.DataFrame(aggregated_array.T, columns=[label])
-        elif len(percentiles) == 3:
-            aggregate_df = pd.DataFrame(aggregated_array.T, columns=[label + "_lower", label, label + "_upper"])
-        else:
-            raise PredictionException("Invalid input percentiles.")
-
+        columns = [label + "_" + str(p) if p != 50 else label for p in percentiles]
+        aggregate_df = pd.DataFrame(aggregated_array.T, columns=columns)
         return aggregate_df
 
-    def predict(self, df):
+    def predict(self, df, decompose=False):
         """Return model predictions as a function of fitted model and df"""
         # raise if model is not fitted
         if not self.is_fitted():
@@ -792,6 +796,7 @@ class GAMFull(BaseGAM):
             posterior_estimates=posterior_samples,
             df=df,
             include_error=True,
+            decompose=decompose,
         )
 
         # MUST copy, or else instance var persists in memory
