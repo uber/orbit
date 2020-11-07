@@ -19,7 +19,6 @@ class DataInputMapper(Enum):
     _REGRESSION_PENALTY = 'REG_PENALTY_TYPE'
     AUTO_RIDGE_SCALE = 'AUTO_RIDGE_SCALE'
     LASSO_SCALE = 'LASSO_SCALE'
-    _WITH_MCMC = 'WITH_MCMC'
 
 
 class BaseSamplingParameters(Enum):
@@ -27,9 +26,6 @@ class BaseSamplingParameters(Enum):
 
 
 class RegressionSamplingParameters(Enum):
-    """
-    The stan output sampling parameters related with regression component.
-    """
     POSITIVE_REGRESSOR_BETA = 'pr_beta'
     REGULAR_REGRESSOR_BETA = 'rr_beta'
 
