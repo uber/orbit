@@ -536,7 +536,6 @@ class LinearRegressionFull(BaseLinearRegression):
 
         aggregated_df = pd.concat(predicted_dict, axis=1)
         aggregated_df.columns = aggregated_df.columns.droplevel()
-        aggregated_df = self._prepend_date_column(aggregated_df, df)
         return aggregated_df
 
     def get_regression_coefs(self, aggregate_method='mean'):
