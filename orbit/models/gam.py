@@ -79,6 +79,7 @@ class BaseGAM(BaseModel):
                  span_coefficients=None,
                  rho_level=None,
                  rho_coefficients=None,
+                 degree_of_freedom=30,
                  # response_sd=None,
                  insert_prior_idx=None,
                  insert_prior_tp_idx=None,
@@ -114,7 +115,7 @@ class BaseGAM(BaseModel):
         self._rho_level = self.rho_level
         self._rho_coefficients = self.rho_coefficients
         self._positive_regressor_knot_pooling_scale = self.positive_regressor_knot_pooling_scale
-        self._degree_of_freedom = DEFAULT_DEGREE_OF_FREEDOM
+        self._degree_of_freedom = degree_of_freedom
         self._insert_prior_idx = self.insert_prior_idx
         self._insert_prior_tp_idx = self.insert_prior_tp_idx
         self._insert_prior_mean = self.insert_prior_mean
