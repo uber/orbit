@@ -20,8 +20,10 @@ class PyroEstimator(BaseEstimator):
     learning_rate : float
         Estimator learning rate
     learning_rate_total_decay: float
-        :class:`~pyro.optim.optim.DCTAdam`. Note this is the total decay
-        over all ``num_steps``, not the per-step decay factor.
+        A config re-parameterized from ``lrd`` in :class:`~pyro.optim.ClippedAdam`.
+        Note this is the total decay over all ``num_steps``, not the per-step decay factor.  Such
+        parameter is independent from ``num_steps``.  e.g. 1.0 means no decay and 0.1 means 90% decay
+        at the final step.
     seed : int
         Seed int
     message :  int
@@ -32,7 +34,7 @@ class PyroEstimator(BaseEstimator):
     -----
         See http://docs.pyro.ai/en/stable/_modules/pyro/optim/clipped_adam.html for optimizer details
     """
-    def __init__(self, num_steps=101, learning_rate=0.1, learning_rate_total_decay=0.1, message=100, **kwargs):
+    def __init__(self, num_steps=101, learning_rate=0.1, learning_rate_total_decay=1.0, message=100, **kwargs):
         super().__init__(**kwargs)
         self.num_steps = num_steps
         self.learning_rate = learning_rate
@@ -52,7 +54,7 @@ class PyroEstimatorVI(PyroEstimator):
     num_sample : int
         Number of samples ot draw for inference, default 100
     num_particles : int
-        Number of particles used in the pyro.infer.Trace_ELBO modules for SVI optimization
+        Number of particles used in :class: `~pyro.infer.Trace_ELBO` for SVI optimization
     kwargs
         Additional `PyroEstimator` class args
 
