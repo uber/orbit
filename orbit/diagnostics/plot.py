@@ -114,8 +114,8 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         plt.show()
 
 
-def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, title="", figsize=None, path=None,
-                             plot_components=None):
+def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, plot_components=None,
+                              title="", figsize=None, path=None):
 
     """ Plot predicted componenets with the data frame of decomposed prediction where components
     has been pre-defined as `trend`, `seasonality` and `regression`.
@@ -129,6 +129,9 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
     prediction_percentiles: list
         a list should consist exact two elements which will be used to plot as lower and upper bound of
         confidence interval
+    plot_components: list
+        a list of strings to show the label of components to be plotted; by default, it uses values in
+        `orbit.constants.constants.PredictedComponents`.
     title: str
         title of the plot
     figsize: tuple
@@ -216,8 +219,8 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
 
 
 def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
-                         pair_type='scatter', figsize=None, path=None,
-                         incl_trend_params=False, incl_smooth_params=False):
+                          pair_type='scatter', figsize=None, path=None,
+                          incl_trend_params=False, incl_smooth_params=False):
     """ Data Viz for posterior samples
 
     Params
@@ -281,7 +284,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
             mean = np.mean(samples)
             median = np.median(samples)
             cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level)/2), \
-                                    np.percentile(samples, 100 * (1 + ci_level)/2)
+                                 np.percentile(samples, 100 * (1 + ci_level)/2)
 
             sns.distplot(samples, bins=n_bins, kde_kws={'shade':True}, ax=axes[i], norm_hist=False)
             # sns.kdeplot(samples, shade=True, ax=axes[i])
