@@ -114,7 +114,9 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         plt.show()
 
 
-def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, title="", figsize=None, path=None):
+def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, title="", figsize=None, path=None,
+                             plot_components=None):
+
     """ Plot predicted componenets with the data frame of decomposed prediction where components
     has been pre-defined as `trend`, `seasonality` and `regression`.
     Parameters
@@ -140,9 +142,11 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
 
     _predicted_df=predicted_df.copy()
     _predicted_df[date_col] = pd.to_datetime(_predicted_df[date_col])
-    plot_components = [PredictedComponents.TREND.value,
-                       PredictedComponents.SEASONALITY.value,
-                       PredictedComponents.REGRESSION.value]
+    if plot_components is None:
+        plot_components = [PredictedComponents.TREND.value,
+                           PredictedComponents.SEASONALITY.value,
+                           PredictedComponents.REGRESSION.value]
+
     plot_components = [p for p in plot_components if p in _predicted_df.columns.tolist()]
     n_panels = len(plot_components)
     if not figsize:
