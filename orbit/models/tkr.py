@@ -26,7 +26,7 @@ from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel
-from ..utils.features import make_fourier_series_df
+from ..utils.features import make_fourier_series_df2
 
 
 class BaseTKR(BaseModel):
@@ -167,8 +167,8 @@ class BaseTKR(BaseModel):
         # seasonlity validation and default
         if self.seasonality is None:
             self._seasonality = list()
-        elif not isinstance(self.seasonality, list):
-            self._seasonality = list(self.seasonality)
+        elif not isinstance(self.seasonality, list) and isinstance(self.seasonality * 1.0, float):
+            self._seasonality = [self.seasonality]
 
         if self.seasonality_fs_order is None:
             self._seasonality_fs_order = [2] * len(self._seasonality)
@@ -181,11 +181,12 @@ class BaseTKR(BaseModel):
         ##############################
         # if no regressors, end here #
         ##############################
-        if self._regressor_col is None:
+        if self.regressor_col is None:
             # regardless of what args are set for these, if regressor_col is None
             # these should all be empty lists
             self._regressor_knot_loc = list()
             self._regressor_knot_scale = list()
+            self._regressor_col = list()
 
             return
 
@@ -251,7 +252,7 @@ class BaseTKR(BaseModel):
         if len(self._seasonality) > 0:
             for idx, s in enumerate(self._seasonality):
                 order = self._seasonality_fs_order[idx]
-                df, _ = make_fourier_series_df(df, self.date_col, s, order=order, prefix='layer{}_'.format(idx))
+                df, _ = make_fourier_series_df2(df, s, order=order, prefix='layer{}_'.format(idx))
         return df
 
     def _validate_training_df(self, df):
@@ -354,38 +355,6 @@ class BaseTKR(BaseModel):
     def is_fitted(self):
         # if empty dict false, else true
         return bool(self._posterior_samples)
-
-    # @staticmethod
-    # def _concat_regression_coefs(pr_beta=None, rr_beta=None):
-    #     """Concatenates regression posterior matrix
-    #
-    #     In the case that `pr_beta` or `rr_beta` is a 1d tensor, transform to 2d tensor and
-    #     concatenate.
-    #
-    #     Args
-    #     ----
-    #     pr_beta : torch.tensor
-    #         postive-value constrainted regression betas
-    #     rr_beta : torch.tensor
-    #         regular regression betas
-    #
-    #     Returns
-    #     -------
-    #     torch.tensor
-    #         concatenated 2d tensor of shape (1, len(rr_beta) + len(pr_beta))
-    #
-    #     """
-    #     regressor_beta = None
-    #     if pr_beta is not None and rr_beta is not None:
-    #         pr_beta = pr_beta if len(pr_beta.shape) == 2 else pr_beta.reshape(1, -1)
-    #         rr_beta = rr_beta if len(rr_beta.shape) == 2 else rr_beta.reshape(1, -1)
-    #         regressor_beta = torch.cat((rr_beta, pr_beta), dim=1)
-    #     elif pr_beta is not None:
-    #         regressor_beta = pr_beta
-    #     elif rr_beta is not None:
-    #         regressor_beta = rr_beta
-    #
-    #     return regressor_beta
 
     def _predict(self, posterior_estimates, df, include_error=False, decompose=False):
         """Vectorized version of prediction math"""
