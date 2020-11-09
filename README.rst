@@ -1,4 +1,4 @@
-.. image:: docs/img/orbit-icon-small.png
+.. image:: docs/img/orbit-banner.png
 
 -------------------------------------------
 
