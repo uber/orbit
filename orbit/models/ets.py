@@ -29,7 +29,7 @@ class BaseETS(BaseModel):
     def __init__(self, response_col='y', date_col='ds', seasonality=None,
                  regressor_col=None, regressor_sign=None,
                  regressor_beta_prior=None, regressor_sigma_prior=None,
-                 regression_penalty='fixed_ridge', lasso_scale=0.5, auto_ridge_scale=0.5,
+                 regression_penalty='ridge',
                  seasonality_sm_input=None, slope_sm_input=None, level_sm_input=None,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
@@ -41,8 +41,6 @@ class BaseETS(BaseModel):
         self.regressor_beta_prior = regressor_beta_prior
         self.regressor_sigma_prior = regressor_sigma_prior
         self.regression_penalty = regression_penalty
-        self.lasso_scale = lasso_scale
-        self.auto_ridge_scale = auto_ridge_scale
         # fixed smoothing parameters config
         self.seasonality_sm_input = seasonality_sm_input
         self.slope_sm_input = slope_sm_input
@@ -66,7 +64,7 @@ class BaseETS(BaseModel):
         # the following are set by `_set_static_data_attributes()`
         self._regression_penalty = None
         self._with_mcmc = 0
-
+        self._num_of_regressors = 0
         # regular regressors
         self._num_of_regular_regressors = 0
         self._regular_regressor_col = list()
@@ -77,6 +75,11 @@ class BaseETS(BaseModel):
         self._positive_regressor_col = list()
         self._positive_regressor_beta_prior = list()
         self._positive_regressor_sigma_prior = list()
+        # negative regressors
+        self._num_of_negative_regressors = 0
+        self._negative_regressor_col = list()
+        self._negative_regressor_beta_prior = list()
+        self._negative_regressor_sigma_prior = list()
         # depends on seasonality length
         self._init_values = None
 
@@ -99,6 +102,7 @@ class BaseETS(BaseModel):
         # regression data
         self._regular_regressor_matrix = None
         self._positive_regressor_matrix = None
+        self._negative_regressor_matrix = None
 
         # init posterior samples
         # `_posterior_samples` is set by `fit()`
@@ -142,21 +146,21 @@ class BaseETS(BaseModel):
                     raise IllegalArgument('Wrong dimension length in Regression Param Input')
 
         # regressor defaults
-        num_of_regressors = len(self.regressor_col)
+        self._num_of_regressors = len(self.regressor_col)
 
         _validate(
             [self.regressor_sign, self.regressor_beta_prior, self.regressor_sigma_prior],
-            num_of_regressors
+            self._num_of_regressors
         )
 
         if self.regressor_sign is None:
-            self._regressor_sign = [DEFAULT_REGRESSOR_SIGN] * num_of_regressors
+            self._regressor_sign = [DEFAULT_REGRESSOR_SIGN] * self._num_of_regressors
 
         if self.regressor_beta_prior is None:
-            self._regressor_beta_prior = [DEFAULT_REGRESSOR_BETA] * num_of_regressors
+            self._regressor_beta_prior = [DEFAULT_REGRESSOR_BETA] * self._num_of_regressors
 
         if self.regressor_sigma_prior is None:
-            self._regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * num_of_regressors
+            self._regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * self._num_of_regressors
 
     def _set_regression_penalty(self):
         regression_penalty = self.regression_penalty
@@ -167,13 +171,18 @@ class BaseETS(BaseModel):
         if self.regressor_col is None:
             return
 
-        # inside *.stan files, we need to distinguish regular regressors from positive regressors
+        # inside *.stan files, we need to distinguish regular, positive and negative regressors
         for index, reg_sign in enumerate(self._regressor_sign):
             if reg_sign == '+':
                 self._num_of_positive_regressors += 1
                 self._positive_regressor_col.append(self.regressor_col[index])
                 self._positive_regressor_beta_prior.append(self._regressor_beta_prior[index])
                 self._positive_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
+            elif reg_sign == '-':
+                self._num_of_negative_regressors += 1
+                self._negative_regressor_col.append(self.regressor_col[index])
+                self._negative_regressor_beta_prior.append(self._regressor_beta_prior[index])
+                self._negative_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
             else:
                 self._num_of_regular_regressors += 1
                 self._regular_regressor_col.append(self.regressor_col[index])
@@ -186,6 +195,33 @@ class BaseETS(BaseModel):
         # if no attribute for _is_mcmc_estimator, default to False
         if getattr(estimator_type, '_is_mcmc_estimator', False):
             self._with_mcmc = 1
+
+    def _set_init_values(self):
+        """Set Stan init as a callable
+
+        See: https://pystan.readthedocs.io/en/latest/api.htm
+        """
+        def init_values_function(seasonality):
+            init_values = dict()
+            if seasonality > 1:
+                seas_init = np.random.normal(loc=0, scale=0.05, size=seasonality - 1)
+                # catch cases with extreme values
+                seas_init[seas_init > 1.0] = 1.0
+                seas_init[seas_init < -1.0] = -1.0
+                init_values['init_sea'] = seas_init
+
+            return init_values
+
+        seasonality = self._seasonality
+
+        # init_values_partial = partial(init_values_callable, seasonality=seasonality)
+        # partialfunc does not work when passed to PyStan because PyStan uses
+        # inspect.getargspec(func) which seems to raise an exception with keyword-only args
+        # caused by using partialfunc
+        # lambda as an alternative workaround
+        if seasonality > 1:
+            init_values_callable = lambda: init_values_function(seasonality)  # noqa
+            self._init_values = init_values_callable
 
     def _set_static_data_attributes(self):
         """model data input based on args at instatiation or computed from args at instantiation"""
@@ -237,44 +273,22 @@ class BaseETS(BaseModel):
 
     def _set_regressor_matrix(self, df):
         # init of regression matrix depends on length of response vector
-        self._positive_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
         self._regular_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
+        self._positive_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
+        self._negative_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
 
         # update regression matrices
-        if self._num_of_positive_regressors > 0:
-            self._positive_regressor_matrix = df.filter(
-                items=self._positive_regressor_col,).values
-
         if self._num_of_regular_regressors > 0:
             self._regular_regressor_matrix = df.filter(
                 items=self._regular_regressor_col,).values
 
-    def _set_init_values(self):
-        """Set Stan init as a callable
+        if self._num_of_positive_regressors > 0:
+            self._positive_regressor_matrix = df.filter(
+                items=self._positive_regressor_col,).values
 
-        See: https://pystan.readthedocs.io/en/latest/api.htm
-        """
-        def init_values_function(seasonality):
-            init_values = dict()
-            if seasonality > 1:
-                seas_init = np.random.normal(loc=0, scale=0.05, size=seasonality - 1)
-                # catch cases with extreme values
-                seas_init[seas_init > 1.0] = 1.0
-                seas_init[seas_init < -1.0] = -1.0
-                init_values['init_sea'] = seas_init
-
-            return init_values
-
-        seasonality = self._seasonality
-
-        # init_values_partial = partial(init_values_callable, seasonality=seasonality)
-        # partialfunc does not work when passed to PyStan because PyStan uses
-        # inspect.getargspec(func) which seems to raise an exception with keyword-only args
-        # caused by using partialfunc
-        # lambda as an alternative workaround
-        if seasonality > 1:
-            init_values_callable = lambda: init_values_function(seasonality)  # noqa
-            self._init_values = init_values_callable
+        if self._num_of_negative_regressors > 0:
+            self._negative_regressor_matrix = df.filter(
+                items=self._negative_regressor_col,).values
 
     def _set_dynamic_data_attributes(self, df):
         """Stan data input based on input DataFrame, rather than at object instantiation"""
@@ -300,9 +314,9 @@ class BaseETS(BaseModel):
             self._model_param_names += [param.value for param in constants.SeasonalitySamplingParameters]
 
         # append positive regressors if any
-        if self._num_of_positive_regressors + self._num_of_regular_regressors > 0:
+        if self._num_of_regressors > 0:
             self._model_param_names += [
-                    constants.RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value]
+                constants.RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value]
 
     def _get_model_param_names(self):
         return self._model_param_names
@@ -335,11 +349,11 @@ class BaseETS(BaseModel):
         return bool(self._posterior_samples)
 
     @staticmethod
-    def _get_regressor_matrix(df, rr_col, pr_col):
+    def _get_regressor_matrix(df, rr_col, pr_col, nr_col):
         """
         """
-        if len(rr_col) + len(pr_col) > 0:
-            regressor_matrix = df.filter(items=rr_col + pr_col).values
+        if len(rr_col) + len(pr_col) + len(nr_col) > 0:
+            regressor_matrix = df.filter(items=rr_col + pr_col + nr_col).values
         else:
             raise PredictionException('prediction/model does not contains any regressor.')
         return regressor_matrix
@@ -433,7 +447,7 @@ class BaseETS(BaseModel):
         # calculate regression component
         if self.regressor_col is not None and len(self.regressor_col) > 0:
             regressor_matrix = self._get_regressor_matrix(
-                df, self._regular_regressor_col, self._positive_regressor_col
+                df, self._regular_regressor_col, self._positive_regressor_col, self._negative_regressor_col
             )
             regressor_torch = torch.from_numpy(regressor_matrix).double()
             regression = torch.matmul(regressor_torch, regressor_beta.transpose(-1, -2))
@@ -467,7 +481,6 @@ class BaseETS(BaseModel):
         # However, if predicted end of period > training period, update with out-of-samples forecast
         if full_len <= trained_len:
             trend_component = local_trend_levels[:, :full_len]
-
             # in-sample error are iids
             if include_error:
                 error_value = np.random.normal(
@@ -477,7 +490,6 @@ class BaseETS(BaseModel):
                 )
 
                 error_value = torch.from_numpy(error_value).double()
-                # error_value = torch.from_numpy(error_value.reshape(num_sample, full_len)).double()
                 trend_component += error_value
         else:
             trend_component = local_trend_levels
@@ -496,7 +508,6 @@ class BaseETS(BaseModel):
             trend_component = torch.cat((trend_component, trend_forecast_matrix), dim=1)
 
             last_local_trend_level = local_trend_levels[:, -1]
-            # trend_component_zeros = torch.zeros_like(trend_component[:, 0])
 
             for idx in range(trained_len, full_len):
                 trend_component[:, idx] = last_local_trend_level
@@ -627,15 +638,17 @@ class BaseETS(BaseModel):
         # get column names
         rr_cols = self._regular_regressor_col
         pr_cols = self._positive_regressor_col
+        nr_cols = self._negative_regressor_col
 
         # note ordering here is not the same as `self.regressor_cols` because positive
         # and negative do not have to be grouped on input
-        regressor_cols = rr_cols + pr_cols
+        regressor_cols = rr_cols + pr_cols + nr_cols
 
         # same note
         regressor_signs \
             = ["Regular"] * self._num_of_regular_regressors \
-            + ["Positive"] * self._num_of_positive_regressors
+            + ["Positive"] * self._num_of_positive_regressors \
+            + ["Negative"] * self._num_of_negative_regressors
 
         reg_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
         reg_df[COEFFICIENT_DF_COLS.REGRESSOR_SIGN] = regressor_signs
