@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 
 from orbit.estimators.pyro_estimator import PyroEstimator, PyroEstimatorVI, PyroEstimatorMAP
 from orbit.estimators.stan_estimator import StanEstimator, StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
@@ -312,6 +313,33 @@ def test_lgt_predict_all_positive_reg(iclaims_training_data):
     predicted_df = lgt.predict(df, decompose=True)
 
     assert any(predicted_df['regression'].values)
+
+def test_lgt_predict_mixed_regular_positive(iclaims_training_data):
+    df = iclaims_training_data
+
+    lgt = LGTMAP(
+        response_col='claims',
+        date_col='week',
+        regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
+        regressor_sign=['=', '+', '='],
+        seasonality=52,
+        seed=8888,
+    )
+    lgt.fit(df)
+    predicted_df = lgt.predict(df)
+
+    lgt_new = LGTMAP(
+        response_col='claims',
+        date_col='week',
+        regressor_col=['trend.unemploy', 'trend.job', 'trend.filling'],
+        regressor_sign=['=', '=', '+'],
+        seasonality=52,
+        seed=8888,
+    )
+    lgt_new.fit(df)
+    predicted_df_new = lgt_new.predict(df)
+
+    assert np.allclose(predicted_df['prediction'].values, predicted_df_new['prediction'].values)
 
 
 @pytest.mark.parametrize("prediction_percentiles", [None, [5, 10, 95]])

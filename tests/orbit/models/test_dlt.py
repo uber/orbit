@@ -1,4 +1,6 @@
 import pytest
+import numpy as np
+
 from orbit.models.dlt import BaseDLT, DLTFull, DLTAggregated, DLTMAP
 from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 
@@ -251,3 +253,30 @@ def test_dlt_predict_all_positive_reg(iclaims_training_data):
     predicted_df = dlt.predict(df, decompose=True)
 
     assert any(predicted_df['regression'].values)
+
+def test_dlt_predict_mixed_regular_positive(iclaims_training_data):
+    df = iclaims_training_data
+
+    dlt = DLTMAP(
+        response_col='claims',
+        date_col='week',
+        regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
+        regressor_sign=['=', '+', '='],
+        seasonality=52,
+        seed=8888,
+    )
+    dlt.fit(df)
+    predicted_df = dlt.predict(df)
+
+    dlt_new = DLTMAP(
+        response_col='claims',
+        date_col='week',
+        regressor_col=['trend.unemploy', 'trend.job', 'trend.filling'],
+        regressor_sign=['=', '=', '+'],
+        seasonality=52,
+        seed=8888,
+    )
+    dlt_new.fit(df)
+    predicted_df_new = dlt_new.predict(df)
+
+    assert np.allclose(predicted_df['prediction'].values, predicted_df_new['prediction'].values)
