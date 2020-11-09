@@ -32,7 +32,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
     predicted_df: pd.DataFrame
         predicted data response data frame. two columns required: actual_col and pred_col. If
         user provide prediction_percentiles, it needs to include them as well in such
-        `prediction_{x}` where x is the correspodent percentiles
+        `prediction_{x}` where x is the correspondent percentiles
     prediction_percentiles: list
         list of two elements indicates the lower and upper percentiles
     date_col: str
