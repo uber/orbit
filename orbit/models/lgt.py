@@ -224,6 +224,8 @@ class BaseLGT(BaseModel):
                 self._regular_regressor_beta_prior.append(self._regressor_beta_prior[index])
                 self._regular_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
 
+        self._regressor_col = self._positive_regressor_col + self._regular_regressor_col
+
     def _set_with_mcmc(self):
         estimator_type = self.estimator_type
         # set `_with_mcmc` attribute based on estimator type
@@ -521,7 +523,7 @@ class BaseLGT(BaseModel):
         # calculate regression component
         if self.regressor_col is not None and len(self.regressor_col) > 0:
             regressor_beta = regressor_beta.t()
-            regressor_matrix = df[self.regressor_col].values
+            regressor_matrix = df[self._regressor_col].values
             regressor_torch = torch.from_numpy(regressor_matrix).double()
             regressor_component = torch.matmul(regressor_torch, regressor_beta)
             regressor_component = regressor_component.t()
