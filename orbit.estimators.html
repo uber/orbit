@@ -11,10 +11,12 @@
   
 
   
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/orbit.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
 
   
+  
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
   
   
   
@@ -58,6 +60,9 @@
           
 
           
+            
+            <img src="_static/orbit-logo-black.png" class="logo" alt="Logo"/>
+          
           </a>
 
           
@@ -95,15 +100,7 @@
 <li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Docs</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="orbit.html">orbit package</a><ul class="current">
-<li class="toctree-l3 current"><a class="reference internal" href="orbit.html#subpackages">Subpackages</a><ul class="current">
-<li class="toctree-l4"><a class="reference internal" href="orbit.constants.html">orbit.constants package</a></li>
-<li class="toctree-l4"><a class="reference internal" href="orbit.diagnostics.html">orbit.diagnostics package</a></li>
-<li class="toctree-l4 current"><a class="current reference internal" href="#">orbit.estimators package</a></li>
-<li class="toctree-l4"><a class="reference internal" href="orbit.models.html">orbit.models package</a></li>
-<li class="toctree-l4"><a class="reference internal" href="orbit.pyro.html">orbit.pyro package</a></li>
-<li class="toctree-l4"><a class="reference internal" href="orbit.utils.html">orbit.utils package</a></li>
-</ul>
-</li>
+<li class="toctree-l3 current"><a class="reference internal" href="orbit.html#subpackages">Subpackages</a></li>
 <li class="toctree-l3"><a class="reference internal" href="orbit.html#submodules">Submodules</a></li>
 <li class="toctree-l3"><a class="reference internal" href="orbit.html#module-orbit.exceptions">orbit.exceptions module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="orbit.html#module-orbit.orbit">orbit.orbit module</a></li>
@@ -256,20 +253,26 @@ and value is <cite>num_sample</cite> x posterior values</p>
 <span id="orbit-estimators-pyro-estimator-module"></span><h2>orbit.estimators.pyro_estimator module<a class="headerlink" href="#module-orbit.estimators.pyro_estimator" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="orbit.estimators.pyro_estimator.PyroEstimator">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.estimators.pyro_estimator.</code><code class="sig-name descname">PyroEstimator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">num_steps</span><span class="o">=</span><span class="default_value">101</span></em>, <em class="sig-param"><span class="n">learning_rate</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">message</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimator" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">orbit.estimators.pyro_estimator.</code><code class="sig-name descname">PyroEstimator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">num_steps</span><span class="o">=</span><span class="default_value">101</span></em>, <em class="sig-param"><span class="n">learning_rate</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">learning_rate_total_decay</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">message</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimator" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#orbit.estimators.base_estimator.BaseEstimator" title="orbit.estimators.base_estimator.BaseEstimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.estimators.base_estimator.BaseEstimator</span></code></a></p>
 <p>Abstract PyroEstimator with shared args for all PyroEstimator child classes</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>num_steps</strong> (<em>int</em>) – Number of estimator steps</p></li>
+<li><p><strong>num_steps</strong> (<em>int</em>) – Number of estimator steps in optimization</p></li>
 <li><p><strong>learning_rate</strong> (<em>float</em>) – Estimator learning rate</p></li>
+<li><p><strong>learning_rate_total_decay</strong> (<em>float</em>) – A config re-parameterized from <code class="docutils literal notranslate"><span class="pre">lrd</span></code> in <code class="xref py py-class docutils literal notranslate"><span class="pre">ClippedAdam</span></code>.
+Note this is the total decay over all <code class="docutils literal notranslate"><span class="pre">num_steps</span></code>, not the per-step decay factor.  Such
+parameter is independent from <code class="docutils literal notranslate"><span class="pre">num_steps</span></code>.  e.g. 1.0 means no decay and 0.1 means 90% decay
+at the final step.</p></li>
 <li><p><strong>seed</strong> (<em>int</em>) – Seed int</p></li>
 <li><p><strong>message</strong> (<em>int</em>) – Print to console every <cite>message</cite> number of steps</p></li>
 <li><p><strong>kwargs</strong> – Additional BaseEstimator args</p></li>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Notes</p>
+<p>See <a class="reference external" href="http://docs.pyro.ai/en/stable/_modules/pyro/optim/clipped_adam.html">http://docs.pyro.ai/en/stable/_modules/pyro/optim/clipped_adam.html</a> for optimizer details</p>
 <dl class="py method">
 <dt id="orbit.estimators.pyro_estimator.PyroEstimator.fit">
 <em class="property">abstract </em><code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_name</span></em>, <em class="sig-param"><span class="n">model_param_names</span></em>, <em class="sig-param"><span class="n">data_input</span></em>, <em class="sig-param"><span class="n">init_values</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimator.fit" title="Permalink to this definition">¶</a></dt>
@@ -325,13 +328,14 @@ and value is <cite>num_sample</cite> x posterior values</p>
 
 <dl class="py class">
 <dt id="orbit.estimators.pyro_estimator.PyroEstimatorVI">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.estimators.pyro_estimator.</code><code class="sig-name descname">PyroEstimatorVI</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">num_sample</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimatorVI" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">orbit.estimators.pyro_estimator.</code><code class="sig-name descname">PyroEstimatorVI</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">num_sample</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">num_particles</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimatorVI" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#orbit.estimators.pyro_estimator.PyroEstimator" title="orbit.estimators.pyro_estimator.PyroEstimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.estimators.pyro_estimator.PyroEstimator</span></code></a></p>
 <p>Pyro Estimator for VI Sampling</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>num_sample</strong> (<em>int</em>) – Number of samples ot draw for inference, default 100</p></li>
+<li><p><strong>num_particles</strong> (<em>int</em>) – Number of particles used in :class: <cite>~pyro.infer.Trace_ELBO</cite> for SVI optimization</p></li>
 <li><p><strong>kwargs</strong> – Additional <cite>PyroEstimator</cite> class args</p></li>
 </ul>
 </dd>
