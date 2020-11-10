@@ -6,6 +6,7 @@ from orbit.estimators.stan_estimator import StanEstimator, StanEstimatorMCMC, St
 from orbit.models.lgt import BaseLGT, LGTFull, LGTAggregated, LGTMAP
 from orbit.constants.constants import PredictedComponents
 
+
 def test_base_lgt_init():
     lgt = BaseLGT()
 
@@ -313,6 +314,7 @@ def test_lgt_predict_all_positive_reg(iclaims_training_data):
     predicted_df = lgt.predict(df, decompose=True)
 
     assert any(predicted_df['regression'].values)
+
 
 def test_lgt_predict_mixed_regular_positive(iclaims_training_data):
     df = iclaims_training_data
