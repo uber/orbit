@@ -158,7 +158,7 @@ class BaseGAM(BaseModel):
         self._num_knots_level = None
         self._num_knots_coefficients = None
         self._knots_tp_level = None
-        self.n_knots_coefficients = None
+        self._knots_tp_coefficients = None
         # regression data
         self._positive_regressor_matrix = None
         self._regular_regressor_matrix = None
@@ -334,16 +334,16 @@ class BaseGAM(BaseModel):
         width_level = round(self._span_level * self._cutoff)
         width_coefficients = round(self._span_coefficients * self._cutoff)
         self._knots_tp_level = np.arange(1, self._cutoff + 1, width_level) / self._num_of_observations
-        self.n_knots_coefficients = np.arange(1, self._cutoff + 1, width_coefficients) / self._num_of_observations
+        self._knots_tp_coefficients = np.arange(1, self._cutoff + 1, width_coefficients) / self._num_of_observations
 
         # Kernel here is used to determine mean
         kernel_level = gauss_kernel(tp, self._knots_tp_level, rho=self._rho_level)
-        kernel_coefficients = gauss_kernel(tp, self.n_knots_coefficients, rho=self._rho_coefficients)
+        kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self._rho_coefficients)
         kernel_level = kernel_level/np.sum(kernel_level, axis=1, keepdims=True)
         kernel_coefficients = kernel_coefficients / np.sum(kernel_coefficients, axis=1, keepdims=True)
 
         self._num_knots_level = len(self._knots_tp_level)
-        self._num_knots_coefficients = len(self.n_knots_coefficients)
+        self._num_knots_coefficients = len(self._knots_tp_coefficients)
         self._kernel_level = kernel_level
         self._kernel_coefficients = kernel_coefficients
 
@@ -498,7 +498,7 @@ class BaseGAM(BaseModel):
         new_tp = np.arange(1 + gap_int, output_len + gap_int + 1)
         new_tp = new_tp / trained_len
         kernel_level = gauss_kernel(new_tp, self._knots_tp_level, rho=self._rho_level)
-        kernel_coefficients = gauss_kernel(new_tp, self.n_knots_coefficients, rho=self._rho_coefficients)
+        kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self._rho_coefficients)
         kernel_level = kernel_level/np.sum(kernel_level, axis=1, keepdims=True)
         kernel_coefficients = kernel_coefficients / np.sum(kernel_coefficients, axis=1, keepdims=True)
 
@@ -868,7 +868,7 @@ class GAMAggregated(BaseGAM):
         super().fit(df)
         self._set_aggregate_posteriors()
 
-    def predict(self, df):
+    def predict(self, df, decompose=False):
         # raise if model is not fitted
         if not self.is_fitted():
             raise PredictionException("Model is not fitted yet.")
@@ -879,6 +879,7 @@ class GAMAggregated(BaseGAM):
             posterior_estimates=aggregate_posteriors,
             df=df,
             include_error=False,
+            decompose=decompose,
         )
 
         # must flatten to convert to DataFrame
@@ -892,6 +893,35 @@ class GAMAggregated(BaseGAM):
 
     def get_regression_coefs(self):
         return super().get_regression_coefs(aggregate_method=self.aggregate_method, include_ci=False)
+
+    def get_regression_coefs_hmm(self):
+        """Return DataFrame regression coefficients for hmm purpose
+        """
+        # init dataframe
+        reg_df = pd.DataFrame()
+        reg_df[self.date_col] = self._training_df_meta['date_array']
+
+        # end if no regressors
+        if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
+            return reg_df
+
+        regressor_knots = self._aggregate_posteriors \
+            .get(self.aggregate_method) \
+            .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+        regressor_betas = np.matmul(regressor_knots, self._kernel_coefficients.transpose(1, 0))
+        regressor_betas = np.squeeze(regressor_betas, axis=0).transpose(1, 0)
+
+        # get column names
+        pr_cols = self._positive_regressor_col
+        rr_cols = self._regular_regressor_col
+
+        # note ordering here is not the same as `self.regressor_cols` because positive
+        # and negative do not have to be grouped on input
+        regressor_col = rr_cols + pr_cols
+        for idx, col in enumerate(regressor_col):
+            reg_df[col] = regressor_betas[:, idx]
+
+        return reg_df
 
     def plot_regression_coefs(self, **kwargs):
         coef_df = self.get_regression_coefs()
@@ -937,7 +967,7 @@ class GAMMAP(BaseGAM):
         super().fit(df)
         self._set_map_posterior()
 
-    def predict(self, df):
+    def predict(self, df, decompose=False):
         # raise if model is not fitted
         if not self.is_fitted():
             raise PredictionException("Model is not fitted yet.")
@@ -948,6 +978,7 @@ class GAMMAP(BaseGAM):
             posterior_estimates=aggregate_posteriors,
             df=df,
             include_error=False,
+            decompose=decompose,
         )
 
         # must flatten to convert to DataFrame
