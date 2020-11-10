@@ -121,6 +121,8 @@ class BaseLGT(BaseModel):
         self._regular_regressor_col = list()
         self._regular_regressor_beta_prior = list()
         self._regular_regressor_sigma_prior = list()
+        # internal regressor_col to maintain column ordering on prediction
+        self._regressor_col = list()
         # depends on seasonality length
         self._init_values = None
 
