@@ -1,15 +1,11 @@
 // Holt-Winters’ seasonal method
-// Additive Trend, Additive Seasonal and Additive Error model
-// as known as ETS(A,A,A)
+// Additive Trend, Additive Seasonal and Additive Error model with damped trend
+// as known as ETS(A,A_d,A)
 // Hyndman Exponential Smoothing Book page. 46
 // Using equation 3.16a-3.16e
 // Additional Regression Components are added as r[t]
 // normalized seasonal component using chapter 8.1 in initial components
-// can consider dynamic normalization later
-// lgt version provided an additional global power trend suggested by Slawek
-
-// damped trend method suppress the global trend
-// and follows Section 7.2 from Hyndman's blog
+// dynamic normalization seems not help much in terms of performance
 
 // rr stands for regular regressor(s) where the coef follows normal distribution
 // pr stands for positive regressor(s) where the coef follows truncated normal distribution

@@ -5,9 +5,6 @@ from copy import copy, deepcopy
 
 from ..constants import ets as constants
 from ..constants.constants import (
-    DEFAULT_REGRESSOR_SIGN,
-    DEFAULT_REGRESSOR_BETA,
-    DEFAULT_REGRESSOR_SIGMA,
     COEFFICIENT_DF_COLS,
     PredictMethod
 )
@@ -27,24 +24,20 @@ class BaseETS(BaseModel):
     _supported_estimator_types = None  # set for each model
 
     def __init__(self, response_col='y', date_col='ds', seasonality=None,
-                 regressor_col=None, regressor_sign=None,
-                 regressor_beta_prior=None, regressor_sigma_prior=None,
-                 regression_penalty='ridge',
                  seasonality_sm_input=None, slope_sm_input=None, level_sm_input=None,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
         self.response_col = response_col
         self.date_col = date_col
         self.seasonality = seasonality
-        self.regressor_col = regressor_col
-        self.regressor_sign = regressor_sign
-        self.regressor_beta_prior = regressor_beta_prior
-        self.regressor_sigma_prior = regressor_sigma_prior
-        self.regression_penalty = regression_penalty
+
         # fixed smoothing parameters config
         self.seasonality_sm_input = seasonality_sm_input
         self.slope_sm_input = slope_sm_input
         self.level_sm_input = level_sm_input
+
+        # indicator of using mcmc
+        self._with_mcmc = 0
 
         # set private var to arg value
         # if None set default in _set_default_base_args()
@@ -52,34 +45,11 @@ class BaseETS(BaseModel):
         self._seasonality_sm_input = self.seasonality_sm_input
         self._slope_sm_input = self.slope_sm_input
         self._level_sm_input = self.level_sm_input
-        self._regressor_sign = self.regressor_sign
-        self._regressor_beta_prior = self.regressor_beta_prior
-        self._regressor_sigma_prior = self.regressor_sigma_prior
 
         self._model_param_names = list()
         self._training_df_meta = None
         self._model_data_input = dict()
 
-        # init static data attributes
-        # the following are set by `_set_static_data_attributes()`
-        self._regression_penalty = None
-        self._with_mcmc = 0
-        self._num_of_regressors = 0
-        # regular regressors
-        self._num_of_regular_regressors = 0
-        self._regular_regressor_col = list()
-        self._regular_regressor_beta_prior = list()
-        self._regular_regressor_sigma_prior = list()
-        # positive regressors
-        self._num_of_positive_regressors = 0
-        self._positive_regressor_col = list()
-        self._positive_regressor_beta_prior = list()
-        self._positive_regressor_sigma_prior = list()
-        # negative regressors
-        self._num_of_negative_regressors = 0
-        self._negative_regressor_col = list()
-        self._negative_regressor_beta_prior = list()
-        self._negative_regressor_sigma_prior = list()
         # depends on seasonality length
         self._init_values = None
 
@@ -128,67 +98,6 @@ class BaseETS(BaseModel):
         if self.seasonality is None:
             self._seasonality = -1
 
-        ##############################
-        # if no regressors, end here #
-        ##############################
-        if self.regressor_col is None:
-            # regardless of what args are set for these, if regressor_col is None
-            # these should all be empty lists
-            self._regressor_sign = list()
-            self._regressor_beta_prior = list()
-            self._regressor_sigma_prior = list()
-
-            return
-
-        def _validate(regression_params, valid_length):
-            for p in regression_params:
-                if p is not None and len(p) != valid_length:
-                    raise IllegalArgument('Wrong dimension length in Regression Param Input')
-
-        # regressor defaults
-        self._num_of_regressors = len(self.regressor_col)
-
-        _validate(
-            [self.regressor_sign, self.regressor_beta_prior, self.regressor_sigma_prior],
-            self._num_of_regressors
-        )
-
-        if self.regressor_sign is None:
-            self._regressor_sign = [DEFAULT_REGRESSOR_SIGN] * self._num_of_regressors
-
-        if self.regressor_beta_prior is None:
-            self._regressor_beta_prior = [DEFAULT_REGRESSOR_BETA] * self._num_of_regressors
-
-        if self.regressor_sigma_prior is None:
-            self._regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * self._num_of_regressors
-
-    def _set_regression_penalty(self):
-        regression_penalty = self.regression_penalty
-        self._regression_penalty = getattr(constants.RegressionPenalty, regression_penalty).value
-
-    def _set_static_regression_attributes(self):
-        # if no regressors, end here
-        if self.regressor_col is None:
-            return
-
-        # inside *.stan files, we need to distinguish regular, positive and negative regressors
-        for index, reg_sign in enumerate(self._regressor_sign):
-            if reg_sign == '+':
-                self._num_of_positive_regressors += 1
-                self._positive_regressor_col.append(self.regressor_col[index])
-                self._positive_regressor_beta_prior.append(self._regressor_beta_prior[index])
-                self._positive_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
-            elif reg_sign == '-':
-                self._num_of_negative_regressors += 1
-                self._negative_regressor_col.append(self.regressor_col[index])
-                self._negative_regressor_beta_prior.append(self._regressor_beta_prior[index])
-                self._negative_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
-            else:
-                self._num_of_regular_regressors += 1
-                self._regular_regressor_col.append(self.regressor_col[index])
-                self._regular_regressor_beta_prior.append(self._regressor_beta_prior[index])
-                self._regular_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
-
     def _set_with_mcmc(self):
         estimator_type = self.estimator_type
         # set `_with_mcmc` attribute based on estimator type
@@ -226,8 +135,6 @@ class BaseETS(BaseModel):
     def _set_static_data_attributes(self):
         """model data input based on args at instatiation or computed from args at instantiation"""
         self._set_default_base_args()
-        self._set_regression_penalty()
-        self._set_static_regression_attributes()
         self._set_with_mcmc()
         self._set_init_values()
 
@@ -260,35 +167,9 @@ class BaseETS(BaseModel):
         if not is_ordered_datetime(date_array):
             raise ModelException('Datetime index must be ordered and not repeat')
 
-        # validate regression columns
-        if self.regressor_col is not None and \
-                not set(self.regressor_col).issubset(df_columns):
-            raise ModelException(
-                "DataFrame does not contain specified regressor colummn(s)."
-            )
-
         # validate response variable is in df
         if self.response_col not in df_columns:
             raise ModelException("DataFrame does not contain `response_col`: {}".format(self.response_col))
-
-    def _set_regressor_matrix(self, df):
-        # init of regression matrix depends on length of response vector
-        self._regular_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
-        self._positive_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
-        self._negative_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
-
-        # update regression matrices
-        if self._num_of_regular_regressors > 0:
-            self._regular_regressor_matrix = df.filter(
-                items=self._regular_regressor_col,).values
-
-        if self._num_of_positive_regressors > 0:
-            self._positive_regressor_matrix = df.filter(
-                items=self._positive_regressor_col,).values
-
-        if self._num_of_negative_regressors > 0:
-            self._negative_regressor_matrix = df.filter(
-                items=self._negative_regressor_col,).values
 
     def _set_dynamic_data_attributes(self, df):
         """Stan data input based on input DataFrame, rather than at object instantiation"""
@@ -301,8 +182,6 @@ class BaseETS(BaseModel):
         self._response = df[self.response_col].values
         self._num_of_observations = len(self._response)
         self._response_sd = np.std(self._response)
-
-        self._set_regressor_matrix(df)  # depends on _num_of_observations
         self._set_init_values()
 
     def _set_model_param_names(self):
@@ -442,21 +321,6 @@ class BaseETS(BaseModel):
         full_len = trained_len + n_forecast_steps
 
         ################################################################
-        # Regression Component
-        ################################################################
-        # calculate regression component
-        if self.regressor_col is not None and len(self.regressor_col) > 0:
-            regressor_matrix = self._get_regressor_matrix(
-                df, self._regular_regressor_col, self._positive_regressor_col, self._negative_regressor_col
-            )
-            regressor_torch = torch.from_numpy(regressor_matrix).double()
-            regression = torch.matmul(regressor_torch, regressor_beta.transpose(-1, -2))
-            regression = regression.t()
-        else:
-            # regressor is always dependent with df. hence, no need to make full size
-            regression = torch.zeros((num_sample, output_len), dtype=torch.double)
-
-        ################################################################
         # Seasonality Component
         ################################################################
 
@@ -542,20 +406,18 @@ class BaseETS(BaseModel):
         seasonal_component = seasonal_component[:, start:]
 
         # sum components
-        pred_array = trend_component + seasonal_component + regression
+        pred_array = trend_component + seasonal_component
 
         pred_array = pred_array.numpy()
         trend_component = trend_component.numpy()
         seasonal_component = seasonal_component.numpy()
-        regression = regression.numpy()
 
         # if decompose output dictionary of components
         if decompose:
             decomp_dict = {
                 'prediction': pred_array,
                 'trend': trend_component,
-                'seasonality': seasonal_component,
-                'regression': regression
+                'seasonality': seasonal_component
             }
 
             return decomp_dict

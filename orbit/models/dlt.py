@@ -5,14 +5,20 @@ import numpy as np
 from copy import deepcopy
 
 from ..constants import dlt as constants
-from ..exceptions import IllegalArgument, PredictionException
-from ..models.lgt import BaseLGT, LGTFull, LGTAggregated, LGTMAP
-from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
+from ..constants.constants import (
+    DEFAULT_REGRESSOR_SIGN,
+    DEFAULT_REGRESSOR_BETA,
+    DEFAULT_REGRESSOR_SIGMA,
+    COEFFICIENT_DF_COLS
+)
 
+from ..models.ets import BaseETS, ETSMAP
+from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
+from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..utils.general import is_ordered_datetime
 
 
-class BaseDLT(BaseLGT):
+class BaseDLT(BaseETS):
     """Base DLT model object with shared functionality for Full, Aggregated, and MAP methods
 
     The model arguments are the same as `BaseLGT` with some additional arguments
@@ -38,14 +44,50 @@ class BaseDLT(BaseLGT):
     _model_name = 'dlt'
     _supported_estimator_types = None  # set for each model
 
-    def __init__(self, period=1, damped_factor=0.8, global_trend_option='linear', **kwargs):
+    def __init__(self, regressor_col=None, regressor_sign=None, regressor_beta_prior=None,
+                 regressor_sigma_prior=None, regression_penalty='fixed_ridge',
+                 lasso_scale=0.5, auto_ridge_scale=0.5,
+                 period=1, damped_factor=0.8, global_trend_option='linear', **kwargs):
+
         self.damped_factor = damped_factor
         self.global_trend_option = global_trend_option
         self.period = period
 
+        self.regressor_col = regressor_col
+        self.regressor_sign = regressor_sign
+        self.regressor_beta_prior = regressor_beta_prior
+        self.regressor_sigma_prior = regressor_sigma_prior
+        self.regression_penalty = regression_penalty
+
         # global trend related attributes
         self._global_trend_option = None
         self._time_delta = 1
+
+        # init static data attributes
+        # the following are set by `_set_static_data_attributes()`
+        self._regressor_sign = self.regressor_sign
+        self._regressor_beta_prior = self.regressor_beta_prior
+        self._regressor_sigma_prior = self.regressor_sigma_prior
+
+        self._regression_penalty = None
+        self._num_of_regressors = 0
+        self._regressor_col = list()
+
+        # positive regressors
+        self._num_of_positive_regressors = 0
+        self._positive_regressor_col = list()
+        self._positive_regressor_beta_prior = list()
+        self._positive_regressor_sigma_prior = list()
+        # negative regressors
+        self._num_of_negative_regressors = 0
+        self._negative_regressor_col = list()
+        self._negative_regressor_beta_prior = list()
+        self._negative_regressor_sigma_prior = list()
+        # regular regressors
+        self._num_of_regular_regressors = 0
+        self._regular_regressor_col = list()
+        self._regular_regressor_beta_prior = list()
+        self._regular_regressor_sigma_prior = list()
 
         # order matters and super constructor called after attributes are set
         # since we override _set_static_data_attributes()
@@ -57,7 +99,71 @@ class BaseDLT(BaseLGT):
 
     def _set_static_data_attributes(self):
         super()._set_static_data_attributes()
-        self._set_global_trend_attributes()
+        self._set_regression_default_attributes()
+        self._set_regression_penalty()
+        self._set_static_regression_attributes()
+
+    def _set_regression_default_attributes(self):
+        ##############################
+        # if no regressors, end here #
+        ##############################
+        if self.regressor_col is None:
+            # regardless of what args are set for these, if regressor_col is None
+            # these should all be empty lists
+            self._regressor_sign = list()
+            self._regressor_beta_prior = list()
+            self._regressor_sigma_prior = list()
+
+            return
+
+        def _validate(regression_params, valid_length):
+            for p in regression_params:
+                if p is not None and len(p) != valid_length:
+                    raise IllegalArgument('Wrong dimension length in Regression Param Input')
+
+        # regressor defaults
+        self._num_of_regressors = len(self.regressor_col)
+
+        _validate(
+            [self.regressor_sign, self.regressor_beta_prior, self.regressor_sigma_prior],
+            self._num_of_regressors
+        )
+
+        if self.regressor_sign is None:
+            self._regressor_sign = [DEFAULT_REGRESSOR_SIGN] * self._num_of_regressors
+
+        if self.regressor_beta_prior is None:
+            self._regressor_beta_prior = [DEFAULT_REGRESSOR_BETA] * self._num_of_regressors
+
+        if self.regressor_sigma_prior is None:
+            self._regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * self._num_of_regressors
+
+    def _set_regression_penalty(self):
+        regression_penalty = self.regression_penalty
+        self._regression_penalty = getattr(constants.RegressionPenalty, regression_penalty).value
+
+    def _set_static_regression_attributes(self):
+        # if no regressors, end here
+        if self.regressor_col is None:
+            return
+
+        # inside *.stan files, we need to distinguish regular, positive and negative regressors
+        for index, reg_sign in enumerate(self._regressor_sign):
+            if reg_sign == '+':
+                self._num_of_positive_regressors += 1
+                self._positive_regressor_col.append(self.regressor_col[index])
+                self._positive_regressor_beta_prior.append(self._regressor_beta_prior[index])
+                self._positive_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
+            elif reg_sign == '-':
+                self._num_of_negative_regressors += 1
+                self._negative_regressor_col.append(self.regressor_col[index])
+                self._negative_regressor_beta_prior.append(self._regressor_beta_prior[index])
+                self._negative_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
+            else:
+                self._num_of_regular_regressors += 1
+                self._regular_regressor_col.append(self.regressor_col[index])
+                self._regular_regressor_beta_prior.append(self._regressor_beta_prior[index])
+                self._regular_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
 
     def _set_model_param_names(self):
         """Model parameters to extract from Stan"""
@@ -79,6 +185,40 @@ class BaseDLT(BaseLGT):
 
         if self._global_trend_option != constants.GlobalTrendOption.flat.value:
             self._model_param_names += [param.value for param in constants.GlobalTrendSamplingParameters]
+
+    def _validate_training_df_with_regression(self):
+        # validate regression columns
+        if self.regressor_col is not None and \
+                not set(self.regressor_col).issubset(df_columns):
+            raise ModelException(
+                "DataFrame does not contain specified regressor colummn(s)."
+            )
+
+    def _set_regressor_matrix(self, df):
+        # init of regression matrix depends on length of response vector
+        self._positive_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
+        self._negative_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
+        self._regular_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
+
+        # update regression matrices
+        if self._num_of_positive_regressors > 0:
+            self._positive_regressor_matrix = df.filter(
+                items=self._positive_regressor_col, ).values
+
+        if self._num_of_negative_regressors > 0:
+            self._negative_regressor_matrix = df.filter(
+                items=self._negative_regressor_col, ).values
+
+        if self._num_of_regular_regressors > 0:
+            self._regular_regressor_matrix = df.filter(
+                items=self._regular_regressor_col, ).values
+
+    def _set_dynamic_data_attributes(self, df):
+        """Stan data input based on input DataFrame, rather than at object instantiation"""
+        super._set_dynamic_data_attributes(df)
+        # extra settings for regression
+        self._validate_training_df_with_regression(df)
+        self._set_regressor_matrix(df)  # depends on _num_of_observations
 
     def _predict(self, posterior_estimates, df=None, include_error=False, decompose=False):
 
@@ -133,9 +273,7 @@ class BaseDLT(BaseLGT):
             global_trend = torch.zeros(local_trend.shape, dtype=torch.double)
 
         # regression components
-        pr_beta = model.get(constants.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
-        rr_beta = model.get(constants.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value)
-        regressor_beta = self._concat_regression_coefs(pr_beta, rr_beta)
+        regressor_beta = model.get(constants.RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
 
         ################################################################
         # Prediction Attributes
@@ -189,17 +327,17 @@ class BaseDLT(BaseLGT):
         ################################################################
         # Regression Component
         ################################################################
-
         # calculate regression component
         if self.regressor_col is not None and len(self.regressor_col) > 0:
-            regressor_beta = regressor_beta.t()
-            regressor_matrix = df[self._regressor_col].values
+            regressor_matrix = self._get_regressor_matrix(
+                df, self._regular_regressor_col, self._positive_regressor_col, self._negative_regressor_col
+            )
             regressor_torch = torch.from_numpy(regressor_matrix).double()
-            regressor_component = torch.matmul(regressor_torch, regressor_beta)
-            regressor_component = regressor_component.t()
+            regression = torch.matmul(regressor_torch, regressor_beta.transpose(-1, -2))
+            regression = regression.t()
         else:
             # regressor is always dependent with df. hence, no need to make full size
-            regressor_component = torch.zeros((num_sample, output_len), dtype=torch.double)
+            regression = torch.zeros((num_sample, output_len), dtype=torch.double)
 
         ################################################################
         # Seasonality Component
@@ -208,15 +346,15 @@ class BaseDLT(BaseLGT):
         # calculate seasonality component
         if self._seasonality > 1:
             if full_len <= seasonality_levels.shape[1]:
-                seasonality_component = seasonality_levels[:, :full_len]
+                seasonal_component = seasonality_levels[:, :full_len]
             else:
                 seasonality_forecast_length = full_len - seasonality_levels.shape[1]
                 seasonality_forecast_matrix = \
                     torch.zeros((num_sample, seasonality_forecast_length), dtype=torch.double)
-                seasonality_component = torch.cat(
+                seasonal_component = torch.cat(
                     (seasonality_levels, seasonality_forecast_matrix), dim=1)
         else:
-            seasonality_component = torch.zeros((num_sample, full_len), dtype=torch.double)
+            seasonal_component = torch.zeros((num_sample, full_len), dtype=torch.double)
 
         ################################################################
         # Trend Component
@@ -305,12 +443,11 @@ class BaseDLT(BaseLGT):
                     + (1 - slope_smoothing_factor) * damped_factor.flatten() * last_local_trend_slope
 
                 if self._seasonality > 1 and idx + self._seasonality < full_len:
-                    seasonality_component[:, idx + self._seasonality] = \
+                    seasonal_component[:, idx + self._seasonality] = \
                         seasonality_smoothing_factor.flatten() \
-                        * (full_local_trend[:, idx] + seasonality_component[:, idx] -
+                        * (full_local_trend[:, idx] + seasonal_component[:, idx] -
                            new_local_trend_level) \
-                        + (1 - seasonality_smoothing_factor.flatten()) * seasonality_component[:,
-                                                                         idx]
+                        + (1 - seasonality_smoothing_factor.flatten()) * seasonal_component[:, idx]
 
                 last_local_trend_level = new_local_trend_level
 
@@ -320,23 +457,23 @@ class BaseDLT(BaseLGT):
 
         # trim component with right start index
         trend_component = full_global_trend[:, start:] + full_local_trend[:, start:]
-        seasonality_component = seasonality_component[:, start:]
+        seasonal_component = seasonal_component[:, start:]
 
         # sum components
-        pred_array = trend_component + seasonality_component + regressor_component
+        pred_array = trend_component + seasonal_component + regression
 
         pred_array = pred_array.numpy()
         trend_component = trend_component.numpy()
-        seasonality_component = seasonality_component.numpy()
-        regressor_component = regressor_component.numpy()
+        seasonal_component = seasonal_component.numpy()
+        regression = regression.numpy()
 
         # if decompose output dictionary of components
         if decompose:
             decomp_dict = {
                 'prediction': pred_array,
                 'trend': trend_component,
-                'seasonality': seasonality_component,
-                'regression': regressor_component
+                'seasonality': seasonal_component,
+                'regression': regression
             }
 
             return decomp_dict
@@ -344,39 +481,39 @@ class BaseDLT(BaseLGT):
         return {'prediction': pred_array}
 
 
-class DLTFull(LGTFull, BaseDLT):
-    """Concrete DLT model for full prediction
+# class DLTFull(LGTFull, BaseDLT):
+#     """Concrete DLT model for full prediction
+#
+#     The model arguments are the same as `LGTFull` with some additional arguments
+#
+#     See Also
+#     --------
+#     orbit.models.lgt.LGTFull
+#
+#     """
+#     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
+#
+#     def __init__(self, **kwargs):
+#         super().__init__(**kwargs)
+#
+#
+# class DLTAggregated(LGTAggregated, BaseDLT):
+#     """Concrete DLT model for aggregated posterior prediction
+#
+#     The model arguments are the same as `LGTAggregated` with some additional arguments
+#
+#     See Also
+#     --------
+#     orbit.models.lgt.LGTAggregated
+#
+#     """
+#     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
+#
+#     def __init__(self, **kwargs):
+#         super().__init__(**kwargs)
 
-    The model arguments are the same as `LGTFull` with some additional arguments
 
-    See Also
-    --------
-    orbit.models.lgt.LGTFull
-
-    """
-    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
-class DLTAggregated(LGTAggregated, BaseDLT):
-    """Concrete DLT model for aggregated posterior prediction
-
-    The model arguments are the same as `LGTAggregated` with some additional arguments
-
-    See Also
-    --------
-    orbit.models.lgt.LGTAggregated
-
-    """
-    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
-class DLTMAP(LGTMAP, BaseDLT):
+class DLTMAP(ETSMAP, BaseDLT):
     """Concrete DLT model for MAP (Maximum a Posteriori) prediction
 
     The model arguments are the same as `LGTNAP` with some additional arguments
