@@ -5,7 +5,6 @@ from copy import copy, deepcopy
 
 from ..constants import ets as constants
 from ..constants.constants import (
-    COEFFICIENT_DF_COLS,
     PredictMethod
 )
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
@@ -69,10 +68,6 @@ class BaseETS(BaseModel):
         self._response = None
         self._num_of_observations = None
         self._repsonse_sd = None
-        # regression data
-        self._regular_regressor_matrix = None
-        self._positive_regressor_matrix = None
-        self._negative_regressor_matrix = None
 
         # init posterior samples
         # `_posterior_samples` is set by `fit()`
@@ -192,11 +187,6 @@ class BaseETS(BaseModel):
         if self._seasonality > 1:
             self._model_param_names += [param.value for param in constants.SeasonalitySamplingParameters]
 
-        # append positive regressors if any
-        if self._num_of_regressors > 0:
-            self._model_param_names += [
-                constants.RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value]
-
     def _get_model_param_names(self):
         return self._model_param_names
 
@@ -267,9 +257,6 @@ class BaseETS(BaseModel):
             constants.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
         local_trend_levels = model.get(constants.BaseSamplingParameters.LOCAL_TREND_LEVELS.value)
         residual_sigma = model.get(constants.BaseSamplingParameters.RESIDUAL_SIGMA.value)
-
-        # regression components
-        regressor_beta = model.get(constants.RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
 
         ################################################################
         # Prediction Attributes
@@ -481,43 +468,6 @@ class BaseETS(BaseModel):
 
         self._posterior_samples = model_extract
 
-    def get_regression_coefs(self, aggregate_method):
-        """Return DataFrame regression coefficients
-
-        If PredictMethod is `full` return `mean` of coefficients instead
-        """
-        # init dataframe
-        reg_df = pd.DataFrame()
-
-        # end if no regressors
-        if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
-            return reg_df
-
-        coef = self._aggregate_posteriors\
-            .get(aggregate_method)\
-            .get(constants.RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
-
-        # get column names
-        rr_cols = self._regular_regressor_col
-        pr_cols = self._positive_regressor_col
-        nr_cols = self._negative_regressor_col
-
-        # note ordering here is not the same as `self.regressor_cols` because positive
-        # and negative do not have to be grouped on input
-        regressor_cols = rr_cols + pr_cols + nr_cols
-
-        # same note
-        regressor_signs \
-            = ["Regular"] * self._num_of_regular_regressors \
-            + ["Positive"] * self._num_of_positive_regressors \
-            + ["Negative"] * self._num_of_negative_regressors
-
-        reg_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
-        reg_df[COEFFICIENT_DF_COLS.REGRESSOR_SIGN] = regressor_signs
-        reg_df[COEFFICIENT_DF_COLS.COEFFICIENT] = coef.flatten()
-
-        return reg_df
-
 
 class ETSFull(BaseETS):
     """Concrete LGT model for full prediction
@@ -649,68 +599,61 @@ class ETSFull(BaseETS):
         aggregated_df = self._prepend_date_column(aggregated_df, df)
         return aggregated_df
 
-    def get_regression_coefs(self, aggregate_method='mean'):
+
+class ETSAggregated(BaseETS):
+    """Concrete LGT model for aggregated posterior prediction
+
+    In aggregated prediction, the parameter posterior samples are reduced using `aggregate_method`
+    before performing a single prediction.
+
+    Parameters
+    ----------
+    aggregate_method : { 'mean', 'median' }
+        Method used to reduce parameter posterior samples
+
+    """
+    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
+
+    def __init__(self, aggregate_method='mean', **kwargs):
+        super().__init__(**kwargs)
+        self.aggregate_method = aggregate_method
+
+        self._validate_aggregate_method()
+
+        # validator model / estimator compatibility
+        self._validate_supported_estimator_type()
+
+    def _validate_aggregate_method(self):
+        if self.aggregate_method not in list(self._aggregate_posteriors.keys()):
+            raise PredictionException("No aggregate method defined for: `{}`".format(self.aggregate_method))
+
+    def fit(self, df):
+        """Fit model to data and set extracted posterior samples"""
+        super().fit(df)
         self._set_aggregate_posteriors()
-        return super().get_regression_coefs(aggregate_method=aggregate_method)
 
+    def predict(self, df, decompose=False):
+        # raise if model is not fitted
+        if not self.is_fitted():
+            raise PredictionException("Model is not fitted yet.")
 
-# class LGTAggregated(BaseLGT):
-#     """Concrete LGT model for aggregated posterior prediction
-#
-#     In aggregated prediction, the parameter posterior samples are reduced using `aggregate_method`
-#     before performing a single prediction.
-#
-#     Parameters
-#     ----------
-#     aggregate_method : { 'mean', 'median' }
-#         Method used to reduce parameter posterior samples
-#
-#     """
-#     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
-#
-#     def __init__(self, aggregate_method='mean', **kwargs):
-#         super().__init__(**kwargs)
-#         self.aggregate_method = aggregate_method
-#
-#         self._validate_aggregate_method()
-#
-#         # validator model / estimator compatibility
-#         self._validate_supported_estimator_type()
-#
-#     def _validate_aggregate_method(self):
-#         if self.aggregate_method not in list(self._aggregate_posteriors.keys()):
-#             raise PredictionException("No aggregate method defined for: `{}`".format(self.aggregate_method))
-#
-#     def fit(self, df):
-#         """Fit model to data and set extracted posterior samples"""
-#         super().fit(df)
-#         self._set_aggregate_posteriors()
-#
-#     def predict(self, df, decompose=False):
-#         # raise if model is not fitted
-#         if not self.is_fitted():
-#             raise PredictionException("Model is not fitted yet.")
-#
-#         aggregate_posteriors = self._aggregate_posteriors.get(self.aggregate_method)
-#
-#         predicted_dict = self._predict(
-#             posterior_estimates=aggregate_posteriors,
-#             df=df,
-#             include_error=False,
-#             decompose=decompose
-#         )
-#
-#         # must flatten to convert to DataFrame
-#         for k, v in predicted_dict.items():
-#             predicted_dict[k] = v.flatten()
-#
-#         predicted_df = pd.DataFrame(predicted_dict)
-#         predicted_df = self._prepend_date_column(predicted_df, df)
-#
-#         return predicted_df
-#
-#     def get_regression_coefs(self):
-#         return super().get_regression_coefs(aggregate_method=self.aggregate_method)
+        aggregate_posteriors = self._aggregate_posteriors.get(self.aggregate_method)
+
+        predicted_dict = self._predict(
+            posterior_estimates=aggregate_posteriors,
+            df=df,
+            include_error=False,
+            decompose=decompose
+        )
+
+        # must flatten to convert to DataFrame
+        for k, v in predicted_dict.items():
+            predicted_dict[k] = v.flatten()
+
+        predicted_df = pd.DataFrame(predicted_dict)
+        predicted_df = self._prepend_date_column(predicted_df, df)
+
+        return predicted_df
 
 
 class ETSMAP(BaseETS):
@@ -777,5 +720,4 @@ class ETSMAP(BaseETS):
 
         return predicted_df
 
-    def get_regression_coefs(self):
-        return super().get_regression_coefs(aggregate_method=PredictMethod.MAP.value)
+

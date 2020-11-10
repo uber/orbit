@@ -237,6 +237,7 @@ def test_dlt_map_global_trend(synthetic_data, global_trend_option):
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
 
+
 def test_dlt_predict_all_positive_reg(iclaims_training_data):
     df = iclaims_training_data
 
@@ -253,6 +254,7 @@ def test_dlt_predict_all_positive_reg(iclaims_training_data):
     predicted_df = dlt.predict(df, decompose=True)
 
     assert any(predicted_df['regression'].values)
+
 
 def test_dlt_predict_mixed_regular_positive(iclaims_training_data):
     df = iclaims_training_data

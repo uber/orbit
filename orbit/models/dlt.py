@@ -9,10 +9,11 @@ from ..constants.constants import (
     DEFAULT_REGRESSOR_SIGN,
     DEFAULT_REGRESSOR_BETA,
     DEFAULT_REGRESSOR_SIGMA,
-    COEFFICIENT_DF_COLS
+    COEFFICIENT_DF_COLS,
+    PredictMethod
 )
 
-from ..models.ets import BaseETS, ETSMAP
+from ..models.ets import BaseETS, ETSMAP, ETSFull, ETSAggregated
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..utils.general import is_ordered_datetime
@@ -53,11 +54,18 @@ class BaseDLT(BaseETS):
         self.global_trend_option = global_trend_option
         self.period = period
 
+        # extra parameters for residuals
+        # todo: should this be based on number of obs?
+        self._min_nu = 5.
+        self._max_nu = 40.
+
         self.regressor_col = regressor_col
         self.regressor_sign = regressor_sign
         self.regressor_beta_prior = regressor_beta_prior
         self.regressor_sigma_prior = regressor_sigma_prior
         self.regression_penalty = regression_penalty
+        self.lasso_scale = lasso_scale
+        self.auto_ridge_scale = auto_ridge_scale
 
         # global trend related attributes
         self._global_trend_option = None
@@ -89,6 +97,11 @@ class BaseDLT(BaseETS):
         self._regular_regressor_beta_prior = list()
         self._regular_regressor_sigma_prior = list()
 
+        # regression data
+        self._regular_regressor_matrix = None
+        self._positive_regressor_matrix = None
+        self._negative_regressor_matrix = None
+
         # order matters and super constructor called after attributes are set
         # since we override _set_static_data_attributes()
         super().__init__(**kwargs)
@@ -102,6 +115,7 @@ class BaseDLT(BaseETS):
         self._set_regression_default_attributes()
         self._set_regression_penalty()
         self._set_static_regression_attributes()
+        self._set_global_trend_attributes()
 
     def _set_regression_default_attributes(self):
         ##############################
@@ -165,6 +179,9 @@ class BaseDLT(BaseETS):
                 self._regular_regressor_beta_prior.append(self._regressor_beta_prior[index])
                 self._regular_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
 
+        self._regressor_col = self._positive_regressor_col + self._negative_regressor_col + \
+                              self._regular_regressor_col
+
     def _set_model_param_names(self):
         """Model parameters to extract from Stan"""
         self._model_param_names += [param.value for param in constants.BaseSamplingParameters]
@@ -174,19 +191,15 @@ class BaseDLT(BaseETS):
             self._model_param_names += [param.value for param in constants.SeasonalitySamplingParameters]
 
         # append positive regressors if any
-        if self._num_of_positive_regressors > 0:
+        if self._num_of_regressors > 0:
             self._model_param_names += [
-                constants.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
-
-        # append regular regressors if any
-        if self._num_of_regular_regressors > 0:
-            self._model_param_names += [
-                constants.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value]
+                constants.RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value]
 
         if self._global_trend_option != constants.GlobalTrendOption.flat.value:
             self._model_param_names += [param.value for param in constants.GlobalTrendSamplingParameters]
 
-    def _validate_training_df_with_regression(self):
+    def _validate_training_df_with_regression(self, df):
+        df_columns = df.columns
         # validate regression columns
         if self.regressor_col is not None and \
                 not set(self.regressor_col).issubset(df_columns):
@@ -215,10 +228,19 @@ class BaseDLT(BaseETS):
 
     def _set_dynamic_data_attributes(self, df):
         """Stan data input based on input DataFrame, rather than at object instantiation"""
-        super._set_dynamic_data_attributes(df)
+        super()._validate_training_df(df)
+        super()._set_training_df_meta(df)
+
+        # set the rest of attributes related to training df
+        self._response = df[self.response_col].values
+        self._num_of_observations = len(self._response)
+        self._cauchy_sd = max(self._response) / 30.0
+
         # extra settings for regression
         self._validate_training_df_with_regression(df)
         self._set_regressor_matrix(df)  # depends on _num_of_observations
+
+        super()._set_init_values()
 
     def _predict(self, posterior_estimates, df=None, include_error=False, decompose=False):
 
@@ -480,37 +502,82 @@ class BaseDLT(BaseETS):
 
         return {'prediction': pred_array}
 
+    def get_regression_coefs(self, aggregate_method):
+        """Return DataFrame regression coefficients
 
-# class DLTFull(LGTFull, BaseDLT):
-#     """Concrete DLT model for full prediction
-#
-#     The model arguments are the same as `LGTFull` with some additional arguments
-#
-#     See Also
-#     --------
-#     orbit.models.lgt.LGTFull
-#
-#     """
-#     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
-#
-#     def __init__(self, **kwargs):
-#         super().__init__(**kwargs)
-#
-#
-# class DLTAggregated(LGTAggregated, BaseDLT):
-#     """Concrete DLT model for aggregated posterior prediction
-#
-#     The model arguments are the same as `LGTAggregated` with some additional arguments
-#
-#     See Also
-#     --------
-#     orbit.models.lgt.LGTAggregated
-#
-#     """
-#     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
-#
-#     def __init__(self, **kwargs):
-#         super().__init__(**kwargs)
+        If PredictMethod is `full` return `mean` of coefficients instead
+        """
+        # init dataframe
+        coef_df = pd.DataFrame()
+
+        # end if no regressors
+        if self._num_of_regressors == 0:
+            return coef_df
+
+        coef = self._aggregate_posteriors\
+            .get(aggregate_method)\
+            .get(constants.RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
+
+        # get column names
+        pr_cols = self._positive_regressor_col
+        nr_cols = self._negative_regressor_col
+        rr_cols = self._regular_regressor_col
+
+        # note ordering here is not the same as `self.regressor_cols` because positive
+        # and negative do not have to be grouped on input
+        regressor_cols = pr_cols + nr_cols + rr_cols
+
+        # same note
+        regressor_signs \
+            = ["Positive"] * self._num_of_positive_regressors \
+            + ["Negative"] * self._num_of_negative_regressors \
+            + ["Regular"] * self._num_of_regular_regressors
+
+        coef_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
+        coef_df[COEFFICIENT_DF_COLS.REGRESSOR_SIGN] = regressor_signs
+        coef_df[COEFFICIENT_DF_COLS.COEFFICIENT] = coef.flatten()
+
+        return coef_df
+
+
+class DLTFull(ETSFull, BaseDLT):
+    """Concrete DLT model for full prediction
+
+    The model arguments are the same as `LGTFull` with some additional arguments
+
+    See Also
+    --------
+    orbit.models.lgt.LGTFull
+
+    """
+    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def get_regression_coefs(self, aggregate_method='mean'):
+        self._set_aggregate_posteriors()
+        return super().get_regression_coefs(aggregate_method=aggregate_method)
+
+
+class DLTAggregated(ETSAggregated, BaseDLT):
+    """Concrete DLT model for aggregated posterior prediction
+
+    The model arguments are the same as `LGTAggregated` with some additional arguments
+
+    See Also
+    --------
+    orbit.models.lgt.LGTAggregated
+
+    """
+    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def get_regression_coefs(self):
+        self._set_aggregate_posteriors()
+        return super().get_regression_coefs(aggregate_method=self.aggregate_method)
 
 
 class DLTMAP(ETSMAP, BaseDLT):
@@ -527,3 +594,6 @@ class DLTMAP(ETSMAP, BaseDLT):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+    def get_regression_coefs(self):
+        return super().get_regression_coefs(aggregate_method=PredictMethod.MAP.value)

@@ -138,7 +138,7 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
         None
     """
 
-    _predicted_df=predicted_df.copy()
+    _predicted_df = predicted_df.copy()
     _predicted_df[date_col] = pd.to_datetime(_predicted_df[date_col])
     plot_components = [PredictedComponents.TREND.value,
                        PredictedComponents.SEASONALITY.value,
