@@ -99,6 +99,14 @@ class BaseDLT(BaseETS):
         self._regular_regressor_beta_prior = list()
         self._regular_regressor_sigma_prior = list()
 
+        # init dynamic data attributes
+        # the following are set by `_set_dynamic_data_attributes()` and generally set during fit()
+        # from input df
+        # response data
+        self._response = None
+        self._num_of_observations = None
+        self._cauchy_sd = None
+
         # regression data
         self._regular_regressor_matrix = None
         self._positive_regressor_matrix = None
@@ -356,9 +364,8 @@ class BaseDLT(BaseETS):
         ################################################################
         # calculate regression component
         if self.regressor_col is not None and len(self.regressor_col) > 0:
-            regressor_matrix = self._get_regressor_matrix(
-                df, self._regular_regressor_col, self._positive_regressor_col, self._negative_regressor_col
-            )
+            regressor_beta = regressor_beta.t()
+            regressor_matrix = df[self._regressor_col].values
             regressor_torch = torch.from_numpy(regressor_matrix).double()
             regression = torch.matmul(regressor_torch, regressor_beta.transpose(-1, -2))
             regression = regression.t()
