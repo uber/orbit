@@ -91,6 +91,9 @@ html_theme_options = {
 html_static_path = ['_static']
 html_style = 'css/orbit.css'
 
+
+html_favicon = 'img/favicon/favicon.ico'
+
 napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = True
 
