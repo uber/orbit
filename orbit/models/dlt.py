@@ -58,7 +58,9 @@ class BaseDLT(BaseETS):
         # todo: should this be based on number of obs?
         self._min_nu = 5.
         self._max_nu = 40.
+
         self.slope_sm_input = slope_sm_input
+
         self.regressor_col = regressor_col
         self.regressor_sign = regressor_sign
         self.regressor_beta_prior = regressor_beta_prior

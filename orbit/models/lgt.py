@@ -118,15 +118,6 @@ class BaseLGT(BaseETS):
         self._regular_regressor_beta_prior = list()
         self._regular_regressor_sigma_prior = list()
 
-        # set static data attributes
-        self._set_static_data_attributes()
-
-        # set model param names
-        # this only depends on static attributes, but should these params depend
-        # on dynamic data (e.g actual data matrix, number of responses, etc) this should be
-        # called after fit instead
-        self._set_model_param_names()
-
         # init dynamic data attributes
         # the following are set by `_set_dynamic_data_attributes()` and generally set during fit()
         # from input df
