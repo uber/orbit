@@ -6,6 +6,7 @@ from orbit.estimators.stan_estimator import StanEstimator, StanEstimatorMCMC, St
 from orbit.models.lgt import BaseLGT, LGTFull, LGTAggregated, LGTMAP
 from orbit.constants.constants import PredictedComponents
 
+
 def test_base_lgt_init():
     lgt = BaseLGT()
 

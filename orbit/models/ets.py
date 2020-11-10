@@ -23,7 +23,7 @@ class BaseETS(BaseModel):
     _supported_estimator_types = None  # set for each model
 
     def __init__(self, response_col='y', date_col='ds', seasonality=None,
-                 seasonality_sm_input=None, slope_sm_input=None, level_sm_input=None,
+                 seasonality_sm_input=None, level_sm_input=None,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
         self.response_col = response_col
@@ -32,7 +32,6 @@ class BaseETS(BaseModel):
 
         # fixed smoothing parameters config
         self.seasonality_sm_input = seasonality_sm_input
-        self.slope_sm_input = slope_sm_input
         self.level_sm_input = level_sm_input
 
         # indicator of using mcmc
@@ -42,7 +41,6 @@ class BaseETS(BaseModel):
         # if None set default in _set_default_base_args()
         self._seasonality = self.seasonality
         self._seasonality_sm_input = self.seasonality_sm_input
-        self._slope_sm_input = self.slope_sm_input
         self._level_sm_input = self.level_sm_input
 
         self._model_param_names = list()
@@ -86,8 +84,6 @@ class BaseETS(BaseModel):
         """
         if self.seasonality_sm_input is None:
             self._seasonality_sm_input = -1
-        if self.slope_sm_input is None:
-            self._slope_sm_input = -1
         if self.level_sm_input is None:
             self._level_sm_input = -1
         if self.seasonality is None:

@@ -45,20 +45,20 @@ class BaseDLT(BaseETS):
     _model_name = 'dlt'
     _supported_estimator_types = None  # set for each model
 
-    def __init__(self, regressor_col=None, regressor_sign=None, regressor_beta_prior=None,
-                 regressor_sigma_prior=None, regression_penalty='fixed_ridge',
-                 lasso_scale=0.5, auto_ridge_scale=0.5,
+    def __init__(self, regressor_col=None, regressor_sign=None,
+                 regressor_beta_prior=None, regressor_sigma_prior=None,
+                 regression_penalty='fixed_ridge', lasso_scale=0.5, auto_ridge_scale=0.5,
+                 slope_sm_input=None,
                  period=1, damped_factor=0.8, global_trend_option='linear', **kwargs):
 
         self.damped_factor = damped_factor
         self.global_trend_option = global_trend_option
         self.period = period
-
         # extra parameters for residuals
         # todo: should this be based on number of obs?
         self._min_nu = 5.
         self._max_nu = 40.
-
+        self.slope_sm_input = slope_sm_input
         self.regressor_col = regressor_col
         self.regressor_sign = regressor_sign
         self.regressor_beta_prior = regressor_beta_prior
@@ -67,12 +67,14 @@ class BaseDLT(BaseETS):
         self.lasso_scale = lasso_scale
         self.auto_ridge_scale = auto_ridge_scale
 
+        # init static data attributes
+        # the following are set by `_set_static_data_attributes()`
         # global trend related attributes
+        self._slope_sm_input = self.slope_sm_input
+
         self._global_trend_option = None
         self._time_delta = 1
 
-        # init static data attributes
-        # the following are set by `_set_static_data_attributes()`
         self._regressor_sign = self.regressor_sign
         self._regressor_beta_prior = self.regressor_beta_prior
         self._regressor_sigma_prior = self.regressor_sigma_prior
@@ -106,16 +108,12 @@ class BaseDLT(BaseETS):
         # since we override _set_static_data_attributes()
         super().__init__(**kwargs)
 
-    def _set_global_trend_attributes(self):
+    def _set_additional_trend_attributes(self):
         self._global_trend_option = getattr(constants.GlobalTrendOption, self.global_trend_option).value
         self._time_delta = 1 / max(self.period, self._seasonality, 1)
 
-    def _set_static_data_attributes(self):
-        super()._set_static_data_attributes()
-        self._set_regression_default_attributes()
-        self._set_regression_penalty()
-        self._set_static_regression_attributes()
-        self._set_global_trend_attributes()
+        if self.slope_sm_input is None:
+            self._slope_sm_input = -1
 
     def _set_regression_default_attributes(self):
         ##############################
@@ -181,7 +179,14 @@ class BaseDLT(BaseETS):
 
         self._regressor_col = self._positive_regressor_col + self._negative_regressor_col + \
                               self._regular_regressor_col
-
+        
+    def _set_static_data_attributes(self):
+        super()._set_static_data_attributes()
+        self._set_additional_trend_attributes()
+        self._set_regression_default_attributes()
+        self._set_regression_penalty()
+        self._set_static_regression_attributes()
+        
     def _set_model_param_names(self):
         """Model parameters to extract from Stan"""
         self._model_param_names += [param.value for param in constants.BaseSamplingParameters]

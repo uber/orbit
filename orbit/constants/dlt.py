@@ -86,8 +86,6 @@ class RegressionSamplingParameters(Enum):
     The stan output sampling parameters related with regression component.
     """
     REGRESSION_COEFFICIENTS = 'beta'
-    # POSITIVE_REGRESSOR_BETA = 'pr_beta'
-    # REGULAR_REGRESSOR_BETA = 'rr_beta'
 
 
 class RegressionPenalty(Enum):
