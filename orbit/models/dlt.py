@@ -369,7 +369,7 @@ class BaseDLT(BaseETS):
             regressor_beta = regressor_beta.t()
             regressor_matrix = df[self._regressor_col].values
             regressor_torch = torch.from_numpy(regressor_matrix).double()
-            regression = torch.matmul(regressor_torch, regressor_beta.transpose(-1, -2))
+            regression = torch.matmul(regressor_torch, regressor_beta)
             regression = regression.t()
         else:
             # regressor is always dependent with df. hence, no need to make full size

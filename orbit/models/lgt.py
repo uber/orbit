@@ -355,7 +355,7 @@ class BaseLGT(BaseETS):
             # check if prediction df is a subset of training df
             # e.g. "negative" forecast steps
             n_forecast_steps = len(forecast_dates) or \
-                -(len(set(training_df_meta['date_array']) - set(prediction_df_meta['date_array'])))
+                               -(len(set(training_df_meta['date_array']) - set(prediction_df_meta['date_array'])))
             # time index for prediction start
             start = pd.Index(
                 training_df_meta['date_array']).get_loc(prediction_df_meta['prediction_start'])
