@@ -80,8 +80,8 @@ class BaseGAM(BaseModel):
                  rho_level=None,
                  rho_coefficients=None,
                  degree_of_freedom=30,
-                 # response_sd=None,
-                 insert_prior_idx=None,
+                 insert_prior_regressor_col=None,
+                 # insert_prior_idx=None,
                  insert_prior_tp_idx=None,
                  insert_prior_mean=None,
                  insert_prior_sd=None,
@@ -99,7 +99,8 @@ class BaseGAM(BaseModel):
         self.span_coefficients = span_coefficients
         self.rho_level = rho_level
         self.rho_coefficients = rho_coefficients
-        self.insert_prior_idx = insert_prior_idx
+        self.insert_prior_regressor_col = insert_prior_regressor_col
+        # self.insert_prior_idx = insert_prior_idx
         self.insert_prior_tp_idx = insert_prior_tp_idx
         self.insert_prior_mean = insert_prior_mean
         self.insert_prior_sd = insert_prior_sd
@@ -116,10 +117,13 @@ class BaseGAM(BaseModel):
         self._rho_coefficients = self.rho_coefficients
         self._positive_regressor_knot_pooling_scale = self.positive_regressor_knot_pooling_scale
         self._degree_of_freedom = degree_of_freedom
-        self._insert_prior_idx = self.insert_prior_idx
+        self._insert_prior_regressor_col = self.insert_prior_regressor_col
+        # self._insert_prior_idx = self.insert_prior_idx
         self._insert_prior_tp_idx = self.insert_prior_tp_idx
         self._insert_prior_mean = self.insert_prior_mean
         self._insert_prior_sd = self.insert_prior_sd
+        self._insert_prior_idx = list()
+        self._num_insert_prior = None
 
         self._model_param_names = list()
         self._training_df_meta = None
@@ -137,6 +141,7 @@ class BaseGAM(BaseModel):
         self._regular_regressor_col = list()
         self._regular_regressor_knot_loc = list()
         self._regular_regressor_knot_scale = list()
+        self._regressor_col = list()
 
         # set static data attributes
         self._set_static_data_attributes()
@@ -154,7 +159,6 @@ class BaseGAM(BaseModel):
         self._response = None
         self._num_of_observations = None
         self._response_sd = None
-        self._num_insert_prior = None
         self._num_knots_level = None
         self._num_knots_coefficients = None
         self._knots_tp_level = None
@@ -192,14 +196,16 @@ class BaseGAM(BaseModel):
         if self.rho_coefficients is None:
             self._rho_coefficients = DEFAULT_RHO_COEFFICIENTS
 
-        if self.insert_prior_idx is None:
-            self._insert_prior_idx = list()
+        if self.insert_prior_regressor_col is None:
+            self._insert_prior_regressor_col = list()
         if self.insert_prior_tp_idx is None:
             self._insert_prior_tp_idx = list()
         if self.insert_prior_mean is None:
             self._insert_prior_mean = list()
         if self.insert_prior_sd is None:
             self._insert_prior_sd = list()
+        if self._num_insert_prior is None:
+            self._num_insert_prior = len(self._insert_prior_tp_idx)
 
         ##############################
         # if no regressors, end here #
@@ -221,9 +227,7 @@ class BaseGAM(BaseModel):
         def _validate_insert_prior(insert_prior_params):
             len_insert_prior = list()
             for p in insert_prior_params:
-                if p is not None:
-                    len_insert_prior.append(len(p))
-                else: len_insert_prior.append(0)
+                len_insert_prior.append(len(p))
             if not all(len_insert == len_insert_prior[0] for len_insert in len_insert_prior):
                 raise IllegalArgument('Wrong dimension length in Insert Prior Input')
 
@@ -234,8 +238,8 @@ class BaseGAM(BaseModel):
             [self.regressor_sign, self.regressor_knot_loc, self.regressor_knot_scale],
             num_of_regressors
         )
-        _validate_insert_prior([self.insert_prior_idx, self.insert_prior_tp_idx,
-                                self.insert_prior_mean, self.insert_prior_sd])
+        _validate_insert_prior([self._insert_prior_regressor_col, self._insert_prior_tp_idx,
+                                self._insert_prior_mean, self._insert_prior_sd])
 
         if self.regressor_sign is None:
             self._regressor_sign = [DEFAULT_REGRESSOR_SIGN] * num_of_regressors
@@ -266,10 +270,18 @@ class BaseGAM(BaseModel):
                 self._regular_regressor_knot_loc.append(self._regressor_knot_loc[index])
                 self._regular_regressor_knot_scale.append(self._regressor_knot_scale[index])
 
+        self._regressor_col = self._regular_regressor_col + self._positive_regressor_col
+
+    def _set_insert_prior_idx(self):
+        if self._num_insert_prior > 0 and len(self._regressor_col) > 0:
+            for col in self._insert_prior_regressor_col:
+                self._insert_prior_idx.append(np.where(np.array(self._regressor_col) == col)[0][0])
+
     def _set_static_data_attributes(self):
         """model data input based on args at instatiation or computed from args at instantiation"""
         self._set_default_base_args()
         self._set_static_regression_attributes()
+        self._set_insert_prior_idx()
 
     def _validate_supported_estimator_type(self):
         if self.estimator_type not in self._supported_estimator_types:
@@ -358,7 +370,6 @@ class BaseGAM(BaseModel):
         self._response = df[self.response_col].values
         self._num_of_observations = len(self._response)
         self._response_sd = np.std(self._response)
-        self._num_insert_prior = len(self._insert_prior_mean)
 
         self._set_regressor_matrix(df)
         self._set_kernel_matrix()
