@@ -114,7 +114,8 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         plt.show()
 
 
-def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, figsize=None, path=None):
+def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, plot_components=None,
+                              title="", figsize=None, path=None):
     """ Plot predicted componenets with the data frame of decomposed prediction where components
     has been pre-defined as `trend`, `seasonality` and `regression`.
     Parameters
@@ -127,6 +128,9 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
     prediction_percentiles: list
         a list should consist exact two elements which will be used to plot as lower and upper bound of
         confidence interval
+    plot_components: list
+        a list of strings to show the label of components to be plotted; by default, it uses values in
+        `orbit.constants.constants.PredictedComponents`.
     title: str
         title of the plot
     figsize: tuple
@@ -140,9 +144,12 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
 
     _predicted_df=predicted_df.copy()
     _predicted_df[date_col] = pd.to_datetime(_predicted_df[date_col])
-    plot_components = [PredictedComponents.TREND.value,
-                       PredictedComponents.SEASONALITY.value,
-                       PredictedComponents.REGRESSION.value]
+    if plot_components is None:
+        plot_components = [PredictedComponents.TREND.value,
+                           PredictedComponents.SEASONALITY.value,
+                           PredictedComponents.REGRESSION.value]
+
+    plot_components = [p for p in plot_components if p in _predicted_df.columns.tolist()]
     n_panels = len(plot_components)
     if not figsize:
         figsize=(16, 8)
@@ -167,6 +174,7 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
                             facecolor='#42999E', alpha=0.5)
         ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
         ax.set_title(comp, fontsize=16)
+    plt.suptitle(title, fontsize=16)
     fig.tight_layout()
 
     if path:
@@ -210,8 +218,8 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
 
 
 def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
-                         pair_type='scatter', figsize=None, path=None,
-                         incl_trend_params=False, incl_smooth_params=False):
+                          pair_type='scatter', figsize=None, path=None,
+                          incl_trend_params=False, incl_smooth_params=False):
     """ Data Viz for posterior samples
 
     Params
@@ -275,7 +283,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
             mean = np.mean(samples)
             median = np.median(samples)
             cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level)/2), \
-                                    np.percentile(samples, 100 * (1 + ci_level)/2)
+                                 np.percentile(samples, 100 * (1 + ci_level)/2)
 
             sns.distplot(samples, bins=n_bins, kde_kws={'shade':True}, ax=axes[i], norm_hist=False)
             # sns.kdeplot(samples, shade=True, ax=axes[i])
