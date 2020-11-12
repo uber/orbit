@@ -11,12 +11,10 @@
   
 
   
-  <link rel="stylesheet" href="_static/css/orbit.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
 
   
-  
-    <link rel="shortcut icon" href="_static/favicon.ico"/>
   
   
   
@@ -60,9 +58,6 @@
           
 
           
-            
-            <img src="_static/orbit-logo-black.png" class="logo" alt="Logo"/>
-          
           </a>
 
           
@@ -100,7 +95,15 @@
 <li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Docs</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="orbit.html">orbit package</a><ul class="current">
-<li class="toctree-l3 current"><a class="reference internal" href="orbit.html#subpackages">Subpackages</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="orbit.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="orbit.constants.html">orbit.constants package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">orbit.diagnostics package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="orbit.estimators.html">orbit.estimators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="orbit.models.html">orbit.models package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="orbit.pyro.html">orbit.pyro package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="orbit.utils.html">orbit.utils package</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="orbit.html#submodules">Submodules</a></li>
 <li class="toctree-l3"><a class="reference internal" href="orbit.html#module-orbit.exceptions">orbit.exceptions module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="orbit.html#module-orbit.orbit">orbit.orbit module</a></li>
@@ -254,7 +257,7 @@ different chainse since this information is not stored in orbit model objects.</
 
 <dl class="py function">
 <dt id="orbit.diagnostics.plot.plot_predicted_components">
-<code class="sig-prename descclassname">orbit.diagnostics.plot.</code><code class="sig-name descname">plot_predicted_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">predicted_df</span></em>, <em class="sig-param"><span class="n">date_col</span></em>, <em class="sig-param"><span class="n">prediction_percentiles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">figsize</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.diagnostics.plot.plot_predicted_components" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">orbit.diagnostics.plot.</code><code class="sig-name descname">plot_predicted_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">predicted_df</span></em>, <em class="sig-param"><span class="n">date_col</span></em>, <em class="sig-param"><span class="n">prediction_percentiles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">plot_components</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">title</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">figsize</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.diagnostics.plot.plot_predicted_components" title="Permalink to this definition">¶</a></dt>
 <dd><dl>
 <dt>Plot predicted componenets with the data frame of decomposed prediction where components</dt><dd><p>has been pre-defined as <cite>trend</cite>, <cite>seasonality</cite> and <cite>regression</cite>.
 Parameters
@@ -269,6 +272,9 @@ user provide pred_percentiles_col, it needs to include them as well.</p>
 </dd>
 <dt>prediction_percentiles: list</dt><dd><p>a list should consist exact two elements which will be used to plot as lower and upper bound of
 confidence interval</p>
+</dd>
+<dt>plot_components: list</dt><dd><p>a list of strings to show the label of components to be plotted; by default, it uses values in
+<cite>orbit.constants.constants.PredictedComponents</cite>.</p>
 </dd>
 <dt>title: str</dt><dd><p>title of the plot</p>
 </dd>
