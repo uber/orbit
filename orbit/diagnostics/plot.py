@@ -112,6 +112,8 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         fig.savefig(path)
     if is_visible:
         plt.show()
+        
+    return fig
 
 
 def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, plot_components=None,
@@ -179,6 +181,8 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
 
     if path:
         plt.savefig(path)
+        
+    return fig
 
 
 def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon',
@@ -215,6 +219,8 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
 
     if path:
         plt.savefig(path)
+        
+    return fig
 
 
 def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
