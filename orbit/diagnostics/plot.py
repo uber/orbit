@@ -113,6 +113,8 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
     if is_visible:
         plt.show()
 
+    return ax
+
 
 def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, plot_components=None,
                               title="", figsize=None, path=None):
@@ -180,6 +182,8 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
     if path:
         plt.savefig(path)
 
+    return axes
+
 
 def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon',
                            metric_col='smape', bar_width=0.1, path=None):
@@ -215,6 +219,7 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
 
     if path:
         plt.savefig(path)
+
 
 
 def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
@@ -301,7 +306,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         plt.suptitle('Histogram and Density of Posterior Samples')
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-        return fig
+        return axes
 
     def _trace_plot(posterior_samples, ci_level=.95, figsize=None):
 
@@ -331,7 +336,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         plt.xlabel('draw')
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-        return fig
+        return axes
 
     def _pair_plot(posterior_samples, pair_type='scatter', n_bins=20):
         samples_df = pd.DataFrame({key: posterior_samples[key].flatten() for key in params_})
@@ -343,13 +348,13 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         return fig
 
     if kind == 'density':
-        fig = _density_plot(posterior_samples, n_bins=n_bins, ci_level=ci_level, figsize=figsize)
+        axes = _density_plot(posterior_samples, n_bins=n_bins, ci_level=ci_level, figsize=figsize)
     elif kind == 'trace':
-        fig = _trace_plot(posterior_samples, ci_level=ci_level, figsize=figsize)
+        axes = _trace_plot(posterior_samples, ci_level=ci_level, figsize=figsize)
     elif kind == 'pair':
-        fig = _pair_plot(posterior_samples, pair_type=pair_type, n_bins=n_bins)
+        axes = _pair_plot(posterior_samples, pair_type=pair_type, n_bins=n_bins)
 
     if path:
         plt.savefig(path)
 
-    return fig
+    return axes
