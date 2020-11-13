@@ -7,12 +7,12 @@ from copy import copy, deepcopy
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-from ..constants import gam as constants
+from ..constants import ktr as constants
 from ..constants.constants import (
     # COEFFICIENT_DF_COLS,
     PredictMethod
 )
-from ..constants.gam import (
+from ..constants.ktr import (
     DEFAULT_LEVEL_KNOT_SCALE,
     DEFAULT_PR_KNOT_POOL_SCALE,
     DEFAULT_SPAN_LEVEL,
@@ -30,9 +30,10 @@ from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel
+from ..utils.features import make_fourier_series_df, make_fourier_series
 
 
-class BaseGAM(BaseModel):
+class BaseKTR(BaseModel):
     """Base LGT model object with shared functionality for Full, Aggregated, and MAP methods
 
     Parameters
@@ -63,12 +64,14 @@ class BaseGAM(BaseModel):
     """
     _data_input_mapper = constants.DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
-    _model_name = 'gam'
+    _model_name = 'ktr'
     _supported_estimator_types = None  # set for each model
 
     def __init__(self,
                  response_col='y',
                  date_col='ds',
+                 seasonality=None,
+                 seasonality_fs_order=None,
                  level_knot_scale=None,
                  regressor_col=None,
                  regressor_sign=None,
@@ -89,6 +92,8 @@ class BaseGAM(BaseModel):
         super().__init__(**kwargs)  # create estimator in base class
         self.response_col = response_col
         self.date_col = date_col
+        self.seasonality = seasonality
+        self.seasonality_fs_order = seasonality_fs_order
         self.level_knot_scale = level_knot_scale
         self.regressor_col = regressor_col
         self.regressor_sign = regressor_sign
@@ -107,6 +112,8 @@ class BaseGAM(BaseModel):
 
         # set private var to arg value
         # if None set default in _set_default_base_args()
+        self._seasonality = self.seasonality
+        self._seasonality_fs_order = self.seasonality_fs_order
         self._level_knot_scale = self.level_knot_scale
         self._regressor_sign = self.regressor_sign
         self._regressor_knot_loc = self.regressor_knot_loc
@@ -158,6 +165,7 @@ class BaseGAM(BaseModel):
         # response data
         self._response = None
         self._num_of_observations = None
+        self._num_of_regressors = None
         self._response_sd = None
         self._num_knots_level = None
         self._num_knots_coefficients = None
@@ -195,6 +203,17 @@ class BaseGAM(BaseModel):
             self._rho_level = DEFAULT_RHO_LEVEL
         if self.rho_coefficients is None:
             self._rho_coefficients = DEFAULT_RHO_COEFFICIENTS
+
+        if self.seasonality is None:
+            self._seasonality = list()
+        elif not isinstance(self.seasonality, list) and isinstance(self.seasonality * 1.0, float):
+            self._seasonality = [self.seasonality]
+        if self.seasonality_fs_order is None:
+            self._seasonality_fs_order = [2] * len(self._seasonality)
+        elif not isinstance(self.seasonality_fs_order, list) and isinstance(self.seasonality_fs_order * 1.0, float):
+            self._seasonality_fs_order = [self.seasonality_fs_order]
+        if len(self._seasonality_fs_order) != len(self._seasonality):
+            raise IllegalArgument('length of seasonality and fs_order not matching')
 
         if self.insert_prior_regressor_col is None:
             self._insert_prior_regressor_col = list()
@@ -269,8 +288,34 @@ class BaseGAM(BaseModel):
                 self._regular_regressor_col.append(self.regressor_col[index])
                 self._regular_regressor_knot_loc.append(self._regressor_knot_loc[index])
                 self._regular_regressor_knot_scale.append(self._regressor_knot_scale[index])
-
+        # regular first, then positive
         self._regressor_col = self._regular_regressor_col + self._positive_regressor_col
+
+    def _set_seasonality_attributes(self):
+        """given list of seasonalities and their order, create list of seasonal_regressors_columns"""
+        if len(self._seasonality) > 0:
+            self._seasonal_regressor_col = []
+            self._seasonal_regressor_col_gp = []
+            for idx, s in enumerate(self._seasonality):
+                fs_cols = []
+                order = self._seasonality_fs_order[idx]
+                for i in range(1, order + 1):
+                    fs_cols.append('seas{}_fs_cos{}'.format(s, i))
+                    fs_cols.append('seas{}_fs_sin{}'.format(s, i))
+                self._seasonal_regressor_col += fs_cols
+                self._seasonal_regressor_col_gp.append(fs_cols)
+
+            # update all regressors related attributes
+            # self._num_of_regressors += len(self._seasonal_regressor_col)
+            self._regressor_col = self._seasonal_regressor_col + self._regressor_col
+            self._regressor_sign = ['='] * len(self._seasonal_regressor_col) + self._regressor_sign
+            self._regular_regressor_col = self._seasonal_regressor_col + self._regular_regressor_col
+            self._num_of_regular_regressors += len(self._seasonal_regressor_col)
+            self._regular_regressor_knot_loc = [DEFAULT_COEFFICIENTS_LOC] * len(self._seasonal_regressor_col) + \
+                                                self._regular_regressor_knot_loc
+            self._regular_regressor_knot_scale = [DEFAULT_COEFFICIENTS_SCALE] * len(self._seasonal_regressor_col) + \
+                                                self._regular_regressor_knot_scale
+
 
     def _set_insert_prior_idx(self):
         if self._num_insert_prior > 0 and len(self._regressor_col) > 0:
@@ -281,6 +326,7 @@ class BaseGAM(BaseModel):
         """model data input based on args at instatiation or computed from args at instantiation"""
         self._set_default_base_args()
         self._set_static_regression_attributes()
+        self._set_seasonality_attributes()
         self._set_insert_prior_idx()
 
     def _validate_supported_estimator_type(self):
@@ -299,6 +345,13 @@ class BaseGAM(BaseModel):
             'training_start': df[self.date_col].iloc[0],
             'training_end': df[self.date_col].iloc[-1]
         }
+
+    def _make_seasonal_regressors(self, df):
+        if len(self._seasonality) > 0:
+            for idx, s in enumerate(self._seasonality):
+                order = self._seasonality_fs_order[idx]
+                df, _ = make_fourier_series_df(df, self.date_col, s, order=order, prefix='seas{}_'.format(s))
+        return df
 
     def _validate_training_df(self, df):
         df_columns = df.columns
@@ -363,12 +416,14 @@ class BaseGAM(BaseModel):
         """Stan data input based on input DataFrame, rather than at object instantiation"""
         df = df.copy()
 
+        df = self._make_seasonal_regressors(df)
         self._validate_training_df(df)
         self._set_training_df_meta(df)
 
         # a few of the following are related with training data.
         self._response = df[self.response_col].values
         self._num_of_observations = len(self._response)
+        self._num_of_regressors = len(self._regressor_col)
         self._response_sd = np.std(self._response)
 
         self._set_regressor_matrix(df)
@@ -452,9 +507,9 @@ class BaseGAM(BaseModel):
 
         return regressor_beta
 
-    def _predict(self, posterior_estimates, df, include_error=False, decompose=False):
+    def _predict(self, posterior_estimates, df, include_error=False, decompose=False, random_state=None):
         """Vectorized version of prediction math"""
-
+        df = self._make_seasonal_regressors(df)
         ################################################################
         # Model Attributes
         ################################################################
@@ -533,10 +588,13 @@ class BaseGAM(BaseModel):
                                                 pred_positive_regressor_matrix], axis=-1)
 
         trend = np.matmul(lev_knot, kernel_level.transpose(1, 0))
-        regression = np.sum(np.matmul(coef_knot, kernel_coefficients.transpose(1, 0)) * \
-                            pred_regressor_matrix.transpose(1, 0), axis=-2)
+        regression = 0
+        if self._num_of_regressors > 0:
+            regression = np.sum(np.matmul(coef_knot, kernel_coefficients.transpose(1, 0)) * \
+                                pred_regressor_matrix.transpose(1, 0), axis=-2)
         if include_error:
-            epsilon = nct.rvs(self._degree_of_freedom, nc=0, loc=0, scale=obs_scale, size=(num_sample, len(new_tp)))
+            epsilon = nct.rvs(self._degree_of_freedom, nc=0, loc=0,
+                              scale=obs_scale, size=(num_sample, len(new_tp)), random_state=random_state)
             pred_array = trend + regression + epsilon
         else:
             pred_array = trend + regression
@@ -546,8 +604,19 @@ class BaseGAM(BaseModel):
             decomp_dict = {
                 'prediction': pred_array,
                 'trend': trend,
-                'regression': regression
             }
+            total_seas_regression = 0.0
+            coef = np.matmul(coef_knot, kernel_coefficients.transpose(1, 0))
+            if len(self._seasonality) > 0:
+                pos = 0
+                for idx, cols in enumerate(self._seasonal_regressor_col_gp):
+                    seasonal_regressor_matrix = df[cols].values
+                    seas_coef = coef[..., pos:(pos + len(cols)),:]
+                    seas_regression = np.sum(seas_coef * seasonal_regressor_matrix.transpose(1, 0), axis=-2)
+                    decomp_dict['seasonality_{}'.format(self._seasonality[idx])] = seas_regression
+                    pos += len(cols)
+                    total_seas_regression += seas_regression
+            decomp_dict['regression'] =  regression - total_seas_regression
 
             return decomp_dict
 
@@ -610,48 +679,66 @@ class BaseGAM(BaseModel):
 
         self._posterior_samples = model_extract
 
-    def get_regression_coefs(self, aggregate_method, include_ci=False):
+    def get_regression_coefs(self, aggregate_method, include_ci=False, date_array=None):
         """Return DataFrame regression coefficients
 
         If PredictMethod is `full` return `mean` of coefficients instead
         """
         # init dataframe
         reg_df = pd.DataFrame()
-        reg_df[self.date_col] = self._training_df_meta['date_array']
-
         # end if no regressors
         if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
             return reg_df
 
-        regressor_betas = self._aggregate_posteriors \
-            .get(aggregate_method) \
-            .get(constants.RegressionSamplingParameters.COEFFICIENTS.value)
-        regressor_betas = np.squeeze(regressor_betas, axis=0)
+        if date_array is None:
+            # if date_array not specified, dynamic coefficients in the training perior will be retrieved
+            reg_df[self.date_col] = self._training_df_meta['date_array']
+            coef_knots = self._aggregate_posteriors \
+                .get(aggregate_method) \
+                .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+            regressor_betas = np.squeeze(np.matmul(coef_knots, self._kernel_coefficients.transpose(1, 0)), axis=0)
+            regressor_betas = regressor_betas.transpose(1, 0)
+        else:
+            date_array = pd.to_datetime(date_array).values
+            if not is_ordered_datetime(date_array):
+                raise IllegalArgument('Datetime index must be ordered and not repeat')
+            reg_df[self.date_col] = date_array
+            # TODO: validate that all regressor columns are present, if any
+            training_df_meta = self._training_df_meta
+            prediction_start = date_array[0]
+            if prediction_start < training_df_meta['training_start']:
+                raise PredictionException('Prediction start must be after training start.')
 
-        # pr_beta = self._aggregate_posteriors\
-        #     .get(aggregate_method)\
-        #     .get(constants.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value)
+            trained_len = training_df_meta['df_length'] # i.e., self._num_of_observations
+            output_len = len(date_array)
 
-        # rr_beta = self._aggregate_posteriors\
-        #     .get(aggregate_method)\
-        #     .get(constants.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value)
+            # Here assume dates are ordered and consecutive
+            # if prediction_df_meta['prediction_start'] > training_df_meta['training_end'],
+            # assume prediction starts right after train end
+            # TODO: check utility?
+            gap_time = prediction_start - training_df_meta['training_start']
+            infer_freq = pd.infer_freq(training_df_meta['date_array'])[0]
+            gap_int = int(gap_time / np.timedelta64(1, infer_freq))
 
-        # # because `_conccat_regression_coefs` operates on torch tensors
-        # pr_beta = torch.from_numpy(pr_beta) if pr_beta is not None else pr_beta
-        # rr_beta = torch.from_numpy(rr_beta) if rr_beta is not None else rr_beta
+            new_tp = np.arange(1 + gap_int, output_len + gap_int + 1)
+            new_tp = new_tp / trained_len
+            kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self._rho_coefficients)
+            kernel_coefficients = kernel_coefficients / np.sum(kernel_coefficients, axis=1, keepdims=True)
+            coef_knots = self._aggregate_posteriors \
+                .get(aggregate_method) \
+                .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+            regressor_betas = np.squeeze(np.matmul(coef_knots, kernel_coefficients.transpose(1, 0)), axis=0)
+            regressor_betas = regressor_betas.transpose(1, 0)
 
-        # # regular first, then positive
-        # regressor_betas = self._concat_regression_coefs(rr_beta, pr_beta)
 
         # get column names
-        pr_cols = self._positive_regressor_col
         rr_cols = self._regular_regressor_col
-
-        # note ordering here is not the same as `self.regressor_cols` because positive
-        # and negative do not have to be grouped on input
+        pr_cols = self._positive_regressor_col
         regressor_col = rr_cols + pr_cols
+        # not reporting seasonal regressor coefficients here
+        regressor_col = [col for col in regressor_col if col not in self._seasonal_regressor_col]
         for idx, col in enumerate(regressor_col):
-            reg_df[col] = regressor_betas[:, idx]
+            reg_df[col] = regressor_betas[:, idx + len(self._seasonal_regressor_col)]
 
         if include_ci:
             posterior_samples = self._posterior_samples
@@ -664,8 +751,8 @@ class BaseGAM(BaseModel):
             reg_df_lower = reg_df.copy()
             reg_df_upper = reg_df.copy()
             for idx, col in enumerate(regressor_col):
-                reg_df_lower[col] = coefficients_lower[:, idx]
-                reg_df_upper[col] = coefficients_upper[:, idx]
+                reg_df_lower[col] = coefficients_lower[:, idx + len(self._seasonal_regressor_col)]
+                reg_df_upper[col] = coefficients_upper[:, idx + len(self._seasonal_regressor_col)]
             return reg_df, reg_df_lower, reg_df_upper
 
         return reg_df
@@ -699,7 +786,7 @@ class BaseGAM(BaseModel):
         return fig
 
 
-class GAMFull(BaseGAM):
+class KTRFull(BaseKTR):
     """Concrete LGT model for full prediction
 
     In full prediction, the prediction occurs as a function of each parameter posterior sample,
@@ -744,7 +831,7 @@ class GAMFull(BaseGAM):
         if not self.n_bootstrap_draws:
             self._n_bootstrap_draws = -1
 
-    def _bootstrap(self, n):
+    def _bootstrap(self, n, random_state=None):
         """Draw `n` number of bootstrap samples from the posterior_samples.
 
         Args
@@ -758,11 +845,12 @@ class GAMFull(BaseGAM):
 
         if n < 2:
             raise IllegalArgument("Error: The number of bootstrap draws must be at least 2")
-
+        if random_state is not None:
+            np.random.seed(random_state)
         sample_idx = np.random.choice(
             range(num_samples),
             size=n,
-            replace=True
+            replace=True,
         )
 
         bootstrap_samples_dict = {}
@@ -793,14 +881,14 @@ class GAMFull(BaseGAM):
         aggregate_df = pd.DataFrame(aggregated_array.T, columns=columns)
         return aggregate_df
 
-    def predict(self, df, decompose=False):
+    def predict(self, df, decompose=False, random_state=None):
         """Return model predictions as a function of fitted model and df"""
         # raise if model is not fitted
         if not self.is_fitted():
             raise PredictionException("Model is not fitted yet.")
 
         # if bootstrap draws, replace posterior samples with bootstrap
-        posterior_samples = self._bootstrap(self._n_bootstrap_draws) \
+        posterior_samples = self._bootstrap(self._n_bootstrap_draws, random_state=random_state) \
             if self._n_bootstrap_draws > 1 \
             else self._posterior_samples
 
@@ -808,6 +896,7 @@ class GAMFull(BaseGAM):
             posterior_estimates=posterior_samples,
             df=df,
             include_error=True,
+            random_state=random_state,
             decompose=decompose,
         )
 
@@ -829,19 +918,22 @@ class GAMFull(BaseGAM):
         aggregated_df = self._prepend_date_column(aggregated_df, df)
         return aggregated_df
 
-    def get_regression_coefs(self, aggregate_method='mean', include_ci=False):
+    def get_regression_coefs(self, aggregate_method='mean', include_ci=False, date_array=None):
         self._set_aggregate_posteriors()
         return super().get_regression_coefs(aggregate_method=aggregate_method,
-                                            include_ci=include_ci)
+                                            include_ci=include_ci,
+                                            date_array=date_array)
 
-    def plot_regression_coefs(self, aggregate_method='mean', include_ci=False, **kwargs):
+    def plot_regression_coefs(self, aggregate_method='mean', include_ci=False, date_array=None, **kwargs):
         if include_ci:
             coef_df, coef_df_lower, coef_df_upper = self.get_regression_coefs(
                 aggregate_method=aggregate_method,
                 include_ci=True
             )
         else:
-            coef_df = self.get_regression_coefs(aggregate_method=aggregate_method, include_ci=False)
+            coef_df = self.get_regression_coefs(aggregate_method=aggregate_method,
+                                                include_ci=False,
+                                                date_array=date_array)
             coef_df_lower = None
             coef_df_upper = None
 
@@ -850,7 +942,7 @@ class GAMFull(BaseGAM):
                                              coef_df_upper=coef_df_upper,
                                              **kwargs)
 
-class GAMAggregated(BaseGAM):
+class KTRAggregated(BaseKTR):
     """Concrete LGT model for aggregated posterior prediction
     In aggregated prediction, the parameter posterior samples are reduced using `aggregate_method`
     before performing a single prediction.
@@ -902,45 +994,47 @@ class GAMAggregated(BaseGAM):
 
         return predicted_df
 
-    def get_regression_coefs(self):
-        return super().get_regression_coefs(aggregate_method=self.aggregate_method, include_ci=False)
+    def get_regression_coefs(self, date_array=None):
+        return super().get_regression_coefs(aggregate_method=self.aggregate_method,
+                                            include_ci=False,
+                                            date_array=date_array)
 
-    def get_regression_coefs_hmm(self):
-        """Return DataFrame regression coefficients for hmm purpose
-        """
-        # init dataframe
-        reg_df = pd.DataFrame()
-        reg_df[self.date_col] = self._training_df_meta['date_array']
+    # def get_regression_coefs_hmm(self):
+    #     """Return DataFrame regression coefficients for hmm purpose
+    #     """
+    #     # init dataframe
+    #     reg_df = pd.DataFrame()
+    #     reg_df[self.date_col] = self._training_df_meta['date_array']
 
-        # end if no regressors
-        if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
-            return reg_df
+    #     # end if no regressors
+    #     if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
+    #         return reg_df
 
-        regressor_knots = self._aggregate_posteriors \
-            .get(self.aggregate_method) \
-            .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
-        regressor_betas = np.matmul(regressor_knots, self._kernel_coefficients.transpose(1, 0))
-        regressor_betas = np.squeeze(regressor_betas, axis=0).transpose(1, 0)
+    #     regressor_knots = self._aggregate_posteriors \
+    #         .get(self.aggregate_method) \
+    #         .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+    #     regressor_betas = np.matmul(regressor_knots, self._kernel_coefficients.transpose(1, 0))
+    #     regressor_betas = np.squeeze(regressor_betas, axis=0).transpose(1, 0)
 
-        # get column names
-        pr_cols = self._positive_regressor_col
-        rr_cols = self._regular_regressor_col
+    #     # get column names
+    #     pr_cols = self._positive_regressor_col
+    #     rr_cols = self._regular_regressor_col
 
-        # note ordering here is not the same as `self.regressor_cols` because positive
-        # and negative do not have to be grouped on input
-        regressor_col = rr_cols + pr_cols
-        for idx, col in enumerate(regressor_col):
-            reg_df[col] = regressor_betas[:, idx]
+    #     # note ordering here is not the same as `self.regressor_cols` because positive
+    #     # and negative do not have to be grouped on input
+    #     regressor_col = rr_cols + pr_cols
+    #     for idx, col in enumerate(regressor_col):
+    #         reg_df[col] = regressor_betas[:, idx]
 
-        return reg_df
+    #     return reg_df
 
-    def plot_regression_coefs(self, **kwargs):
-        coef_df = self.get_regression_coefs()
+    def plot_regression_coefs(self, date_array=None, **kwargs):
+        coef_df = self.get_regression_coefs(date_array=date_array)
         return super().plot_regression_coefs(coef_df=coef_df,
                                              **kwargs)
 
 
-class GAMMAP(BaseGAM):
+class KTRMAP(BaseKTR):
     """Concrete LGT model for MAP (Maximum a Posteriori) prediction
     Similar to `LGTAggregated` but predition is based on Maximum a Posteriori (aka Mode)
     of the posterior.
@@ -1001,10 +1095,10 @@ class GAMMAP(BaseGAM):
 
         return predicted_df
 
-    def get_regression_coefs(self):
-        return super().get_regression_coefs(aggregate_method=PredictMethod.MAP.value)
+    def get_regression_coefs(self, date_array=None):
+        return super().get_regression_coefs(aggregate_method=PredictMethod.MAP.value, date_array=date_array)
 
-    def plot_regression_coefs(self, **kwargs):
-        coef_df = self.get_regression_coefs()
+    def plot_regression_coefs(self, date_array=None, **kwargs):
+        coef_df = self.get_regression_coefs(date_array=date_array)
         return super().plot_regression_coefs(coef_df=coef_df,
                                              **kwargs)
