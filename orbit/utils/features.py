@@ -31,8 +31,8 @@ def make_fourier_series(dates, period, order=3):
     out = list()
     for i in range(1, order + 1):
         x = 2.0 * i * np.pi * t / period
-        out.append(np.sin(x))
         out.append(np.cos(x))
+        out.append(np.sin(x))
     out = np.column_stack(out)
     return out
 
