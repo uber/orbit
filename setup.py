@@ -14,7 +14,7 @@ from setuptools.command.test import test as test_command
 # dist.Distribution().fetch_build_eggs(['cython'])
 
 
-VERSION = '1.0.6'
+# VERSION = '1.0.6'
 DESCRIPTION = "Orbit is a package for bayesian time series modeling and inference."
 AUTHOR = '''Edwin Ng <edwinng@uber.com>, Steve Yang <steve.yang@uber.com>,
             Huigang Chen <huigang@uber.com>, Zhishi Wang <zhishiw@uber.com>'''
@@ -60,7 +60,7 @@ setup(
     name='orbit-ml',
     packages=find_packages(),
     url='https://uber.github.io/orbit/',
-    version=VERSION,
+    # version=VERSION, # being maintained by source module
     zip_safe=False,
     classifiers=[
         'Development Status :: 3 - Alpha',
