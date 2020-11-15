@@ -39,4 +39,4 @@ jobs:
             distributions: "sdist bdist_wheel"
 
 after_success:
-    - cd orbit && fossa test
+    - fossa test
