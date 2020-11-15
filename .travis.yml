@@ -27,6 +27,16 @@ jobs:
               # environment variable in Travis see below.
               - fossa init
               - fossa analyze
+        - stage: deploy
+          script: skip
+          deploy:
+            provider: pypi
+            username: "__token__"
+            password: PYPI_API_TOKEN
+            on:
+              tags: true
+            skip_existing: true
+            distributions: "sdist bdist_wheel"
 
 after_success:
     - cd orbit && fossa test
