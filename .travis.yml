@@ -31,8 +31,11 @@ jobs:
           script: skip
           deploy:
             provider: pypi
+            # tmp workaround from travis CI
+            # https://travis-ci.community/t/cant-deploy-to-pypi-anymore-pkg-resources-contextualversionconflict-importlib-metadata-0-18/10494/10
+            install: pip install keyring==21.4.0
             username: "__token__"
-            password: PYPI_API_TOKEN
+            password: $PYPI_API_TOKEN
             on:
               tags: true
             skip_existing: true
