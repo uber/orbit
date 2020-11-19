@@ -398,8 +398,11 @@ class BaseKTR(BaseModel):
         # self._cutoff = round(0.2 * self._num_of_observations)
         width_level = round(self._span_level * self._cutoff)
         width_coefficients = round(self._span_coefficients * self._cutoff)
-        self._knots_tp_level = np.arange(1, self._cutoff + 1, width_level) / self._num_of_observations
-        self._knots_tp_coefficients = np.arange(1, self._cutoff + 1, width_coefficients) / self._num_of_observations
+        arr_tp_level = np.arange(1, self._cutoff + 1, width_level) / self._num_of_observations
+        arr_tp_coef= np.arange(1, self._cutoff + 1, width_coefficients) / self._num_of_observations
+
+        self._knots_tp_level = (arr_tp_level[:-1] + arr_tp_level[1:]) / 2
+        self._knots_tp_coefficients = (arr_tp_coef[:-1] + arr_tp_coef[1:]) / 2
 
         # Kernel here is used to determine mean
         kernel_level = gauss_kernel(tp, self._knots_tp_level, rho=self._rho_level)
