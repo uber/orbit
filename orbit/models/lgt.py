@@ -252,6 +252,16 @@ class BaseLGT(BaseETS):
             self._regular_regressor_matrix = df.filter(
                 items=self._regular_regressor_col, ).values
 
+    @staticmethod
+    def _get_regressor_matrix(df, rr_col, pr_col, nr_col):
+        """
+        """
+        if len(rr_col) + len(pr_col) + len(nr_col) > 0:
+            regressor_matrix = df.filter(items=rr_col + pr_col + nr_col).values
+        else:
+            raise PredictionException('prediction/model does not contains any regressor.')
+        return regressor_matrix
+
     def _set_dynamic_data_attributes(self, df):
         """Stan data input based on input DataFrame, rather than at object instantiation"""
         super()._validate_training_df(df)
@@ -514,41 +524,6 @@ class BaseLGT(BaseETS):
             return decomp_dict
 
         return {'prediction': pred_array}
-
-    def _prepend_date_column(self, predicted_df, input_df):
-        """Prepends date column from `input_df` to `predicted_df`"""
-
-        other_cols = list(predicted_df.columns)
-
-        # add date column
-        predicted_df[self.date_col] = input_df[self.date_col].reset_index(drop=True)
-
-        # re-order columns so date is first
-        col_order = [self.date_col] + other_cols
-        predicted_df = predicted_df[col_order]
-
-        return predicted_df
-
-    def _set_aggregate_posteriors(self):
-        posterior_samples = self._posterior_samples
-
-        mean_posteriors = {}
-        median_posteriors = {}
-
-        # for each model param, aggregate using `method`
-        for param_name in self._model_param_names:
-            param_ndarray = posterior_samples[param_name]
-
-            mean_posteriors.update(
-                {param_name: np.mean(param_ndarray, axis=0, keepdims=True)},
-            )
-
-            median_posteriors.update(
-                {param_name: np.median(param_ndarray, axis=0, keepdims=True)},
-            )
-
-        self._aggregate_posteriors[PredictMethod.MEAN.value] = mean_posteriors
-        self._aggregate_posteriors[PredictMethod.MEDIAN.value] = median_posteriors
 
     def fit(self, df):
         """Fit model to data and set extracted posterior samples"""

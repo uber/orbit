@@ -213,16 +213,6 @@ class BaseETS(BaseModel):
         # if empty dict false, else true
         return bool(self._posterior_samples)
 
-    @staticmethod
-    def _get_regressor_matrix(df, rr_col, pr_col, nr_col):
-        """
-        """
-        if len(rr_col) + len(pr_col) + len(nr_col) > 0:
-            regressor_matrix = df.filter(items=rr_col + pr_col + nr_col).values
-        else:
-            raise PredictionException('prediction/model does not contains any regressor.')
-        return regressor_matrix
-
     def _predict(self, posterior_estimates, df, include_error=False, decompose=False):
         """Vectorized version of prediction math"""
 

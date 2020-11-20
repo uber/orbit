@@ -241,6 +241,16 @@ class BaseDLT(BaseETS):
             self._regular_regressor_matrix = df.filter(
                 items=self._regular_regressor_col, ).values
 
+    @staticmethod
+    def _get_regressor_matrix(df, rr_col, pr_col, nr_col):
+        """
+        """
+        if len(rr_col) + len(pr_col) + len(nr_col) > 0:
+            regressor_matrix = df.filter(items=rr_col + pr_col + nr_col).values
+        else:
+            raise PredictionException('prediction/model does not contains any regressor.')
+        return regressor_matrix
+
     def _set_dynamic_data_attributes(self, df):
         """Stan data input based on input DataFrame, rather than at object instantiation"""
         super()._validate_training_df(df)
@@ -256,6 +266,8 @@ class BaseDLT(BaseETS):
         self._set_regressor_matrix(df)  # depends on _num_of_observations
 
         super()._set_init_values()
+
+
 
     def _predict(self, posterior_estimates, df=None, include_error=False, decompose=False):
 
