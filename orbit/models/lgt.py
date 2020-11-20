@@ -25,20 +25,15 @@ class BaseLGT(BaseETS):
 
     Parameters
     ----------
-    response_col : str
-        Name of response variable column, default 'y'
-    date_col : str
-        Name of date variable column, default 'ds'
     regressor_col : list
         Names of regressor columns, if any
-    seasonality : int
-        Length of seasonality
     regressor_sign :  list
-        list with values { '+', '=' }. '+' indicates regressor coefficient estimates are
-        constrained to [0, inf). '=' indicates regressor coefficient estimates
-        can be any value between (-inf, inf). The length of `regressor_sign` must be
-        the same length as `regressor_col`. If None, all elements of list will be set
-        to '='.
+        list with values { '+', '-', '=' } such that
+        '+' indicates regressor coefficient estimates are constrained to [0, inf).
+        '-' indicates regressor coefficient estimates are constrained to (-inf, 0].
+        '=' indicates regressor coefficient estimates can be any value between (-inf, inf).
+        The length of `regressor_sign` must be the same length as `regressor_col`. If None,
+        all elements of list will be set to '='.
     regressor_beta_prior : list
         list of prior float values for regressor coefficient betas. The length of `regressor_beta_prior`
         must be the same length as `regressor_col`. If None, use non-informative priors.
@@ -51,19 +46,14 @@ class BaseLGT(BaseETS):
         float value between [0, 1], applicable only if `regression_penalty` == 'lasso'
     auto_ridge_scale : float
         float value between [0, 1], applicable only if `regression_penalty` == 'auto_ridge'
-    seasonality_sm_input : float
-        float value between [0, 1], applicable only if `seasonality` > 1. A larger value puts
-        more weight on the current seasonality.
-        If None, the model will estimate this value.
     slope_sm_input : float
         float value between [0, 1]. A larger value puts more weight on the current slope.
         If None, the model will estimate this value.
-    level_sm_input : float
-        float value between [0, 1]. A larger value puts more weight on the current level.
-        If None, the model will estimate this value.
     kwargs
         To specify `estimator_type` or additional args for the specified `estimator_type`
-
+    See Also
+    --------
+    :class: `~orbit.models.lgt.BaseETS`
     """
     _data_input_mapper = constants.DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
@@ -136,10 +126,14 @@ class BaseLGT(BaseETS):
         super().__init__(**kwargs)
 
     def _set_additional_trend_attributes(self):
+        """Set additional trend attributes
+        """
         if self.slope_sm_input is None:
             self._slope_sm_input = -1
 
     def _set_regression_default_attributes(self):
+        """set and validate regression related default attributes.
+        """
         ##############################
         # if no regressors, end here #
         ##############################
@@ -175,10 +169,14 @@ class BaseLGT(BaseETS):
             self._regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * self._num_of_regressors
 
     def _set_regression_penalty(self):
+        """set and validate regression penalty related attributes.
+        """
         regression_penalty = self.regression_penalty
         self._regression_penalty = getattr(constants.RegressionPenalty, regression_penalty).value
 
     def _set_static_regression_attributes(self):
+        """set and validate regression related attributes.
+        """
         # if no regressors, end here
         if self.regressor_col is None:
             return
@@ -205,6 +203,12 @@ class BaseLGT(BaseETS):
                               self._regular_regressor_col
 
     def _set_static_data_attributes(self):
+        """Cast data to the proper type mostly to match Stan required static data types
+        Notes
+        -----
+        Overriding :func: `~orbit.models.BaseETS._set_static_data_attributes`
+        It sets additional required attributes related to trend and regression
+        """
         super()._set_static_data_attributes()
         self._set_additional_trend_attributes()
         self._set_regression_default_attributes()
@@ -212,7 +216,12 @@ class BaseLGT(BaseETS):
         self._set_static_regression_attributes()
 
     def _set_model_param_names(self):
-        """Model parameters to extract from Stan"""
+        """Set posteriors keys to extract from sampling/optimization api
+        Notes
+        -----
+        Overriding :func: `~orbit.models.BaseETS._set_model_param_names`
+        It sets additional required attributes related to trend and regression
+        """
         self._model_param_names += [param.value for param in constants.BaseSamplingParameters]
 
         # append seasonality param names
@@ -234,6 +243,11 @@ class BaseLGT(BaseETS):
             )
 
     def _set_regressor_matrix(self, df):
+        """Set regressor matrix based on the input data-frame.
+        Notes
+        -----
+        In case of absence of regression, they will be set to np.array with dim (num_of_obs, 0) to fit Stan requirement
+        """
         # init of regression matrix depends on length of response vector
         self._positive_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
         self._negative_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
@@ -254,8 +268,7 @@ class BaseLGT(BaseETS):
 
     @staticmethod
     def _get_regressor_matrix(df, rr_col, pr_col, nr_col):
-        """
-        """
+        """Return regressor matrix based on the input data-frame."""
         if len(rr_col) + len(pr_col) + len(nr_col) > 0:
             regressor_matrix = df.filter(items=rr_col + pr_col + nr_col).values
         else:
@@ -263,7 +276,8 @@ class BaseLGT(BaseETS):
         return regressor_matrix
 
     def _set_dynamic_data_attributes(self, df):
-        """Stan data input based on input DataFrame, rather than at object instantiation"""
+        """Set required input based on input DataFrame, rather than at object instantiation.  It also set
+        additional required attributes for LGT"""
         super()._validate_training_df(df)
         super()._set_training_df_meta(df)
 
@@ -573,9 +587,9 @@ class BaseLGT(BaseETS):
         regressor_cols = pr_cols + nr_cols + rr_cols
 
         # same note
-        regressor_signs \
-            = ["Positive"] * self._num_of_positive_regressors \
-              + ["Negative"] * self._num_of_negative_regressors \
+        regressor_signs = \
+            ["Positive"] * self._num_of_positive_regressors + \
+            ["Negative"] * self._num_of_negative_regressors \
               + ["Regular"] * self._num_of_regular_regressors
 
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
@@ -640,7 +654,7 @@ class LGTAggregated(ETSAggregated, BaseLGT):
 class LGTMAP(ETSMAP, BaseLGT):
     """Concrete LGT model for MAP (Maximum a Posteriori) prediction
 
-    Similar to `LGTAggregated` but predition is based on Maximum a Posteriori (aka Mode)
+    Similar to :class: `~orbit.models.LGTAggregated` but predition is based on Maximum a Posteriori (aka Mode)
     of the posterior.
 
     This model only supports MAP estimating `estimator_type`s

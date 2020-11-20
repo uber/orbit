@@ -16,6 +16,19 @@ from ..utils.general import is_ordered_datetime
 
 class BaseETS(BaseModel):
     """
+    response_col : str
+        Name of response variable column, default 'y'
+    date_col : str
+        Name of date variable column, default 'ds'
+    seasonality : int
+        Length of seasonality
+    seasonality_sm_input : float
+        float value between [0, 1], applicable only if `seasonality` > 1. A larger value puts
+        more weight on the current seasonality.
+        If None, the model will estimate this value.
+    level_sm_input : float
+        float value between [0, 1]. A larger value puts more weight on the current level.
+        If None, the model will estimate this value.
     """
     _data_input_mapper = constants.DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
@@ -78,9 +91,7 @@ class BaseETS(BaseModel):
         }
 
     def _set_default_base_args(self):
-        """Set default attributes for None
-
-        Stan requires static data types so data must be cast to the correct type
+        """Cast data to the proper type mostly to match Stan required static data types
         """
         if self.seasonality_sm_input is None:
             self._seasonality_sm_input = -1
@@ -90,6 +101,8 @@ class BaseETS(BaseModel):
             self._seasonality = -1
 
     def _set_with_mcmc(self):
+        """Include extra indicator to indicate whether the object is using mcmc type of estimator
+        """
         estimator_type = self.estimator_type
         # set `_with_mcmc` attribute based on estimator type
         # if no attribute for _is_mcmc_estimator, default to False
@@ -97,8 +110,7 @@ class BaseETS(BaseModel):
             self._with_mcmc = 1
 
     def _set_init_values(self):
-        """Set Stan init as a callable
-
+        """Set init as a callable (for Stan ONLY)
         See: https://pystan.readthedocs.io/en/latest/api.htm
         """
         def init_values_function(seasonality):
@@ -124,7 +136,7 @@ class BaseETS(BaseModel):
             self._init_values = init_values_callable
 
     def _set_static_data_attributes(self):
-        """model data input based on args at instatiation or computed from args at instantiation"""
+        """Set data input based on args or computed from args at object instantiation"""
         self._set_default_base_args()
         self._set_with_mcmc()
         self._set_init_values()
@@ -163,7 +175,7 @@ class BaseETS(BaseModel):
             raise ModelException("DataFrame does not contain `response_col`: {}".format(self.response_col))
 
     def _set_dynamic_data_attributes(self, df):
-        """Stan data input based on input DataFrame, rather than at object instantiation"""
+        """Set required input based on input DataFrame, rather than at object instantiation"""
         df = df.copy()
 
         self._validate_training_df(df)
@@ -176,7 +188,7 @@ class BaseETS(BaseModel):
         self._set_init_values()
 
     def _set_model_param_names(self):
-        """Model parameters to extract from Stan"""
+        """Set posteriors keys to extract from sampling/optimization api"""
         self._model_param_names += [param.value for param in constants.BaseSamplingParameters]
 
         # append seasonality param names
@@ -187,7 +199,7 @@ class BaseETS(BaseModel):
         return self._model_param_names
 
     def _set_model_data_input(self):
-        """Collects data attributes into a dict for `StanModel.sampling`"""
+        """Collects data attributes into a dict for sampling/optimization api"""
         data_inputs = dict()
 
         for key in self._data_input_mapper:
@@ -456,7 +468,7 @@ class BaseETS(BaseModel):
 
 
 class ETSFull(BaseETS):
-    """Concrete LGT model for full prediction
+    """Concrete ETS model for full prediction
 
     In full prediction, the prediction occurs as a function of each parameter posterior sample,
     and the prediction results are aggregated after prediction. Prediction will
@@ -527,16 +539,17 @@ class ETSFull(BaseETS):
 
         return bootstrap_samples_dict
 
-    def _aggregate_full_predictions(self, array, label, percentiles):
+    @staticmethod
+    def _aggregate_full_predictions(array, label, percentiles):
         """Aggregates the mcmc prediction to a point estimate
         Args
         ----
         array: np.ndarray
             A 2d numpy array of shape (`num_samples`, prediction df length)
-        percentiles: list
-            A sorted list of one or three percentile(s) which will be used to aggregate lower, mid and upper values
         label: str
             A string used for labeling output dataframe columns
+        percentiles: list
+            A sorted list of one or three percentile(s) which will be used to aggregate lower, mid and upper values
         Returns
         -------
         pd.DataFrame
@@ -587,7 +600,7 @@ class ETSFull(BaseETS):
 
 
 class ETSAggregated(BaseETS):
-    """Concrete LGT model for aggregated posterior prediction
+    """Concrete ETS model for aggregated posterior prediction
 
     In aggregated prediction, the parameter posterior samples are reduced using `aggregate_method`
     before performing a single prediction.
@@ -643,9 +656,9 @@ class ETSAggregated(BaseETS):
 
 
 class ETSMAP(BaseETS):
-    """Concrete LGT model for MAP (Maximum a Posteriori) prediction
+    """Concrete ETS model for MAP (Maximum a Posteriori) prediction
 
-    Similar to `LGTAggregated` but predition is based on Maximum a Posteriori (aka Mode)
+    Similar to `ETSAggregated` but predition is based on Maximum a Posteriori (aka Mode)
     of the posterior.
 
     This model only supports MAP estimating `estimator_type`s
