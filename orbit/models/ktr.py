@@ -399,7 +399,7 @@ class BaseKTR(BaseModel):
         width_level = round(self._span_level * self._cutoff)
         width_coefficients = round(self._span_coefficients * self._cutoff)
         arr_tp_level = np.arange(1, self._cutoff + 1, width_level) / self._num_of_observations
-        arr_tp_coef= np.arange(1, self._cutoff + 1, width_coefficients) / self._num_of_observations
+        arr_tp_coef = np.arange(1, self._cutoff + 1, width_coefficients) / self._num_of_observations
 
         self._knots_tp_level = (arr_tp_level[:-1] + arr_tp_level[1:]) / 2
         self._knots_tp_coefficients = (arr_tp_coef[:-1] + arr_tp_coef[1:]) / 2
