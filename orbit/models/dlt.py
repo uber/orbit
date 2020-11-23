@@ -26,6 +26,30 @@ class BaseDLT(BaseETS):
 
     Parameters
     ----------
+    regressor_col : list
+        Names of regressor columns, if any
+    regressor_sign :  list
+        list with values { '+', '-', '=' } such that
+        '+' indicates regressor coefficient estimates are constrained to [0, inf).
+        '-' indicates regressor coefficient estimates are constrained to (-inf, 0].
+        '=' indicates regressor coefficient estimates can be any value between (-inf, inf).
+        The length of `regressor_sign` must be the same length as `regressor_col`. If None,
+        all elements of list will be set to '='.
+    regressor_beta_prior : list
+        list of prior float values for regressor coefficient betas. The length of `regressor_beta_prior`
+        must be the same length as `regressor_col`. If None, use non-informative priors.
+    regressor_sigma_prior : list
+        list of prior float values for regressor coefficient sigmas. The length of `regressor_sigma_prior`
+        must be the same length as `regressor_col`. If None, use non-informative priors.
+    regression_penalty : { 'fixed_ridge', 'lasso', 'auto_ridge' }
+        regression penalty method
+    lasso_scale : float
+        float value between [0, 1], applicable only if `regression_penalty` == 'lasso'
+    auto_ridge_scale : float
+        float value between [0, 1], applicable only if `regression_penalty` == 'auto_ridge'
+    slope_sm_input : float
+        float value between [0, 1]. A larger value puts more weight on the current slope.
+        If None, the model will estimate this value.
     period : int
         Used to set `time_delta` as `1 / max(period, seasonality)`. If None and no seasonality,
         then `time_delta` == 1
@@ -34,10 +58,9 @@ class BaseDLT(BaseETS):
         global trend value. Default, 0.8
     global_trend_option : { 'flat', 'linear', 'loglinear', 'logistic' }
         Transformation function for the shape of the forecasted global trend.
-
     See Also
     --------
-    orbit.models.lgt.BaseLGT
+    :class: `~orbit.models.lgt.BaseETS`
 
     """
     _data_input_mapper = constants.DataInputMapper
@@ -119,6 +142,8 @@ class BaseDLT(BaseETS):
         super().__init__(**kwargs)
 
     def _set_additional_trend_attributes(self):
+        """Set additional trend attributes
+        """
         self._global_trend_option = getattr(constants.GlobalTrendOption, self.global_trend_option).value
         self._time_delta = 1 / max(self.period, self._seasonality, 1)
 
@@ -126,6 +151,8 @@ class BaseDLT(BaseETS):
             self._slope_sm_input = -1
 
     def _set_regression_default_attributes(self):
+        """set and validate regression related default attributes.
+        """
         ##############################
         # if no regressors, end here #
         ##############################
@@ -161,10 +188,14 @@ class BaseDLT(BaseETS):
             self._regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * self._num_of_regressors
 
     def _set_regression_penalty(self):
+        """set and validate regression penalty related attributes.
+        """
         regression_penalty = self.regression_penalty
         self._regression_penalty = getattr(constants.RegressionPenalty, regression_penalty).value
 
     def _set_static_regression_attributes(self):
+        """set and validate regression related attributes.
+        """
         # if no regressors, end here
         if self.regressor_col is None:
             return
@@ -191,6 +222,12 @@ class BaseDLT(BaseETS):
                               self._regular_regressor_col
         
     def _set_static_data_attributes(self):
+        """Cast data to the proper type mostly to match Stan required static data types
+        Notes
+        -----
+        Overriding :func: `~orbit.models.BaseETS._set_static_data_attributes`
+        It sets additional required attributes related to trend and regression
+        """
         super()._set_static_data_attributes()
         self._set_additional_trend_attributes()
         self._set_regression_default_attributes()
@@ -198,7 +235,12 @@ class BaseDLT(BaseETS):
         self._set_static_regression_attributes()
         
     def _set_model_param_names(self):
-        """Model parameters to extract from Stan"""
+        """Set posteriors keys to extract from sampling/optimization api
+        Notes
+        -----
+        Overriding :func: `~orbit.models.BaseETS._set_model_param_names`
+        It sets additional required attributes related to trend and regression
+        """
         self._model_param_names += [param.value for param in constants.BaseSamplingParameters]
 
         # append seasonality param names
@@ -241,8 +283,22 @@ class BaseDLT(BaseETS):
             self._regular_regressor_matrix = df.filter(
                 items=self._regular_regressor_col, ).values
 
+    @staticmethod
+    def _get_regressor_matrix(df, rr_col, pr_col, nr_col):
+        """Set regressor matrix based on the input data-frame.
+        Notes
+        -----
+        In case of absence of regression, they will be set to np.array with dim (num_of_obs, 0) to fit Stan requirement
+        """
+        if len(rr_col) + len(pr_col) + len(nr_col) > 0:
+            regressor_matrix = df.filter(items=rr_col + pr_col + nr_col).values
+        else:
+            raise PredictionException('prediction/model does not contains any regressor.')
+        return regressor_matrix
+
     def _set_dynamic_data_attributes(self, df):
-        """Stan data input based on input DataFrame, rather than at object instantiation"""
+        """Set required input based on input DataFrame, rather than at object instantiation.  It also set
+        additional required attributes for DLT"""
         super()._validate_training_df(df)
         super()._set_training_df_meta(df)
 
@@ -258,7 +314,7 @@ class BaseDLT(BaseETS):
         super()._set_init_values()
 
     def _predict(self, posterior_estimates, df=None, include_error=False, decompose=False):
-
+        """Vectorized version of prediction math"""
         ################################################################
         # Model Attributes
         ################################################################
