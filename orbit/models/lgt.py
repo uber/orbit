@@ -539,28 +539,6 @@ class BaseLGT(BaseETS):
 
         return {'prediction': pred_array}
 
-    def fit(self, df):
-        """Fit model to data and set extracted posterior samples"""
-        estimator = self.estimator
-        model_name = self._model_name
-
-        self._set_dynamic_data_attributes(df)
-        self._set_model_data_input()
-
-        # estimator inputs
-        data_input = self._get_model_data_input()
-        init_values = self._get_init_values()
-        model_param_names = self._get_model_param_names()
-
-        model_extract = estimator.fit(
-            model_name=model_name,
-            model_param_names=model_param_names,
-            data_input=data_input,
-            init_values=init_values
-        )
-
-        self._posterior_samples = model_extract
-
     def get_regression_coefs(self, aggregate_method):
         """Return DataFrame regression coefficients
 
