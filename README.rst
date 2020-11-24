@@ -12,7 +12,7 @@ This project
 - is stable and being incubated for long-term support. It may contain new experimental code, for which APIs are subject to change.
 - requires PyStan as a system dependency. PyStan is licensed under** `GPLv3 <https://www.gnu.org/licenses/gpl-3.0.html>`__ **, which is a free, copyleft license for software.**
 
-Orbit: A Python package for Object-oRiented BayesIan Time-series models
+Orbit: A Python package for Bayesian forecasting models 
 ====================
 
 Orbit is a Python package for Bayesian forecasting models developed under object-oriented design. It provides a
