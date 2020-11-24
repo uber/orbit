@@ -148,7 +148,7 @@ Related projects
     :target: https://badge.fury.io/py/orbit-ml
     :alt: pypi
     
-.. |travis| image:: https://travis-ci.com/uber/orbit.svg?branch=masterv 
+.. |travis| image:: https://travis-ci.com/uber/orbit.svg?branch=master 
  :target: https://travis-ci.com/uber/orbit  
  :alt: travis
 
