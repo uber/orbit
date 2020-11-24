@@ -2,6 +2,8 @@
 
 -------------------------------------------
 
+.. image:: https://travis-ci.com/uber/orbit.svg?branch=masterv 
+ :target: https://travis-ci.com/uber/orbit
 .. image:: https://static.pepy.tech/personalized-badge/orbit-ml?period=total&units=international_system&left_color=blue&right_color=grey&left_text=Downloads
  :target: https://pepy.tech/project/orbit-ml
 
