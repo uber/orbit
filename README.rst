@@ -2,14 +2,22 @@
 
 -------------------------------------------
 
-**Disclaimer: Orbit requires PyStan as a system dependency. PyStan is
-licensed under** `GPLv3 <https://www.gnu.org/licenses/gpl-3.0.html>`__ **,
-which is a free, copyleft license for software.**
+|pypi| |travis| |downloads|
 
-Orbit is a Python package for time series modeling and inference
-using Bayesian sampling methods for model estimation. It provides a
+Disclaimer
+==========
+
+This project
+
+- is stable and being incubated for long-term support. It may contain new experimental code, for which APIs are subject to change.
+- requires PyStan as a system dependency. PyStan is licensed under** `GPLv3 <https://www.gnu.org/licenses/gpl-3.0.html>`__ **, which is a free, copyleft license for software.**
+
+Orbit: A Python package for Bayesian forecasting models 
+====================
+
+Orbit is a Python package for Bayesian forecasting models developed under object-oriented design. It provides a
 familiar and intuitive initialize-fit-predict interface for working with
-time series tasks, while utilizing probabilistic modeling under
+time series tasks, while utilizing probabilistic modeling api under
 the hood.
 
 The initial release supports concrete implementation for the following
@@ -134,3 +142,16 @@ Related projects
 - `Pyro <https://github.com/pyro-ppl/pyro>`__
 - `Stan <https://github.com/stan-dev/stan>`__
 - `Rlgt <https://cran.r-project.org/web/packages/Rlgt/index.html>`__
+
+
+.. |pypi| image:: https://badge.fury.io/py/orbit-ml.svg
+    :target: https://badge.fury.io/py/orbit-ml
+    :alt: pypi
+    
+.. |travis| image:: https://travis-ci.com/uber/orbit.svg?branch=master 
+ :target: https://travis-ci.com/uber/orbit  
+ :alt: travis
+
+.. |downloads| image:: https://static.pepy.tech/personalized-badge/orbit-ml?period=month&units=international_system&left_color=blue&right_color=grey&left_text=Downloads
+ :target: https://pepy.tech/project/orbit-ml
+ :alt: downloads
