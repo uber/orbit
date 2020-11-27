@@ -70,15 +70,31 @@ class Model:
 
         # regular regressor sampling
         if n_rr > 0:
-            rr_knot = pyro.sample("rr_knot", dist.Normal(
-                rr_knot_loc,
-                rr_knot_scale
+            # pooling latent variables
+            rr_knot_loc = pyro.sample(
+                "rr_knot_loc",
+                dist.FoldedDistribution(
+                    dist.Normal(0, 1.0)
+                )
+            ).unsqueeze(-1) * torch.ones(n_rr, n_knots_coef)
+            rr_knot = pyro.sample(
+                "rr_knot",
+                dist.FoldedDistribution(
+                    dist.Normal(rr_knot_loc, 0.2)
                 ).to_event(1)
             )
             rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
 
+            # rr_knot = pyro.sample("rr_knot", dist.Normal(
+            #     rr_knot_loc,
+            #     rr_knot_scale
+            #     ).to_event(1)
+            # )
+            # rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+
         # positive regressor sampling
         if n_pr > 0:
+            # pooling latent variables
             pr_knot_loc = pyro.sample(
                 "pr_knot_loc",
                 dist.FoldedDistribution(
