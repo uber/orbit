@@ -54,12 +54,13 @@ class Model:
         lev_knot_scale = self.lev_knot_scale
 
         # expand dim to n_rr x n_knots_coef
-        rr_knot_loc = self.rr_knot_loc.unsqueeze(-1).repeat([1, n_knots_coef])
-        rr_knot_scale = self.rr_knot_scale.unsqueeze(-1).repeat([1, n_knots_coef])
+        rr_knot_pool_loc = self.rr_knot_pool_loc
+        knot_pool_scale = self.knot_pool_scale
+        rr_knot_scale = self.rr_knot_scale.unsqueeze(-1)
 
         # this does not need to expand dim since it is used as latent grand mean
         pr_knot_pool_loc = self.pr_knot_pool_loc
-        pr_knot_pool_scale = self.pr_knot_pool_scale
+        knot_pool_scale = self.knot_pool_scale
         pr_knot_scale = self.pr_knot_scale.unsqueeze(-1)
 
         extra_out = {}
@@ -70,24 +71,17 @@ class Model:
 
         # regular regressor sampling
         if n_rr > 0:
-            # # pooling latent variables
-            # rr_knot_loc = pyro.sample(
-            #     "rr_knot_loc",
-            #     dist.FoldedDistribution(
-            #         dist.Normal(0, 1.0)
-            #     )
-            # ).unsqueeze(-1) * torch.ones(n_rr, n_knots_coef)
-            # rr_knot = pyro.sample(
-            #     "rr_knot",
-            #     dist.FoldedDistribution(
-            #         dist.Normal(rr_knot_loc, 0.2)
-            #     ).to_event(1)
-            # )
-            # rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
-
-            rr_knot = pyro.sample("rr_knot", dist.Normal(
-                rr_knot_loc,
-                rr_knot_scale
+            # pooling latent variables
+            rr_knot_loc = pyro.sample(
+                "rr_knot_loc",
+                dist.FoldedDistribution(
+                    dist.Normal(rr_knot_pool_loc, knot_pool_scale)
+                )
+            ).unsqueeze(-1) * torch.ones(n_rr, n_knots_coef)
+            rr_knot = pyro.sample(
+                "rr_knot",
+                dist.FoldedDistribution(
+                    dist.Normal(rr_knot_loc, rr_knot_scale)
                 ).to_event(1)
             )
             rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
@@ -98,7 +92,7 @@ class Model:
             pr_knot_loc = pyro.sample(
                 "pr_knot_loc",
                 dist.FoldedDistribution(
-                    dist.Normal(pr_knot_pool_loc, pr_knot_pool_scale)
+                    dist.Normal(pr_knot_pool_loc, knot_pool_scale)
                 )
             ).unsqueeze(-1) * torch.ones(n_pr, n_knots_coef)
             pr_knot = pyro.sample(
