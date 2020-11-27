@@ -13,6 +13,7 @@ from ..constants.palette import QualitativePalette
 from sklearn.model_selection import ParameterGrid
 from orbit.diagnostics.metrics import smape, mape, wmape
 
+
 class TimeSeriesSplitter(object):
     """Cross validation splitter for time series data"""
 
@@ -181,7 +182,7 @@ class TimeSeriesSplitter(object):
                 lw=lw,
                 vmin=-0.2,
                 vmax=1.2,
-            )
+                )
 
         # Formatting
         # TODO: do a date_col style if date_col is avaliable
@@ -394,9 +395,10 @@ class BackTester(object):
 
         return self._score_df
 
-def GridSearchOrbit(param_grid, model, df,
-                    min_train_len, incremental_len, forecast_len,
-                    metrics=None, criteria=None, verbose=True, **kwargs):
+
+def grid_search_orbit(param_grid, model, df, min_train_len,
+                      incremental_len, forecast_len, n_splits=None,
+                      metrics=None, criteria=None, verbose=True, **kwargs):
     """A gird search unitlity to tune the hyperparameters for orbit models using the inherent backtest module.
 
     Parameters
@@ -407,6 +409,7 @@ def GridSearchOrbit(param_grid, model, df,
     min_train_len : scheduling parameter in backtest
     incremental_len : scheduling parameter in backtest
     forecast_len : scheduling parameter in backtest
+    n_splits : scheduling parameter in backtest
     metrics : metric function, defaul smape defined in orbit.diagnostics.metrics
     criteria : "min" or "max"; defatul is None ("min")
 
@@ -447,14 +450,19 @@ def GridSearchOrbit(param_grid, model, df,
             model=model_,
             df=df,
             min_train_len=min_train_len,
+            n_splits=n_splits,
             incremental_len=incremental_len,
             forecast_len=forecast_len,
             **kwargs
         )
         bt.fit_predict()
+        # TODO: should we assert len(metrics) == 1?
         if metrics is None:
             metrics = smape
-        metric_values.append(bt.score(metrics=[metrics]).metric_values[0])
+        metric_val = bt.score(metrics=[metrics]).metric_values[0]
+        if verbose:
+            print("tuning metric:{:-.5g}".format(metric_val))
+        metric_values.append(metric_val)
     res['metrics'] = metric_values
     if criteria is None:
         criteria = 'min'
