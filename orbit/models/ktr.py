@@ -14,15 +14,14 @@ from ..constants.constants import (
 )
 from ..constants.ktr import (
     DEFAULT_LEVEL_KNOT_SCALE,
-    DEFAULT_PR_KNOT_POOL_SCALE,
     DEFAULT_SPAN_LEVEL,
     DEFAULT_SPAN_COEFFICIENTS,
     DEFAULT_RHO_LEVEL,
     DEFAULT_RHO_COEFFICIENTS,
     DEFAULT_REGRESSOR_SIGN,
+    DEFAULT_COEFFICIENTS_KNOT_POOL_SCALE,
     DEFAULT_COEFFICIENTS_LOC,
     DEFAULT_COEFFICIENTS_SCALE,
-    DEFAULT_DEGREE_OF_FREEDOM,
 )
 
 from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
@@ -77,7 +76,7 @@ class BaseKTR(BaseModel):
                  regressor_sign=None,
                  regressor_knot_loc=None,
                  regressor_knot_scale=None,
-                 positive_regressor_knot_pooling_scale=None,
+                 regressor_knot_pooling_scale=None,
                  span_level=None,
                  span_coefficients=None,
                  rho_level=None,
@@ -88,6 +87,8 @@ class BaseKTR(BaseModel):
                  insert_prior_tp_idx=None,
                  insert_prior_mean=None,
                  insert_prior_sd=None,
+                 # knot customization
+                 lev_knots_date=None,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
         self.response_col = response_col
@@ -99,7 +100,7 @@ class BaseKTR(BaseModel):
         self.regressor_sign = regressor_sign
         self.regressor_knot_loc = regressor_knot_loc
         self.regressor_knot_scale = regressor_knot_scale
-        self.positive_regressor_knot_pooling_scale = positive_regressor_knot_pooling_scale
+        self.regressor_knot_pooling_scale = regressor_knot_pooling_scale
         self.span_level = span_level
         self.span_coefficients = span_coefficients
         self.rho_level = rho_level
@@ -109,6 +110,7 @@ class BaseKTR(BaseModel):
         self.insert_prior_tp_idx = insert_prior_tp_idx
         self.insert_prior_mean = insert_prior_mean
         self.insert_prior_sd = insert_prior_sd
+        self.lev_knots_date = lev_knots_date
 
         # set private var to arg value
         # if None set default in _set_default_base_args()
@@ -122,7 +124,7 @@ class BaseKTR(BaseModel):
         self._span_coefficients = self.span_coefficients
         self._rho_level = self.rho_level
         self._rho_coefficients = self.rho_coefficients
-        self._positive_regressor_knot_pooling_scale = self.positive_regressor_knot_pooling_scale
+        self._regressor_knot_pooling_scale= self.regressor_knot_pooling_scale
         self._degree_of_freedom = degree_of_freedom
         self._insert_prior_regressor_col = self.insert_prior_regressor_col
         # self._insert_prior_idx = self.insert_prior_idx
@@ -140,13 +142,11 @@ class BaseKTR(BaseModel):
         self._num_of_positive_regressors = 0
         self._positive_regressor_col = list()
         self._positive_regressor_knot_pooling_loc = list()
-        # self._positive_regressor_knot_pooling_scale = list()
         self._positive_regressor_knot_scale = list()
-        # self._positive_regressor_latent_sale_prior = list()
         # regular regressors
         self._num_of_regular_regressors = 0
         self._regular_regressor_col = list()
-        self._regular_regressor_knot_loc = list()
+        self._regular_regressor_knot_pooling_loc = list()
         self._regular_regressor_knot_scale = list()
         self._regressor_col = list()
 
@@ -193,8 +193,8 @@ class BaseKTR(BaseModel):
 
         if self.level_knot_scale is None:
             self._level_knot_scale = DEFAULT_LEVEL_KNOT_SCALE
-        if self.positive_regressor_knot_pooling_scale is None:
-            self._positive_regressor_knot_pooling_scale = DEFAULT_PR_KNOT_POOL_SCALE
+        if self._regressor_knot_pooling_scale is None:
+            self._regressor_knot_pooling_scale = DEFAULT_COEFFICIENTS_KNOT_POOL_SCALE
         if self.span_level is None:
             self._span_level = DEFAULT_SPAN_LEVEL
         if self.span_coefficients is None:
@@ -286,7 +286,9 @@ class BaseKTR(BaseModel):
             else:
                 self._num_of_regular_regressors += 1
                 self._regular_regressor_col.append(self.regressor_col[index])
-                self._regular_regressor_knot_loc.append(self._regressor_knot_loc[index])
+                # used for 'rr_knot_loc' sampling in pyro
+                self._regular_regressor_knot_pooling_loc.append(self._regressor_knot_loc[index])
+                # used for 'rr_knot' sampling in pyro
                 self._regular_regressor_knot_scale.append(self._regressor_knot_scale[index])
         # regular first, then positive
         self._regressor_col = self._regular_regressor_col + self._positive_regressor_col
@@ -311,11 +313,12 @@ class BaseKTR(BaseModel):
             self._regressor_sign = ['='] * len(self._seasonal_regressor_col) + self._regressor_sign
             self._regular_regressor_col = self._seasonal_regressor_col + self._regular_regressor_col
             self._num_of_regular_regressors += len(self._seasonal_regressor_col)
-            self._regular_regressor_knot_loc = [DEFAULT_COEFFICIENTS_LOC] * len(self._seasonal_regressor_col) + \
-                                                self._regular_regressor_knot_loc
-            self._regular_regressor_knot_scale = [DEFAULT_COEFFICIENTS_SCALE] * len(self._seasonal_regressor_col) + \
-                                                self._regular_regressor_knot_scale
-
+            self._regular_regressor_knot_pooling_loc = \
+                [DEFAULT_COEFFICIENTS_LOC] * len(self._seasonal_regressor_col) + \
+                self._regular_regressor_knot_pooling_loc
+            self._regular_regressor_knot_scale = \
+                [DEFAULT_COEFFICIENTS_SCALE] * len(self._seasonal_regressor_col) + \
+                self._regular_regressor_knot_scale
 
     def _set_insert_prior_idx(self):
         if self._num_insert_prior > 0 and len(self._regressor_col) > 0:
@@ -323,7 +326,7 @@ class BaseKTR(BaseModel):
                 self._insert_prior_idx.append(np.where(np.array(self._regressor_col) == col)[0][0])
 
     def _set_static_data_attributes(self):
-        """model data input based on args at instatiation or computed from args at instantiation"""
+        """model data input based on args at instantiation or computed from args at instantiation"""
         self._set_default_base_args()
         self._set_static_regression_attributes()
         self._set_seasonality_attributes()
@@ -391,23 +394,35 @@ class BaseKTR(BaseModel):
                 items=self._regular_regressor_col,).values
 
     def _set_kernel_matrix(self):
+        # Note that our tp starts by 1; to convert back to index of array, reduce it by 1
         tp = np.arange(1, self._num_of_observations + 1) / self._num_of_observations
+
         # this approach put knots in full range
         self._cutoff = self._num_of_observations
         # cutoff last 20%
         # self._cutoff = round(0.2 * self._num_of_observations)
-        width_level = round(self._span_level * self._cutoff)
-        width_coefficients = round(self._span_coefficients * self._cutoff)
-        arr_tp_level = np.arange(1, self._cutoff + 1, width_level) / self._num_of_observations
-        arr_tp_coef = np.arange(1, self._cutoff + 1, width_coefficients) / self._num_of_observations
 
-        self._knots_tp_level = (arr_tp_level[:-1] + arr_tp_level[1:]) / 2
-        self._knots_tp_coefficients = (arr_tp_coef[:-1] + arr_tp_coef[1:]) / 2
+        # kernel of level calculations
+        if self.lev_knots_date is None:
+            width_level = round(self._span_level * self._cutoff)
+            arr_tp_level = np.arange(1, self._cutoff + 1, width_level) / self._num_of_observations
+            self._knots_tp_level = (arr_tp_level[:-1] + arr_tp_level[1:]) / 2
+        else:
+            # FIXME: this only works up to daily series (not working on hourly series)
+            self._knots_tp_level = np.array(
+                ((self.lev_knots_date - self._training_df_meta['training_start']).days + 1) /
+                ((self._training_df_meta['training_end'] - self._training_df_meta['training_start']).days + 1)
+            )
 
-        # Kernel here is used to determine mean
         kernel_level = gauss_kernel(tp, self._knots_tp_level, rho=self._rho_level)
-        kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self._rho_coefficients)
         kernel_level = kernel_level/np.sum(kernel_level, axis=1, keepdims=True)
+
+        # kernel of coefficients calculations
+        if self._knots_tp_coefficients is None:
+            width_coefficients = round(self._span_coefficients * self._cutoff)
+            arr_tp_coef = np.arange(1, self._cutoff + 1, width_coefficients) / self._num_of_observations
+            self._knots_tp_coefficients = (arr_tp_coef[:-1] + arr_tp_coef[1:]) / 2
+        kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self._rho_coefficients)
         kernel_coefficients = kernel_coefficients / np.sum(kernel_coefficients, axis=1, keepdims=True)
 
         self._num_knots_level = len(self._knots_tp_level)
