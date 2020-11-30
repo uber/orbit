@@ -122,10 +122,11 @@ def test_dlt_non_seasonal_fit(synthetic_data, estimator_type):
     "regressor_signs",
     [
         ["+", "+", "+", "+", "+", "+"],
+        ["-", "-", "-", "-", "-", "-"],
         ["=", "=", "=", "=", "=", "="],
-        ["+", "=", "+", "=", "+", "+"]
+        ["+", "=", "+", "=", "-", "-"]
     ],
-    ids=['positive_only', 'regular_only', 'mixed_signs']
+    ids=['positive_only', 'negative_only', 'regular_only', 'mixed_signs']
 )
 def test_dlt_full_with_regression(synthetic_data, estimator_type, regressor_signs):
     train_df, test_df, coef = synthetic_data
@@ -163,10 +164,11 @@ def test_dlt_full_with_regression(synthetic_data, estimator_type, regressor_sign
     "regressor_signs",
     [
         ["+", "+", "+", "+", "+", "+"],
+        ["-", "-", "-", "-", "-", "-"],
         ["=", "=", "=", "=", "=", "="],
-        ["+", "=", "+", "=", "+", "+"]
+        ["+", "=", "+", "=", "-", "-"]
     ],
-    ids=['positive_only', 'regular_only', 'mixed_signs']
+    ids=['positive_only', 'negative_only', 'regular_only', 'mixed_signs']
 )
 def test_dlt_aggregated_with_regression(synthetic_data, estimator_type, regressor_signs):
     train_df, test_df, coef = synthetic_data
@@ -255,6 +257,23 @@ def test_dlt_predict_all_positive_reg(iclaims_training_data):
 
     assert any(predicted_df['regression'].values)
 
+def test_dlt_predict_all_negative_reg(iclaims_training_data):
+    df = iclaims_training_data
+
+    dlt = DLTMAP(
+        response_col='claims',
+        date_col='week',
+        regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
+        regressor_sign=['-', '-', '-'],
+        seasonality=52,
+        seed=8888,
+    )
+
+    dlt.fit(df)
+    predicted_df = dlt.predict(df, decompose=True)
+
+    assert any(predicted_df['regression'].values)
+
 
 def test_dlt_predict_mixed_regular_positive(iclaims_training_data):
     df = iclaims_training_data
@@ -275,6 +294,60 @@ def test_dlt_predict_mixed_regular_positive(iclaims_training_data):
         date_col='week',
         regressor_col=['trend.unemploy', 'trend.job', 'trend.filling'],
         regressor_sign=['=', '=', '+'],
+        seasonality=52,
+        seed=8888,
+    )
+    dlt_new.fit(df)
+    predicted_df_new = dlt_new.predict(df)
+
+    assert np.allclose(predicted_df['prediction'].values, predicted_df_new['prediction'].values)
+
+def test_dlt_predict_mixed_regular_negative(iclaims_training_data):
+    df = iclaims_training_data
+
+    dlt = DLTMAP(
+        response_col='claims',
+        date_col='week',
+        regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
+        regressor_sign=['=', '-', '='],
+        seasonality=52,
+        seed=8888,
+    )
+    dlt.fit(df)
+    predicted_df = dlt.predict(df)
+
+    dlt_new = DLTMAP(
+        response_col='claims',
+        date_col='week',
+        regressor_col=['trend.unemploy', 'trend.job', 'trend.filling'],
+        regressor_sign=['=', '=', '-'],
+        seasonality=52,
+        seed=8888,
+    )
+    dlt_new.fit(df)
+    predicted_df_new = dlt_new.predict(df)
+
+    assert np.allclose(predicted_df['prediction'].values, predicted_df_new['prediction'].values)
+
+def test_dlt_predict_mixed_positive_negative(iclaims_training_data):
+    df = iclaims_training_data
+
+    dlt = DLTMAP(
+        response_col='claims',
+        date_col='week',
+        regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
+        regressor_sign=['+', '-', '+'],
+        seasonality=52,
+        seed=8888,
+    )
+    dlt.fit(df)
+    predicted_df = dlt.predict(df)
+
+    dlt_new = DLTMAP(
+        response_col='claims',
+        date_col='week',
+        regressor_col=['trend.unemploy', 'trend.job', 'trend.filling'],
+        regressor_sign=['+', '+', '-'],
         seasonality=52,
         seed=8888,
     )
