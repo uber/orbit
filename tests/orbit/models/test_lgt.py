@@ -197,10 +197,11 @@ def test_lgt_non_seasonal_fit_pyro(synthetic_data):
     "regressor_signs",
     [
         ["+", "+", "+", "+", "+", "+"],
+        ["-", "-", "-", "-", "-", "-"],
         ["=", "=", "=", "=", "=", "="],
-        ["+", "=", "+", "=", "+", "+"]
+        ["+", "=", "+", "=", "-", "-"]
     ],
-    ids=['positive_only', 'regular_only', 'mixed_signs']
+    ids=['positive_only', 'negative_only', 'regular_only', 'mixed_signs']
 )
 def test_lgt_full_with_regression(synthetic_data, estimator_type, regressor_signs):
     train_df, test_df, coef = synthetic_data
@@ -231,6 +232,7 @@ def test_lgt_full_with_regression(synthetic_data, estimator_type, regressor_sign
         )
 
     lgt.fit(train_df)
+    print('fit')
     predict_df = lgt.predict(test_df)
 
     regression_out = lgt.get_regression_coefs()
@@ -251,10 +253,11 @@ def test_lgt_full_with_regression(synthetic_data, estimator_type, regressor_sign
     "regressor_signs",
     [
         ["+", "+", "+", "+", "+", "+"],
+        ["-", "-", "-", "-", "-", "-"],
         ["=", "=", "=", "=", "=", "="],
         ["+", "=", "+", "=", "+", "+"]
     ],
-    ids=['positive_only', 'regular_only', 'mixed_signs']
+    ids=['positive_only', 'negative_only', 'regular_only', 'mixed_signs']
 )
 def test_lgt_aggregated_with_regression(synthetic_data, estimator_type, regressor_signs):
     train_df, test_df, coef = synthetic_data
@@ -315,6 +318,23 @@ def test_lgt_predict_all_positive_reg(iclaims_training_data):
 
     assert any(predicted_df['regression'].values)
 
+def test_lgt_predict_all_negative_reg(iclaims_training_data):
+    df = iclaims_training_data
+
+    lgt = LGTMAP(
+        response_col='claims',
+        date_col='week',
+        regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
+        regressor_sign=['-', '-', '-'],
+        seasonality=52,
+        seed=8888,
+    )
+
+    lgt.fit(df)
+    predicted_df = lgt.predict(df, decompose=True)
+
+    assert any(predicted_df['regression'].values)
+
 def test_lgt_predict_mixed_regular_positive(iclaims_training_data):
     df = iclaims_training_data
 
@@ -342,15 +362,14 @@ def test_lgt_predict_mixed_regular_positive(iclaims_training_data):
 
     assert np.allclose(predicted_df['prediction'].values, predicted_df_new['prediction'].values)
 
-
-def test_lgt_predict_mixed_regular_positive(iclaims_training_data):
+def test_lgt_predict_mixed_regular_negative(iclaims_training_data):
     df = iclaims_training_data
 
     lgt = LGTMAP(
         response_col='claims',
         date_col='week',
         regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
-        regressor_sign=['=', '+', '='],
+        regressor_sign=['=', '-', '='],
         seasonality=52,
         seed=8888,
     )
@@ -361,7 +380,7 @@ def test_lgt_predict_mixed_regular_positive(iclaims_training_data):
         response_col='claims',
         date_col='week',
         regressor_col=['trend.unemploy', 'trend.job', 'trend.filling'],
-        regressor_sign=['=', '=', '+'],
+        regressor_sign=['=', '=', '-'],
         seasonality=52,
         seed=8888,
     )
@@ -370,8 +389,35 @@ def test_lgt_predict_mixed_regular_positive(iclaims_training_data):
 
     assert np.allclose(predicted_df['prediction'].values, predicted_df_new['prediction'].values)
 
+def test_lgt_predict_mixed_positive_negative(iclaims_training_data):
+    df = iclaims_training_data
+
+    lgt = LGTMAP(
+        response_col='claims',
+        date_col='week',
+        regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
+        regressor_sign=['+', '-', '+'],
+        seasonality=52,
+        seed=8888,
+    )
+    lgt.fit(df)
+    predicted_df = lgt.predict(df)
+
+    lgt_new = LGTMAP(
+        response_col='claims',
+        date_col='week',
+        regressor_col=['trend.unemploy', 'trend.job', 'trend.filling'],
+        regressor_sign=['+', '+', '-'],
+        seasonality=52,
+        seed=8888,
+    )
+    lgt_new.fit(df)
+    predicted_df_new = lgt_new.predict(df)
+
+    assert np.allclose(predicted_df['prediction'].values, predicted_df_new['prediction'].values)
 
 @pytest.mark.parametrize("prediction_percentiles", [None, [5, 10, 95]])
+
 def test_prediction_percentiles(iclaims_training_data, prediction_percentiles):
     df = iclaims_training_data
 
