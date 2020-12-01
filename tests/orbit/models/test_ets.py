@@ -111,7 +111,7 @@ def test_ets_non_seasonal_fit(synthetic_data, estimator_type):
     ets.fit(train_df)
     predict_df = ets.predict(test_df)
 
-    expected_columns =    ['week', 'prediction_5', 'prediction', 'prediction_95']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 4
 
@@ -133,7 +133,7 @@ def test_prediction_percentiles(iclaims_training_data, prediction_percentiles):
     )
 
     if not prediction_percentiles:
-        p_labels  = ['_5', '', '_95']
+        p_labels = ['_5', '', '_95']
     else:
         p_labels = ['_5', '_10', '', '_95']
 
