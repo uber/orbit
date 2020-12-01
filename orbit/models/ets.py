@@ -113,14 +113,14 @@ class BaseETS(BaseModel):
         """Set init as a callable (for Stan ONLY)
         See: https://pystan.readthedocs.io/en/latest/api.htm
         """
-        def init_values_function(seasonality):
+        def init_values_function(s, rng):
             init_values = dict()
-            if seasonality > 1:
-                seas_init = np.random.normal(loc=0, scale=0.05, size=seasonality - 1)
+            if s > 1:
+                init_sea = rng.normal(loc=0, scale=0.05, size=s-1)
                 # catch cases with extreme values
-                seas_init[seas_init > 1.0] = 1.0
-                seas_init[seas_init < -1.0] = -1.0
-                init_values['init_sea'] = seas_init
+                init_sea[init_sea > 1.0] = 1.0
+                init_sea[init_sea < -1.0] = -1.0
+                init_values['init_sea'] = init_sea
 
             return init_values
 
@@ -132,7 +132,7 @@ class BaseETS(BaseModel):
         # caused by using partialfunc
         # lambda as an alternative workaround
         if seasonality > 1:
-            init_values_callable = lambda: init_values_function(seasonality)  # noqa
+            init_values_callable = lambda: init_values_function(seasonality, self.estimator.rng)  # noqa
             self._init_values = init_values_callable
 
     def _set_static_data_attributes(self):

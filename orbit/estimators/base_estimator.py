@@ -18,7 +18,7 @@ class BaseEstimator(object):
         self.verbose = verbose
 
         # set random state
-        np.random.seed(self.seed)
+        self.rng = np.random.default_rng(self.seed)
 
     @abstractmethod
     def fit(self, model_name, model_param_names, data_input, init_values=None):

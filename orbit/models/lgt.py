@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy.stats import nct
 import torch
-from copy import copy, deepcopy
+from copy import deepcopy
 
 from ..constants import lgt as constants
 from ..constants.constants import (
@@ -125,6 +125,44 @@ class BaseLGT(BaseETS):
         # since we override _set_static_data_attributes()
         super().__init__(**kwargs)
 
+    def _set_init_values(self):
+        """Set init as a callable (for Stan ONLY)
+        See: https://pystan.readthedocs.io/en/latest/api.htm
+        Overriding :func: `~orbit.models.BaseETS._set_init_values`
+        """
+        # TODO: this is a hacky way to override the entire _set_init_values to add the regression initialization
+        def init_values_function(s, n_pr, n_nr, n_rr, rng):
+            init_values = dict()
+            if s > 1:
+                init_sea = rng.normal(loc=0, scale=0.05, size=s-1)
+                # catch cases with extreme values
+                init_sea[init_sea > 1.0] = 1.0
+                init_sea[init_sea < -1.0] = -1.0
+                init_values['init_sea'] = init_sea
+            if n_pr > 0:
+                init_values['pr_beta'] = np.repeat(1e-5, n_pr)
+            if n_nr > 0:
+                init_values['nr_beta'] = np.repeat(-1 * 1e-5, n_nr)
+            if n_rr > 0:
+                init_values['rr_beta'] = np.zeros((n_rr, ))
+            return init_values
+
+        seasonality = self._seasonality
+
+        # init_values_partial = partial(init_values_callable, seasonality=seasonality)
+        # partialfunc does not work when passed to PyStan because PyStan uses
+        # inspect.getargspec(func) which seems to raise an exception with keyword-only args
+        # caused by using partialfunc
+        # lambda as an alternative workaround
+        if seasonality > 1 or self._num_of_regressors > 0:
+            init_values_callable = lambda: init_values_function(
+                seasonality,
+                self._num_of_positive_regressors,
+                self._num_of_negative_regressors,
+                self._num_of_regular_regressors,
+                self.estimator.rng)
+            self._init_values = init_values_callable
+
     def _set_additional_trend_attributes(self):
         """Set additional trend attributes
         """
@@ -210,6 +248,8 @@ class BaseLGT(BaseETS):
         It sets additional required attributes related to trend and regression
         """
         super()._set_static_data_attributes()
+        # TODO: hacky fix
+        # self._set_init_values()
         self._set_additional_trend_attributes()
         self._set_regression_default_attributes()
         self._set_regression_penalty()
@@ -239,7 +279,7 @@ class BaseLGT(BaseETS):
         if self.regressor_col is not None and \
                 not set(self.regressor_col).issubset(df_columns):
             raise ModelException(
-                "DataFrame does not contain specified regressor colummn(s)."
+                "DataFrame does not contain specified regressor column(s)."
             )
 
     def _set_regressor_matrix(self, df):
@@ -289,8 +329,6 @@ class BaseLGT(BaseETS):
         # extra settings for regression
         self._validate_training_df_with_regression(df)
         self._set_regressor_matrix(df)  # depends on _num_of_observations
-
-        super()._set_init_values()
 
     def _predict(self, posterior_estimates, df, include_error=False, decompose=False):
         """Vectorized version of prediction math"""
@@ -632,7 +670,7 @@ class LGTAggregated(ETSAggregated, BaseLGT):
 class LGTMAP(ETSMAP, BaseLGT):
     """Concrete LGT model for MAP (Maximum a Posteriori) prediction
 
-    Similar to :class: `~orbit.models.LGTAggregated` but predition is based on Maximum a Posteriori (aka Mode)
+    Similar to :class: `~orbit.models.LGTAggregated` but prediction is based on Maximum a Posteriori (aka Mode)
     of the posterior.
 
     This model only supports MAP estimating `estimator_type`s

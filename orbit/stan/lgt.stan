@@ -304,5 +304,9 @@ generated quantities {
     if (NUM_OF_RR > 0) {
       beta[idx:idx+NUM_OF_RR-1] = rr_beta;
     }
+    // truncate small numeric values 
+    for(iidx in 1:NUM_OF_PR + NUM_OF_NR + NUM_OF_RR) {
+      if (beta[iidx] < 1e-5) beta[iidx] = 0;
+    }
   }
 }

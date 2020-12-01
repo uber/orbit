@@ -353,9 +353,9 @@ def test_lgt_mixed_signs_and_order(iclaims_training_data, regressor_signs):
     pred_v4 = predicted_df_v4['prediction'].values
 
     # they should be all identical; ordering of signs or columns in prediction show not matter
-    assert np.allclose(pred_v1, pred_v2)
-    assert np.allclose(pred_v1, pred_v3)
-    assert np.allclose(pred_v1, pred_v4)
+    assert np.allclose(pred_v1, pred_v2, atol=1e-3)
+    assert np.allclose(pred_v1, pred_v3, atol=1e-3)
+    assert np.allclose(pred_v1, pred_v4, atol=1e-3)
 
 
 @pytest.mark.parametrize("prediction_percentiles", [None, [5, 10, 95]])
