@@ -10,7 +10,7 @@ from .utils.utils import make_synthetic_series
 def iclaims_training_data():
     test_file = pkg_resources.resource_filename(
         'tests',
-        'resources/iclaims_example.csv'
+        'resources/iclaims.example.csv'
     )
     df = pd.read_csv(
         test_file,
