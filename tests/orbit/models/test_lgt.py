@@ -232,7 +232,6 @@ def test_lgt_full_with_regression(synthetic_data, estimator_type, regressor_sign
         )
 
     lgt.fit(train_df)
-    print('fit')
     predict_df = lgt.predict(test_df)
 
     regression_out = lgt.get_regression_coefs()
@@ -246,7 +245,6 @@ def test_lgt_full_with_regression(synthetic_data, estimator_type, regressor_sign
     assert predict_df.columns.tolist() == expected_columns
     assert regression_out.shape == expected_regression_shape
     assert num_regressors == len(train_df.columns.tolist()[2:])
-    assert any(predict_df['regression'].values)
 
 
 @pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI])
@@ -256,7 +254,7 @@ def test_lgt_full_with_regression(synthetic_data, estimator_type, regressor_sign
         ["+", "+", "+", "+", "+", "+"],
         ["-", "-", "-", "-", "-", "-"],
         ["=", "=", "=", "=", "=", "="],
-        ["+", "=", "+", "=", "-", "-"]
+        ["+", "=", "+", "=", "-", "-"],
     ],
     ids=['positive_only', 'negative_only', 'regular_only', 'mixed_signs']
 )
@@ -300,6 +298,8 @@ def test_lgt_aggregated_with_regression(synthetic_data, estimator_type, regresso
     assert predict_df.columns.tolist() == expected_columns
     assert regression_out.shape == expected_regression_shape
     assert num_regressors == len(train_df.columns.tolist()[2:])
+
+    predict_df = lgt.predict(test_df, decompose=True)
     assert any(predict_df['regression'].values)
 
 

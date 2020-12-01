@@ -198,6 +198,8 @@ def test_dlt_aggregated_with_regression(synthetic_data, estimator_type, regresso
     assert predict_df.columns.tolist() == expected_columns
     assert regression_out.shape == expected_regression_shape
     assert num_regressors == len(train_df.columns.tolist()[2:])
+
+    predict_df = dlt.predict(test_df, decompose=True)
     assert any(predict_df['regression'].values)
 
 

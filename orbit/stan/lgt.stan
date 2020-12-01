@@ -306,7 +306,7 @@ generated quantities {
     }
     // truncate small numeric values 
     for(iidx in 1:NUM_OF_PR + NUM_OF_NR + NUM_OF_RR) {
-      if (beta[iidx] <= 1e-5) beta[iidx] = 0;
+      if (fabs(beta[iidx]) <= 1e-5) beta[iidx] = 0;
     }
   }
 }

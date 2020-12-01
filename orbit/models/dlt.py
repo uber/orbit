@@ -147,10 +147,10 @@ class BaseDLT(BaseETS):
         Overriding :func: `~orbit.models.BaseETS._set_init_values`
         """
         # TODO: this is a hacky way to override the entire _set_init_values to add the regression initialization
-        def init_values_function(s, n_pr, n_nr, n_rr, rng):
+        def init_values_function(s, n_pr, n_nr, n_rr):
             init_values = dict()
             if s > 1:
-                init_sea = rng.normal(loc=0, scale=0.05, size=s-1)
+                init_sea = np.random.normal(loc=0, scale=0.05, size=s - 1)
                 # catch cases with extreme values
                 init_sea[init_sea > 1.0] = 1.0
                 init_sea[init_sea < -1.0] = -1.0
@@ -160,7 +160,7 @@ class BaseDLT(BaseETS):
             if n_nr > 0:
                 init_values['nr_beta'] = np.repeat(-1 * 1e-5, n_nr)
             if n_rr > 0:
-                init_values['rr_beta'] = np.zeros((n_rr, ))
+                init_values['rr_beta'] = np.zeros((n_rr,))
             return init_values
 
         seasonality = self._seasonality
@@ -175,8 +175,7 @@ class BaseDLT(BaseETS):
                 seasonality,
                 self._num_of_positive_regressors,
                 self._num_of_negative_regressors,
-                self._num_of_regular_regressors,
-                self.estimator.rng)
+                self._num_of_regular_regressors)
             self._init_values = init_values_callable
 
     def _set_additional_trend_attributes(self):
