@@ -55,12 +55,12 @@ class Model:
 
         # expand dim to n_rr x n_knots_coef
         rr_knot_pool_loc = self.rr_knot_pool_loc
-        knot_pool_scale = self.knot_pool_scale
+        rr_knot_pool_scale = self.rr_knot_pool_scale
         rr_knot_scale = self.rr_knot_scale.unsqueeze(-1)
 
         # this does not need to expand dim since it is used as latent grand mean
         pr_knot_pool_loc = self.pr_knot_pool_loc
-        knot_pool_scale = self.knot_pool_scale
+        pr_knot_pool_scale = self.pr_knot_pool_scale
         pr_knot_scale = self.pr_knot_scale.unsqueeze(-1)
 
         extra_out = {}
@@ -75,7 +75,7 @@ class Model:
             rr_knot_loc = pyro.sample(
                 "rr_knot_loc",
                 dist.FoldedDistribution(
-                    dist.Normal(rr_knot_pool_loc, knot_pool_scale)
+                    dist.Normal(rr_knot_pool_loc, rr_knot_pool_scale)
                 )
             ).unsqueeze(-1) * torch.ones(n_rr, n_knots_coef)
             rr_knot = pyro.sample(
@@ -92,7 +92,7 @@ class Model:
             pr_knot_loc = pyro.sample(
                 "pr_knot_loc",
                 dist.FoldedDistribution(
-                    dist.Normal(pr_knot_pool_loc, knot_pool_scale)
+                    dist.Normal(pr_knot_pool_loc, pr_knot_pool_scale)
                 )
             ).unsqueeze(-1) * torch.ones(n_pr, n_knots_coef)
             pr_knot = pyro.sample(

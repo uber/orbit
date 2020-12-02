@@ -20,8 +20,10 @@ from ..constants.ktr import (
     DEFAULT_RHO_COEFFICIENTS,
     DEFAULT_REGRESSOR_SIGN,
     DEFAULT_COEFFICIENTS_KNOT_POOL_SCALE,
-    DEFAULT_COEFFICIENTS_LOC,
-    DEFAULT_COEFFICIENTS_SCALE,
+    DEFAULT_COEFFICIENTS_KNOT_POOL_LOC,
+    DEFAULT_COEFFICIENTS_KNOT_SCALE,
+    DEFAULT_SEASONAL_POOL_SCALE,
+    DEFAULT_SEASONAL_SCALE,
 )
 
 from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
@@ -142,11 +144,13 @@ class BaseKTR(BaseModel):
         self._num_of_positive_regressors = 0
         self._positive_regressor_col = list()
         self._positive_regressor_knot_pooling_loc = list()
+        self._positive_regressor_knot_pooling_scale = list()
         self._positive_regressor_knot_scale = list()
         # regular regressors
         self._num_of_regular_regressors = 0
         self._regular_regressor_col = list()
         self._regular_regressor_knot_pooling_loc = list()
+        self._regular_regressor_knot_pooling_scale = list()
         self._regular_regressor_knot_scale = list()
         self._regressor_col = list()
 
@@ -193,8 +197,8 @@ class BaseKTR(BaseModel):
 
         if self.level_knot_scale is None:
             self._level_knot_scale = DEFAULT_LEVEL_KNOT_SCALE
-        if self._regressor_knot_pooling_scale is None:
-            self._regressor_knot_pooling_scale = DEFAULT_COEFFICIENTS_KNOT_POOL_SCALE
+        # if self._regressor_knot_pooling_scale is None:
+        #     self._regressor_knot_pooling_scale = DEFAULT_COEFFICIENTS_KNOT_POOL_SCALE
         if self.span_level is None:
             self._span_level = DEFAULT_SPAN_LEVEL
         if self.span_coefficients is None:
@@ -234,6 +238,7 @@ class BaseKTR(BaseModel):
             # these should all be empty lists
             self._regressor_sign = list()
             self._regressor_knot_loc = list()
+            self._regressor_knot_pooling_scale = list()
             self._regressor_knot_scale = list()
 
             return
@@ -264,10 +269,13 @@ class BaseKTR(BaseModel):
             self._regressor_sign = [DEFAULT_REGRESSOR_SIGN] * num_of_regressors
 
         if self.regressor_knot_loc is None:
-            self._regressor_knot_loc = [DEFAULT_COEFFICIENTS_LOC] * num_of_regressors
+            self._regressor_knot_loc = [DEFAULT_COEFFICIENTS_KNOT_POOL_LOC] * num_of_regressors
+
+        if self.regressor_knot_pooling_scale is None:
+            self._regressor_knot_pooling_scale = [DEFAULT_COEFFICIENTS_KNOT_POOL_SCALE] * num_of_regressors
 
         if self.regressor_knot_scale is None:
-            self._regressor_knot_scale = [DEFAULT_COEFFICIENTS_SCALE] * num_of_regressors
+            self._regressor_knot_scale = [DEFAULT_COEFFICIENTS_KNOT_SCALE] * num_of_regressors
 
     def _set_static_regression_attributes(self):
         # if no regressors, end here
@@ -281,6 +289,7 @@ class BaseKTR(BaseModel):
                 self._positive_regressor_col.append(self.regressor_col[index])
                 # used for 'pr_knot_loc' sampling in pyro
                 self._positive_regressor_knot_pooling_loc.append(self._regressor_knot_loc[index])
+                self._positive_regressor_knot_pooling_scale.append(self._regressor_knot_pooling_scale[index])
                 # used for 'pr_knot' sampling in pyro
                 self._positive_regressor_knot_scale.append(self._regressor_knot_scale[index])
             else:
@@ -288,6 +297,7 @@ class BaseKTR(BaseModel):
                 self._regular_regressor_col.append(self.regressor_col[index])
                 # used for 'rr_knot_loc' sampling in pyro
                 self._regular_regressor_knot_pooling_loc.append(self._regressor_knot_loc[index])
+                self._regular_regressor_knot_pooling_scale.append(self._regressor_knot_pooling_scale[index])
                 # used for 'rr_knot' sampling in pyro
                 self._regular_regressor_knot_scale.append(self._regressor_knot_scale[index])
         # regular first, then positive
@@ -314,10 +324,13 @@ class BaseKTR(BaseModel):
             self._regular_regressor_col = self._seasonal_regressor_col + self._regular_regressor_col
             self._num_of_regular_regressors += len(self._seasonal_regressor_col)
             self._regular_regressor_knot_pooling_loc = \
-                [DEFAULT_COEFFICIENTS_LOC] * len(self._seasonal_regressor_col) + \
+                [0.0] * len(self._seasonal_regressor_col) + \
                 self._regular_regressor_knot_pooling_loc
+            self._regular_regressor_knot_pooling_scale = \
+                [DEFAULT_SEASONAL_POOL_SCALE] * len(self._seasonal_regressor_col) + \
+                self._regular_regressor_knot_pooling_scale
             self._regular_regressor_knot_scale = \
-                [DEFAULT_COEFFICIENTS_SCALE] * len(self._seasonal_regressor_col) + \
+                [DEFAULT_SEASONAL_SCALE] * len(self._seasonal_regressor_col) + \
                 self._regular_regressor_knot_scale
 
     def _set_insert_prior_idx(self):
@@ -959,6 +972,7 @@ class KTRFull(BaseKTR):
                                              coef_df_lower=coef_df_lower,
                                              coef_df_upper=coef_df_upper,
                                              **kwargs)
+
 
 class KTRAggregated(BaseKTR):
     """Concrete LGT model for aggregated posterior prediction
