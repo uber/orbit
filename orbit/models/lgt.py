@@ -140,9 +140,11 @@ class BaseLGT(BaseETS):
                 init_sea[init_sea < -1.0] = -1.0
                 init_values['init_sea'] = init_sea
             if n_pr > 0:
-                init_values['pr_beta'] = np.repeat(1e-5, n_pr)
+                # init_values['pr_beta'] = np.repeat(1e-5, n_pr)
+                init_values['nr_beta'] = np.zeros((n_pr,))
             if n_nr > 0:
-                init_values['nr_beta'] = np.repeat(-1 * 1e-5, n_nr)
+                # init_values['nr_beta'] = np.repeat(-1 * 1e-5, n_nr)
+                init_values['nr_beta'] = np.zeros((n_nr, ))
             if n_rr > 0:
                 init_values['rr_beta'] = np.zeros((n_rr, ))
             return init_values
