@@ -135,6 +135,7 @@ class BaseKTR(BaseModel):
         self._insert_prior_sd = self.insert_prior_sd
         self._insert_prior_idx = list()
         self._num_insert_prior = None
+        self._lev_knots_date = self.lev_knots_date
 
         self._model_param_names = list()
         self._training_df_meta = None
@@ -406,7 +407,7 @@ class BaseKTR(BaseModel):
             self._regular_regressor_matrix = df.filter(
                 items=self._regular_regressor_col,).values
 
-    def _set_kernel_matrix(self):
+    def _set_kernel_matrix(self, df):
         # Note that our tp starts by 1; to convert back to index of array, reduce it by 1
         tp = np.arange(1, self._num_of_observations + 1) / self._num_of_observations
 
@@ -416,14 +417,15 @@ class BaseKTR(BaseModel):
         # self._cutoff = round(0.2 * self._num_of_observations)
 
         # kernel of level calculations
-        if self.lev_knots_date is None:
+        if self._lev_knots_date is None:
             width_level = round(self._span_level * self._cutoff)
             arr_tp_level = np.arange(1, self._cutoff + 1, width_level) / self._num_of_observations
             self._knots_tp_level = (arr_tp_level[:-1] + arr_tp_level[1:]) / 2
         else:
             # FIXME: this only works up to daily series (not working on hourly series)
+            self._lev_knots_date = pd.to_datetime([x for x in self._lev_knots_date if x <= df[self.date_col].max()])
             self._knots_tp_level = np.array(
-                ((self.lev_knots_date - self._training_df_meta['training_start']).days + 1) /
+                ((self._lev_knots_date - self._training_df_meta['training_start']).days + 1) /
                 ((self._training_df_meta['training_end'] - self._training_df_meta['training_start']).days + 1)
             )
 
@@ -458,7 +460,7 @@ class BaseKTR(BaseModel):
         self._response_sd = np.std(self._response)
 
         self._set_regressor_matrix(df)
-        self._set_kernel_matrix()
+        self._set_kernel_matrix(df)
 
     def _set_model_param_names(self):
         """Model parameters to extract from Stan"""
