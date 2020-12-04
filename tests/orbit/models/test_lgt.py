@@ -1,3 +1,4 @@
+import copy
 import pytest
 import numpy as np
 
@@ -382,4 +383,71 @@ def test_prediction_percentiles(iclaims_training_data, prediction_percentiles):
     assert predicted_df.shape[0] == df.shape[0]
 
 
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
+@pytest.mark.parametrize(
+    "regressor_signs",
+    [
+        ["+", "+", "+", "+", "+", "+"],
+        ["=", "=", "=", "=", "=", "="],
+        ["+", "=", "+", "=", "+", "+"]
+    ],
+    ids=['positive_only', 'regular_only', 'mixed_signs']
+)
+@pytest.mark.parametrize("seasonality", [1, 52])
+def test_lgt_full_reproducibility(synthetic_data, estimator_type, regressor_signs, seasonality):
+    train_df, test_df, coef = synthetic_data
 
+    lgt_first = LGTFull(
+        response_col='response',
+        date_col='week',
+        regressor_col=train_df.columns.tolist()[2:],
+        regressor_sign=regressor_signs,
+        prediction_percentiles=[5, 95],
+        seasonality=seasonality,
+        num_warmup=50,
+        verbose=False,
+        estimator_type=estimator_type
+    )
+
+    # first fit and predict
+    lgt_first.fit(train_df)
+    posteriors_first = copy.copy(lgt_first._posterior_samples)
+    predict_df_first = lgt_first.predict(test_df)
+    regression_out_first = lgt_first.get_regression_coefs()
+
+    # second fit and predict
+    # note a new instance must be created to reset the seed
+    # note both fit and predict contain random generation processes
+    lgt_second = LGTFull(
+        response_col='response',
+        date_col='week',
+        regressor_col=train_df.columns.tolist()[2:],
+        regressor_sign=regressor_signs,
+        prediction_percentiles=[5, 95],
+        seasonality=seasonality,
+        num_warmup=50,
+        verbose=False,
+        estimator_type=estimator_type
+    )
+
+    lgt_second.fit(train_df)
+    posteriors_second = copy.copy(lgt_second._posterior_samples)
+    predict_df_second = lgt_second.predict(test_df)
+    regression_out_second = lgt_second.get_regression_coefs()
+
+    posterior_keys = posteriors_first.keys()
+
+    # assert same posterior keys
+    assert set(posteriors_first.keys()) == set(posteriors_second.keys())
+
+    # assert posterior draws are reproducible
+    for k, v in posteriors_first.items():
+        assert np.allclose(posteriors_first[k], posteriors_second[k])
+
+    # assert identical regression columns
+    # this is also checked in posterior samples, but an extra layer just in case
+    # since this one very commonly retrieved by end users
+    assert all(regression_out_first == regression_out_second)
+
+    # assert prediction is reproducible
+    assert all(predict_df_first == predict_df_second)
