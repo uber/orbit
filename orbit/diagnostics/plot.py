@@ -115,6 +115,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
 
     return ax
 
+
 def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, plot_components=None,
                               title="", figsize=None, path=None):
 
