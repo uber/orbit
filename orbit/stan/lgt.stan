@@ -75,7 +75,7 @@ transformed data {
   SLP_SM_SIZE = 0;
   SEA_SM_SIZE = 0;
   if (SEASONALITY > 1) IS_SEASONAL = 1;
-  # Only auto-ridge is using pr_sigma and rr_sigma
+  // Only auto-ridge is using pr_sigma and rr_sigma
   if (REG_PENALTY_TYPE == 2) USE_VARY_SIGMA = 1;
 
   if (LEV_SM_INPUT < 0) LEV_SM_SIZE = 1;
@@ -236,10 +236,7 @@ model {
   // 2. https://betanalpha.github.io/assets/case_studies/bayes_sparse_regression.html#33_wide_weakly_informative_prior
   if (NUM_OF_PR > 0) {
     if (REG_PENALTY_TYPE== 0) {
-      // fixed penalty ridge
-      for(i in 1:NUM_OF_PR) {
-        pr_beta[i] ~ normal(PR_BETA_PRIOR[i], PR_SIGMA_PRIOR[i]) T[0,];
-      }
+      pr_beta ~ normal(PR_BETA_PRIOR, PR_SIGMA_PRIOR);
     } else if (REG_PENALTY_TYPE == 1) {
       // lasso penalty
       pr_beta ~ double_exponential(PR_BETA_PRIOR, LASSO_SCALE);
@@ -248,17 +245,14 @@ model {
       for(i in 1:NUM_OF_PR) {
         //weak prior for sigma
         pr_sigma[i] ~ cauchy(0, AUTO_RIDGE_SCALE) T[0,];
-        //weak prior for betas
-        pr_beta[i] ~ normal(PR_BETA_PRIOR[i], pr_sigma[i]) T[0, ];
       }
+      //weak prior for betas
+      pr_beta ~ normal(PR_BETA_PRIOR, pr_sigma);
     }
   }
   if (NUM_OF_NR > 0) {
     if (REG_PENALTY_TYPE == 0) {
-      // fixed penalty ridge
-      for(i in 1:NUM_OF_NR) {
-        nr_beta[i] ~ normal(NR_BETA_PRIOR[i], NR_SIGMA_PRIOR[i]) T[,0];
-      }
+      nr_beta ~ normal(NR_BETA_PRIOR, NR_SIGMA_PRIOR);
     } else if (REG_PENALTY_TYPE == 1) {
       // lasso penalty
       nr_beta ~ double_exponential(NR_BETA_PRIOR, LASSO_SCALE);
@@ -266,8 +260,9 @@ model {
       // data-driven penalty for ridge
       for(i in 1:NUM_OF_NR) {
         nr_sigma[i] ~ cauchy(0, AUTO_RIDGE_SCALE) T[0,];
-        nr_beta[i] ~ normal(NR_BETA_PRIOR[i], nr_sigma[i]) T[,0];
       }
+      //weak prior for betas
+      nr_beta ~ normal(NR_BETA_PRIOR, nr_sigma);
     }
   }
   if (NUM_OF_RR > 0) {

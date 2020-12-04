@@ -156,11 +156,15 @@ class BaseDLT(BaseETS):
                 init_sea[init_sea < -1.0] = -1.0
                 init_values['init_sea'] = init_sea
             if n_pr > 0:
-                init_values['pr_beta'] = np.repeat(1e-5, n_pr)
+                x = np.random.normal(loc=0, scale=0.1, size=n_pr)
+                x[x < 0] = -1 * x[x < 0]
+                init_values['pr_beta'] = x
             if n_nr > 0:
-                init_values['nr_beta'] = np.repeat(-1 * 1e-5, n_nr)
+                x = np.random.normal(loc=-0, scale=0.1, size=n_nr)
+                x[x > 0] = -1 * x[x > 0]
+                init_values['nr_beta'] = x
             if n_rr > 0:
-                init_values['rr_beta'] = np.zeros((n_rr,))
+                init_values['rr_beta'] = np.random.normal(loc=-0, scale=0.1, size=n_rr)
             return init_values
 
         seasonality = self._seasonality
