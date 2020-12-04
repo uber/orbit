@@ -221,7 +221,6 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
         plt.savefig(path)
 
 
-
 def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
                           pair_type='scatter', figsize=None, path=None,
                           incl_trend_params=False, incl_smooth_params=False):
