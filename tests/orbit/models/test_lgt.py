@@ -307,11 +307,8 @@ def test_lgt_aggregated_with_regression(synthetic_data, estimator_type, regresso
     "regressor_signs",
     [
         ['=', '=', '+'],
-        ['=', '=', '-'],
-        ['+', '-', '+'],
-        ['+', '-', '=']
     ],
-    ids=['positive_mixed', 'negative_mixed', 'positive_negative', 'mixed']
+    ids=['positive_mixed']
 )
 def test_lgt_mixed_signs_and_order(iclaims_training_data, regressor_signs):
     df = iclaims_training_data
