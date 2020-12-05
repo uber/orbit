@@ -284,7 +284,7 @@ class StanEstimatorMAP(StanEstimator):
     def fit(self, model_name, model_param_names, data_input, init_values=None):
         compiled_stan_file = get_compiled_stan_model(model_name)
 
-        #   passing callable from the model as seen in `initfun1()`
+        # passing callable from the model as seen in `initfun1()`
         init_values = init_values or self.stan_init
 
         # in case optimizing fails with given algorithm fallback to `Newton`

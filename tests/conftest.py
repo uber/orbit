@@ -66,7 +66,7 @@ def stan_estimator_lgt_model_input():
     stan_model_name = 'lgt'
     model_param_names = [
         'l', 'b', 'lev_sm', 'slp_sm', 'obs_sigma', 'nu',
-        'lgt_sum', 'gt_pow', 'lt_coef', 'gt_coef', 's', 'sea_sm'
+        'lgt_sum', 'gt_pow', 'lt_coef', 'gt_coef', 's', 'sea_sm',
     ]
     data_input = {
         'WITH_MCMC': 1,
@@ -114,6 +114,10 @@ def stan_estimator_lgt_model_input():
         'PR_MAT': np.empty((157, 0), dtype=np.float64),
         'PR_BETA_PRIOR': [],
         'PR_SIGMA_PRIOR': [],
+        'NUM_OF_NR': 0,
+        'NR_MAT': np.empty((157, 0), dtype=np.float64),
+        'NR_BETA_PRIOR': [],
+        'NR_SIGMA_PRIOR': [],
         'NUM_OF_RR': 0,
         'RR_MAT': np.empty((157, 0), dtype=np.float64),
         'RR_BETA_PRIOR': [],
