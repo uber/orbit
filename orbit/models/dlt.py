@@ -78,7 +78,6 @@ class BaseDLT(BaseETS):
         self.global_trend_option = global_trend_option
         self.period = period
         # extra parameters for residuals
-        # todo: should this be based on number of obs?
         self._min_nu = 5.
         self._max_nu = 40.
 
@@ -146,7 +145,6 @@ class BaseDLT(BaseETS):
         See: https://pystan.readthedocs.io/en/latest/api.htm
         Overriding :func: `~orbit.models.BaseETS._set_init_values`
         """
-        # TODO: this is a hacky way to override the entire _set_init_values to add the regression initialization
         def init_values_function(s, n_pr, n_nr, n_rr):
             init_values = dict()
             if s > 1:
@@ -306,6 +304,11 @@ class BaseDLT(BaseETS):
             )
 
     def _set_regressor_matrix(self, df):
+        """Set regressor matrix based on the input data-frame.
+        Notes
+        -----
+        In case of absence of regression, they will be set to np.array with dim (num_of_obs, 0) to fit Stan requirement
+        """
         # init of regression matrix depends on length of response vector
         self._positive_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
         self._negative_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
@@ -323,19 +326,6 @@ class BaseDLT(BaseETS):
         if self._num_of_regular_regressors > 0:
             self._regular_regressor_matrix = df.filter(
                 items=self._regular_regressor_col, ).values
-
-    @staticmethod
-    def _get_regressor_matrix(df, rr_col, pr_col, nr_col):
-        """Set regressor matrix based on the input data-frame.
-        Notes
-        -----
-        In case of absence of regression, they will be set to np.array with dim (num_of_obs, 0) to fit Stan requirement
-        """
-        if len(rr_col) + len(pr_col) + len(nr_col) > 0:
-            regressor_matrix = df.filter(items=rr_col + pr_col + nr_col).values
-        else:
-            raise PredictionException('prediction/model does not contains any regressor.')
-        return regressor_matrix
 
     def _set_dynamic_data_attributes(self, df):
         """Set required input based on input DataFrame, rather than at object instantiation.  It also set

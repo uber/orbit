@@ -66,7 +66,6 @@ class BaseLGT(BaseETS):
                  slope_sm_input=None,
                  **kwargs):
 
-        # todo: should this be based on number of obs?
         self._min_nu = 5.
         self._max_nu = 40.
 
@@ -130,7 +129,6 @@ class BaseLGT(BaseETS):
         See: https://pystan.readthedocs.io/en/latest/api.htm
         Overriding :func: `~orbit.models.BaseETS._set_init_values`
         """
-        # TODO: this is a hacky way to override the entire _set_init_values to add the regression initialization
         def init_values_function(s, n_pr, n_nr, n_rr):
             init_values = dict()
             if s > 1:
@@ -251,8 +249,6 @@ class BaseLGT(BaseETS):
         It sets additional required attributes related to trend and regression
         """
         super()._set_static_data_attributes()
-        # TODO: hacky fix
-        # self._set_init_values()
         self._set_additional_trend_attributes()
         self._set_regression_default_attributes()
         self._set_regression_penalty()
@@ -308,15 +304,6 @@ class BaseLGT(BaseETS):
         if self._num_of_regular_regressors > 0:
             self._regular_regressor_matrix = df.filter(
                 items=self._regular_regressor_col, ).values
-
-    @staticmethod
-    def _get_regressor_matrix(df, rr_col, pr_col, nr_col):
-        """Return regressor matrix based on the input data-frame."""
-        if len(rr_col) + len(pr_col) + len(nr_col) > 0:
-            regressor_matrix = df.filter(items=rr_col + pr_col + nr_col).values
-        else:
-            raise PredictionException('prediction/model does not contains any regressor.')
-        return regressor_matrix
 
     def _set_dynamic_data_attributes(self, df):
         """Set required input based on input DataFrame, rather than at object instantiation.  It also set
