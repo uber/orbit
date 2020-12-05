@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import copy
 
 from orbit.estimators.stan_estimator import StanEstimator, StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 from orbit.models.ets import BaseETS, ETSFull, ETSAggregated, ETSMAP
@@ -157,4 +158,49 @@ def test_prediction_percentiles(iclaims_training_data, prediction_percentiles):
     assert predicted_df.shape[0] == df.shape[0]
 
 
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
+@pytest.mark.parametrize("seasonality", [1, 52])
+def test_ets_full_reproducibility(synthetic_data, estimator_type, seasonality):
+    train_df, test_df, coef = synthetic_data
 
+    ets_first = ETSFull(
+        response_col='response',
+        date_col='week',
+        prediction_percentiles=[5, 95],
+        seasonality=seasonality,
+        num_warmup=50,
+        verbose=False,
+        estimator_type=estimator_type
+    )
+
+    # first fit and predict
+    ets_first.fit(train_df)
+    posteriors_first = copy.copy(ets_first._posterior_samples)
+    predict_df_first = ets_first.predict(test_df)
+
+    # second fit and predict
+    # note a new instance must be created to reset the seed
+    # note both fit and predict contain random generation processes
+    ets_second = ETSFull(
+        response_col='response',
+        date_col='week',
+        prediction_percentiles=[5, 95],
+        seasonality=seasonality,
+        num_warmup=50,
+        verbose=False,
+        estimator_type=estimator_type
+    )
+
+    ets_second.fit(train_df)
+    posteriors_second = copy.copy(ets_second._posterior_samples)
+    predict_df_second = ets_second.predict(test_df)
+
+    # assert same posterior keys
+    assert set(posteriors_first.keys()) == set(posteriors_second.keys())
+
+    # assert posterior draws are reproducible
+    for k, v in posteriors_first.items():
+        assert np.allclose(posteriors_first[k], posteriors_second[k])
+
+    # assert prediction is reproducible
+    assert all(predict_df_first == predict_df_second)

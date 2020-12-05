@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import copy
 
 from orbit.models.dlt import BaseDLT, DLTFull, DLTAggregated, DLTMAP
 from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI
@@ -278,3 +279,75 @@ def test_dlt_mixed_signs_and_order(iclaims_training_data, regressor_signs):
     assert np.allclose(pred_v1, pred_v4, atol=1e-3)
 
 
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
+@pytest.mark.parametrize(
+    "regressor_signs",
+    [
+        ["+", "+", "+", "+", "+", "+"],
+        ["=", "=", "=", "=", "=", "="],
+        ["-", "-", "-", "-", "-", "-"],
+        ["+", "=", "+", "=", "+", "+"],
+        ["-", "=", "-", "=", "-", "="],
+        ["+", "=", "+", "=", "-", "-"],
+    ],
+    ids=['positive_only', 'regular_only', 'negative_only',
+         'positive_mixed', 'negative_mixed', 'mixed_signs']
+)
+@pytest.mark.parametrize("seasonality", [1, 52])
+def test_dlt_full_reproducibility(synthetic_data, estimator_type, regressor_signs, seasonality):
+    train_df, test_df, coef = synthetic_data
+
+    dlt_first = DLTFull(
+        response_col='response',
+        date_col='week',
+        regressor_col=train_df.columns.tolist()[2:],
+        regressor_sign=regressor_signs,
+        prediction_percentiles=[5, 95],
+        seasonality=seasonality,
+        num_warmup=50,
+        verbose=False,
+        estimator_type=estimator_type
+    )
+
+    # first fit and predict
+    dlt_first.fit(train_df)
+    posteriors_first = copy.copy(dlt_first._posterior_samples)
+    predict_df_first = dlt_first.predict(test_df)
+    regression_out_first = dlt_first.get_regression_coefs()
+
+    # second fit and predict
+    # note a new instance must be created to reset the seed
+    # note both fit and predict contain random generation processes
+    dlt_second = DLTFull(
+        response_col='response',
+        date_col='week',
+        regressor_col=train_df.columns.tolist()[2:],
+        regressor_sign=regressor_signs,
+        prediction_percentiles=[5, 95],
+        seasonality=seasonality,
+        num_warmup=50,
+        verbose=False,
+        estimator_type=estimator_type
+    )
+
+    dlt_second.fit(train_df)
+    posteriors_second = copy.copy(dlt_second._posterior_samples)
+    predict_df_second = dlt_second.predict(test_df)
+    regression_out_second = dlt_second.get_regression_coefs()
+
+    posterior_keys = posteriors_first.keys()
+
+    # assert same posterior keys
+    assert set(posteriors_first.keys()) == set(posteriors_second.keys())
+
+    # assert posterior draws are reproducible
+    for k, v in posteriors_first.items():
+        assert np.allclose(posteriors_first[k], posteriors_second[k])
+
+    # assert identical regression columns
+    # this is also checked in posterior samples, but an extra layer just in case
+    # since this one very commonly retrieved by end users
+    assert all(regression_out_first == regression_out_second)
+
+    # assert prediction is reproducible
+    assert all(predict_df_first == predict_df_second)
