@@ -13,13 +13,6 @@ class DataInputMapper(Enum):
     # ---------- Seasonality ---------- #
     _SEASONALITY = 'SEASONALITY'
     _SEASONALITY_SM_INPUT = 'SEA_SM_INPUT'
-    # ---------- LGT Global Trend ---------- #
-    # GLOBAL_TREND_COEF_MIN = 'GT_COEF_MIN'
-    # GLOBAL_TREND_COEF_MAX = 'GT_COEF_MAX'
-    # GLOBAL_TREND_POW_MIN = 'GT_POW_MIN'
-    # GLOBAL_TREND_POW_MAX = 'GT_POW_MAX'
-    # LOCAL_TREND_COEF_MIN = 'LT_COEF_MIN'
-    # LOCAL_TREND_COEF_MAX = 'LT_COEF_MAX'
     # ---------- Common Local Trend ---------- #
     _LEVEL_SM_INPUT = 'LEV_SM_INPUT'
     _SLOPE_SM_INPUT = 'SLP_SM_INPUT'
@@ -32,6 +25,10 @@ class DataInputMapper(Enum):
     _POSITIVE_REGRESSOR_MATRIX = 'PR_MAT'
     _POSITIVE_REGRESSOR_BETA_PRIOR = 'PR_BETA_PRIOR'
     _POSITIVE_REGRESSOR_SIGMA_PRIOR = 'PR_SIGMA_PRIOR'
+    _NUM_OF_NEGATIVE_REGRESSORS = 'NUM_OF_NR'
+    _NEGATIVE_REGRESSOR_MATRIX = 'NR_MAT'
+    _NEGATIVE_REGRESSOR_BETA_PRIOR = 'NR_BETA_PRIOR'
+    _NEGATIVE_REGRESSOR_SIGMA_PRIOR = 'NR_SIGMA_PRIOR'
     _NUM_OF_REGULAR_REGRESSORS = 'NUM_OF_RR'
     _REGULAR_REGRESSOR_MATRIX = 'RR_MAT'
     _REGULAR_REGRESSOR_BETA_PRIOR = 'RR_BETA_PRIOR'
@@ -73,8 +70,7 @@ class RegressionSamplingParameters(Enum):
     """
     The stan output sampling parameters related with regression component.
     """
-    POSITIVE_REGRESSOR_BETA = 'pr_beta'
-    REGULAR_REGRESSOR_BETA = 'rr_beta'
+    REGRESSION_COEFFICIENTS = 'beta'
 
 
 class RegressionPenalty(Enum):
