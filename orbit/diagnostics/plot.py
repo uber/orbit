@@ -112,12 +112,19 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         fig.savefig(path)
     if is_visible:
         plt.show()
+    else:
+        plt.close()
 
     return ax
 
 
 def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, plot_components=None,
+<<<<<<< Updated upstream
                               title="", figsize=None, path=None):
+=======
+                              title="", is_visible=False, figsize=None, path=None):
+
+>>>>>>> Stashed changes
     """ Plot predicted componenets with the data frame of decomposed prediction where components
     has been pre-defined as `trend`, `seasonality` and `regression`.
     Parameters
@@ -181,6 +188,11 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
 
     if path:
         plt.savefig(path)
+
+    if is_visible:
+        plt.show()
+    else:
+        plt.close()
 
     return axes
 
