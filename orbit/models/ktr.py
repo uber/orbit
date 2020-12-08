@@ -393,11 +393,20 @@ class BaseKTR(BaseModel):
             'training_end': df[self.date_col].iloc[-1]
         }
 
-    def _make_seasonal_regressors(self, df):
+    def _make_seasonal_regressors(self, df, shift):
+        """
+        df : pd.DataFrame
+        shift: int
+            use 0 for fitting; use delta of prediction start and train start for prediction
+        Returns
+        -------
+        pd.DataFrame
+            data with computed fourier series attached
+        """
         if len(self._seasonality) > 0:
             for idx, s in enumerate(self._seasonality):
                 order = self._seasonality_fs_order[idx]
-                df, _ = make_fourier_series_df(df, s, order=order, prefix='seas{}_'.format(s))
+                df, _ = make_fourier_series_df(df, s, order=order, prefix='seas{}_'.format(s), shift=shift)
         return df
 
     def _validate_training_df(self, df):
@@ -485,7 +494,7 @@ class BaseKTR(BaseModel):
         """data input based on input DataFrame, rather than at object instantiation"""
         df = df.copy()
 
-        df = self._make_seasonal_regressors(df)
+        df = self._make_seasonal_regressors(df, shift=0)
         self._validate_training_df(df)
         self._set_training_df_meta(df)
 
@@ -595,7 +604,6 @@ class BaseKTR(BaseModel):
 
     def _predict(self, posterior_estimates, df, include_error=False, decompose=False, random_state=None):
         """Vectorized version of prediction math"""
-        df = self._make_seasonal_regressors(df)
         ################################################################
         # Model Attributes
         ################################################################
@@ -638,22 +646,48 @@ class BaseKTR(BaseModel):
 
         trained_len = training_df_meta['df_length'] # i.e., self._num_of_observations
         output_len = prediction_df_meta['df_length']
+        date_array = prediction_df_meta['date_array']
+        prediction_start = prediction_df_meta['prediction_start']
 
         # Here assume dates are ordered and consecutive
         # if prediction_df_meta['prediction_start'] > training_df_meta['training_end'],
         # assume prediction starts right after train end
+
+        # If we cannot find a match of prediction range, assume prediction starts right after train
+        # end
+        if prediction_start > training_df_meta['training_end']:
+            forecast_dates = set(date_array)
+            n_forecast_steps = len(forecast_dates)
+            # time index for prediction start
+            start = trained_len
+        else:
+            # compute how many steps to forecast
+            forecast_dates = set(date_array) - set(training_df_meta['date_array'])
+            # check if prediction df is a subset of training df
+            # e.g. "negative" forecast steps
+            n_forecast_steps = len(forecast_dates) or \
+                               - (len(set(training_df_meta['date_array']) - set(date_array)))
+            # time index for prediction start
+            start = pd.Index(training_df_meta['date_array']).get_loc(prediction_start)
+
+        df = self._make_seasonal_regressors(df, shift=start)
+        new_tp = np.arange(start + 1, n_forecast_steps + trained_len + 1) / trained_len
+
+        # Replacing this ----
         # TODO: check utility?
-        gap_time = prediction_df_meta['prediction_start'] - training_df_meta['training_start']
-        infer_freq = pd.infer_freq(df[self.date_col])[0]
-        gap_int = int(gap_time / np.timedelta64(1, infer_freq))
+        # gap_time = prediction_df_meta['prediction_start'] - training_df_meta['training_start']
+        # infer_freq = pd.infer_freq(df[self.date_col])[0]
+        # gap_int = int(gap_time / np.timedelta64(1, infer_freq))
+        #
+        # # 1. set idx = test_df[date_col]
+        # # 2. search match position of idx[0], set position = pos
+        # # 3. if match, start from pos, assume all time points ordered so that your prediction horizon = pos + len(test_df)
+        # # 3b. if not match, assumne start from last idx + 1, perdiction horizon = len(train_df) + len(test_df)
+        #
+        # new_tp = np.arange(1 + gap_int, output_len + gap_int + 1)
+        # new_tp = new_tp / trained_len
+        # Replacing this ---- END
 
-        # 1. set idx = test_df[date_col]
-        # 2. search match position of idx[0], set position = pos
-        # 3. if match, start from pos, assume all time points ordered so that your prediction horizon = pos + len(test_df)
-        # 3b. if not match, assumne start from last idx + 1, perdiction horizon = len(train_df) + len(test_df)
-
-        new_tp = np.arange(1 + gap_int, output_len + gap_int + 1)
-        new_tp = new_tp / trained_len
         # kernel_level = gauss_kernel(new_tp, self._knots_tp_level, rho=self._rho_level)
         kernel_level = sandwich_kernel(new_tp, self._knots_tp_level)
         kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self._rho_coefficients)
@@ -667,15 +701,16 @@ class BaseKTR(BaseModel):
         obs_scale = obs_scale.reshape(-1, 1)
 
         # init of regression matrix depends on length of response vector
-        pred_positive_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
         pred_regular_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
+        pred_positive_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
+
         # update regression matrices
-        if self._num_of_positive_regressors > 0:
-            pred_positive_regressor_matrix = df.filter(
-                items=self._positive_regressor_col,).values
         if self._num_of_regular_regressors > 0:
             pred_regular_regressor_matrix = df.filter(
                 items=self._regular_regressor_col,).values
+        if self._num_of_positive_regressors > 0:
+            pred_positive_regressor_matrix = df.filter(
+                items=self._positive_regressor_col,).values
         # regular first, then positive
         pred_regressor_matrix = np.concatenate([pred_regular_regressor_matrix,
                                                 pred_positive_regressor_matrix], axis=-1)
@@ -709,7 +744,7 @@ class BaseKTR(BaseModel):
                     decomp_dict['seasonality_{}'.format(self._seasonality[idx])] = seas_regression
                     pos += len(cols)
                     total_seas_regression += seas_regression
-            decomp_dict['regression'] =  regression - total_seas_regression
+            decomp_dict['regression'] = regression - total_seas_regression
 
             return decomp_dict
 
@@ -796,6 +831,7 @@ class BaseKTR(BaseModel):
             if not is_ordered_datetime(date_array):
                 raise IllegalArgument('Datetime index must be ordered and not repeat')
             reg_df[self.date_col] = date_array
+
             # TODO: validate that all regressor columns are present, if any
             training_df_meta = self._training_df_meta
             prediction_start = date_array[0]
@@ -805,16 +841,35 @@ class BaseKTR(BaseModel):
             trained_len = training_df_meta['df_length'] # i.e., self._num_of_observations
             output_len = len(date_array)
 
+            # If we cannot find a match of prediction range, assume prediction starts right after train
+            # end
+            if prediction_start > training_df_meta['training_end']:
+                forecast_dates = set(date_array)
+                n_forecast_steps = len(forecast_dates)
+                # time index for prediction start
+                start = trained_len
+            else:
+                # compute how many steps to forecast
+                forecast_dates = set(date_array) - set(training_df_meta['date_array'])
+                # check if prediction df is a subset of training df
+                # e.g. "negative" forecast steps
+                n_forecast_steps = len(forecast_dates) or \
+                                   - (len(set(training_df_meta['date_array']) - set(date_array)))
+                # time index for prediction start
+                start = pd.Index(training_df_meta['date_array']).get_loc(prediction_start)
+
+            new_tp = np.arange(start + 1, n_forecast_steps + trained_len + 1) / trained_len
+
             # Here assume dates are ordered and consecutive
             # if prediction_df_meta['prediction_start'] > training_df_meta['training_end'],
             # assume prediction starts right after train end
-            # TODO: check utility?
-            gap_time = prediction_start - training_df_meta['training_start']
-            infer_freq = pd.infer_freq(training_df_meta['date_array'])[0]
-            gap_int = int(gap_time / np.timedelta64(1, infer_freq))
-
-            new_tp = np.arange(1 + gap_int, output_len + gap_int + 1)
-            new_tp = new_tp / trained_len
+            # # TODO: check utility?
+            # gap_time = prediction_start - training_df_meta['training_start']
+            # infer_freq = pd.infer_freq(training_df_meta['date_array'])[0]
+            # gap_int = int(gap_time / np.timedelta64(1, infer_freq))
+            #
+            # new_tp = np.arange(1 + gap_int, output_len + gap_int + 1)
+            # new_tp = new_tp / trained_len
             kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self._rho_coefficients)
             kernel_coefficients = kernel_coefficients / np.sum(kernel_coefficients, axis=1, keepdims=True)
             coef_knots = self._aggregate_posteriors \
@@ -822,7 +877,6 @@ class BaseKTR(BaseModel):
                 .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
             regressor_betas = np.squeeze(np.matmul(coef_knots, kernel_coefficients.transpose(1, 0)), axis=0)
             regressor_betas = regressor_betas.transpose(1, 0)
-
 
         # get column names
         rr_cols = self._regular_regressor_col
