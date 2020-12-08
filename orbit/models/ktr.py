@@ -53,7 +53,7 @@ class BaseKTR(BaseModel):
     regressor_knot_pooling_loc : list
         list of regressor knot pooling mean priors, default to be 0's
     regressor_knot_pooling_scale : list
-        list of regressor knot pooling sigma's to control the pooling stength towards the grand mean of regressors;
+        list of regressor knot pooling sigma's to control the pooling strength towards the grand mean of regressors;
         default to be 1.
     regressor_knot_scale : list
         list of regressor knot sigma priors; default to be 0.1.
@@ -157,6 +157,7 @@ class BaseKTR(BaseModel):
         self._insert_prior_idx = list()
         self._num_insert_prior = None
         self._level_knot_dates = self.level_knot_dates
+        self._coef_knot_dates = None
         self._seasonal_knot_pooling_scale = self.seasonal_knot_pooling_scale
         self._seasonal_knot_scale = self.seasonal_knot_scale
 
@@ -461,7 +462,7 @@ class BaseKTR(BaseModel):
             knots_distance = math.ceil(self._cutoff / number_of_knots)
             # start in the middle
             knots_idx_start_level = round(knots_distance / 2)
-            knots_idx_level = np.arange(knots_idx_start_level, self._cutoff,  knots_distance)
+            knots_idx_level = np.arange(knots_idx_start_level, self._cutoff, knots_distance)
             self._knots_tp_level = (1 + knots_idx_level) / self._num_of_observations
             self._level_knot_dates = df[self.date_col].values[knots_idx_level]
         else:
@@ -479,9 +480,14 @@ class BaseKTR(BaseModel):
 
         # kernel of coefficients calculations
         if self._knots_tp_coefficients is None:
-            width_coefficients = round(self._span_coefficients * self._cutoff)
-            arr_tp_coef = np.arange(1, self._cutoff + 1, width_coefficients) / self._num_of_observations
-            self._knots_tp_coefficients = (arr_tp_coef[:-1] + arr_tp_coef[1:]) / 2
+            number_of_knots = round(1 / self._span_coefficients)
+            knots_distance = math.ceil(self._cutoff / number_of_knots)
+            # start in the middle
+            knots_idx_start_coef = round(knots_distance / 2)
+            knots_idx_coef = np.arange(knots_idx_start_coef, self._cutoff,  knots_distance)
+            self._knots_tp_coefficients = (1 + knots_idx_coef) / self._num_of_observations
+            self._coef_knot_dates = df[self.date_col].values[knots_idx_coef]
+
         kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self._rho_coefficients)
         kernel_coefficients = kernel_coefficients / np.sum(kernel_coefficients, axis=1, keepdims=True)
 
@@ -671,7 +677,7 @@ class BaseKTR(BaseModel):
             start = pd.Index(training_df_meta['date_array']).get_loc(prediction_start)
 
         df = self._make_seasonal_regressors(df, shift=start)
-        new_tp = np.arange(start + 1, n_forecast_steps + trained_len + 1) / trained_len
+        new_tp = np.arange(start + 1, start + output_len + 1) / trained_len
 
         # Replacing this ----
         # TODO: check utility?
@@ -858,7 +864,7 @@ class BaseKTR(BaseModel):
                 # time index for prediction start
                 start = pd.Index(training_df_meta['date_array']).get_loc(prediction_start)
 
-            new_tp = np.arange(start + 1, n_forecast_steps + trained_len + 1) / trained_len
+            new_tp = np.arange(start + 1, start + output_len + 1) / trained_len
 
             # Here assume dates are ordered and consecutive
             # if prediction_df_meta['prediction_start'] > training_df_meta['training_end'],
@@ -875,6 +881,7 @@ class BaseKTR(BaseModel):
             coef_knots = self._aggregate_posteriors \
                 .get(aggregate_method) \
                 .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+            # TODO: this looks sub-optimal; let's simplify this later
             regressor_betas = np.squeeze(np.matmul(coef_knots, kernel_coefficients.transpose(1, 0)), axis=0)
             regressor_betas = regressor_betas.transpose(1, 0)
 
