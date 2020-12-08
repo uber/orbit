@@ -397,7 +397,7 @@ class BaseKTR(BaseModel):
         if len(self._seasonality) > 0:
             for idx, s in enumerate(self._seasonality):
                 order = self._seasonality_fs_order[idx]
-                df, _ = make_fourier_series_df(df, self.date_col, s, order=order, prefix='seas{}_'.format(s))
+                df, _ = make_fourier_series_df(df, s, order=order, prefix='seas{}_'.format(s))
         return df
 
     def _validate_training_df(self, df):
@@ -448,9 +448,13 @@ class BaseKTR(BaseModel):
 
         # kernel of level calculations
         if self._level_knot_dates is None:
-            width_level = round(self._span_level * self._cutoff)
-            arr_tp_level = np.arange(1, self._cutoff + 1, width_level) / self._num_of_observations
-            self._knots_tp_level = (arr_tp_level[:-1] + arr_tp_level[1:]) / 2
+            number_of_knots = round(1 / self._span_level)
+            knots_distance = math.ceil(self._cutoff / number_of_knots)
+            # start in the middle
+            knots_idx_start_level = round(knots_distance / 2)
+            knots_idx_level = np.arange(knots_idx_start_level, self._cutoff,  knots_distance)
+            self._knots_tp_level = (1 + knots_idx_level) / self._num_of_observations
+            self._level_knot_dates = df[self.date_col].values[knots_idx_level]
         else:
             # FIXME: this only works up to daily series (not working on hourly series)
             self._level_knot_dates = pd.to_datetime([x for x in self._level_knot_dates if x <= df[self.date_col].max()])
@@ -642,6 +646,11 @@ class BaseKTR(BaseModel):
         gap_time = prediction_df_meta['prediction_start'] - training_df_meta['training_start']
         infer_freq = pd.infer_freq(df[self.date_col])[0]
         gap_int = int(gap_time / np.timedelta64(1, infer_freq))
+
+        # 1. set idx = test_df[date_col]
+        # 2. search match position of idx[0], set position = pos
+        # 3. if match, start from pos, assume all time points ordered so that your prediction horizon = pos + len(test_df)
+        # 3b. if not match, assumne start from last idx + 1, perdiction horizon = len(train_df) + len(test_df)
 
         new_tp = np.arange(1 + gap_int, output_len + gap_int + 1)
         new_tp = new_tp / trained_len
