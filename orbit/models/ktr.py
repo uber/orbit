@@ -162,7 +162,6 @@ class BaseKTR(BaseModel):
                  regressor_knot_scale=None,
                  seasonal_knot_pooling_scale=None,
                  seasonal_knot_scale=None,
-                 seasonal_knot_loc=None,
                  span_level=None,
                  span_coefficients=None,
                  rho_level=None,
