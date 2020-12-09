@@ -41,6 +41,8 @@ class DataInputMapper(Enum):
     _INSERT_PRIOR_SD = 'PRIOR_SD'
     _INSERT_PRIOR_TP_IDX = 'PRIOR_TP_IDX'
     _INSERT_PRIOR_IDX = 'PRIOR_IDX'
+    _LEVEL_KNOTS = 'LEV_KNOT_LOC'
+    _SEAS_TERM = 'SEAS_TERM'
 
 
 class BaseSamplingParameters(Enum):

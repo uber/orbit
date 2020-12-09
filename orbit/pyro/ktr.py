@@ -14,7 +14,7 @@ class Model:
     def __init__(self, data):
         for key, value in data.items():
             key = key.lower()
-            if isinstance(value, (list, np.ndarray)):
+            if isinstance(value, (list, np.ndarray, float)):
                 value = torch.tensor(value)
             self.__dict__[key] = value
 
@@ -38,6 +38,8 @@ class Model:
         sdy = self.sdy
         meany = self.mean_y
         dof = self.dof
+        lev_knot_loc = self.lev_knot_loc
+        seas_term = self.seas_term
 
         pr = self.pr
         rr = self.rr
@@ -69,16 +71,26 @@ class Model:
             regressors = pr
         elif n_rr > 0:
             regressors = rr
+
+        response -= seas_term
         response_tran = response - meany
 
         # sampling begins here
         extra_out = {}
 
         # levels sampling
-        with pyro.plate("lev_plate", n_knots_lev):
-            lev_drift = pyro.sample("lev_drift", dist.Laplace(0, lev_knot_scale))
-        lev_knot_tran = lev_drift.cumsum(-1)
-        lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
+        # with pyro.plate("lev_plate", n_knots_lev):
+        #     lev_drift = pyro.sample("lev_drift", dist.Laplace(0, lev_knot_scale))
+        # lev_knot_tran = lev_drift.cumsum(-1)
+        # lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
+
+        # levels sampling
+        if len(lev_knot_loc) > 0:
+            lev_knot_tran = pyro.sample("lev_knot", dist.Normal(lev_knot_loc - meany, lev_knot_scale).expand([n_knots_lev]))
+            lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
+        else:
+            lev_knot_tran = pyro.sample("lev_knot", dist.Laplace(0, lev_knot_scale).expand([n_knots_lev]))
+            lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
 
         # regular regressor sampling
         if n_rr > 0:
@@ -149,8 +161,8 @@ class Model:
         lev_knot = lev_knot_tran + meany
 
         extra_out.update({
-            'yhat': yhat,
-            'lev': lev,
+            'yhat': yhat + seas_term,
+            'lev': lev + meany,
             'lev_knot':lev_knot,
             'coef': coef,
             'coef_knot': coef_knot
