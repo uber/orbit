@@ -14,8 +14,14 @@ class Model:
     def __init__(self, data):
         for key, value in data.items():
             key = key.lower()
-            if isinstance(value, (list, np.ndarray, float)):
-                value = torch.tensor(value)
+            if isinstance(value, (list, np.ndarray)):
+                if key in ['which_valid_res']:
+                    # to use as index, tensor type has to be long or int
+                    value = torch.tensor(value)
+                else:
+                    # loc/scale cannot be in long format
+                    # sometimes they may be supplied as int, so dtype conversion is needed
+                    value = torch.tensor(value, dtype=torch.double)
             self.__dict__[key] = value
 
     def __call__(self):
@@ -72,8 +78,7 @@ class Model:
         elif n_rr > 0:
             regressors = rr
 
-        response -= seas_term
-        response_tran = response - meany
+        response_tran = response - meany - seas_term
 
         # sampling begins here
         extra_out = {}
@@ -161,9 +166,9 @@ class Model:
         lev_knot = lev_knot_tran + meany
 
         extra_out.update({
-            'yhat': yhat + seas_term,
+            'yhat': yhat + seas_term + meany,
             'lev': lev + meany,
-            'lev_knot':lev_knot,
+            'lev_knot': lev_knot,
             'coef': coef,
             'coef_knot': coef_knot
         })
