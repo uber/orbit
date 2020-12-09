@@ -14,7 +14,7 @@ class Model:
     def __init__(self, data):
         for key, value in data.items():
             key = key.lower()
-            if isinstance(value, (list, np.ndarray)):
+            if isinstance(value, (list, np.ndarray, float)):
                 value = torch.tensor(value)
             self.__dict__[key] = value
 
@@ -39,6 +39,7 @@ class Model:
         meany = self.mean_y
         dof = self.dof
         lev_knot_loc = self.lev_knot_loc
+        seas_term = self.seas_term
 
         pr = self.pr
         rr = self.rr
@@ -70,6 +71,9 @@ class Model:
             regressors = pr
         elif n_rr > 0:
             regressors = rr
+
+        response -= seas_term
+        meany -= torch.mean(seas_term)
         response_tran = response - meany
 
         # sampling begins here
@@ -158,8 +162,8 @@ class Model:
         lev_knot = lev_knot_tran + meany
 
         extra_out.update({
-            'yhat': yhat,
-            'lev': lev,
+            'yhat': yhat + seas_term,
+            'lev': lev + meany,
             'lev_knot':lev_knot,
             'coef': coef,
             'coef_knot': coef_knot
