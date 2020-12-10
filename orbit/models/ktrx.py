@@ -6,31 +6,24 @@ import torch
 from copy import copy, deepcopy
 import matplotlib.pyplot as plt
 
-from ..constants import ktr as constants
+from ..constants import ktrx as constants
 from ..constants.constants import (
     PredictMethod
 )
-from ..constants.ktr import (
-    DEFAULT_LEVEL_KNOT_SCALE,
-    DEFAULT_SPAN_LEVEL,
-    DEFAULT_SPAN_COEFFICIENTS,
-    DEFAULT_RHO_LEVEL,
-    DEFAULT_RHO_COEFFICIENTS,
+from ..constants.ktrx import (
     DEFAULT_REGRESSOR_SIGN,
     DEFAULT_COEFFICIENTS_KNOT_POOL_SCALE,
     DEFAULT_COEFFICIENTS_KNOT_POOL_LOC,
     DEFAULT_COEFFICIENTS_KNOT_SCALE,
-    DEFAULT_SEASONAL_POOL_SCALE,
-    DEFAULT_SEASONAL_SCALE,
 )
 
-from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
-from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
+from ..estimators.pyro_estimator import PyroEstimatorVI
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel, sandwich_kernel
-from ..utils.features import make_fourier_series_df, make_fourier_series
+from ..utils.features import make_fourier_series_df
+
 
 def generate_tp(prediction_date_array, training_df_meta):
     # should be you prediction date array
@@ -45,10 +38,12 @@ def generate_tp(prediction_date_array, training_df_meta):
     new_tp = np.arange(start + 1, start + output_len + 1) / trained_len
     return new_tp
 
+
 def generate_insample_tp(date_array, training_df_meta):
     idx = np.nonzero(np.in1d(training_df_meta['date_array'], date_array))[0]
     tp = (idx + 1) / training_df_meta['df_length']
     return tp
+
 
 def generate_levs(prediction_date_array, training_df_meta, level_knot_dates, lev_knot):
     new_tp = generate_tp(prediction_date_array, training_df_meta)
@@ -57,6 +52,7 @@ def generate_levs(prediction_date_array, training_df_meta, level_knot_dates, lev
     levs = np.matmul(lev_knot, kernel_level.transpose(1, 0))
     return levs
 
+
 def generate_coefs(prediction_date_array, training_df_meta, coef_knot_dates, coef_knot, rho):
     new_tp = generate_tp(prediction_date_array, training_df_meta)
     knots_tp_coef = generate_insample_tp(coef_knot_dates, training_df_meta)
@@ -64,6 +60,7 @@ def generate_coefs(prediction_date_array, training_df_meta, coef_knot_dates, coe
     kernel_coef = kernel_coef / np.sum(kernel_coef, axis=1, keepdims=True)
     coefs = np.squeeze(np.matmul(coef_knot, kernel_coef.transpose(1, 0)), axis=0).transpose(1, 0)
     return coefs
+
 
 def generate_seas(df, date_col, training_df_meta, coef_knot_dates, coef_knot, rho, seasonality, seasonality_fs_order):
     prediction_date_array = df[date_col].values
@@ -97,7 +94,7 @@ def generate_seas(df, date_col, training_df_meta, coef_knot_dates, coef_knot, rh
 
     return seas
 
-class BaseKTR(BaseModel):
+class BaseKTRX(BaseModel):
     """Base LGT model object with shared functionality for Full, Aggregated, and MAP methods
 
     Parameters
@@ -121,10 +118,6 @@ class BaseKTR(BaseModel):
         default to be 1.
     regressor_knot_scale : list
         list of regressor knot sigma priors; default to be 0.1.
-    seasonal_knot_pooling_scale : float
-        pooling sigma for seasonal fourier series regressors; default to be 1
-    seasonal_knot_scale : float
-        sigma for seasonal fourier series regressors; default to be 0.1.
     span_level : float between (0, 1)
         window width to decide the number of windows for the level (trend) term.
         e.g., span 0.1 will produce 10 windows.
@@ -146,29 +139,25 @@ class BaseKTR(BaseModel):
     """
     _data_input_mapper = constants.DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
-    _model_name = 'ktr'
+    _model_name = 'ktrx'
     _supported_estimator_types = None  # set for each model
 
     def __init__(self,
                  response_col='y',
                  date_col='ds',
-                 seasonality=None,
-                 seasonality_fs_order=None,
-                 level_knot_scale=None,
+                 level_knot_scale=0.1,
                  regressor_col=None,
                  regressor_sign=None,
                  regressor_knot_pooling_loc=None,
                  regressor_knot_pooling_scale=None,
                  regressor_knot_scale=None,
-                 seasonal_knot_pooling_scale=None,
-                 seasonal_knot_scale=None,
-                 span_level=None,
-                 span_coefficients=None,
-                 rho_level=None,
-                 rho_coefficients=None,
+                 span_level=0.1,
+                 rho_level=0.05,
+                 span_coefficients=0.2,
+                 rho_coefficients=0.15,
                  degree_of_freedom=30,
+                 # coef priors on specific time-point
                  insert_prior_regressor_col=None,
-                 # insert_prior_idx=None,
                  insert_prior_tp_idx=None,
                  insert_prior_mean=None,
                  insert_prior_sd=None,
@@ -180,43 +169,37 @@ class BaseKTR(BaseModel):
         super().__init__(**kwargs)  # create estimator in base class
         self.response_col = response_col
         self.date_col = date_col
-        self.seasonality = seasonality
-        self.seasonality_fs_order = seasonality_fs_order
+
         self.level_knot_scale = level_knot_scale
         self.regressor_col = regressor_col
         self.regressor_sign = regressor_sign
         self.regressor_knot_pooling_loc = regressor_knot_pooling_loc
         self.regressor_knot_pooling_scale = regressor_knot_pooling_scale
         self.regressor_knot_scale = regressor_knot_scale
-        self.seasonal_knot_pooling_scale = seasonal_knot_pooling_scale
-        self.seasonal_knot_scale = seasonal_knot_scale
+
+        self.degree_of_freedom = degree_of_freedom
+
         self.span_level = span_level
         self.span_coefficients = span_coefficients
         self.rho_level = rho_level
         self.rho_coefficients = rho_coefficients
+
         self.insert_prior_regressor_col = insert_prior_regressor_col
-        # self.insert_prior_idx = insert_prior_idx
         self.insert_prior_tp_idx = insert_prior_tp_idx
         self.insert_prior_mean = insert_prior_mean
         self.insert_prior_sd = insert_prior_sd
+
         self.level_knot_dates = level_knot_dates
         self.level_knots = level_knots
-        self.seasonal_knots_input = seasonal_knots_input
+        self._seasonal_knots_input = seasonal_knots_input
 
         # set private var to arg value
         # if None set default in _set_default_base_args()
-        self._seasonality = self.seasonality
-        self._seasonality_fs_order = self.seasonality_fs_order
-        self._level_knot_scale = self.level_knot_scale
         self._regressor_sign = self.regressor_sign
         self._regressor_knot_pooling_loc = self.regressor_knot_pooling_loc
         self._regressor_knot_pooling_scale= self.regressor_knot_pooling_scale
         self._regressor_knot_scale = self.regressor_knot_scale
-        self._span_level = self.span_level
-        self._span_coefficients = self.span_coefficients
-        self._rho_level = self.rho_level
-        self._rho_coefficients = self.rho_coefficients
-        self._degree_of_freedom = degree_of_freedom
+
         self._insert_prior_regressor_col = self.insert_prior_regressor_col
         # self._insert_prior_idx = self.insert_prior_idx
         self._insert_prior_tp_idx = self.insert_prior_tp_idx
@@ -224,17 +207,20 @@ class BaseKTR(BaseModel):
         self._insert_prior_sd = self.insert_prior_sd
         self._insert_prior_idx = list()
         self._num_insert_prior = None
+
         self._level_knot_dates = self.level_knot_dates
         self._level_knots = self.level_knots
+        self._num_knots_level = None
+        self._knots_tp_level = None
         self._coef_knot_dates = None
-        self._seasonal_knot_pooling_scale = self.seasonal_knot_pooling_scale
-        self._seasonal_knot_scale = self.seasonal_knot_scale
-        self._seasonal_knots_input = self.seasonal_knots_input
-        self._seas_term = 0.0
+        self._seas_term = None
 
         self._model_param_names = list()
         self._training_df_meta = None
         self._model_data_input = dict()
+
+        self._num_of_regressors = 0
+        self._num_knots_coefficients = 0
 
         # positive regressors
         self._num_of_positive_regressors = 0
@@ -249,9 +235,6 @@ class BaseKTR(BaseModel):
         self._regular_regressor_knot_pooling_scale = list()
         self._regular_regressor_knot_scale = list()
         self._regressor_col = list()
-        # seasonal regressors
-        self._seasonal_regressor_col = []
-        self._seasonal_regressor_col_gp = []
 
         # set static data attributes
         self._set_static_data_attributes()
@@ -269,16 +252,13 @@ class BaseKTR(BaseModel):
         self._response = None
         self._num_of_observations = None
         self._response_sd = None
-        self._response_mean = 0
-        self._num_knots_level = None
-        self._knots_tp_level = None
+        self._response_mean = 0.0
         self._is_valid_response = None
         self._which_valid_response = None
         self._num_of_valid_response = 0
+        self._seasonality = None
 
         # regression data
-        self._num_of_regressors = None
-        self._num_knots_coefficients = None
         self._knots_tp_coefficients = None
         self._positive_regressor_matrix = None
         self._regular_regressor_matrix = None
@@ -293,38 +273,16 @@ class BaseKTR(BaseModel):
             PredictMethod.MEDIAN.value: dict(),
         }
 
+    def _validate_supported_estimator_type(self):
+        if self.estimator_type not in self._supported_estimator_types:
+            msg_template = "Model class: {} is incompatible with Estimator: {}"
+            model_class = type(self)
+            estimator_type = self.estimator_type
+            raise IllegalArgument(msg_template.format(model_class, estimator_type))
+
     def _set_default_base_args(self):
         """Set default attributes for None
         """
-
-        if self.level_knot_scale is None:
-            self._level_knot_scale = DEFAULT_LEVEL_KNOT_SCALE
-        # if self._regressor_knot_pooling_scale is None:
-        #     self._regressor_knot_pooling_scale = DEFAULT_COEFFICIENTS_KNOT_POOL_SCALE
-        if self.span_level is None:
-            self._span_level = DEFAULT_SPAN_LEVEL
-        if self.span_coefficients is None:
-            self._span_coefficients = DEFAULT_SPAN_COEFFICIENTS
-        if self.rho_level is None:
-            self._rho_level = DEFAULT_RHO_LEVEL
-        if self.rho_coefficients is None:
-            self._rho_coefficients = DEFAULT_RHO_COEFFICIENTS
-        if self.seasonal_knot_pooling_scale is None:
-            self._seasonal_knot_pooling_scale = DEFAULT_SEASONAL_POOL_SCALE
-        if self.seasonal_knot_scale is None:
-            self._seasonal_knot_scale = DEFAULT_SEASONAL_SCALE
-
-        if self.seasonality is None:
-            self._seasonality = list()
-        elif not isinstance(self.seasonality, list) and isinstance(self.seasonality * 1.0, float):
-            self._seasonality = [self.seasonality]
-        if self.seasonality_fs_order is None:
-            self._seasonality_fs_order = [2] * len(self._seasonality)
-        elif not isinstance(self.seasonality_fs_order, list) and isinstance(self.seasonality_fs_order * 1.0, float):
-            self._seasonality_fs_order = [self.seasonality_fs_order]
-        if len(self._seasonality_fs_order) != len(self._seasonality):
-            raise IllegalArgument('length of seasonality and fs_order not matching')
-
         if self.insert_prior_regressor_col is None:
             self._insert_prior_regressor_col = list()
         if self.insert_prior_tp_idx is None:
@@ -335,11 +293,12 @@ class BaseKTR(BaseModel):
             self._insert_prior_sd = list()
         if self._num_insert_prior is None:
             self._num_insert_prior = len(self._insert_prior_tp_idx)
-        if self._level_knots is None:
+        if self.level_knots is None:
             self._level_knots = list()
-        # if self._seasonal_knots_input is None:
-        #     self._seasonal_knots_input = dict()
-
+        if self._seasonal_knots_input is not None:
+            self._seasonality = self._seasonal_knots_input['_seasonality']
+        else:
+            self._seasonality = list()
         ##############################
         # if no regressors, end here #
         ##############################
@@ -350,7 +309,6 @@ class BaseKTR(BaseModel):
             self._regressor_knot_pooling_loc = list()
             self._regressor_knot_pooling_scale = list()
             self._regressor_knot_scale = list()
-
             return
 
         def _validate(regression_params, valid_length):
@@ -366,9 +324,8 @@ class BaseKTR(BaseModel):
                 raise IllegalArgument('Wrong dimension length in Insert Prior Input')
 
         def _validate_level_knot_inputs(level_knot_dates, level_knots):
-            if level_knots is not None:
-                if len(level_knots) != len(level_knot_dates):
-                    raise IllegalArgument('level_knots and level_knot_dates should have the same length')
+            if len(level_knots) != len(level_knot_dates):
+                raise IllegalArgument('level_knots and level_knot_dates should have the same length')
 
         # regressor defaults
         num_of_regressors = len(self.regressor_col)
@@ -383,7 +340,6 @@ class BaseKTR(BaseModel):
 
         _validate_level_knot_inputs(self.level_knot_dates, self.level_knots)
 
-
         if self.regressor_sign is None:
             self._regressor_sign = [DEFAULT_REGRESSOR_SIGN] * num_of_regressors
 
@@ -396,9 +352,11 @@ class BaseKTR(BaseModel):
         if self.regressor_knot_scale is None:
             self._regressor_knot_scale = [DEFAULT_COEFFICIENTS_KNOT_SCALE] * num_of_regressors
 
+        self._num_of_regressors = num_of_regressors
+
     def _set_static_regression_attributes(self):
         # if no regressors, end here
-        if self.regressor_col is None:
+        if self._num_of_regressors == 0:
             return
 
         for index, reg_sign in enumerate(self._regressor_sign):
@@ -421,34 +379,6 @@ class BaseKTR(BaseModel):
         # regular first, then positive
         self._regressor_col = self._regular_regressor_col + self._positive_regressor_col
 
-    def _set_seasonality_attributes(self):
-        """given list of seasonalities and their order, create list of seasonal_regressors_columns"""
-        if len(self._seasonality) > 0:
-            for idx, s in enumerate(self._seasonality):
-                fs_cols = []
-                order = self._seasonality_fs_order[idx]
-                for i in range(1, order + 1):
-                    fs_cols.append('seas{}_fs_cos{}'.format(s, i))
-                    fs_cols.append('seas{}_fs_sin{}'.format(s, i))
-                self._seasonal_regressor_col += fs_cols
-                self._seasonal_regressor_col_gp.append(fs_cols)
-
-            # update all regressors related attributes
-            # self._num_of_regressors += len(self._seasonal_regressor_col)
-            self._regressor_col = self._seasonal_regressor_col + self._regressor_col
-            self._regressor_sign = ['='] * len(self._seasonal_regressor_col) + self._regressor_sign
-            self._regular_regressor_col = self._seasonal_regressor_col + self._regular_regressor_col
-            self._num_of_regular_regressors += len(self._seasonal_regressor_col)
-            self._regular_regressor_knot_pooling_loc = \
-                [0.0] * len(self._seasonal_regressor_col) + \
-                self._regular_regressor_knot_pooling_loc
-            self._regular_regressor_knot_pooling_scale = \
-                [self._seasonal_knot_pooling_scale] * len(self._seasonal_regressor_col) + \
-                self._regular_regressor_knot_pooling_scale
-            self._regular_regressor_knot_scale = \
-                [self._seasonal_knot_scale] * len(self._seasonal_regressor_col) + \
-                self._regular_regressor_knot_scale
-
     def _set_insert_prior_idx(self):
         if self._num_insert_prior > 0 and len(self._regressor_col) > 0:
             for col in self._insert_prior_regressor_col:
@@ -458,41 +388,7 @@ class BaseKTR(BaseModel):
         """model data input based on args at instantiation or computed from args at instantiation"""
         self._set_default_base_args()
         self._set_static_regression_attributes()
-        self._set_seasonality_attributes()
         self._set_insert_prior_idx()
-
-    def _validate_supported_estimator_type(self):
-        if self.estimator_type not in self._supported_estimator_types:
-            msg_template = "Model class: {} is incompatible with Estimator: {}"
-            model_class = type(self)
-            estimator_type = self.estimator_type
-            raise IllegalArgument(msg_template.format(model_class, estimator_type))
-
-    def _set_training_df_meta(self, df):
-        # Date Metadata
-        # TODO: use from constants for dict key
-        self._training_df_meta = {
-            'date_array': pd.to_datetime(df[self.date_col]).reset_index(drop=True),
-            'df_length': len(df.index),
-            'training_start': df[self.date_col].iloc[0],
-            'training_end': df[self.date_col].iloc[-1]
-        }
-
-    def _make_seasonal_regressors(self, df, shift):
-        """
-        df : pd.DataFrame
-        shift: int
-            use 0 for fitting; use delta of prediction start and train start for prediction
-        Returns
-        -------
-        pd.DataFrame
-            data with computed fourier series attached
-        """
-        if len(self._seasonality) > 0:
-            for idx, s in enumerate(self._seasonality):
-                order = self._seasonality_fs_order[idx]
-                df, _ = make_fourier_series_df(df, s, order=order, prefix='seas{}_'.format(s), shift=shift)
-        return df
 
     def _validate_training_df(self, df):
         df_columns = df.columns
@@ -517,6 +413,29 @@ class BaseKTR(BaseModel):
         if self.response_col not in df_columns:
             raise ModelException("DataFrame does not contain `response_col`: {}".format(self.response_col))
 
+    def _set_training_df_meta(self, df):
+        # Date Metadata
+        # TODO: use from constants for dict key
+        self._training_df_meta = {
+            'date_array': pd.to_datetime(df[self.date_col]).reset_index(drop=True),
+            'df_length': len(df.index),
+            'training_start': df[self.date_col].iloc[0],
+            'training_end': df[self.date_col].iloc[-1]
+        }
+
+    def _set_valid_response_attributes(self):
+        if self._seasonality:
+            max_seasonality = np.round(np.max(self._seasonality)).astype(int)
+            self._response_mean = np.nanmean(self._response[:max_seasonality])
+        else:
+            self._response_mean = np.nanmean(self._response)
+
+        self._is_valid_response = ~np.isnan(self._response)
+        # [0] to convert tuple back to array
+        self._which_valid_response = np.where(self._is_valid_response)[0]
+        self._num_of_valid_response = len(self._which_valid_response)
+        self._response_sd = np.nanstd(self._response)
+
     def _set_regressor_matrix(self, df):
         # init of regression matrix depends on length of response vector
         self._positive_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
@@ -531,44 +450,18 @@ class BaseKTR(BaseModel):
             self._regular_regressor_matrix = df.filter(
                 items=self._regular_regressor_col,).values
 
-    def _set_kernel_matrix(self, df):
+    def _set_coefficients_kernel_matrix(self, df):
         # Note that our tp starts by 1; to convert back to index of array, reduce it by 1
         tp = np.arange(1, self._num_of_observations + 1) / self._num_of_observations
-
         # this approach put knots in full range
         self._cutoff = self._num_of_observations
         # cutoff last 20%
         # self._cutoff = round(0.2 * self._num_of_observations)
-
-        # kernel of level calculations
-        if self._level_knot_dates is None:
-            number_of_knots = round(1 / self._span_level)
-            knots_distance = math.ceil(self._cutoff / number_of_knots)
-            # start in the middle
-            knots_idx_start_level = round(knots_distance / 2)
-            knots_idx_level = np.arange(knots_idx_start_level, self._cutoff, knots_distance)
-            self._knots_tp_level = (1 + knots_idx_level) / self._num_of_observations
-            self._level_knot_dates = df[self.date_col].values[knots_idx_level]
-        else:
-            # FIXME: this only works up to daily series (not working on hourly series)
-            self._level_knot_dates = pd.to_datetime([x for x in self._level_knot_dates if x <= df[self.date_col].max()])
-            if len(self._level_knots) > 0:
-                # trim _level_knots accordingly
-                self._level_knots = self._level_knots[:len(self._level_knot_dates)]
-
-            self._knots_tp_level = np.array(
-                ((self._level_knot_dates - self._training_df_meta['training_start']).days + 1) /
-                ((self._training_df_meta['training_end'] - self._training_df_meta['training_start']).days + 1)
-            )
-
-        # TODO: why don't we do the normalization under the kernel methods?
-        # kernel_level = gauss_kernel(tp, self._knots_tp_level, rho=self._rho_level)
-        kernel_level = sandwich_kernel(tp, self._knots_tp_level)
-        kernel_level = kernel_level/np.sum(kernel_level, axis=1, keepdims=True)
-
+        self._kernel_coefficients = np.zeros((self._num_of_observations, 0), dtype=np.double)
+        #if self._num_of_regressors > 0:
         # kernel of coefficients calculations
         if self._knots_tp_coefficients is None:
-            number_of_knots = round(1 / self._span_coefficients)
+            number_of_knots = round(1 / self.span_coefficients)
             knots_distance = math.ceil(self._cutoff / number_of_knots)
             # start in the middle
             knots_idx_start_coef = round(knots_distance / 2)
@@ -576,95 +469,57 @@ class BaseKTR(BaseModel):
             self._knots_tp_coefficients = (1 + knots_idx_coef) / self._num_of_observations
             self._coef_knot_dates = df[self.date_col].values[knots_idx_coef]
 
-        kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self._rho_coefficients)
-        kernel_coefficients = kernel_coefficients / np.sum(kernel_coefficients, axis=1, keepdims=True)
+            kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            self._num_knots_coefficients = len(self._knots_tp_coefficients)
+            self._kernel_coefficients = kernel_coefficients
 
-        self._num_knots_level = len(self._knots_tp_level)
-        self._num_knots_coefficients = len(self._knots_tp_coefficients)
-        self._kernel_level = kernel_level
-        self._kernel_coefficients = kernel_coefficients
-
-    def _set_level_seas_input(self, df):
+    def _set_levs_and_seas(self, df):
         tp = np.arange(1, self._num_of_observations + 1) / self._num_of_observations
-        if len(self._level_knots) > 0:
+        # trim level knots dates when they are beyond training dates
+        self._level_knot_dates = pd.to_datetime([x for x in self.level_knot_dates if x <= df[self.date_col].max()])
+        self._level_knots = self.level_knots[:len(self._level_knot_dates)]
+
+        if len(self.level_knots) > 0 and len(self.level_knot_dates) > 0:
             # new_tp = generate_tp(self.level_knot_dates, self._training_df_meta)
-            # knots_tp_level = generate_insample_tp(self._training_df_meta['date_array'], self._training_df_meta)
+            # self._knots_tp_level = generate_insample_tp(self._training_df_meta['date_array'], self._training_df_meta)
             self._knots_tp_level = np.array(
                 ((self._level_knot_dates - self._training_df_meta['training_start']).days + 1) /
                 ((self._training_df_meta['training_end'] - self._training_df_meta['training_start']).days + 1)
             )
+        else:
+            raise ModelException("User need to supply list of level knots.")
 
-            kernel_level = sandwich_kernel(tp, self._knots_tp_level)
-            kernel_level = kernel_level/np.sum(kernel_level, axis=1, keepdims=True)
+        kernel_level = sandwich_kernel(tp, self._knots_tp_level)
 
-            self._kernel_level = kernel_level
-            self._num_knots_level = len(self._level_knot_dates)
+        self._kernel_level = kernel_level
+        self._num_knots_level = len(self._level_knot_dates)
 
         if self._seasonal_knots_input is not None:
-            # no need to train seasonality any more
-            if self.seasonality is not None:
-                raise IllegalArgument('No need to train seasonality again with supplied seasonal knot coefficients.')
-            self._seas_term = generate_seas(df, self.date_col, self._training_df_meta,
-                                        self._seasonal_knots_input['_seas_coef_knot_dates'],
-                                        self._seasonal_knots_input['_sea_coef_knot'],
-                                        self._seasonal_knots_input['_sea_rho'],
-                                        self._seasonal_knots_input['_seasonality'],
-                                        self._seasonal_knots_input['_seasonality_fs_order'])
-
+            self._seas_term = generate_seas(
+                df, self.date_col, self._training_df_meta,
+                self._seasonal_knots_input['_seas_coef_knot_dates'],
+                self._seasonal_knots_input['_sea_coef_knot'],
+                self._seasonal_knots_input['_sea_rho'],
+                self._seasonal_knots_input['_seasonality'],
+                self._seasonal_knots_input['_seasonality_fs_order'])
 
     def _set_dynamic_data_attributes(self, df):
         """data input based on input DataFrame, rather than at object instantiation"""
         df = df.copy()
-
-        df = self._make_seasonal_regressors(df, shift=0)
-        self._validate_training_df(df)
-        self._set_training_df_meta(df)
-
-        # a few of the following are related with training data.
         self._response = df[self.response_col].values
         self._num_of_observations = len(self._response)
-        self._response_sd = np.nanstd(self._response)
-        if self._seasonality:
-            max_seasonality = round(np.max(self._seasonality))
-            if self._num_of_observations < max_seasonality:
-                raise ModelException(
-                    "Number of observations {} is less than max seasonality {}".format(
-                        self._num_of_observations, max_seasonality
-                    )
-                )
-            else:
-                self._response_mean = np.nanmean(self._response[:max_seasonality])
-        else:
-            self._response_mean = np.nanmean(self._response)
 
-        self._is_valid_response = ~np.isnan(self._response)
-        # [0] to convert tuple back to array
-        self._which_valid_response = np.where(self._is_valid_response)[0]
-        self._num_of_valid_response = len(self._which_valid_response)
-        self._num_of_regressors = len(self._regressor_col)
-
+        self._validate_training_df(df)
+        self._set_training_df_meta(df)
+        self._set_valid_response_attributes()
         self._set_regressor_matrix(df)
-        self._set_kernel_matrix(df)
-        self._set_level_seas_input(df)
+        self._set_coefficients_kernel_matrix(df)
+        self._set_levs_and_seas(df)
 
     def _set_model_param_names(self):
         """Model parameters to extract"""
         self._model_param_names += [param.value for param in constants.BaseSamplingParameters]
         self._model_param_names += [param.value for param in constants.RegressionSamplingParameters]
-
-        # # append seasonality param names
-        # if self._seasonality > 1:
-        #     self._model_param_names += [param.value for param in constants.SeasonalitySamplingParameters]
-
-        # # append positive regressors if any
-        # if self._num_of_positive_regressors > 0:
-        #     self._model_param_names += [
-        #         constants.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA.value]
-
-        # # append regular regressors if any
-        # if self._num_of_regular_regressors > 0:
-        #     self._model_param_names += [
-        #         constants.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA.value]
 
     def _get_model_param_names(self):
         return self._model_param_names
@@ -780,20 +635,13 @@ class BaseKTR(BaseModel):
         # end
         if prediction_start > training_df_meta['training_end']:
             forecast_dates = set(date_array)
-            n_forecast_steps = len(forecast_dates)
-            # time index for prediction start
             start = trained_len
         else:
             # compute how many steps to forecast
             forecast_dates = set(date_array) - set(training_df_meta['date_array'])
-            # check if prediction df is a subset of training df
-            # e.g. "negative" forecast steps
-            n_forecast_steps = len(forecast_dates) or \
-                               - (len(set(training_df_meta['date_array']) - set(date_array)))
             # time index for prediction start
             start = pd.Index(training_df_meta['date_array']).get_loc(prediction_start)
 
-        df = self._make_seasonal_regressors(df, shift=start)
         new_tp = np.arange(start + 1, start + output_len + 1) / trained_len
 
         # Replacing this ----
@@ -811,23 +659,12 @@ class BaseKTR(BaseModel):
         # new_tp = new_tp / trained_len
         # Replacing this ---- END
 
-        # kernel_level = gauss_kernel(new_tp, self._knots_tp_level, rho=self._rho_level)
         kernel_level = sandwich_kernel(new_tp, self._knots_tp_level)
-        kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self._rho_coefficients)
-        # TODO: why don't we do the normalization under the kernel methods?
-        kernel_level = kernel_level/np.sum(kernel_level, axis=1, keepdims=True)
-        kernel_coefficients = kernel_coefficients / np.sum(kernel_coefficients, axis=1, keepdims=True)
 
         lev_knot = model.get(constants.BaseSamplingParameters.LEVEL_KNOT.value)
         coef_knot = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
         obs_scale = model.get(constants.BaseSamplingParameters.OBS_SCALE.value)
         obs_scale = obs_scale.reshape(-1, 1)
-
-        # if self.level_knot_dates is not None and self.level_knots is not None:
-        #     trend = generate_levs(prediction_array, training_df_meta,
-        #                                     self.level_knot_dates, self.level_knots)
-        # else:
-        #     trend = np.matmul(lev_knot, kernel_level.transpose(1, 0))
 
         if self._seasonal_knots_input is not None:
             seas = generate_seas(df, self.date_col, self._training_df_meta,
@@ -839,28 +676,29 @@ class BaseKTR(BaseModel):
         else:
             seas = 0.0
 
-        # init of regression matrix depends on length of response vector
-        pred_regular_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
-        pred_positive_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
-
-        # update regression matrices
-        if self._num_of_regular_regressors > 0:
-            pred_regular_regressor_matrix = df.filter(
-                items=self._regular_regressor_col,).values
-        if self._num_of_positive_regressors > 0:
-            pred_positive_regressor_matrix = df.filter(
-                items=self._positive_regressor_col,).values
-        # regular first, then positive
-        pred_regressor_matrix = np.concatenate([pred_regular_regressor_matrix,
-                                                pred_positive_regressor_matrix], axis=-1)
-
         trend = np.matmul(lev_knot, kernel_level.transpose(1, 0))
         regression = np.zeros(trend.shape)
         if self._num_of_regressors > 0:
+            # init of regression matrix depends on length of response vector
+            pred_regular_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
+            pred_positive_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
+
+            # update regression matrices
+            if self._num_of_regular_regressors > 0:
+                pred_regular_regressor_matrix = df.filter(
+                    items=self._regular_regressor_col,).values
+            if self._num_of_positive_regressors > 0:
+                pred_positive_regressor_matrix = df.filter(
+                    items=self._positive_regressor_col,).values
+            # regular first, then positive
+            pred_regressor_matrix = np.concatenate([pred_regular_regressor_matrix,
+                                                    pred_positive_regressor_matrix], axis=-1)
+
+            kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
             regression = np.sum(np.matmul(coef_knot, kernel_coefficients.transpose(1, 0)) * \
                                 pred_regressor_matrix.transpose(1, 0), axis=-2)
         if include_error:
-            epsilon = nct.rvs(self._degree_of_freedom, nc=0, loc=0,
+            epsilon = nct.rvs(self.degree_of_freedom, nc=0, loc=0,
                               scale=obs_scale, size=(num_sample, len(new_tp)), random_state=random_state)
             pred_array = trend + seas + regression + epsilon
         else:
@@ -880,18 +718,6 @@ class BaseKTR(BaseModel):
                     'prediction': pred_array,
                     'trend': trend,
                 }
-                total_seas_regression = np.zeros(trend.shape)
-                coef = np.matmul(coef_knot, kernel_coefficients.transpose(1, 0))
-                if len(self._seasonality) > 0:
-                    pos = 0
-                    for idx, cols in enumerate(self._seasonal_regressor_col_gp):
-                        seasonal_regressor_matrix = df[cols].values
-                        seas_coef = coef[..., pos:(pos + len(cols)),:]
-                        seas_regression = np.sum(seas_coef * seasonal_regressor_matrix.transpose(1, 0), axis=-2)
-                        decomp_dict['seasonality_{}'.format(self._seasonality[idx])] = seas_regression
-                        pos += len(cols)
-                        total_seas_regression += seas_regression
-                decomp_dict['regression'] = regression - total_seas_regression
 
             return decomp_dict
 
@@ -992,16 +818,11 @@ class BaseKTR(BaseModel):
             # end
             if prediction_start > training_df_meta['training_end']:
                 forecast_dates = set(date_array)
-                n_forecast_steps = len(forecast_dates)
                 # time index for prediction start
                 start = trained_len
             else:
                 # compute how many steps to forecast
                 forecast_dates = set(date_array) - set(training_df_meta['date_array'])
-                # check if prediction df is a subset of training df
-                # e.g. "negative" forecast steps
-                n_forecast_steps = len(forecast_dates) or \
-                                   - (len(set(training_df_meta['date_array']) - set(date_array)))
                 # time index for prediction start
                 start = pd.Index(training_df_meta['date_array']).get_loc(prediction_start)
 
@@ -1017,8 +838,7 @@ class BaseKTR(BaseModel):
             #
             # new_tp = np.arange(1 + gap_int, output_len + gap_int + 1)
             # new_tp = new_tp / trained_len
-            kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self._rho_coefficients)
-            kernel_coefficients = kernel_coefficients / np.sum(kernel_coefficients, axis=1, keepdims=True)
+            kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
             coef_knots = self._aggregate_posteriors \
                 .get(aggregate_method) \
                 .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
@@ -1030,10 +850,8 @@ class BaseKTR(BaseModel):
         rr_cols = self._regular_regressor_col
         pr_cols = self._positive_regressor_col
         regressor_col = rr_cols + pr_cols
-        # not reporting seasonal regressor coefficients here
-        regressor_col = [col for col in regressor_col if col not in self._seasonal_regressor_col]
         for idx, col in enumerate(regressor_col):
-            reg_df[col] = regressor_betas[:, idx + len(self._seasonal_regressor_col)]
+            reg_df[col] = regressor_betas[:, idx]
 
         if include_ci:
             posterior_samples = self._posterior_samples
@@ -1046,8 +864,8 @@ class BaseKTR(BaseModel):
             reg_df_lower = reg_df.copy()
             reg_df_upper = reg_df.copy()
             for idx, col in enumerate(regressor_col):
-                reg_df_lower[col] = coefficients_lower[:, idx + len(self._seasonal_regressor_col)]
-                reg_df_upper[col] = coefficients_upper[:, idx + len(self._seasonal_regressor_col)]
+                reg_df_lower[col] = coefficients_lower[:, idx]
+                reg_df_upper[col] = coefficients_upper[:, idx]
             return reg_df, reg_df_lower, reg_df_upper
 
         return reg_df
@@ -1081,7 +899,7 @@ class BaseKTR(BaseModel):
         return axes
 
 
-class KTRFull(BaseKTR):
+class KTRXFull(BaseKTRX):
     """Concrete LGT model for full prediction
 
     In full prediction, the prediction occurs as a function of each parameter posterior sample,
@@ -1101,7 +919,7 @@ class KTRFull(BaseKTR):
         Additional args to pass to parent classes.
 
     """
-    _supported_estimator_types = [StanEstimatorMCMC, PyroEstimatorVI]
+    _supported_estimator_types = [PyroEstimatorVI]
 
     def __init__(self, n_bootstrap_draws=None, prediction_percentiles=None, **kwargs):
         # todo: assert compatible estimator
@@ -1238,7 +1056,7 @@ class KTRFull(BaseKTR):
                                              **kwargs)
 
 
-class KTRAggregated(BaseKTR):
+class KTRXAggregated(BaseKTRX):
     """Concrete LGT model for aggregated posterior prediction
     In aggregated prediction, the parameter posterior samples are reduced using `aggregate_method`
     before performing a single prediction.
@@ -1247,7 +1065,7 @@ class KTRAggregated(BaseKTR):
     aggregate_method : { 'mean', 'median' }
         Method used to reduce parameter posterior samples
     """
-    _supported_estimator_types = [StanEstimatorMCMC, PyroEstimatorVI]
+    _supported_estimator_types = [PyroEstimatorVI]
 
     def __init__(self, aggregate_method='mean', **kwargs):
         super().__init__(**kwargs)
@@ -1294,105 +1112,6 @@ class KTRAggregated(BaseKTR):
         return super().get_regression_coefs(aggregate_method=self.aggregate_method,
                                             include_ci=False,
                                             date_array=date_array)
-
-    # def get_regression_coefs_hmm(self):
-    #     """Return DataFrame regression coefficients for hmm purpose
-    #     """
-    #     # init dataframe
-    #     reg_df = pd.DataFrame()
-    #     reg_df[self.date_col] = self._training_df_meta['date_array']
-
-    #     # end if no regressors
-    #     if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
-    #         return reg_df
-
-    #     regressor_knots = self._aggregate_posteriors \
-    #         .get(self.aggregate_method) \
-    #         .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
-    #     regressor_betas = np.matmul(regressor_knots, self._kernel_coefficients.transpose(1, 0))
-    #     regressor_betas = np.squeeze(regressor_betas, axis=0).transpose(1, 0)
-
-    #     # get column names
-    #     pr_cols = self._positive_regressor_col
-    #     rr_cols = self._regular_regressor_col
-
-    #     # note ordering here is not the same as `self.regressor_cols` because positive
-    #     # and negative do not have to be grouped on input
-    #     regressor_col = rr_cols + pr_cols
-    #     for idx, col in enumerate(regressor_col):
-    #         reg_df[col] = regressor_betas[:, idx]
-
-    #     return reg_df
-
-    def plot_regression_coefs(self, date_array=None, **kwargs):
-        coef_df = self.get_regression_coefs(date_array=date_array)
-        return super().plot_regression_coefs(coef_df=coef_df,
-                                             **kwargs)
-
-
-class KTRMAP(BaseKTR):
-    """Concrete LGT model for MAP (Maximum a Posteriori) prediction
-    Similar to `LGTAggregated` but predition is based on Maximum a Posteriori (aka Mode)
-    of the posterior.
-    This model only supports MAP estimating `estimator_type`s
-    """
-    _supported_estimator_types = [StanEstimatorMAP, PyroEstimatorMAP]
-
-    def __init__(self, estimator_type=PyroEstimatorMAP, **kwargs):
-        super().__init__(estimator_type=estimator_type, **kwargs)
-
-        # override init aggregate posteriors
-        self._aggregate_posteriors = {
-            PredictMethod.MAP.value: dict(),
-        }
-
-        # validator model / estimator compatibility
-        self._validate_supported_estimator_type()
-
-    def _set_map_posterior(self):
-        posterior_samples = self._posterior_samples
-
-        map_posterior = {}
-        for param_name in self._model_param_names:
-            param_array = posterior_samples[param_name]
-            # add dimension so it works with vector math in `_predict`
-            param_array = np.expand_dims(param_array, axis=0)
-            map_posterior.update(
-                {param_name: param_array}
-            )
-
-        self._aggregate_posteriors[PredictMethod.MAP.value] = map_posterior
-
-    def fit(self, df):
-        """Fit model to data and set extracted posterior samples"""
-        super().fit(df)
-        self._set_map_posterior()
-
-    def predict(self, df, decompose=False):
-        # raise if model is not fitted
-        if not self.is_fitted():
-            raise PredictionException("Model is not fitted yet.")
-
-        aggregate_posteriors = self._aggregate_posteriors.get(PredictMethod.MAP.value)
-
-        predicted_dict = self._predict(
-            posterior_estimates=aggregate_posteriors,
-            df=df,
-            include_error=False,
-            decompose=decompose,
-        )
-
-        # must flatten to convert to DataFrame
-        for k, v in predicted_dict.items():
-            predicted_dict[k] = v.flatten()
-
-        predicted_df = pd.DataFrame(predicted_dict)
-        predicted_df = self._prepend_date_column(predicted_df, df)
-
-        return predicted_df
-
-    def get_regression_coefs(self, date_array=None):
-        return super().get_regression_coefs(aggregate_method=PredictMethod.MAP.value, date_array=date_array)
 
     def plot_regression_coefs(self, date_array=None, **kwargs):
         coef_df = self.get_regression_coefs(date_array=date_array)
