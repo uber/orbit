@@ -4,6 +4,7 @@ import torch
 import pyro
 import pyro.distributions as dist
 
+# FIXME: this is sort of dangerous; consider better implementation later
 torch.set_default_tensor_type('torch.DoubleTensor')
 
 
@@ -68,7 +69,6 @@ class Model:
         pr_knot_pool_scale = self.pr_knot_pool_scale
         pr_knot_scale = self.pr_knot_scale.unsqueeze(-1)
 
-        # sampling begins here
         # transformation of data
         regressors = torch.zeros(n_obs)
         if n_pr > 0 and n_rr > 0:
@@ -156,8 +156,6 @@ class Model:
             for m, sd, tp, idx in zip(prior_mean, prior_sd, prior_tp_idx, prior_idx):
                 pyro.sample("prior_{}_{}".format(tp, idx), dist.Normal(m, sd),
                             obs=coef[..., tp, idx])
-
-        pyro.sample("init_lev", dist.Normal(response[0], sdy), obs=lev[..., 0])
 
         obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy))
         with pyro.plate("response_plate", n_valid):
