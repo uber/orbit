@@ -458,9 +458,9 @@ class BaseKTRX(BaseModel):
         # cutoff last 20%
         # self._cutoff = round(0.2 * self._num_of_observations)
         self._kernel_coefficients = np.zeros((self._num_of_observations, 0), dtype=np.double)
-        if self._num_of_regressors > 0:
-            # kernel of coefficients calculations
-            # if self._knots_tp_coefficients is None:
+        #if self._num_of_regressors > 0:
+        # kernel of coefficients calculations
+        if self._knots_tp_coefficients is None:
             number_of_knots = round(1 / self.span_coefficients)
             knots_distance = math.ceil(self._cutoff / number_of_knots)
             # start in the middle
@@ -660,7 +660,6 @@ class BaseKTRX(BaseModel):
         # Replacing this ---- END
 
         kernel_level = sandwich_kernel(new_tp, self._knots_tp_level)
-        kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
 
         lev_knot = model.get(constants.BaseSamplingParameters.LEVEL_KNOT.value)
         coef_knot = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
@@ -677,24 +676,25 @@ class BaseKTRX(BaseModel):
         else:
             seas = 0.0
 
-        # init of regression matrix depends on length of response vector
-        pred_regular_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
-        pred_positive_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
-
-        # update regression matrices
-        if self._num_of_regular_regressors > 0:
-            pred_regular_regressor_matrix = df.filter(
-                items=self._regular_regressor_col,).values
-        if self._num_of_positive_regressors > 0:
-            pred_positive_regressor_matrix = df.filter(
-                items=self._positive_regressor_col,).values
-        # regular first, then positive
-        pred_regressor_matrix = np.concatenate([pred_regular_regressor_matrix,
-                                                pred_positive_regressor_matrix], axis=-1)
-
         trend = np.matmul(lev_knot, kernel_level.transpose(1, 0))
         regression = np.zeros(trend.shape)
         if self._num_of_regressors > 0:
+            # init of regression matrix depends on length of response vector
+            pred_regular_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
+            pred_positive_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
+
+            # update regression matrices
+            if self._num_of_regular_regressors > 0:
+                pred_regular_regressor_matrix = df.filter(
+                    items=self._regular_regressor_col,).values
+            if self._num_of_positive_regressors > 0:
+                pred_positive_regressor_matrix = df.filter(
+                    items=self._positive_regressor_col,).values
+            # regular first, then positive
+            pred_regressor_matrix = np.concatenate([pred_regular_regressor_matrix,
+                                                    pred_positive_regressor_matrix], axis=-1)
+
+            kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
             regression = np.sum(np.matmul(coef_knot, kernel_coefficients.transpose(1, 0)) * \
                                 pred_regressor_matrix.transpose(1, 0), axis=-2)
         if include_error:
