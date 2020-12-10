@@ -249,6 +249,9 @@ class BaseKTR(BaseModel):
         self._regular_regressor_knot_pooling_scale = list()
         self._regular_regressor_knot_scale = list()
         self._regressor_col = list()
+        # seasonal regressors
+        self._seasonal_regressor_col = []
+        self._seasonal_regressor_col_gp = []
 
         # set static data attributes
         self._set_static_data_attributes()
@@ -362,6 +365,11 @@ class BaseKTR(BaseModel):
             if not all(len_insert == len_insert_prior[0] for len_insert in len_insert_prior):
                 raise IllegalArgument('Wrong dimension length in Insert Prior Input')
 
+        def _validate_level_knot_inputs(level_knot_dates, level_knots):
+            if level_knots is not None:
+                if len(level_knots) != len(level_knot_dates):
+                    raise IllegalArgument('level_knots and level_knot_dates should have the same length')
+
         # regressor defaults
         num_of_regressors = len(self.regressor_col)
 
@@ -372,6 +380,9 @@ class BaseKTR(BaseModel):
         )
         _validate_insert_prior([self._insert_prior_regressor_col, self._insert_prior_tp_idx,
                                 self._insert_prior_mean, self._insert_prior_sd])
+
+        _validate_level_knot_inputs(self.level_knot_dates, self.level_knots)
+
 
         if self.regressor_sign is None:
             self._regressor_sign = [DEFAULT_REGRESSOR_SIGN] * num_of_regressors
@@ -413,8 +424,6 @@ class BaseKTR(BaseModel):
     def _set_seasonality_attributes(self):
         """given list of seasonalities and their order, create list of seasonal_regressors_columns"""
         if len(self._seasonality) > 0:
-            self._seasonal_regressor_col = []
-            self._seasonal_regressor_col_gp = []
             for idx, s in enumerate(self._seasonality):
                 fs_cols = []
                 order = self._seasonality_fs_order[idx]
@@ -543,6 +552,10 @@ class BaseKTR(BaseModel):
         else:
             # FIXME: this only works up to daily series (not working on hourly series)
             self._level_knot_dates = pd.to_datetime([x for x in self._level_knot_dates if x <= df[self.date_col].max()])
+            if len(self._level_knots) > 0:
+                # trim _level_knots accordingly
+                self._level_knots = self._level_knots[:len(self._level_knot_dates)]
+
             self._knots_tp_level = np.array(
                 ((self._level_knot_dates - self._training_df_meta['training_start']).days + 1) /
                 ((self._training_df_meta['training_end'] - self._training_df_meta['training_start']).days + 1)
@@ -1065,7 +1078,7 @@ class BaseKTR(BaseModel):
             axes[row_idx, col_idx].ticklabel_format(useOffset=False)
         plt.tight_layout()
 
-        return fig
+        return axes
 
 
 class KTRFull(BaseKTR):

@@ -4,7 +4,6 @@ import torch
 import pyro
 import pyro.distributions as dist
 
-# FIXME: this is sort of dangerous; consider better implementation later
 torch.set_default_tensor_type('torch.DoubleTensor')
 
 
@@ -14,8 +13,14 @@ class Model:
     def __init__(self, data):
         for key, value in data.items():
             key = key.lower()
-            if isinstance(value, (list, np.ndarray, float)):
-                value = torch.tensor(value)
+            if isinstance(value, (list, np.ndarray)):
+                if key in ['which_valid_res']:
+                    # to use as index, tensor type has to be long or int
+                    value = torch.tensor(value)
+                else:
+                    # loc/scale cannot be in long format
+                    # sometimes they may be supplied as int, so dtype conversion is needed
+                    value = torch.tensor(value, dtype=torch.double)
             self.__dict__[key] = value
 
     def __call__(self):
@@ -63,6 +68,7 @@ class Model:
         pr_knot_pool_scale = self.pr_knot_pool_scale
         pr_knot_scale = self.pr_knot_scale.unsqueeze(-1)
 
+        # sampling begins here
         # transformation of data
         regressors = torch.zeros(n_obs)
         if n_pr > 0 and n_rr > 0:
@@ -72,8 +78,7 @@ class Model:
         elif n_rr > 0:
             regressors = rr
 
-        response -= seas_term
-        response_tran = response - meany
+        response_tran = response - meany - seas_term
 
         # sampling begins here
         extra_out = {}
@@ -152,6 +157,8 @@ class Model:
                 pyro.sample("prior_{}_{}".format(tp, idx), dist.Normal(m, sd),
                             obs=coef[..., tp, idx])
 
+        pyro.sample("init_lev", dist.Normal(response[0], sdy), obs=lev[..., 0])
+
         obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy))
         with pyro.plate("response_plate", n_valid):
             pyro.sample("response",
@@ -161,9 +168,9 @@ class Model:
         lev_knot = lev_knot_tran + meany
 
         extra_out.update({
-            'yhat': yhat + seas_term,
+            'yhat': yhat + seas_term + meany,
             'lev': lev + meany,
-            'lev_knot':lev_knot,
+            'lev_knot': lev_knot,
             'coef': coef,
             'coef_knot': coef_knot
         })
