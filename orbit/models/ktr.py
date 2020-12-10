@@ -249,6 +249,9 @@ class BaseKTR(BaseModel):
         self._regular_regressor_knot_pooling_scale = list()
         self._regular_regressor_knot_scale = list()
         self._regressor_col = list()
+        # seasonal regressors
+        self._seasonal_regressor_col = []
+        self._seasonal_regressor_col_gp = []
 
         # set static data attributes
         self._set_static_data_attributes()
@@ -413,8 +416,6 @@ class BaseKTR(BaseModel):
     def _set_seasonality_attributes(self):
         """given list of seasonalities and their order, create list of seasonal_regressors_columns"""
         if len(self._seasonality) > 0:
-            self._seasonal_regressor_col = []
-            self._seasonal_regressor_col_gp = []
             for idx, s in enumerate(self._seasonality):
                 fs_cols = []
                 order = self._seasonality_fs_order[idx]
@@ -1065,7 +1066,7 @@ class BaseKTR(BaseModel):
             axes[row_idx, col_idx].ticklabel_format(useOffset=False)
         plt.tight_layout()
 
-        return fig
+        return axes
 
 
 class KTRFull(BaseKTR):
