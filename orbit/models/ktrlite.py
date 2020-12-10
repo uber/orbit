@@ -218,7 +218,7 @@ class BaseKTRLite(BaseModel):
             raise ModelException("DataFrame does not contain `response_col`: {}".format(self.response_col))
 
         if self._seasonality:
-            max_seasonality = round(np.max(self._seasonality))
+            max_seasonality = np.round(np.max(self._seasonality)).astype(int)
             if self._num_of_observations < max_seasonality:
                 raise ModelException(
                     "Number of observations {} is less than max seasonality {}".format(
@@ -241,9 +241,9 @@ class BaseKTRLite(BaseModel):
 
         return df
 
-    def _set_dynamic_response_attributes(self):
+    def _set_valid_response_attributes(self):
         if self._seasonality:
-            max_seasonality = round(np.max(self._seasonality))
+            max_seasonality = np.round(np.max(self._seasonality)).astype(int)
             self._response_mean = np.nanmean(self._response[:max_seasonality])
         else:
             self._response_mean = np.nanmean(self._response)
@@ -252,7 +252,6 @@ class BaseKTRLite(BaseModel):
         # [0] to convert tuple back to array
         self._which_valid_response = np.where(self._is_valid_response)[0]
         self._num_of_valid_response = len(self._which_valid_response)
-        self._num_of_regressors = len(self._regressor_col)
         self._response_sd = np.nanstd(self._response)
 
     def _set_regressor_matrix(self, df):
@@ -318,7 +317,7 @@ class BaseKTRLite(BaseModel):
         self._set_training_df_meta(df)
 
         df = self._make_seasonal_regressors(df, shift=0)
-        self._set_dynamic_response_attributes()
+        self._set_valid_response_attributes()
         self._set_regressor_matrix(df)
         self._set_kernel_matrix(df)
 
