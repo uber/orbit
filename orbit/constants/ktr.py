@@ -10,7 +10,13 @@ class DataInputMapper(Enum):
     # observation related
     _NUM_OF_OBSERVATIONS = 'N_OBS'
     _RESPONSE = 'RESPONSE'
+    # used for pyro
+    # _IS_VALID_RESPONSE = 'IS_VALID_RES'
+    _NUM_OF_VALID_RESPONSE = 'N_VALID_RES'
+    # mainly used for stan
+    _WHICH_VALID_RESPONSE = 'WHICH_VALID_RES'
     _RESPONSE_SD = 'SDY'
+    _RESPONSE_MEAN = 'MEAN_Y'
     _DEGREE_OF_FREEDOM = 'DOF'
     # ----------  Level  ---------- #
     _NUM_KNOTS_LEVEL = 'N_KNOTS_LEV'
@@ -35,6 +41,8 @@ class DataInputMapper(Enum):
     _INSERT_PRIOR_SD = 'PRIOR_SD'
     _INSERT_PRIOR_TP_IDX = 'PRIOR_TP_IDX'
     _INSERT_PRIOR_IDX = 'PRIOR_IDX'
+    _LEVEL_KNOTS = 'LEV_KNOT_LOC'
+    _SEAS_TERM = 'SEAS_TERM'
 
 
 class BaseSamplingParameters(Enum):

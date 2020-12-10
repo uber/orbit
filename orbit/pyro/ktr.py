@@ -4,6 +4,7 @@ import torch
 import pyro
 import pyro.distributions as dist
 
+# FIXME: this is sort of dangerous; consider better implementation later
 torch.set_default_tensor_type('torch.DoubleTensor')
 
 
@@ -14,7 +15,13 @@ class Model:
         for key, value in data.items():
             key = key.lower()
             if isinstance(value, (list, np.ndarray)):
-                value = torch.tensor(value, dtype=torch.double)
+                if key in ['which_valid_res']:
+                    # to use as index, tensor type has to be long or int
+                    value = torch.tensor(value)
+                else:
+                    # loc/scale cannot be in long format
+                    # sometimes they may be supplied as int, so dtype conversion is needed
+                    value = torch.tensor(value, dtype=torch.double)
             self.__dict__[key] = value
 
     def __call__(self):
@@ -30,9 +37,15 @@ class Model:
         use _coef, _weight etc. instead of _beta, use _scale instead of _sigma
         """
         response = self.response
+        which_valid = self.which_valid_res
+
         n_obs = self.n_obs
+        n_valid = self.n_valid_res
         sdy = self.sdy
+        meany = self.mean_y
         dof = self.dof
+        lev_knot_loc = self.lev_knot_loc
+        seas_term = self.seas_term
 
         pr = self.pr
         rr = self.rr
@@ -43,13 +56,6 @@ class Model:
         k_coef = self.k_coef
         n_knots_lev = self.n_knots_lev
         n_knots_coef = self.n_knots_coef
-        regressors = torch.zeros(n_obs)
-        if n_pr > 0 and n_rr > 0:
-            regressors = torch.cat([rr, pr], dim=-1)
-        elif n_pr > 0:
-            regressors = pr
-        elif n_rr > 0:
-            regressors = rr
 
         lev_knot_scale = self.lev_knot_scale
 
@@ -63,11 +69,33 @@ class Model:
         pr_knot_pool_scale = self.pr_knot_pool_scale
         pr_knot_scale = self.pr_knot_scale.unsqueeze(-1)
 
+        # transformation of data
+        regressors = torch.zeros(n_obs)
+        if n_pr > 0 and n_rr > 0:
+            regressors = torch.cat([rr, pr], dim=-1)
+        elif n_pr > 0:
+            regressors = pr
+        elif n_rr > 0:
+            regressors = rr
+
+        response_tran = response - meany - seas_term
+
+        # sampling begins here
         extra_out = {}
 
         # levels sampling
-        lev_knot = pyro.sample("lev_knot", dist.Laplace(0, lev_knot_scale).expand([n_knots_lev]))
-        lev = (lev_knot @ k_lev.transpose(-2, -1))
+        # with pyro.plate("lev_plate", n_knots_lev):
+        #     lev_drift = pyro.sample("lev_drift", dist.Laplace(0, lev_knot_scale))
+        # lev_knot_tran = lev_drift.cumsum(-1)
+        # lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
+
+        # levels sampling
+        if len(lev_knot_loc) > 0:
+            lev_knot_tran = pyro.sample("lev_knot", dist.Normal(lev_knot_loc - meany, lev_knot_scale).expand([n_knots_lev]))
+            lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
+        else:
+            lev_knot_tran = pyro.sample("lev_knot", dist.Laplace(0, lev_knot_scale).expand([n_knots_lev]))
+            lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
 
         # regular regressor sampling
         if n_rr > 0:
@@ -129,11 +157,19 @@ class Model:
                 pyro.sample("prior_{}_{}".format(tp, idx), dist.Normal(m, sd),
                             obs=coef[..., tp, idx])
 
-        pyro.sample("init_lev", dist.Normal(response[0], sdy), obs=lev[..., 0])
-
         obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy))
-        with pyro.plate("response_plate", n_obs):
-            pyro.sample("response", dist.StudentT(dof, yhat[..., :], obs_scale), obs=response)
+        with pyro.plate("response_plate", n_valid):
+            pyro.sample("response",
+                        dist.StudentT(dof, yhat[..., which_valid], obs_scale),
+                        obs=response_tran[which_valid])
 
-        extra_out.update({'yhat': yhat, 'lev': lev, 'coef': coef, 'coef_knot': coef_knot})
+        lev_knot = lev_knot_tran + meany
+
+        extra_out.update({
+            'yhat': yhat + seas_term + meany,
+            'lev': lev + meany,
+            'lev_knot': lev_knot,
+            'coef': coef,
+            'coef_knot': coef_knot
+        })
         return extra_out

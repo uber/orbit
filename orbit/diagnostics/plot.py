@@ -112,13 +112,14 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         fig.savefig(path)
     if is_visible:
         plt.show()
+    else:
+        plt.close()
 
     return ax
 
 
 def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, plot_components=None,
-                              title="", figsize=None, path=None):
-
+                              title="", is_visible=True, figsize=None, path=None):
     """ Plot predicted componenets with the data frame of decomposed prediction where components
     has been pre-defined as `trend`, `seasonality` and `regression`.
     Parameters
@@ -138,6 +139,8 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
         title of the plot
     figsize: tuple
         figsize pass through to `matplotlib.pyplot.figure()`
+    is_visible: boolean
+        whether we want to show the plot. If called from unittest, is_visible might = False.
     path: str
         path to save the figure
    Returns
@@ -182,6 +185,11 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
 
     if path:
         plt.savefig(path)
+
+    if is_visible:
+        plt.show()
+    else:
+        plt.close()
 
     return axes
 
