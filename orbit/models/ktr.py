@@ -598,7 +598,7 @@ class BaseKTR(BaseModel):
             kernel_level = kernel_level/np.sum(kernel_level, axis=1, keepdims=True)
 
             self._kernel_level = kernel_level
-            self._num_knots_level = len(self.level_knot_dates)
+            self._num_knots_level = len(self._level_knot_dates)
 
         if self._seasonal_knots_input is not None:
             # no need to train seasonality any more
