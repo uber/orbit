@@ -337,7 +337,7 @@ class BaseKTRLite(BaseModel):
     def _set_model_param_names(self):
         """Model parameters to extract"""
         self._model_param_names += [param.value for param in constants.BaseSamplingParameters]
-        if self._seasonality > 0 or self._num_of_regressors > 0:
+        if len(self._seasonality) > 0 or self._num_of_regressors > 0:
             self._model_param_names += [param.value for param in constants.RegressionSamplingParameters]
 
     def _get_model_param_names(self):
