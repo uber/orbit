@@ -46,10 +46,5 @@ class RegressionSamplingParameters(Enum):
     """
     The stan output sampling parameters related with regression component.
     """
-
-    # REGULAR_REGRESSOR_LATENT_BETA = 'rr_lat'
-    # POSITIVE_REGRESSOR_LATENT_BETA_MEAN = 'pr_lat_mean'
-    # POSITIVE_REGRESSOR_LATENT_BETA = 'pr_lat'
-
     COEFFICIENTS_KNOT = 'coef_knot'
     COEFFICIENTS = 'coef'

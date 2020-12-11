@@ -94,6 +94,7 @@ def generate_seas(df, date_col, training_df_meta, coef_knot_dates, coef_knot, rh
 
     return seas
 
+
 class BaseKTRX(BaseModel):
     """Base LGT model object with shared functionality for Full, Aggregated, and MAP methods
 
@@ -118,13 +119,8 @@ class BaseKTRX(BaseModel):
         default to be 1.
     regressor_knot_scale : list
         list of regressor knot sigma priors; default to be 0.1.
-    span_level : float between (0, 1)
-        window width to decide the number of windows for the level (trend) term.
-        e.g., span 0.1 will produce 10 windows.
     span_coefficients : float between (0, 1)
         window width to decide the number of windows for the regression term
-    rho_level : float
-        sigma in the Gaussian kernel for the level term
     rho_coefficients : float
         sigma in the Gaussian kernel for the regression term
     insert_prior_regressor_col : list
@@ -151,8 +147,6 @@ class BaseKTRX(BaseModel):
                  regressor_knot_pooling_loc=None,
                  regressor_knot_pooling_scale=None,
                  regressor_knot_scale=None,
-                 span_level=0.1,
-                 rho_level=0.05,
                  span_coefficients=0.2,
                  rho_coefficients=0.15,
                  degree_of_freedom=30,
@@ -179,9 +173,7 @@ class BaseKTRX(BaseModel):
 
         self.degree_of_freedom = degree_of_freedom
 
-        self.span_level = span_level
         self.span_coefficients = span_coefficients
-        self.rho_level = rho_level
         self.rho_coefficients = rho_coefficients
 
         self.insert_prior_regressor_col = insert_prior_regressor_col
