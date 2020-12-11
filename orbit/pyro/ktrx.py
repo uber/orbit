@@ -85,7 +85,7 @@ class Model:
 
         # levels sampling
         lev_knot_tran = pyro.sample(
-            "lev_knot", dist.Normal(lev_knot_loc - meany, lev_knot_scale).expand([n_knots_lev])
+            "lev_knot_tran", dist.Normal(lev_knot_loc - meany, lev_knot_scale).expand([n_knots_lev])
         )
         lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
 
@@ -151,8 +151,7 @@ class Model:
 
         obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy))
         with pyro.plate("response_plate", n_valid):
-            pyro.sample("response",
-                        dist.StudentT(dof, yhat[..., which_valid], obs_scale),
+            pyro.sample("response", dist.StudentT(dof, yhat[..., which_valid], obs_scale),
                         obs=response_tran[which_valid])
 
         lev_knot = lev_knot_tran + meany

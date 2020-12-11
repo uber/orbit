@@ -11,7 +11,6 @@ class DataInputMapper(Enum):
     _NUM_OF_OBSERVATIONS = 'N_OBS'
     _RESPONSE = 'RESPONSE'
     # used for pyro
-    # _IS_VALID_RESPONSE = 'IS_VALID_RES'
     _NUM_OF_VALID_RESPONSE = 'N_VALID_RES'
     # mainly used for stan
     _WHICH_VALID_RESPONSE = 'WHICH_VALID_RES'
@@ -66,11 +65,6 @@ class RegressionSamplingParameters(Enum):
     """
     The stan output sampling parameters related with regression component.
     """
-
-    # REGULAR_REGRESSOR_LATENT_BETA = 'rr_lat'
-    # POSITIVE_REGRESSOR_LATENT_BETA_MEAN = 'pr_lat_mean'
-    # POSITIVE_REGRESSOR_LATENT_BETA = 'pr_lat'
-
     COEFFICIENTS_KNOT = 'coef_knot'
     COEFFICIENTS = 'coef'
 
