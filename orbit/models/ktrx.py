@@ -147,7 +147,7 @@ class BaseKTRX(BaseModel):
                  regressor_knot_pooling_loc=None,
                  regressor_knot_pooling_scale=None,
                  regressor_knot_scale=None,
-                 span_coefficients=0.2,
+                 span_coefficients=0.3,
                  rho_coefficients=0.15,
                  degree_of_freedom=30,
                  # coef priors on specific time-point
@@ -159,20 +159,22 @@ class BaseKTRX(BaseModel):
                  level_knot_dates=None,
                  level_knots=None,
                  seasonal_knots_input=None,
+                 coefficients_knot_length=None,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
         self.response_col = response_col
         self.date_col = date_col
 
+        # normal distribution of known knot
         self.level_knot_scale = level_knot_scale
+
         self.regressor_col = regressor_col
         self.regressor_sign = regressor_sign
         self.regressor_knot_pooling_loc = regressor_knot_pooling_loc
         self.regressor_knot_pooling_scale = regressor_knot_pooling_scale
         self.regressor_knot_scale = regressor_knot_scale
 
-        self.degree_of_freedom = degree_of_freedom
-
+        self.coefficients_knot_length = coefficients_knot_length
         self.span_coefficients = span_coefficients
         self.rho_coefficients = rho_coefficients
 
@@ -184,6 +186,8 @@ class BaseKTRX(BaseModel):
         self.level_knot_dates = level_knot_dates
         self.level_knots = level_knots
         self._seasonal_knots_input = seasonal_knots_input
+
+        self.degree_of_freedom = degree_of_freedom
 
         # set private var to arg value
         # if None set default in _set_default_base_args()
@@ -202,6 +206,7 @@ class BaseKTRX(BaseModel):
 
         self._level_knot_dates = self.level_knot_dates
         self._level_knots = self.level_knots
+        self._kernel_level = None
         self._num_knots_level = None
         self._knots_tp_level = None
         self._coef_knot_dates = None
@@ -450,11 +455,18 @@ class BaseKTRX(BaseModel):
         # cutoff last 20%
         # self._cutoff = round(0.2 * self._num_of_observations)
         self._kernel_coefficients = np.zeros((self._num_of_observations, 0), dtype=np.double)
-        #if self._num_of_regressors > 0:
+        self._num_knots_coefficients = 0
+
         # kernel of coefficients calculations
-        if self._knots_tp_coefficients is None:
-            number_of_knots = round(1 / self.span_coefficients)
-            knots_distance = math.ceil(self._cutoff / number_of_knots)
+        # if self._knots_tp_coefficients is None:
+        if self._num_of_regressors > 0:
+            if self.coefficients_knot_length is not None:
+                # TODO: approximation; can consider directly coefficients_knot_length it as step size
+                knots_distance = self.coefficients_knot_length
+            else:
+                number_of_knots = round(1 / self.span_coefficients)
+                knots_distance = math.ceil(self._cutoff / number_of_knots)
+
             # start in the middle
             knots_idx_start_coef = round(knots_distance / 2)
             knots_idx_coef = np.arange(knots_idx_start_coef, self._cutoff,  knots_distance)
@@ -511,7 +523,8 @@ class BaseKTRX(BaseModel):
     def _set_model_param_names(self):
         """Model parameters to extract"""
         self._model_param_names += [param.value for param in constants.BaseSamplingParameters]
-        self._model_param_names += [param.value for param in constants.RegressionSamplingParameters]
+        if self._num_of_regressors > 0 :
+            self._model_param_names += [param.value for param in constants.RegressionSamplingParameters]
 
     def _get_model_param_names(self):
         return self._model_param_names
@@ -635,26 +648,9 @@ class BaseKTRX(BaseModel):
             start = pd.Index(training_df_meta['date_array']).get_loc(prediction_start)
 
         new_tp = np.arange(start + 1, start + output_len + 1) / trained_len
-
-        # Replacing this ----
-        # TODO: check utility?
-        # gap_time = prediction_df_meta['prediction_start'] - training_df_meta['training_start']
-        # infer_freq = pd.infer_freq(df[self.date_col])[0]
-        # gap_int = int(gap_time / np.timedelta64(1, infer_freq))
-        #
-        # # 1. set idx = test_df[date_col]
-        # # 2. search match position of idx[0], set position = pos
-        # # 3. if match, start from pos, assume all time points ordered so that your prediction horizon = pos + len(test_df)
-        # # 3b. if not match, assumne start from last idx + 1, perdiction horizon = len(train_df) + len(test_df)
-        #
-        # new_tp = np.arange(1 + gap_int, output_len + gap_int + 1)
-        # new_tp = new_tp / trained_len
-        # Replacing this ---- END
-
         kernel_level = sandwich_kernel(new_tp, self._knots_tp_level)
 
         lev_knot = model.get(constants.BaseSamplingParameters.LEVEL_KNOT.value)
-        coef_knot = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
         obs_scale = model.get(constants.BaseSamplingParameters.OBS_SCALE.value)
         obs_scale = obs_scale.reshape(-1, 1)
 
@@ -671,6 +667,8 @@ class BaseKTRX(BaseModel):
         trend = np.matmul(lev_knot, kernel_level.transpose(1, 0))
         regression = np.zeros(trend.shape)
         if self._num_of_regressors > 0:
+            coef_knot = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+
             # init of regression matrix depends on length of response vector
             pred_regular_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
             pred_positive_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
@@ -685,10 +683,10 @@ class BaseKTRX(BaseModel):
             # regular first, then positive
             pred_regressor_matrix = np.concatenate([pred_regular_regressor_matrix,
                                                     pred_positive_regressor_matrix], axis=-1)
-
             kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
             regression = np.sum(np.matmul(coef_knot, kernel_coefficients.transpose(1, 0)) * \
                                 pred_regressor_matrix.transpose(1, 0), axis=-2)
+
         if include_error:
             epsilon = nct.rvs(self.degree_of_freedom, nc=0, loc=0,
                               scale=obs_scale, size=(num_sample, len(new_tp)), random_state=random_state)
@@ -777,6 +775,7 @@ class BaseKTRX(BaseModel):
 
         If PredictMethod is `full` return `mean` of coefficients instead
         """
+        print('here')
         # init dataframe
         reg_df = pd.DataFrame()
         # end if no regressors

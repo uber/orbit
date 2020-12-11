@@ -57,11 +57,13 @@ class BaseKTRLite(BaseModel):
                  seasonal_knot_pooling_scale=1.0,
                  seasonal_knot_scale=0.1,
                  span_level=0.1,
-                 span_coefficients=0.2,
+                 span_coefficients=0.3,
                  rho_coefficients=0.15,
                  degree_of_freedom=30,
                  # knot customization
                  level_knot_dates=None,
+                 level_knot_length=None,
+                 coefficients_knot_length=None,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
         self.response_col = response_col
@@ -69,6 +71,10 @@ class BaseKTRLite(BaseModel):
 
         self.span_level = span_level
         self.level_knot_scale = level_knot_scale
+        # customize knot dates for levels
+        self.level_knot_dates = level_knot_dates
+        self.level_knot_length = level_knot_length
+        self.coefficients_knot_length = coefficients_knot_length
 
         self.seasonality = seasonality
         self.seasonality_fs_order = seasonality_fs_order
@@ -78,10 +84,9 @@ class BaseKTRLite(BaseModel):
         self.span_coefficients = span_coefficients
         self.rho_coefficients = rho_coefficients
 
-        self.level_knot_dates = level_knot_dates
-
         # set private var to arg value
         # if None set default in _set_default_base_args()
+        # use public one if knots length is not available
         self._seasonality = self.seasonality
         self._seasonality_fs_order = self.seasonality_fs_order
         self._seasonal_knot_scale = self.seasonal_knot_scale
@@ -95,7 +100,7 @@ class BaseKTRLite(BaseModel):
         self._model_data_input = dict()
 
         # regression attributes -- now is only used for fourier series as seasonality
-        self._num_of_regressors = None
+        self._num_of_regressors = 0
         self._regressor_col = list()
         self._regressor_col_gp = list()
         self._coefficients_knot_pooling_loc = list()
@@ -271,8 +276,13 @@ class BaseKTRLite(BaseModel):
 
         # kernel of level calculations
         if self._level_knot_dates is None:
-            number_of_knots = round(1 / self.span_level)
-            knots_distance = math.ceil(self._cutoff / number_of_knots)
+            if self.level_knot_length is not None:
+                # TODO: approximation; can consider directly level_knot_length it as step size
+                knots_distance = self.level_knot_length
+            else:
+                number_of_knots = round(1 / self.span_level)
+                knots_distance = math.ceil(self._cutoff / number_of_knots)
+
             # start in the middle
             knots_idx_start_level = round(knots_distance / 2)
             knots_idx_level = np.arange(knots_idx_start_level, self._cutoff, knots_distance)
@@ -287,25 +297,28 @@ class BaseKTRLite(BaseModel):
             )
 
         kernel_level = sandwich_kernel(tp, self._knots_tp_level)
-        kernel_level = kernel_level/np.sum(kernel_level, axis=1, keepdims=True)
+        self._kernel_level = kernel_level/np.sum(kernel_level, axis=1, keepdims=True)
+        self._num_knots_level = len(self._knots_tp_level)
+
+        self._kernel_coefficients = np.zeros((self._num_of_observations, 0), dtype=np.double)
+        self._num_knots_coefficients = 0
 
         # kernel of coefficients calculations
-        if self._knots_tp_coefficients is None:
-            number_of_knots = round(1 / self.span_coefficients)
-            knots_distance = math.ceil(self._cutoff / number_of_knots)
+        if self._num_of_regressors > 0:
+            if self.coefficients_knot_length is not None:
+                # TODO: approximation; can consider directly coefficients_knot_length it as step size
+                knots_distance = self.coefficients_knot_length
+            else:
+                number_of_knots = round(1 / self.span_coefficients)
+                knots_distance = math.ceil(self._cutoff / number_of_knots)
+
             # start in the middle
             knots_idx_start_coef = round(knots_distance / 2)
             knots_idx_coef = np.arange(knots_idx_start_coef, self._cutoff,  knots_distance)
             self._knots_tp_coefficients = (1 + knots_idx_coef) / self._num_of_observations
             self._coef_knot_dates = df[self.date_col].values[knots_idx_coef]
-
-        kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
-        kernel_coefficients = kernel_coefficients / np.sum(kernel_coefficients, axis=1, keepdims=True)
-
-        self._num_knots_level = len(self._knots_tp_level)
-        self._num_knots_coefficients = len(self._knots_tp_coefficients)
-        self._kernel_level = kernel_level
-        self._kernel_coefficients = kernel_coefficients
+            self._kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            self._num_knots_coefficients = len(self._knots_tp_coefficients)
 
     def _set_dynamic_data_attributes(self, df):
         """data input based on input DataFrame, rather than at object instantiation"""
@@ -324,7 +337,8 @@ class BaseKTRLite(BaseModel):
     def _set_model_param_names(self):
         """Model parameters to extract"""
         self._model_param_names += [param.value for param in constants.BaseSamplingParameters]
-        self._model_param_names += [param.value for param in constants.RegressionSamplingParameters]
+        if self._seasonality > 0 or self._num_of_regressors > 0:
+            self._model_param_names += [param.value for param in constants.RegressionSamplingParameters]
 
     def _get_model_param_names(self):
         return self._model_param_names
