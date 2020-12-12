@@ -90,6 +90,8 @@ class BaseKTRLite(BaseModel):
         self._seasonality = self.seasonality
         self._seasonality_fs_order = self.seasonality_fs_order
         self._seasonal_knot_scale = self.seasonal_knot_scale
+        self._seasonal_knot_pooling_scale = None
+        self._seasonal_knot_scale = None
 
         self._level_knot_dates = self.level_knot_dates
 
@@ -154,7 +156,7 @@ class BaseKTRLite(BaseModel):
         elif not isinstance(self.seasonality, list) and isinstance(self.seasonality * 1.0, float):
             self._seasonality = [self.seasonality]
 
-        if self.seasonality_fs_order is None:
+        if self._seasonality and self.seasonality_fs_order is None:
             self._seasonality_fs_order = [2] * len(self._seasonality)
         elif not isinstance(self.seasonality_fs_order, list) and isinstance(self.seasonality_fs_order * 1.0, float):
             self._seasonality_fs_order = [self.seasonality_fs_order]
@@ -162,14 +164,31 @@ class BaseKTRLite(BaseModel):
         if len(self._seasonality_fs_order) != len(self._seasonality):
             raise IllegalArgument('length of seasonality and fs_order not matching')
 
+        if not isinstance(self.seasonal_knot_pooling_scale, list) and isinstance(self.seasonal_knot_pooling_scale * 1.0, float):
+            self._seasonal_knot_pooling_scale = [self.seasonal_knot_pooling_scale] * len(self._seasonality)
+        else:
+            self._seasonal_knot_pooling_scale = self.seasonal_knot_pooling_scale
+
+        if not isinstance(self.seasonal_knot_scale, list) and isinstance(self.seasonal_knot_scale * 1.0, float):
+            self._seasonal_knot_scale = [self.seasonal_knot_scale] * len(self._seasonality)
+        else:
+            self._seasonal_knot_scale = self.seasonal_knot_scale
+
     def _set_seasonality_attributes(self):
         """given list of seasonalities and their order, create list of seasonal_regressors_columns"""
         self._regressor_col_gp = []
         self._regressor_col = []
+        self._coefficients_knot_pooling_loc = []
+        self._coefficients_knot_pooling_scale = []
+        self._coefficients_knot_scale = []
+
         if len(self._seasonality) > 0:
             for idx, s in enumerate(self._seasonality):
                 fs_cols = []
                 order = self._seasonality_fs_order[idx]
+                self._coefficients_knot_pooling_loc += [0.0] * order * 2
+                self._coefficients_knot_pooling_scale += [self._seasonal_knot_pooling_scale[idx]] * order * 2
+                self._coefficients_knot_scale += [self._seasonal_knot_scale[idx]] * order * 2
                 for i in range(1, order + 1):
                     fs_cols.append('seas{}_fs_cos{}'.format(s, i))
                     fs_cols.append('seas{}_fs_sin{}'.format(s, i))
@@ -177,12 +196,8 @@ class BaseKTRLite(BaseModel):
                 self._regressor_col += fs_cols
                 # list of group of regressor columns bundled with seasonality
                 self._regressor_col_gp.append(fs_cols)
-            # update all regressors related attributes
 
         self._num_of_regressors = len(self._regressor_col)
-        self._coefficients_knot_pooling_loc = [0.0] * self._num_of_regressors
-        self._coefficients_knot_pooling_scale = [self.seasonal_knot_pooling_scale] * self._num_of_regressors
-        self._coefficients_knot_scale = [self._seasonal_knot_scale] * self._num_of_regressors
 
     def _set_static_data_attributes(self):
         """model data input based on args at instantiation or computed from args at instantiation"""
