@@ -775,7 +775,6 @@ class BaseKTRX(BaseModel):
 
         If PredictMethod is `full` return `mean` of coefficients instead
         """
-        print('here')
         # init dataframe
         reg_df = pd.DataFrame()
         # end if no regressors
