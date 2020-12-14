@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from .features import make_fourier_series_df
+from .kernels import gauss_kernel, sandwich_kernel
 
 
 def generate_tp(prediction_date_array, training_df_meta):
