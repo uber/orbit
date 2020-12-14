@@ -611,6 +611,14 @@ class BaseKTR(BaseModel):
                                         self._seasonal_knots_input['_seasonality'],
                                         self._seasonal_knots_input['_seasonality_fs_order'])
 
+    def _filter_insert_prior(self, df):
+        if self._num_insert_prior > 0 and len(self._regressor_col) > 0:
+            idx_inside = np.array(self._insert_prior_tp_idx) < df.shape[0]
+            self._insert_prior_regressor_col = np.array(self._insert_prior_regressor_col)[idx_inside]
+            self._insert_prior_idx = np.array(self._insert_prior_idx[idx_inside])
+            self._insert_prior_tp_idx = np.array(self._insert_prior_tp_idx)[idx_inside]
+            self._insert_prior_mean = np.array(self._insert_prior_mean)[idx_inside]
+            self._insert_prior_sd = np.array(self._insert_prior_sd)[idx_inside]
 
     def _set_dynamic_data_attributes(self, df):
         """data input based on input DataFrame, rather than at object instantiation"""
@@ -646,6 +654,7 @@ class BaseKTR(BaseModel):
         self._set_regressor_matrix(df)
         self._set_kernel_matrix(df)
         self._set_level_seas_input(df)
+        self._filter_insert_prior(df)
 
     def _set_model_param_names(self):
         """Model parameters to extract"""
