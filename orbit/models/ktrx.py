@@ -21,7 +21,8 @@ from ..estimators.pyro_estimator import PyroEstimatorVI
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
-from ..utils.kernels import gauss_kernel, sandwich_kernel, generate_seas
+from ..utils.kernels import gauss_kernel, sandwich_kernel
+from ..utils.timepoints import generate_seas
 from ..utils.features import make_fourier_series_df
 
 
