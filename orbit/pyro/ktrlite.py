@@ -75,15 +75,11 @@ class Model:
             # pooling latent variables
             coef_knot_loc = pyro.sample(
                 "coef_knot_loc",
-                dist.Distribution(
-                    dist.Normal(coef_knot_pool_loc, coef_knot_pool_scale)
-                )
+                dist.Normal(coef_knot_pool_loc, coef_knot_pool_scale)
             ).unsqueeze(-1) * torch.ones(p, n_knots_coef)
             coef_knot = pyro.sample(
                 "coef_knot",
-                dist.Distribution(
-                    dist.Normal(coef_knot_loc, coef_knot_scale)
-                ).to_event(1)
+                dist.Normal(coef_knot_loc, coef_knot_scale).to_event(1)
             )
             coef = (coef_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
             regression = (regressors * coef).sum(-1)
