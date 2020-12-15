@@ -66,6 +66,7 @@ class RegressionSamplingParameters(Enum):
     The stan output sampling parameters related with regression component.
     """
     COEFFICIENTS_KNOT = 'coef_knot'
+    COEFFICIENTS_KNOT_LOCATION = 'coef_knot_loc'
     COEFFICIENTS = 'coef'
 
 

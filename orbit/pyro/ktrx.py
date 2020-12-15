@@ -93,12 +93,11 @@ class Model:
         if n_rr > 0:
             # pooling latent variables
             rr_knot_loc = pyro.sample(
-                "rr_knot_loc",
-                dist.Normal(rr_knot_pool_loc, rr_knot_pool_scale)
-            ).unsqueeze(-1) * torch.ones(n_rr, n_knots_coef)
+                "rr_knot_loc", dist.Normal(rr_knot_pool_loc, rr_knot_pool_scale)
+            )
             rr_knot = pyro.sample(
                 "rr_knot",
-                dist.Normal(rr_knot_loc, rr_knot_scale).to_event(1)
+                dist.Normal(rr_knot_loc.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef), rr_knot_scale).to_event(1)
             )
             rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
 
@@ -110,26 +109,30 @@ class Model:
                 dist.FoldedDistribution(
                     dist.Normal(pr_knot_pool_loc, pr_knot_pool_scale)
                 )
-            ).unsqueeze(-1) * torch.ones(n_pr, n_knots_coef)
+            )
             pr_knot = pyro.sample(
                 "pr_knot",
                 dist.FoldedDistribution(
-                    dist.Normal(pr_knot_loc, pr_knot_scale)
+                    dist.Normal(pr_knot_loc.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef), pr_knot_scale)
                 ).to_event(1)
             )
             pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
 
         # concatenating all latent variables
         coef_knot = torch.zeros(n_knots_coef)
+        coef_knot_loc = torch.zeros(pr_knot_pool_loc.shape)
         coef = torch.zeros(n_obs)
         if n_pr > 0 and n_rr > 0:
             coef_knot = torch.cat([rr_knot, pr_knot], dim=-2)
+            coef_knot_loc = torch.cat([rr_knot_loc, pr_knot_loc], dim=-1)
             coef = torch.cat([rr_coef, pr_coef], dim=-1)
         elif n_pr > 0:
             coef_knot = pr_knot
+            coef_knot_loc = pr_knot_loc
             coef = pr_coef
         elif n_rr > 0:
             coef_knot = rr_knot
+            coef_knot_loc = rr_knot_loc
             coef = rr_coef
         yhat = lev + (regressors * coef).sum(-1)
 
@@ -157,6 +160,7 @@ class Model:
             'lev': lev + meany,
             'lev_knot': lev_knot,
             'coef': coef,
-            'coef_knot': coef_knot
+            'coef_knot': coef_knot,
+            'coef_knot_loc': coef_knot_loc,
         })
         return extra_out
