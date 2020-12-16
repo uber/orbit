@@ -15,9 +15,12 @@ class Model:
         for key, value in data.items():
             key = key.lower()
             if isinstance(value, (list, np.ndarray)):
+                # TODO: this is hackk way; please fix this later
                 if key in ['which_valid_res']:
                     # to use as index, tensor type has to be long or int
                     value = torch.tensor(value)
+                elif key in ['coef_prior_list']:
+                    pass
                 else:
                     # loc/scale cannot be in long format
                     # sometimes they may be supplied as int, so dtype conversion is needed
@@ -137,15 +140,15 @@ class Model:
         yhat = lev + (regressors * coef).sum(-1)
 
         # inject customize priors for coef at time t
-        n_prior = self.n_prior
-        if n_prior > 0:
-            prior_mean = self.prior_mean
-            prior_sd = self.prior_sd
-            prior_tp_idx = self.prior_tp_idx.int()
-            prior_idx = self.prior_idx.int()
-
-            for m, sd, tp, idx in zip(prior_mean, prior_sd, prior_tp_idx, prior_idx):
-                pyro.sample("prior_{}_{}".format(tp, idx), dist.Normal(m, sd),
+        coef_prior_list = self.coef_prior_list
+        if coef_prior_list:
+            for x in coef_prior_list:
+                name = x['name']
+                m = torch.tensor(x['prior_mean'])
+                sd = torch.tensor(x['prior_sd'])
+                tp = torch.tensor(x['prior_tp_idx'])
+                idx = torch.tensor(x['regressor_col_idx'])
+                pyro.sample("prior_{}".format(name), dist.Normal(m, sd),
                             obs=coef[..., tp, idx])
 
         obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy))
