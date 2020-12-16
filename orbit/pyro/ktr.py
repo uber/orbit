@@ -91,10 +91,10 @@ class Model:
 
         # levels sampling
         if len(lev_knot_loc) > 0:
-            lev_knot_tran = pyro.sample("lev_knot", dist.Normal(lev_knot_loc - meany, lev_knot_scale).expand([n_knots_lev]))
+            lev_knot_tran = pyro.sample("lev_knot_tran", dist.Normal(lev_knot_loc - meany, lev_knot_scale).expand([n_knots_lev]))
             lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
         else:
-            lev_knot_tran = pyro.sample("lev_knot", dist.Laplace(0, lev_knot_scale).expand([n_knots_lev]))
+            lev_knot_tran = pyro.sample("lev_knot_tran", dist.Laplace(0, lev_knot_scale).expand([n_knots_lev]))
             lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
 
         # regular regressor sampling
@@ -102,7 +102,6 @@ class Model:
             # pooling latent variables
             rr_knot_loc = pyro.sample(
                 "rr_knot_loc",
-
                 dist.Normal(rr_knot_pool_loc, rr_knot_pool_scale)
             ).unsqueeze(-1) * torch.ones(n_rr, n_knots_coef)
             rr_knot = pyro.sample(
