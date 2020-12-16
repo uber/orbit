@@ -54,14 +54,11 @@ class BaseKTRX(BaseModel):
         window width to decide the number of windows for the regression term
     rho_coefficients : float
         sigma in the Gaussian kernel for the regression term
-    insert_prior_regressor_col : list
-        list of regressor names to ingest priors
-    insert_prior_tp_idx : list
-        list of time points to ingest priors
-    insert_prior_mean : list
-        list of ingested prior means
-    insert_prior_sd : list
-        list of ingested prior sigmas
+    coef_prior_list : list of dicts
+        each dict in the list should have keys as 'name', 'prior_mean', 'prior_sd',
+        'prior_tp_idx', and 'prior_regressor_col', where values of 'prior_mean', 'prior_sd',
+        'prior_tp_idx' are lists of the same length.
+
 
     """
     _data_input_mapper = constants.DataInputMapper
