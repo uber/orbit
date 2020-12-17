@@ -143,13 +143,14 @@ class Model:
         coef_prior_list = self.coef_prior_list
         if coef_prior_list:
             for x in coef_prior_list:
-                name = x['name']
-                m = torch.tensor(x['prior_mean'])
-                sd = torch.tensor(x['prior_sd'])
-                tp = torch.tensor(x['prior_tp_idx'])
-                idx = torch.tensor(x['regressor_col_idx'])
-                pyro.sample("prior_{}".format(name), dist.Normal(m, sd),
-                            obs=coef[..., tp, idx])
+                if len(x['prior_mean']) > 0:
+                    name = x['name']
+                    m = torch.tensor(x['prior_mean'])
+                    sd = torch.tensor(x['prior_sd'])
+                    tp = torch.tensor(x['prior_tp_idx'])
+                    idx = torch.tensor(x['prior_regressor_col_idx'])
+                    pyro.sample("prior_{}".format(name), dist.Normal(m, sd),
+                                obs=coef[..., tp, idx])
 
         obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy))
         with pyro.plate("response_plate", n_valid):
