@@ -35,11 +35,12 @@ class DataInputMapper(Enum):
     _POSITIVE_REGRESSOR_KNOT_POOLING_SCALE = 'PR_KNOT_POOL_SCALE'
     _POSITIVE_REGRESSOR_KNOT_SCALE = 'PR_KNOT_SCALE'
     # ----------  Prior Specification  ---------- #
-    _NUM_INSERT_PRIOR = 'N_PRIOR'
-    _INSERT_PRIOR_MEAN = 'PRIOR_MEAN'
-    _INSERT_PRIOR_SD = 'PRIOR_SD'
-    _INSERT_PRIOR_TP_IDX = 'PRIOR_TP_IDX'
-    _INSERT_PRIOR_IDX = 'PRIOR_IDX'
+    # _NUM_INSERT_PRIOR = 'N_PRIOR'
+    # _INSERT_PRIOR_MEAN = 'PRIOR_MEAN'
+    # _INSERT_PRIOR_SD = 'PRIOR_SD'
+    # _INSERT_PRIOR_TP_IDX = 'PRIOR_TP_IDX'
+    # _INSERT_PRIOR_IDX = 'PRIOR_IDX'
+    _COEF_PRIOR_LIST = 'COEF_PRIOR_LIST'
     _LEVEL_KNOTS = 'LEV_KNOT_LOC'
     _SEAS_TERM = 'SEAS_TERM'
 
@@ -66,6 +67,7 @@ class RegressionSamplingParameters(Enum):
     The stan output sampling parameters related with regression component.
     """
     COEFFICIENTS_KNOT = 'coef_knot'
+    COEFFICIENTS_KNOT_LOCATION = 'coef_knot_loc'
     COEFFICIENTS = 'coef'
 
 

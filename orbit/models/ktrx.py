@@ -54,14 +54,11 @@ class BaseKTRX(BaseModel):
         window width to decide the number of windows for the regression term
     rho_coefficients : float
         sigma in the Gaussian kernel for the regression term
-    insert_prior_regressor_col : list
-        list of regressor names to ingest priors
-    insert_prior_tp_idx : list
-        list of time points to ingest priors
-    insert_prior_mean : list
-        list of ingested prior means
-    insert_prior_sd : list
-        list of ingested prior sigmas
+    coef_prior_list : list of dicts
+        each dict in the list should have keys as 'name', 'prior_mean', 'prior_sd',
+        'prior_tp_idx', and 'prior_regressor_col', where values of 'prior_mean', 'prior_sd',
+        'prior_tp_idx' are lists of the same length.
+
 
     """
     _data_input_mapper = constants.DataInputMapper
@@ -82,10 +79,11 @@ class BaseKTRX(BaseModel):
                  rho_coefficients=0.15,
                  degree_of_freedom=30,
                  # coef priors on specific time-point
-                 insert_prior_regressor_col=None,
-                 insert_prior_tp_idx=None,
-                 insert_prior_mean=None,
-                 insert_prior_sd=None,
+                 # insert_prior_regressor_col=None,
+                 # insert_prior_tp_idx=None,
+                 # insert_prior_mean=None,
+                 # insert_prior_sd=None,
+                 coef_prior_list=None,
                  # knot customization
                  level_knot_dates=None,
                  level_knots=None,
@@ -109,11 +107,11 @@ class BaseKTRX(BaseModel):
         self.span_coefficients = span_coefficients
         self.rho_coefficients = rho_coefficients
 
-        self.insert_prior_regressor_col = insert_prior_regressor_col
-        self.insert_prior_tp_idx = insert_prior_tp_idx
-        self.insert_prior_mean = insert_prior_mean
-        self.insert_prior_sd = insert_prior_sd
-
+        # self.insert_prior_regressor_col = insert_prior_regressor_col
+        # self.insert_prior_tp_idx = insert_prior_tp_idx
+        # self.insert_prior_mean = insert_prior_mean
+        # self.insert_prior_sd = insert_prior_sd
+        self.coef_prior_list = coef_prior_list
         self.level_knot_dates = level_knot_dates
         self.level_knots = level_knots
         self._seasonal_knots_input = seasonal_knots_input
@@ -127,14 +125,17 @@ class BaseKTRX(BaseModel):
         self._regressor_knot_pooling_scale= self.regressor_knot_pooling_scale
         self._regressor_knot_scale = self.regressor_knot_scale
 
-        self._insert_prior_regressor_col = self.insert_prior_regressor_col
-        # self._insert_prior_idx = self.insert_prior_idx
-        self._insert_prior_tp_idx = self.insert_prior_tp_idx
-        self._insert_prior_mean = self.insert_prior_mean
-        self._insert_prior_sd = self.insert_prior_sd
-        self._insert_prior_idx = list()
-        self._num_insert_prior = None
-
+        # self._insert_prior_regressor_col = self.insert_prior_regressor_col
+        # # self._insert_prior_idx = self.insert_prior_idx
+        # self._insert_prior_tp_idx = self.insert_prior_tp_idx
+        # self._insert_prior_mean = self.insert_prior_mean
+        # self._insert_prior_sd = self.insert_prior_sd
+        # self._insert_prior_idx = list()
+        # self._num_insert_prior = None
+        if self.coef_prior_list:
+            self._coef_prior_list = deepcopy(coef_prior_list)
+        else:
+            self._coef_prior_list = None
         self._level_knot_dates = self.level_knot_dates
         self._level_knots = self.level_knots
         self._kernel_level = None
@@ -211,16 +212,18 @@ class BaseKTRX(BaseModel):
     def _set_default_base_args(self):
         """Set default attributes for None
         """
-        if self.insert_prior_regressor_col is None:
-            self._insert_prior_regressor_col = list()
-        if self.insert_prior_tp_idx is None:
-            self._insert_prior_tp_idx = list()
-        if self.insert_prior_mean is None:
-            self._insert_prior_mean = list()
-        if self.insert_prior_sd is None:
-            self._insert_prior_sd = list()
-        if self._num_insert_prior is None:
-            self._num_insert_prior = len(self._insert_prior_tp_idx)
+        # if self.insert_prior_regressor_col is None:
+        #     self._insert_prior_regressor_col = list()
+        # if self.insert_prior_tp_idx is None:
+        #     self._insert_prior_tp_idx = list()
+        # if self.insert_prior_mean is None:
+        #     self._insert_prior_mean = list()
+        # if self.insert_prior_sd is None:
+        #     self._insert_prior_sd = list()
+        # if self._num_insert_prior is None:
+        #     self._num_insert_prior = len(self._insert_prior_tp_idx)
+        if self.coef_prior_list is None:
+            self._coef_prior_list = []
         if self.level_knots is None:
             self._level_knots = list()
         if self._seasonal_knots_input is not None:
@@ -244,12 +247,14 @@ class BaseKTRX(BaseModel):
                 if p is not None and len(p) != valid_length:
                     raise IllegalArgument('Wrong dimension length in Regression Param Input')
 
-        def _validate_insert_prior(insert_prior_params):
-            len_insert_prior = list()
-            for p in insert_prior_params:
-                len_insert_prior.append(len(p))
-            if not all(len_insert == len_insert_prior[0] for len_insert in len_insert_prior):
-                raise IllegalArgument('Wrong dimension length in Insert Prior Input')
+        def _validate_insert_prior(coef_prior_list):
+            for test_dict in coef_prior_list:
+                len_insert_prior = list()
+                for key, val in test_dict.items():
+                    if key in ['prior_mean', 'prior_sd', 'prior_tp_idx']:
+                        len_insert_prior.append(len(val))
+                if not all(len_insert == len_insert_prior[0] for len_insert in len_insert_prior):
+                    raise IllegalArgument('wrong dimension length in inserted prior list')
 
         def _validate_level_knot_inputs(level_knot_dates, level_knots):
             if len(level_knots) != len(level_knot_dates):
@@ -263,8 +268,7 @@ class BaseKTRX(BaseModel):
              self.regressor_knot_pooling_scale, self.regressor_knot_scale],
             num_of_regressors
         )
-        _validate_insert_prior([self._insert_prior_regressor_col, self._insert_prior_tp_idx,
-                                self._insert_prior_mean, self._insert_prior_sd])
+        _validate_insert_prior(self.coef_prior_list)
 
         _validate_level_knot_inputs(self.level_knot_dates, self.level_knots)
 
@@ -308,9 +312,10 @@ class BaseKTRX(BaseModel):
         self._regressor_col = self._regular_regressor_col + self._positive_regressor_col
 
     def _set_insert_prior_idx(self):
-        if self._num_insert_prior > 0 and len(self._regressor_col) > 0:
-            for col in self._insert_prior_regressor_col:
-                self._insert_prior_idx.append(np.where(np.array(self._regressor_col) == col)[0][0])
+        if self._coef_prior_list and len(self._regressor_col) > 0:
+            for x in self._coef_prior_list:
+                prior_regressor_col_idx = np.where(np.array(self._regressor_col) == x['prior_regressor_col'])[0][0]
+                x.update({'prior_regressor_col_idx': prior_regressor_col_idx})
 
     def _set_static_data_attributes(self):
         """model data input based on args at instantiation or computed from args at instantiation"""
@@ -439,13 +444,12 @@ class BaseKTRX(BaseModel):
                 self._seasonal_knots_input['_seasonality_fs_order'])
 
     def _filter_insert_prior(self, df):
-        if self._num_insert_prior > 0 and len(self._regressor_col) > 0:
-            idx_inside = np.array(self._insert_prior_tp_idx) < df.shape[0]
-            self._insert_prior_regressor_col = np.array(self._insert_prior_regressor_col)[idx_inside]
-            self._insert_prior_idx = np.array(self._insert_prior_idx)[idx_inside]
-            self._insert_prior_tp_idx = np.array(self._insert_prior_tp_idx)[idx_inside]
-            self._insert_prior_mean = np.array(self._insert_prior_mean)[idx_inside]
-            self._insert_prior_sd = np.array(self._insert_prior_sd)[idx_inside]
+        if self._coef_prior_list and len(self._regressor_col) > 0:
+            for test_dict in self._coef_prior_list:
+                idx_inside = np.array(test_dict['prior_tp_idx']) < df.shape[0]
+                test_dict.update({'prior_tp_idx': np.array(test_dict['prior_tp_idx'])[idx_inside]})
+                test_dict.update({'prior_mean': np.array(test_dict['prior_mean'])[idx_inside]})
+                test_dict.update({'prior_sd': np.array(test_dict['prior_sd'])[idx_inside]})
 
     def _set_dynamic_data_attributes(self, df):
         """data input based on input DataFrame, rather than at object instantiation"""
