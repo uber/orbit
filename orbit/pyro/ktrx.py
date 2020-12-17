@@ -15,9 +15,12 @@ class Model:
         for key, value in data.items():
             key = key.lower()
             if isinstance(value, (list, np.ndarray)):
+                # TODO: this is hackk way; please fix this later
                 if key in ['which_valid_res']:
                     # to use as index, tensor type has to be long or int
                     value = torch.tensor(value)
+                elif key in ['coef_prior_list']:
+                    pass
                 else:
                     # loc/scale cannot be in long format
                     # sometimes they may be supplied as int, so dtype conversion is needed
@@ -94,10 +97,10 @@ class Model:
             # pooling latent variables
             rr_knot_loc = pyro.sample(
                 "rr_knot_loc", dist.Normal(rr_knot_pool_loc, rr_knot_pool_scale)
-            ).unsqueeze(-1) * torch.ones(n_rr, n_knots_coef)
+            )
             rr_knot = pyro.sample(
                 "rr_knot",
-                dist.Normal(rr_knot_loc, rr_knot_scale).to_event(1)
+                dist.Normal(rr_knot_loc.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef), rr_knot_scale).to_event(1)
             )
             rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
 
@@ -109,40 +112,45 @@ class Model:
                 dist.FoldedDistribution(
                     dist.Normal(pr_knot_pool_loc, pr_knot_pool_scale)
                 )
-            ).unsqueeze(-1) * torch.ones(n_pr, n_knots_coef)
+            )
             pr_knot = pyro.sample(
                 "pr_knot",
                 dist.FoldedDistribution(
-                    dist.Normal(pr_knot_loc, pr_knot_scale)
+                    dist.Normal(pr_knot_loc.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef), pr_knot_scale)
                 ).to_event(1)
             )
             pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
 
         # concatenating all latent variables
         coef_knot = torch.zeros(n_knots_coef)
+        coef_knot_loc = torch.zeros(pr_knot_pool_loc.shape)
         coef = torch.zeros(n_obs)
         if n_pr > 0 and n_rr > 0:
             coef_knot = torch.cat([rr_knot, pr_knot], dim=-2)
+            coef_knot_loc = torch.cat([rr_knot_loc, pr_knot_loc], dim=-1)
             coef = torch.cat([rr_coef, pr_coef], dim=-1)
         elif n_pr > 0:
             coef_knot = pr_knot
+            coef_knot_loc = pr_knot_loc
             coef = pr_coef
         elif n_rr > 0:
             coef_knot = rr_knot
+            coef_knot_loc = rr_knot_loc
             coef = rr_coef
         yhat = lev + (regressors * coef).sum(-1)
 
         # inject customize priors for coef at time t
-        n_prior = self.n_prior
-        if n_prior > 0:
-            prior_mean = self.prior_mean
-            prior_sd = self.prior_sd
-            prior_tp_idx = self.prior_tp_idx.int()
-            prior_idx = self.prior_idx.int()
-
-            for m, sd, tp, idx in zip(prior_mean, prior_sd, prior_tp_idx, prior_idx):
-                pyro.sample("prior_{}_{}".format(tp, idx), dist.Normal(m, sd),
-                            obs=coef[..., tp, idx])
+        coef_prior_list = self.coef_prior_list
+        if coef_prior_list:
+            for x in coef_prior_list:
+                if len(x['prior_mean']) > 0:
+                    name = x['name']
+                    m = torch.tensor(x['prior_mean'])
+                    sd = torch.tensor(x['prior_sd'])
+                    tp = torch.tensor(x['prior_tp_idx'])
+                    idx = torch.tensor(x['prior_regressor_col_idx'])
+                    pyro.sample("prior_{}".format(name), dist.Normal(m, sd),
+                                obs=coef[..., tp, idx])
 
         obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy))
         with pyro.plate("response_plate", n_valid):
@@ -156,6 +164,7 @@ class Model:
             'lev': lev + meany,
             'lev_knot': lev_knot,
             'coef': coef,
-            'coef_knot': coef_knot
+            'coef_knot': coef_knot,
+            'coef_knot_loc': coef_knot_loc,
         })
         return extra_out
