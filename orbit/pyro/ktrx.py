@@ -107,8 +107,8 @@ class Model:
                 "rr_knot",
                 dist.Normal(
                     rr_knot_loc.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef),
-                    rr_knot_scale)
-            ).to_event(2)
+                    rr_knot_scale).to_event(2)
+            )
             rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
 
         # positive regressor sampling
