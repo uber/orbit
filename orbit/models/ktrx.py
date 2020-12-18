@@ -132,10 +132,7 @@ class BaseKTRX(BaseModel):
         # self._insert_prior_sd = self.insert_prior_sd
         # self._insert_prior_idx = list()
         # self._num_insert_prior = None
-        if self.coef_prior_list:
-            self._coef_prior_list = deepcopy(coef_prior_list)
-        else:
-            self._coef_prior_list = None
+        self._coef_prior_list = []
         self._level_knot_dates = self.level_knot_dates
         self._level_knots = self.level_knots
         self._kernel_level = None
@@ -222,8 +219,8 @@ class BaseKTRX(BaseModel):
         #     self._insert_prior_sd = list()
         # if self._num_insert_prior is None:
         #     self._num_insert_prior = len(self._insert_prior_tp_idx)
-        if self.coef_prior_list is None:
-            self._coef_prior_list = []
+        if self.coef_prior_list is not None:
+            self._coef_prior_list = deepcopy(self.coef_prior_list)
         if self.level_knots is None:
             self._level_knots = list()
         if self._seasonal_knots_input is not None:
@@ -268,7 +265,7 @@ class BaseKTRX(BaseModel):
              self.regressor_knot_pooling_scale, self.regressor_knot_scale],
             num_of_regressors
         )
-        _validate_insert_prior(self.coef_prior_list)
+        _validate_insert_prior(self._coef_prior_list)
 
         _validate_level_knot_inputs(self.level_knot_dates, self.level_knots)
 

@@ -7,6 +7,8 @@ import pyro.distributions as dist
 # FIXME: this is sort of dangerous; consider better implementation later
 torch.set_default_tensor_type('torch.DoubleTensor')
 
+pyro.enable_validation(True)
+
 
 class Model:
     max_plate_nesting = 1
@@ -64,8 +66,7 @@ class Model:
         extra_out = {}
 
         # levels sampling
-        with pyro.plate("lev_plate", n_knots_lev):
-            lev_drift = pyro.sample("lev_drift", dist.Laplace(0, lev_knot_scale))
+        lev_drift = pyro.sample("lev_drift", dist.Laplace(0, lev_knot_scale).expand([n_knots_lev]).to_event(1))
         lev_knot_tran = lev_drift.cumsum(-1)
         lev_tran = (lev_knot_tran @ k_lev.transpose(-2, -1))
 
@@ -74,12 +75,15 @@ class Model:
         if p > 0:
             # pooling latent variables
             coef_knot_loc = pyro.sample(
-                "coef_knot_loc",
-                dist.Normal(coef_knot_pool_loc, coef_knot_pool_scale)
-            ).unsqueeze(-1) * torch.ones(p, n_knots_coef)
+                "coef_knot_loc", dist.Normal(
+                    coef_knot_pool_loc,
+                    coef_knot_pool_scale).to_event(1)
+            )
             coef_knot = pyro.sample(
                 "coef_knot",
-                dist.Normal(coef_knot_loc, coef_knot_scale).to_event(1)
+                dist.Normal(
+                    coef_knot_loc.unsqueeze(-1) * torch.ones(p, n_knots_coef),
+                    coef_knot_scale).to_event(2)
             )
             coef = (coef_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
             regression = (regressors * coef).sum(-1)
@@ -87,11 +91,11 @@ class Model:
         # concatenating all latent variables
         yhat = lev_tran + regression
 
-        obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy))
-        with pyro.plate("response_plate", n_valid):
-            pyro.sample("response",
-                        dist.StudentT(dof, yhat[..., which_valid], obs_scale),
-                        obs=response_tran[which_valid])
+        obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy)).unsqueeze(-1)
+        # with pyro.plate("response_plate", n_valid):
+        pyro.sample("response",
+                    dist.StudentT(dof, yhat[..., which_valid], obs_scale).to_event(1),
+                    obs=response_tran[which_valid])
 
         extra_out.update({
             'yhat': yhat + meany,
