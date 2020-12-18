@@ -11,6 +11,7 @@ from ..constants.constants import (
 )
 
 from ..estimators.stan_estimator import StanEstimatorMAP
+from ..estimators.pyro_estimator import PyroEstimatorMAP, PyroEstimatorVI
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
@@ -543,13 +544,146 @@ class BaseKTRLite(BaseModel):
         self._posterior_samples = model_extract
 
 
+class KTRLiteFull(BaseKTRLite):
+    """Concrete LGT model for full prediction
+
+    In full prediction, the prediction occurs as a function of each parameter posterior sample,
+    and the prediction results are aggregated after prediction. Prediction will
+    always return the median (aka 50th percentile) along with any additional percentiles that
+    are specified.
+
+    Parameters
+    ----------
+    n_bootstrap_draws : int
+        Number of bootstrap samples to draw from the initial MCMC or VI posterior samples.
+        If None, use the original posterior draws.
+    prediction_percentiles : list
+        List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
+        confident intervals, pass an empty list
+    kwargs
+        Additional args to pass to parent classes.
+
+    """
+    _supported_estimator_types = [PyroEstimatorVI]
+
+    def __init__(self, n_bootstrap_draws=None, prediction_percentiles=None, **kwargs):
+        # todo: assert compatible estimator
+        super().__init__(**kwargs)
+        self.n_bootstrap_draws = n_bootstrap_draws
+        self.prediction_percentiles = prediction_percentiles
+
+        # set default args
+        self._prediction_percentiles = None
+        self._n_bootstrap_draws = self.n_bootstrap_draws
+        self._set_default_args()
+
+        # validator model / estimator compatibility
+        self._validate_supported_estimator_type()
+
+    def _set_default_args(self):
+        if self.prediction_percentiles is None:
+            self._prediction_percentiles = [5, 95]
+        else:
+            self._prediction_percentiles = copy(self.prediction_percentiles)
+
+        if not self.n_bootstrap_draws:
+            self._n_bootstrap_draws = -1
+
+    def _bootstrap(self, n, random_state=None):
+        """Draw `n` number of bootstrap samples from the posterior_samples.
+
+        Args
+        ----
+        n : int
+            The number of bootstrap samples to draw
+
+        """
+        num_samples = self.estimator.num_sample
+        posterior_samples = self._posterior_samples
+
+        if n < 2:
+            raise IllegalArgument("Error: The number of bootstrap draws must be at least 2")
+        if random_state is not None:
+            np.random.seed(random_state)
+        sample_idx = np.random.choice(
+            range(num_samples),
+            size=n,
+            replace=True,
+        )
+
+        bootstrap_samples_dict = {}
+        for k, v in posterior_samples.items():
+            bootstrap_samples_dict[k] = v[sample_idx]
+
+        return bootstrap_samples_dict
+
+    def _aggregate_full_predictions(self, array, label, percentiles):
+        """Aggregates the mcmc prediction to a point estimate
+        Args
+        ----
+        array: np.ndarray
+            A 2d numpy array of shape (`num_samples`, prediction df length)
+        percentiles: list
+            A sorted list of one or three percentile(s) which will be used to aggregate lower, mid and upper values
+        label: str
+            A string used for labeling output dataframe columns
+        Returns
+        -------
+        pd.DataFrame
+            The aggregated across mcmc samples with columns for `50` aka median
+            and all other percentiles specified in `percentiles`.
+        """
+
+        aggregated_array = np.percentile(array, percentiles, axis=0)
+        columns = [label + "_" + str(p) if p != 50 else label for p in percentiles]
+        aggregate_df = pd.DataFrame(aggregated_array.T, columns=columns)
+        return aggregate_df
+
+    def predict(self, df, decompose=False, random_state=None):
+        """Return model predictions as a function of fitted model and df"""
+        # raise if model is not fitted
+        if not self.is_fitted():
+            raise PredictionException("Model is not fitted yet.")
+
+        # if bootstrap draws, replace posterior samples with bootstrap
+        posterior_samples = self._bootstrap(self._n_bootstrap_draws, random_state=random_state) \
+            if self._n_bootstrap_draws > 1 \
+            else self._posterior_samples
+
+        predicted_dict = self._predict(
+            posterior_estimates=posterior_samples,
+            df=df,
+            include_error=True,
+            random_state=random_state,
+            decompose=decompose,
+        )
+
+        # MUST copy, or else instance var persists in memory
+        percentiles = copy(self._prediction_percentiles)
+        percentiles += [50]  # always find median
+        percentiles = list(set(percentiles))  # unique set
+        percentiles.sort()
+
+        for k, v in predicted_dict.items():
+            predicted_dict[k] = self._aggregate_full_predictions(
+                array=v,
+                label=k,
+                percentiles=percentiles,
+            )
+
+        aggregated_df = pd.concat(predicted_dict, axis=1)
+        aggregated_df.columns = aggregated_df.columns.droplevel()
+        aggregated_df = self._prepend_date_column(aggregated_df, df)
+        return aggregated_df
+
+
 class KTRLiteMAP(BaseKTRLite):
     """Concrete LGT model for MAP (Maximum a Posteriori) prediction
     Similar to `LGTAggregated` but predition is based on Maximum a Posteriori (aka Mode)
     of the posterior.
     This model only supports MAP estimating `estimator_type`s
     """
-    _supported_estimator_types = [StanEstimatorMAP]
+    _supported_estimator_types = [StanEstimatorMAP, PyroEstimatorMAP]
 
     def __init__(self, estimator_type=StanEstimatorMAP, **kwargs):
         super().__init__(estimator_type=estimator_type, **kwargs)

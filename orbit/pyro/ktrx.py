@@ -7,6 +7,8 @@ import pyro.distributions as dist
 # FIXME: this is sort of dangerous; consider better implementation later
 torch.set_default_tensor_type('torch.DoubleTensor')
 
+pyro.enable_validation(True)
+
 
 class Model:
     max_plate_nesting = 1
@@ -88,7 +90,8 @@ class Model:
 
         # levels sampling
         lev_knot_tran = pyro.sample(
-            "lev_knot_tran", dist.Normal(lev_knot_loc - meany, lev_knot_scale).expand([n_knots_lev])
+            "lev_knot_tran",
+            dist.Normal(lev_knot_loc - meany, lev_knot_scale).expand([n_knots_lev]).to_event(1)
         )
         lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
 
@@ -96,12 +99,16 @@ class Model:
         if n_rr > 0:
             # pooling latent variables
             rr_knot_loc = pyro.sample(
-                "rr_knot_loc", dist.Normal(rr_knot_pool_loc, rr_knot_pool_scale)
+                "rr_knot_loc", dist.Normal(
+                    rr_knot_pool_loc,
+                    rr_knot_pool_scale).to_event(1)
             )
             rr_knot = pyro.sample(
                 "rr_knot",
-                dist.Normal(rr_knot_loc.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef), rr_knot_scale).to_event(1)
-            )
+                dist.Normal(
+                    rr_knot_loc.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef),
+                    rr_knot_scale)
+            ).to_event(2)
             rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
 
         # positive regressor sampling
@@ -110,14 +117,25 @@ class Model:
             pr_knot_loc = pyro.sample(
                 "pr_knot_loc",
                 dist.FoldedDistribution(
-                    dist.Normal(pr_knot_pool_loc, pr_knot_pool_scale)
-                )
+                    dist.Normal(pr_knot_pool_loc,
+                                pr_knot_pool_scale)
+                ).to_event(1)
             )
+            # # TODO: Why not this?
+            # pr_knot = pyro.sample(
+            #     "pr_knot",
+            #     dist.FoldedDistribution(
+            #         dist.Normal(
+            #             pr_knot_loc, pr_knot_scale)
+            #     ).expand([n_knots_coef, n_pr]).to_event(2)
+            # )
             pr_knot = pyro.sample(
                 "pr_knot",
                 dist.FoldedDistribution(
-                    dist.Normal(pr_knot_loc.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef), pr_knot_scale)
-                ).to_event(1)
+                    dist.Normal(
+                        pr_knot_loc.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef),
+                        pr_knot_scale)
+                ).to_event(2)
             )
             pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
 
@@ -149,13 +167,14 @@ class Model:
                     sd = torch.tensor(x['prior_sd'])
                     tp = torch.tensor(x['prior_tp_idx'])
                     idx = torch.tensor(x['prior_regressor_col_idx'])
-                    pyro.sample("prior_{}".format(name), dist.Normal(m, sd),
+                    pyro.sample("prior_{}".format(name), dist.Normal(m, sd).to_event(1),
                                 obs=coef[..., tp, idx])
 
-        obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy))
-        with pyro.plate("response_plate", n_valid):
-            pyro.sample("response", dist.StudentT(dof, yhat[..., which_valid], obs_scale),
-                        obs=response_tran[which_valid])
+        obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy)).unsqueeze(-1)
+        # with pyro.plate("response_plate", n_valid):
+        pyro.sample("response",
+                    dist.StudentT(dof, yhat[..., which_valid], obs_scale).to_event(1),
+                    obs=response_tran[which_valid])
 
         lev_knot = lev_knot_tran + meany
 
