@@ -423,7 +423,8 @@ def grid_search_orbit(param_grid, model, df, min_train_len,
                 params[key] = val
 
         for key, val in model.__dict__['estimator'].__dict__.items():
-            params[key] = val
+            if not key.startswith('_') and key != 'stan_init':
+                params[key] = val
 
         return params.copy()
 
@@ -443,6 +444,7 @@ def grid_search_orbit(param_grid, model, df, min_train_len,
             else:
                 params_[key] = val
 
+        # it is safer to reinstantiate a model object than using deepcopy...
         model_ = model.__class__(**params_)
         bt = BackTester(
             model=model_,
