@@ -3,11 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy
 import inspect
+import tqdm
 
 from .metrics import smape, wmape, mape, mse, mae, rmsse
 from ..exceptions import BacktestException
 from ..constants.constants import TimeSeriesSplitSchemeNames
 from ..constants.palette import QualitativePalette
+
+from sklearn.model_selection import ParameterGrid
+from orbit.diagnostics.metrics import smape, mape, wmape
 
 
 class TimeSeriesSplitter(object):
@@ -390,3 +394,78 @@ class BackTester(object):
             self._score_df = pd.concat((self._score_df, train_score_df), axis=0).reset_index(drop=True)
 
         return self._score_df
+
+
+def grid_search_orbit(param_grid, model, df, min_train_len,
+                      incremental_len, forecast_len, n_splits=None,
+                      metrics=None, criteria=None, verbose=True, **kwargs):
+    """A gird search unitlity to tune the hyperparameters for orbit models using the inherent backtest module.
+    Parameters
+    ----------
+    param_gird : a dict with candidate values for hyper-params to be tuned
+    model : model
+    data : data
+    min_train_len : scheduling parameter in backtest
+    incremental_len : scheduling parameter in backtest
+    forecast_len : scheduling parameter in backtest
+    n_splits : scheduling parameter in backtest
+    metrics : metric function, defaul smape defined in orbit.diagnostics.metrics
+    criteria : "min" or "max"; defatul is None ("min")
+    Return
+    ------
+    a tuple of best hyperparams and dataframe of tuning results
+    """
+    def _get_params(model):
+        # get all the model params for orbit typed models
+        params = {}
+        for key, val in model.__dict__.items():
+            if not key.startswith('_') and key != 'estimator':
+                params[key] = val
+
+        for key, val in model.__dict__['estimator'].__dict__.items():
+            if not key.startswith('_') and key != 'stan_init':
+                params[key] = val
+
+        return params.copy()
+
+    param_list_dict = list(ParameterGrid(param_grid))
+    params = _get_params(model)
+    res = pd.DataFrame(param_list_dict)
+    metric_values = list()
+
+    for tuned_param_dict in tqdm.tqdm(param_list_dict):
+        if verbose:
+            print("tuning hyper-params {}".format(tuned_param_dict))
+
+        params_ = params.copy()
+        for key, val in tuned_param_dict.items():
+            if key not in params_.keys():
+                raise Exception("tuned hyper-param {} is not in the model's parameters".format(key))
+            else:
+                params_[key] = val
+
+        # it is safer to reinstantiate a model object than using deepcopy...
+        model_ = model.__class__(**params_)
+        bt = BackTester(
+            model=model_,
+            df=df,
+            min_train_len=min_train_len,
+            n_splits=n_splits,
+            incremental_len=incremental_len,
+            forecast_len=forecast_len,
+            **kwargs
+        )
+        bt.fit_predict()
+        # TODO: should we assert len(metrics) == 1?
+        if metrics is None:
+            metrics = smape
+        metric_val = bt.score(metrics=[metrics]).metric_values[0]
+        if verbose:
+            print("tuning metric:{:-.5g}".format(metric_val))
+        metric_values.append(metric_val)
+    res['metrics'] = metric_values
+    if criteria is None:
+        criteria = 'min'
+    best_params = res[res['metrics'] == res['metrics'].apply(criteria)].drop('metrics', axis=1).to_dict('records')
+
+    return best_params, res
