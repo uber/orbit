@@ -21,7 +21,7 @@ if os.environ.get('DISPLAY', '') == '':
 
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                         pred_col='prediction', prediction_percentiles=None,
-                        title="", test_actual_df=None, is_visible=True, figsize=None, path=None):
+                        title="", test_actual_df=None, is_visible=True, figsize=None, path=None, fontsize=None):
     """
     plot training actual response together with predicted data; if actual response of predicted
     data is there, plot it too.
@@ -49,6 +49,8 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         figsize pass through to `matplotlib.pyplot.figure()`
     path: str
         path to save the figure
+    fontzise: int
+        fontsize of the title
     Returns
     -------
         None.
@@ -73,7 +75,10 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         plot_confid = True
 
     if not figsize:
-        figsize=(16, 8)
+        figsize = (16, 8)
+
+    if not fontsize:
+        fontsize = 16
 
     _training_actual_df = training_actual_df.copy()
     _predicted_df = predicted_df.copy()
@@ -105,19 +110,21 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                         _predicted_df[confid_cols[1]],
                         facecolor='#42999E', alpha=0.5)
 
-    ax.set_title(title, fontsize=16)
+    ax.set_title(title, fontsize=fontsize)
     ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
     ax.legend()
     if path:
         fig.savefig(path)
     if is_visible:
         plt.show()
+    else:
+        plt.close()
 
     return ax
 
 
 def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, plot_components=None,
-                              title="", figsize=None, path=None):
+                              title="", figsize=None, path=None, fontsize=None, is_visible=True):
     """ Plot predicted componenets with the data frame of decomposed prediction where components
     has been pre-defined as `trend`, `seasonality` and `regression`.
     Parameters
@@ -133,12 +140,16 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
     plot_components: list
         a list of strings to show the label of components to be plotted; by default, it uses values in
         `orbit.constants.constants.PredictedComponents`.
-    title: str
+    title: str; optional
         title of the plot
-    figsize: tuple
+    figsize: tuple; optional
         figsize pass through to `matplotlib.pyplot.figure()`
-    path: str
+    path: str; optional
         path to save the figure
+    fontzise: int; optional
+        fontsize of the title
+    is_visible: boolean
+        whether we want to show the plot. If called from unittest, is_visible might = False.
    Returns
     -------
         None
@@ -154,7 +165,10 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
     plot_components = [p for p in plot_components if p in _predicted_df.columns.tolist()]
     n_panels = len(plot_components)
     if not figsize:
-        figsize=(16, 8)
+        figsize = (16, 8)
+
+    if not fontsize:
+        fontsize = 16
 
     if prediction_percentiles is None:
         _pred_percentiles = [5, 95]
@@ -175,19 +189,29 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
                             _predicted_df[confid_cols[1]],
                             facecolor='#42999E', alpha=0.5)
         ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
-        ax.set_title(comp, fontsize=16)
-    plt.suptitle(title, fontsize=16)
+        ax.set_title(comp, fontsize=fontsize)
+    plt.suptitle(title, fontsize=fontsize)
     fig.tight_layout()
 
     if path:
         plt.savefig(path)
+    if is_visible:
+        plt.show()
+    else:
+        plt.close()
 
     return axes
 
 
 def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon',
-                           metric_col='smape', bar_width=0.1, path=None):
-    plt.rcParams['figure.figsize'] = [20, 6]
+                           metric_col='smape', bar_width=0.1, path=None, figsize=None, fontsize=None, is_visible=False):
+    if not figsize:
+        figsize = [20, 6]
+
+    if not fontsize:
+        fontsize = 10
+
+    plt.rcParams['figure.figsize'] = figsize
     models = df[model_col].unique()
     metric_horizons = df[pred_horizon_col].unique()
     n_models = len(models)
@@ -215,16 +239,20 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
 
     # create legend & show graphic
     plt.legend()
-    plt.title("Model Comparison with {}".format(metric_col))
+    plt.title("Model Comparison with {}".format(metric_col), fontsize=fontsize)
 
     if path:
         plt.savefig(path)
 
+    if is_visible:
+        plt.show()
+    else:
+        plt.close()
 
 
 def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
-                          pair_type='scatter', figsize=None, path=None,
-                          incl_trend_params=False, incl_smooth_params=False):
+                          pair_type='scatter', figsize=None, path=None, fontsize=None,
+                          incl_trend_params=False, incl_smooth_params=False, is_visible=True):
     """ Data Viz for posterior samples
 
     Params
@@ -243,16 +271,20 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         figure size
     path : str; optional
         dir path to save the chart
+    fontsize: int; optional
+        fontsize of the title
     incl_trend_params : bool
         if plot trend parameters; default False
     incl_smooth_params : bool
         if plot smoothing parameters; default False
+    is_visible: boolean
+        whether we want to show the plot. If called from unittest, is_visible might = False.
 
     Returns
     -------
     fig : plt object
     """
-    if not 'orbit' in str(mod.__class__):
+    if 'orbit' not in str(mod.__class__):
         raise Exception("This plotting utility works for orbit model object only.")
     # if mod.infer_method != 'mcmc':
     #     raise Exception("This plotting utility works for mcmc inference only.")
@@ -263,7 +295,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
 
     if len(mod._positive_regressor_col) > 0:
         for i, regressor in enumerate(mod._positive_regressor_col):
-            posterior_samples[regressor] = posterior_samples['pr_beta'][:,i]
+            posterior_samples[regressor] = posterior_samples['pr_beta'][:, i]
     if len(mod._regular_regressor_col) > 0:
         for i, regressor in enumerate(mod._regular_regressor_col):
             posterior_samples[regressor] = posterior_samples['rr_beta'][:, i]
@@ -280,6 +312,9 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     if not figsize:
         figsize = (8, 2 * len(params_))
 
+    if not fontsize:
+        fontsize = 10
+
     def _density_plot(posterior_samples, n_bins=20, ci_level=.95, figsize=None):
 
         fig, axes = plt.subplots(len(params_), 1, squeeze=True, figsize=figsize)
@@ -288,9 +323,9 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
             mean = np.mean(samples)
             median = np.median(samples)
             cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level)/2), \
-                                 np.percentile(samples, 100 * (1 + ci_level)/2)
+                np.percentile(samples, 100 * (1 + ci_level)/2)
 
-            sns.distplot(samples, bins=n_bins, kde_kws={'shade':True}, ax=axes[i], norm_hist=False)
+            sns.distplot(samples, bins=n_bins, kde_kws={'shade': True}, ax=axes[i], norm_hist=False)
             # sns.kdeplot(samples, shade=True, ax=axes[i])
             axes[i].set_xlabel(param)
             axes[i].set_ylabel('density')
@@ -303,7 +338,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
 
         handles, labels = axes[0].get_legend_handles_labels()
         fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.15, 0.9))
-        plt.suptitle('Histogram and Density of Posterior Samples')
+        plt.suptitle('Histogram and Density of Posterior Samples', fontsize=fontsize)
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
         return axes
@@ -332,7 +367,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
 
         handles, labels = axes[0].get_legend_handles_labels()
         fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.15, 0.9))
-        plt.suptitle('Trace of Posterior Samples')
+        plt.suptitle('Trace of Posterior Samples', fontsize=fontsize)
         plt.xlabel('draw')
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
@@ -342,7 +377,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         samples_df = pd.DataFrame({key: posterior_samples[key].flatten() for key in params_})
 
         fig = sns.pairplot(samples_df, kind=pair_type, diag_kws=dict(bins=n_bins))
-        fig.fig.suptitle("Pair Plot")
+        fig.fig.suptitle("Pair Plot", fontsize=fontsize)
         fig.fig.tight_layout(rect=[0, 0.03, 1, 0.95])
 
         return fig
@@ -356,5 +391,10 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
 
     if path:
         plt.savefig(path)
+
+    if is_visible:
+        plt.show()
+    else:
+        plt.close()
 
     return axes
