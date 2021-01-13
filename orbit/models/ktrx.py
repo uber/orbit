@@ -465,8 +465,8 @@ class BaseKTRX(BaseModel):
                 start_tp_idx = min(test_dict['prior_start_tp_idx'], df.shape[0])
                 if start_tp_idx < end_tp_idx:
                     expected_shape = (end_tp_idx - start_tp_idx, len(prior_regressor_col))
-                    test_dict.update({'end_tp_idx': end_tp_idx})
-                    test_dict.update({'start_tp_idx': start_tp_idx})
+                    test_dict.update({'prior_end_tp_idx': end_tp_idx})
+                    test_dict.update({'prior_start_tp_idx': start_tp_idx})
                     test_dict.update({'prior_mean': np.full(expected_shape, m)})
                     test_dict.update({'prior_sd': np.full(expected_shape, sd)})
                 else:

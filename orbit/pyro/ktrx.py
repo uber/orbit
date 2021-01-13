@@ -165,8 +165,8 @@ class Model:
                 sd = torch.tensor(x['prior_sd'])
                 # tp = torch.tensor(x['prior_tp_idx'])
                 # idx = torch.tensor(x['prior_regressor_col_idx'])
-                start_tp_idx = x['start_tp_idx']
-                end_tp_idx = x['end_tp_idx']
+                start_tp_idx = x['prior_start_tp_idx']
+                end_tp_idx = x['prior_end_tp_idx']
                 idx = x['prior_regressor_col_idx']
                 pyro.sample(
                     "prior_{}".format(name),
