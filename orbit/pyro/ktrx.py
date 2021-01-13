@@ -155,23 +155,33 @@ class Model:
             coef_knot = rr_knot
             coef_knot_loc = rr_knot_loc
             coef = rr_coef
-        yhat = lev + (regressors * coef).sum(-1)
 
-        # inject customize priors for coef at time t
+        # coefficients likelihood/priors
         coef_prior_list = self.coef_prior_list
         if coef_prior_list:
             for x in coef_prior_list:
-                if len(x['prior_mean']) > 0:
-                    name = x['name']
-                    m = torch.tensor(x['prior_mean'])
-                    sd = torch.tensor(x['prior_sd'])
-                    tp = torch.tensor(x['prior_tp_idx'])
-                    idx = torch.tensor(x['prior_regressor_col_idx'])
-                    pyro.sample("prior_{}".format(name), dist.Normal(m, sd).to_event(1),
-                                obs=coef[..., tp, idx])
+                name = x['name']
+                m = torch.tensor(x['prior_mean'])
+                sd = torch.tensor(x['prior_sd'])
+                # tp = torch.tensor(x['prior_tp_idx'])
+                # idx = torch.tensor(x['prior_regressor_col_idx'])
+                start_tp_idx = x['start_tp_idx']
+                end_tp_idx = x['end_tp_idx']
+                idx = x['prior_regressor_col_idx']
+                pyro.sample(
+                    "prior_{}".format(name),
+                    dist.Normal(m, sd).to_event(2),
+                    obs=coef[..., start_tp_idx:end_tp_idx, idx]
+                )
 
+        # observation likelihood
+        yhat = lev + (regressors * coef).sum(-1)
         obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy)).unsqueeze(-1)
         # with pyro.plate("response_plate", n_valid):
+        #     pyro.sample("response",
+        #                 dist.StudentT(dof, yhat[..., which_valid], obs_scale),
+        #                 obs=response_tran[which_valid])
+
         pyro.sample("response",
                     dist.StudentT(dof, yhat[..., which_valid], obs_scale).to_event(1),
                     obs=response_tran[which_valid])

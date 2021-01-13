@@ -245,13 +245,14 @@ class BaseKTRX(BaseModel):
                     raise IllegalArgument('Wrong dimension length in Regression Param Input')
 
         def _validate_insert_prior(coef_prior_list):
-            for test_dict in coef_prior_list:
-                len_insert_prior = list()
-                for key, val in test_dict.items():
-                    if key in ['prior_mean', 'prior_sd', 'prior_tp_idx']:
-                        len_insert_prior.append(len(val))
-                if not all(len_insert == len_insert_prior[0] for len_insert in len_insert_prior):
-                    raise IllegalArgument('wrong dimension length in inserted prior list')
+            pass
+            # for test_dict in coef_prior_list:
+            #     len_insert_prior = list()
+            #     for key, val in test_dict.items():
+            #         if key in ['prior_mean', 'prior_sd', 'prior_tp_idx']:
+            #             len_insert_prior.append(len(val))
+            #     if not all(len_insert == len_insert_prior[0] for len_insert in len_insert_prior):
+            #         raise IllegalArgument('wrong dimension length in inserted prior list')
 
         def _validate_level_knot_inputs(level_knot_dates, level_knots):
             if len(level_knots) != len(level_knot_dates):
@@ -311,7 +312,10 @@ class BaseKTRX(BaseModel):
     def _set_insert_prior_idx(self):
         if self._coef_prior_list and len(self._regressor_col) > 0:
             for x in self._coef_prior_list:
-                prior_regressor_col_idx = np.where(np.array(self._regressor_col) == x['prior_regressor_col'])[0][0]
+                prior_regressor_col_idx = [
+                    np.where(np.array(self._regressor_col) == col)[0][0]
+                    for col in x['prior_regressor_col']
+                ]
                 x.update({'prior_regressor_col_idx': prior_regressor_col_idx})
 
     def _set_static_data_attributes(self):
@@ -443,10 +447,17 @@ class BaseKTRX(BaseModel):
     def _filter_insert_prior(self, df):
         if self._coef_prior_list and len(self._regressor_col) > 0:
             for test_dict in self._coef_prior_list:
-                idx_inside = np.array(test_dict['prior_tp_idx']) < df.shape[0]
-                test_dict.update({'prior_tp_idx': np.array(test_dict['prior_tp_idx'])[idx_inside]})
-                test_dict.update({'prior_mean': np.array(test_dict['prior_mean'])[idx_inside]})
-                test_dict.update({'prior_sd': np.array(test_dict['prior_sd'])[idx_inside]})
+                prior_regressor_col = test_dict['prior_regressor_col']
+                m = test_dict['prior_mean']
+                sd = test_dict['prior_sd']
+                end_tp_idx = min(test_dict['prior_end_tp_idx'], df.shape[0])
+                start_tp_idx = max(test_dict['prior_start_tp_idx'], 0)
+                expected_shape = (end_tp_idx - start_tp_idx, len(prior_regressor_col))
+
+                test_dict.update({'end_tp_idx': end_tp_idx})
+                test_dict.update({'start_tp_idx': start_tp_idx})
+                test_dict.update({'prior_mean': np.full(expected_shape, m)})
+                test_dict.update({'prior_sd': np.full(expected_shape, sd)})
 
     def _set_dynamic_data_attributes(self, df):
         """data input based on input DataFrame, rather than at object instantiation"""
