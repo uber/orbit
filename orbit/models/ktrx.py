@@ -457,7 +457,8 @@ class BaseKTRX(BaseModel):
 
     def _filter_insert_prior(self, df):
         if self._coef_prior_list and len(self._regressor_col) > 0:
-            for test_dict in self._coef_prior_list:
+            # iterate over a copy due to the removal operation
+            for test_dict in self._coef_prior_list[:]:
                 prior_regressor_col = test_dict['prior_regressor_col']
                 m = test_dict['prior_mean']
                 sd = test_dict['prior_sd']
