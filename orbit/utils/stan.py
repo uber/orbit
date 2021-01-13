@@ -25,7 +25,7 @@ def compile_stan_model(stan_model_name):
     if not os.path.isfile(compiled_model) or \
             os.path.getmtime(compiled_model) < os.path.getmtime(source_model):
 
-        with open(source_model) as f:
+        with open(source_model, encoding="utf-8") as f:
             model_code = f.read()
 
         sm = StanModel(model_code=model_code)
