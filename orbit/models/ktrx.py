@@ -89,6 +89,7 @@ class BaseKTRX(BaseModel):
                  level_knots=None,
                  seasonal_knots_input=None,
                  coefficients_knot_length=None,
+                 coef_knot_dates=None,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
         self.response_col = response_col
@@ -138,7 +139,7 @@ class BaseKTRX(BaseModel):
         self._kernel_level = None
         self._num_knots_level = None
         self._knots_tp_level = None
-        self._coef_knot_dates = None
+        self._coef_knot_dates = coef_knot_dates
         self._seas_term = None
 
         self._model_param_names = list()
@@ -397,18 +398,28 @@ class BaseKTRX(BaseModel):
         # kernel of coefficients calculations
         # if self._knots_tp_coefficients is None:
         if self._num_of_regressors > 0:
-            if self.coefficients_knot_length is not None:
-                # TODO: approximation; can consider directly coefficients_knot_length it as step size
-                knots_distance = self.coefficients_knot_length
-            else:
-                number_of_knots = round(1 / self.span_coefficients)
-                knots_distance = math.ceil(self._cutoff / number_of_knots)
+            if self._coef_knot_dates is None:
+                if self.coefficients_knot_length is not None:
+                    # TODO: approximation; can consider directly coefficients_knot_length it as step size
+                    knots_distance = self.coefficients_knot_length
+                else:
+                    number_of_knots = round(1 / self.span_coefficients)
+                    knots_distance = math.ceil(self._cutoff / number_of_knots)
 
-            # start in the middle
-            knots_idx_start_coef = round(knots_distance / 2)
-            knots_idx_coef = np.arange(knots_idx_start_coef, self._cutoff,  knots_distance)
-            self._knots_tp_coefficients = (1 + knots_idx_coef) / self._num_of_observations
-            self._coef_knot_dates = df[self.date_col].values[knots_idx_coef]
+                # start in the middle
+                knots_idx_start_coef = round(knots_distance / 2)
+                knots_idx_coef = np.arange(knots_idx_start_coef, self._cutoff,  knots_distance)
+                self._knots_tp_coefficients = (1 + knots_idx_coef) / self._num_of_observations
+                self._coef_knot_dates = df[self.date_col].values[knots_idx_coef]
+            else:
+                # FIXME: this only works up to daily series (not working on hourly series)
+                self._coef_knot_dates = pd.to_datetime([
+                    x for x in self._coef_knot_dates if (x <= df[self.date_col].max()) and (x >= df[self.date_col].min())
+                ])
+                self._knots_tp_coefficients = np.array(
+                    ((self._coef_knot_dates - self._training_df_meta['training_start']).days + 1) /
+                    ((self._training_df_meta['training_end'] - self._training_df_meta['training_start']).days + 1)
+                )
 
             kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
             self._num_knots_coefficients = len(self._knots_tp_coefficients)
@@ -451,13 +462,16 @@ class BaseKTRX(BaseModel):
                 m = test_dict['prior_mean']
                 sd = test_dict['prior_sd']
                 end_tp_idx = min(test_dict['prior_end_tp_idx'], df.shape[0])
-                start_tp_idx = max(test_dict['prior_start_tp_idx'], 0)
-                expected_shape = (end_tp_idx - start_tp_idx, len(prior_regressor_col))
-
-                test_dict.update({'end_tp_idx': end_tp_idx})
-                test_dict.update({'start_tp_idx': start_tp_idx})
-                test_dict.update({'prior_mean': np.full(expected_shape, m)})
-                test_dict.update({'prior_sd': np.full(expected_shape, sd)})
+                start_tp_idx = min(test_dict['prior_start_tp_idx'], df.shape[0])
+                if start_tp_idx < end_tp_idx:
+                    expected_shape = (end_tp_idx - start_tp_idx, len(prior_regressor_col))
+                    test_dict.update({'end_tp_idx': end_tp_idx})
+                    test_dict.update({'start_tp_idx': start_tp_idx})
+                    test_dict.update({'prior_mean': np.full(expected_shape, m)})
+                    test_dict.update({'prior_sd': np.full(expected_shape, sd)})
+                else:
+                    # removing invalid prior
+                    self._coef_prior_list.remove(test_dict)
 
     def _set_dynamic_data_attributes(self, df):
         """data input based on input DataFrame, rather than at object instantiation"""
@@ -609,11 +623,11 @@ class BaseKTRX(BaseModel):
 
         if self._seasonal_knots_input is not None:
             seas = generate_seas(df, self.date_col, self._training_df_meta,
-                                        self._seasonal_knots_input['_seas_coef_knot_dates'],
-                                        self._seasonal_knots_input['_sea_coef_knot'],
-                                        self._seasonal_knots_input['_sea_rho'],
-                                        self._seasonal_knots_input['_seasonality'],
-                                        self._seasonal_knots_input['_seasonality_fs_order'])
+                                 self._seasonal_knots_input['_seas_coef_knot_dates'],
+                                 self._seasonal_knots_input['_sea_coef_knot'],
+                                 self._seasonal_knots_input['_sea_rho'],
+                                 self._seasonal_knots_input['_seasonality'],
+                                 self._seasonal_knots_input['_seasonality_fs_order'])
         else:
             seas = 0.0
 
@@ -637,8 +651,10 @@ class BaseKTRX(BaseModel):
             pred_regressor_matrix = np.concatenate([pred_regular_regressor_matrix,
                                                     pred_positive_regressor_matrix], axis=-1)
             kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
-            regression = np.sum(np.matmul(coef_knot, kernel_coefficients.transpose(1, 0)) * \
-                                pred_regressor_matrix.transpose(1, 0), axis=-2)
+            regression = np.sum(
+                np.matmul(coef_knot, kernel_coefficients.transpose(1, 0)) *
+                pred_regressor_matrix.transpose(1, 0), axis=-2
+            )
 
         if include_error:
             epsilon = nct.rvs(self.degree_of_freedom, nc=0, loc=0,
@@ -813,6 +829,31 @@ class BaseKTRX(BaseModel):
 
         return reg_df
 
+    def get_regression_coefs_knots(self, aggregate_method):
+        """Return DataFrame regression coefficients knots
+
+        If PredictMethod is `full` return `mean` of coefficients instead
+        """
+        # init dataframe
+        knots_df = pd.DataFrame()
+        # end if no regressors
+        if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
+            return knots_df
+
+        knots_df[self.date_col] = self._coef_knot_dates
+        coef_knots = self._aggregate_posteriors \
+            .get(aggregate_method) \
+            .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+
+        # get column names
+        rr_cols = self._regular_regressor_col
+        pr_cols = self._positive_regressor_col
+        regressor_col = rr_cols + pr_cols
+        for idx, col in enumerate(regressor_col):
+            knots_df[col] = np.transpose(coef_knots[:, idx])
+
+        return knots_df
+
     def plot_regression_coefs(self,
                               coef_df,
                               coef_df_lower=None,
@@ -980,6 +1021,10 @@ class KTRXFull(BaseKTRX):
                                             include_ci=include_ci,
                                             date_array=date_array)
 
+    def get_regression_coefs_knots(self, aggregate_method='mean'):
+        self._set_aggregate_posteriors()
+        return super().get_regression_coefs_knots(aggregate_method=aggregate_method)
+
     def plot_regression_coefs(self, aggregate_method='mean', include_ci=False, date_array=None, **kwargs):
         if include_ci:
             coef_df, coef_df_lower, coef_df_upper = self.get_regression_coefs(
@@ -1055,6 +1100,9 @@ class KTRXAggregated(BaseKTRX):
         return super().get_regression_coefs(aggregate_method=self.aggregate_method,
                                             include_ci=False,
                                             date_array=date_array)
+
+    def get_regression_coefs_knots(self):
+        return super().get_regression_coefs_knots(aggregate_method=self.aggregate_method)
 
     def plot_regression_coefs(self, date_array=None, **kwargs):
         coef_df = self.get_regression_coefs(date_array=date_array)
