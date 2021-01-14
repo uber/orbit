@@ -161,6 +161,7 @@ class Model:
         if coef_prior_list:
             for x in coef_prior_list:
                 name = x['name']
+                # TODO: we can move torch conversion to init to enhance speed
                 m = torch.tensor(x['prior_mean'])
                 sd = torch.tensor(x['prior_sd'])
                 # tp = torch.tensor(x['prior_tp_idx'])
@@ -175,7 +176,7 @@ class Model:
                 )
 
         # observation likelihood
-        yhat = lev + (regressors * coef).sum(-1)
+        yhat = lev + torch.einsum("ab,...ab->...a", regressors, coef)
         obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy)).unsqueeze(-1)
         # with pyro.plate("response_plate", n_valid):
         #     pyro.sample("response",

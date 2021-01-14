@@ -89,7 +89,7 @@ class BaseKTRX(BaseModel):
                  level_knots=None,
                  seasonal_knots_input=None,
                  coefficients_knot_length=None,
-                 coef_knot_dates=None,
+                 coefficients_knot_dates=None,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
         self.response_col = response_col
@@ -139,7 +139,7 @@ class BaseKTRX(BaseModel):
         self._kernel_level = None
         self._num_knots_level = None
         self._knots_tp_level = None
-        self._coef_knot_dates = coef_knot_dates
+        self._coefficients_knot_dates = coefficients_knot_dates
         self._seas_term = None
 
         self._model_param_names = list()
@@ -398,7 +398,7 @@ class BaseKTRX(BaseModel):
         # kernel of coefficients calculations
         # if self._knots_tp_coefficients is None:
         if self._num_of_regressors > 0:
-            if self._coef_knot_dates is None:
+            if self._coefficients_knot_dates is None:
                 if self.coefficients_knot_length is not None:
                     # TODO: approximation; can consider directly coefficients_knot_length it as step size
                     knots_distance = self.coefficients_knot_length
@@ -410,14 +410,14 @@ class BaseKTRX(BaseModel):
                 knots_idx_start_coef = round(knots_distance / 2)
                 knots_idx_coef = np.arange(knots_idx_start_coef, self._cutoff,  knots_distance)
                 self._knots_tp_coefficients = (1 + knots_idx_coef) / self._num_of_observations
-                self._coef_knot_dates = df[self.date_col].values[knots_idx_coef]
+                self._coefficients_knot_dates = df[self.date_col].values[knots_idx_coef]
             else:
                 # FIXME: this only works up to daily series (not working on hourly series)
-                self._coef_knot_dates = pd.to_datetime([
-                    x for x in self._coef_knot_dates if (x <= df[self.date_col].max()) and (x >= df[self.date_col].min())
+                self._coefficients_knot_dates = pd.to_datetime([
+                    x for x in self._coefficients_knot_dates if (x <= df[self.date_col].max()) and (x >= df[self.date_col].min())
                 ])
                 self._knots_tp_coefficients = np.array(
-                    ((self._coef_knot_dates - self._training_df_meta['training_start']).days + 1) /
+                    ((self._coefficients_knot_dates - self._training_df_meta['training_start']).days + 1) /
                     ((self._training_df_meta['training_end'] - self._training_df_meta['training_start']).days + 1)
                 )
 
@@ -841,7 +841,7 @@ class BaseKTRX(BaseModel):
         if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
             return knots_df
 
-        knots_df[self.date_col] = self._coef_knot_dates
+        knots_df[self.date_col] = self._coefficients_knot_dates
         coef_knots = self._aggregate_posteriors \
             .get(aggregate_method) \
             .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
