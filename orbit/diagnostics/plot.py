@@ -264,12 +264,6 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     if len(mod._regressor_col) > 0:
         for i, regressor in enumerate(mod._regressor_col):
             posterior_samples[regressor] = posterior_samples['beta'][:,i]
-   # if len(mod._positive_regressor_col) > 0:
-   #     for i, regressor in enumerate(mod._positive_regressor_col):
-   #         posterior_samples[regressor] = posterior_samples['pr_beta'][:,i]
-   # if len(mod._regular_regressor_col) > 0:
-   #     for i, regressor in enumerate(mod._regular_regressor_col):
-   #         posterior_samples[regressor] = posterior_samples['rr_beta'][:, i]
 
     params_ = mod.regressor_col + ['obs_sigma']
     if incl_trend_params:
