@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-def load_iclaims():
+def load_iclaims(end_date='2018-06-24'):
     """Load iclaims dataset
 
     Returns
@@ -15,7 +15,7 @@ def load_iclaims():
     """
     url = 'https://raw.githubusercontent.com/uber/orbit/master/examples/data/iclaims_example.csv'
     df = pd.read_csv(url, parse_dates=['week'])
-
+    df = df[df['week'] <= end_date]
     return df
 
 
@@ -109,5 +109,3 @@ def load_air_passengers():
     df = pd.read_csv(url, parse_dates=['ds'])
 
     return df
-
-
