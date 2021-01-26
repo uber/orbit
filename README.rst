@@ -12,7 +12,7 @@ This project
 - is stable and being incubated for long-term support. It may contain new experimental code, for which APIs are subject to change.
 - requires PyStan as a system dependency. PyStan is licensed under `GPLv3 <https://www.gnu.org/licenses/gpl-3.0.html>`__, which is a free, copyleft license for software.
 
-Orbit: A Python package for Bayesian forecasting models 
+Orbit: A Python package for Bayesian forecasting models
 ====================
 
 Orbit is a Python package for Bayesian forecasting models developed under object-oriented design. It provides a
@@ -147,11 +147,11 @@ Related projects
 .. |pypi| image:: https://badge.fury.io/py/orbit-ml.svg
     :target: https://badge.fury.io/py/orbit-ml
     :alt: pypi
-    
-.. |travis| image:: https://travis-ci.com/uber/orbit.svg?branch=master 
- :target: https://travis-ci.com/uber/orbit  
+
+.. |travis| image:: https://travis-ci.com/uber/orbit.svg?branch=master
+ :target: https://travis-ci.com/uber/orbit
  :alt: travis
 
-.. |downloads| image:: https://static.pepy.tech/personalized-badge/orbit-ml?period=month&units=international_system&left_color=blue&right_color=grey&left_text=Downloads
+.. |downloads| image:: https://static.pepy.tech/personalized-badge/orbit-ml?period=total&units=international_system&left_color=blue&right_color=grey&left_text=Downloads
  :target: https://pepy.tech/project/orbit-ml
  :alt: downloads

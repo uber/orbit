@@ -286,7 +286,7 @@ class BaseDLT(BaseETS):
         if self._seasonality > 1:
             self._model_param_names += [param.value for param in constants.SeasonalitySamplingParameters]
 
-        # append positive regressors if any
+        # append regressors if any
         if self._num_of_regressors > 0:
             self._model_param_names += [
                 constants.RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value]
