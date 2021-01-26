@@ -29,6 +29,10 @@ def load_iclaims(end_date='2018-06-24'):
 
     # standardize the regressors by mean; equivalent to subtracting mean after np.log
     regressors = ['trend.unemploy', 'trend.filling', 'trend.job', 'sp500', 'vix']
+
+    # convert to float
+    for col in regressors:
+        df[col] = df[col].astype(float)
     df[regressors] = df[regressors] / df[regressors].apply(np.mean)
 
     # log transfer
