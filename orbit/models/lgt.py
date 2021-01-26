@@ -239,7 +239,7 @@ class BaseLGT(BaseETS):
                 self._regular_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
 
         self._regressor_col = self._positive_regressor_col + self._negative_regressor_col + \
-                              self._regular_regressor_col
+            self._regular_regressor_col
 
     def _set_static_data_attributes(self):
         """Cast data to the proper type mostly to match Stan required static data types
@@ -407,7 +407,7 @@ class BaseLGT(BaseETS):
             # check if prediction df is a subset of training df
             # e.g. "negative" forecast steps
             n_forecast_steps = len(forecast_dates) or \
-                               -(len(set(training_df_meta['date_array']) - set(prediction_df_meta['date_array'])))
+                -(len(set(training_df_meta['date_array']) - set(prediction_df_meta['date_array'])))
             # time index for prediction start
             start = pd.Index(
                 training_df_meta['date_array']).get_loc(prediction_df_meta['prediction_start'])
@@ -593,10 +593,9 @@ class BaseLGT(BaseETS):
         regressor_cols = pr_cols + nr_cols + rr_cols
 
         # same note
-        regressor_signs = \
-            ["Positive"] * self._num_of_positive_regressors + \
-            ["Negative"] * self._num_of_negative_regressors \
-              + ["Regular"] * self._num_of_regular_regressors
+        regressor_signs = ["Positive"] * self._num_of_positive_regressors + \
+            ["Negative"] * self._num_of_negative_regressors + \
+            ["Regular"] * self._num_of_regular_regressors
 
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR_SIGN] = regressor_signs
@@ -673,4 +672,3 @@ class LGTMAP(ETSMAP, BaseLGT):
 
     def get_regression_coefs(self):
         return super().get_regression_coefs(aggregate_method=PredictMethod.MAP.value)
-

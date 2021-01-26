@@ -282,7 +282,6 @@ class BaseETS(BaseModel):
             raise PredictionException('Prediction start must be after training start.')
 
         trained_len = training_df_meta['df_length']
-        output_len = prediction_df_meta['df_length']
 
         # If we cannot find a match of prediction range, assume prediction starts right after train
         # end
@@ -718,5 +717,3 @@ class ETSMAP(BaseETS):
         predicted_df = self._prepend_date_column(predicted_df, df)
 
         return predicted_df
-
-

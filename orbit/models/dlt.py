@@ -258,8 +258,8 @@ class BaseDLT(BaseETS):
                 self._regular_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
 
         self._regressor_col = self._positive_regressor_col + self._negative_regressor_col + \
-                              self._regular_regressor_col
-        
+            self._regular_regressor_col
+
     def _set_static_data_attributes(self):
         """Cast data to the proper type mostly to match Stan required static data types
         Notes
@@ -272,7 +272,7 @@ class BaseDLT(BaseETS):
         self._set_regression_default_attributes()
         self._set_regression_penalty()
         self._set_static_regression_attributes()
-        
+
     def _set_model_param_names(self):
         """Set posteriors keys to extract from sampling/optimization api
         Notes
@@ -438,8 +438,7 @@ class BaseDLT(BaseETS):
             # check if prediction df is a subset of training df
             # e.g. "negative" forecast steps
             n_forecast_steps = len(forecast_dates) or \
-                               - (len(set(training_df_meta['date_array']) - set(
-                                   prediction_df_meta['date_array'])))
+                - (len(set(training_df_meta['date_array']) - set(prediction_df_meta['date_array'])))
             # time index for prediction start
             start = pd.Index(
                 training_df_meta['date_array']).get_loc(prediction_df_meta['prediction_start'])
