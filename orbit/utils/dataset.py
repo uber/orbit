@@ -14,6 +14,10 @@ def load_iclaims():
     https://trends.google.com/trends/?geo=US
     """
     url = 'https://raw.githubusercontent.com/uber/orbit/master/examples/data/iclaims_example.csv'
+<<<<<<< HEAD
+=======
+
+>>>>>>> e1e37ac (upload the enhanced iclaims data to master)
     df = pd.read_csv(url, parse_dates=['week'])
 
     return df
