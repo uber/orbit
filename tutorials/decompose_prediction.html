@@ -3,11 +3,11 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Decomposing Prediction &mdash; orbit 1.0.6 documentation</title>
+  <title>decompose_prediction &mdash; orbit 1.0.10 documentation</title>
   
 
   
@@ -18,7 +18,10 @@
   
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
   
+
   
+  
+
   
 
   
@@ -31,7 +34,6 @@
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-        <script src="../_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
@@ -56,7 +58,7 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> orbit
+            <a href="../index.html" class="icon icon-home"> orbit
           
 
           
@@ -69,7 +71,7 @@
             
             
               <div class="version">
-                1.0.6
+                1.0.10
               </div>
             
           
@@ -98,18 +100,17 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="quick_start.html">Quick Start</a></li>
-<li class="toctree-l2"><a class="reference internal" href="lgt.html">LGT Model</a></li>
-<li class="toctree-l2"><a class="reference internal" href="dlt.html">DLT Model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="regression.html">Regression with Orbit</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Decomposing Prediction</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Data">Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#iclaims-Data">iclaims Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#Regression-on-Simulated-Dataset">Regression on Simulated Dataset</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">decompose_prediction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Data---Initial-Claim">Data - Initial Claim</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#MAP-Estimation">MAP Estimation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#MCMC-Estimation">MCMC Estimation</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="pyro_basic.html">Pyro in Orbit</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_diagnostics.html">Diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="model_diagnostics.html">MCMC Model Visual Diagnostics</a></li>
 <li class="toctree-l2"><a class="reference internal" href="backtest.html">Backtest Orbit Model</a></li>
 </ul>
 </li>
@@ -154,6 +155,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -162,12 +165,12 @@
         
           <li><a href="../tutorials.html">Tutorials</a> &raquo;</li>
         
-      <li>Decomposing Prediction</li>
+      <li>decompose_prediction</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             
               <a href="https://github.com/uber/orbit/blob/master/docs/tutorials/decompose_prediction.ipynb" class="fa fa-github"> Edit on GitHub</a>
             
@@ -453,9 +456,9 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<div class="section" id="Decomposing-Prediction">
-<h1>Decomposing Prediction<a class="headerlink" href="#Decomposing-Prediction" title="Permalink to this headline">¶</a></h1>
-<p>This is an example to show decomposing prediction from orbit models.</p>
+<div class="section" id="decompose_prediction">
+<h1>decompose_prediction<a class="headerlink" href="#decompose_prediction" title="Permalink to this headline">¶</a></h1>
+<p>This tutorial demonstrate a tools to visualize time series components from Orbit models</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
@@ -465,33 +468,166 @@ div.rendered_html tbody tr:hover {
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">orbit.models.dlt</span> <span class="kn">import</span> <span class="n">DLTMAP</span><span class="p">,</span> <span class="n">DLTFull</span>
-<span class="kn">from</span> <span class="nn">orbit.diagnostics.plot</span> <span class="kn">import</span> <span class="n">plot_predicted_components</span>
+<span class="kn">from</span> <span class="nn">orbit.diagnostics.plot</span> <span class="kn">import</span> <span class="n">plot_predicted_data</span><span class="p">,</span><span class="n">plot_predicted_components</span>
 <span class="kn">from</span> <span class="nn">orbit.utils.dataset</span> <span class="kn">import</span> <span class="n">load_iclaims</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="section" id="Data">
-<h2>Data<a class="headerlink" href="#Data" title="Permalink to this headline">¶</a></h2>
-<p>First, let’s load the example data set.</p>
+<div class="section" id="Data---Initial-Claim">
+<h2>Data - Initial Claim<a class="headerlink" href="#Data---Initial-Claim" title="Permalink to this headline">¶</a></h2>
+<p>First, let’s load the example data set. Here we used initial claims data from U.S. Employment and Training Administration. An initial claim is a claim filed by an unemployed individual after a separation from an employer. The claim requests a determination of basic eligibility for the Unemployment Insurance program.</p>
+<p>The dataset has 5 colums: ‘week’, ‘claims’, ‘trend.unemploy’, ‘trend.filling’ and ‘trend.job’.</p>
+<p>U.S. Employment and Training Administration, Initial Claims [ICNSA], retrieved from FRED, Federal Reserve Bank of St. Louis; <a class="reference external" href="https://fred.stlouisfed.org/series/ICNSA">https://fred.stlouisfed.org/series/ICNSA</a>, January 3, 2021.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">df</span> <span class="o">=</span> <span class="n">load_iclaims</span><span class="p">()</span>
-<span class="n">df</span><span class="p">[[</span><span class="s1">&#39;claims&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]]</span> <span class="o">=</span> \
-    <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">df</span><span class="p">[[</span><span class="s1">&#39;claims&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]])</span>
 <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;week&#39;</span>
 <span class="n">response_col</span><span class="o">=</span><span class="s1">&#39;claims&#39;</span>
 </pre></div>
 </div>
 </div>
-<p>Then we will train the model and use <code class="docutils literal notranslate"><span class="pre">decompose=True</span></code> within <code class="docutils literal notranslate"><span class="pre">.predict()</span></code> to decompose the prediction. After that, we can use <code class="docutils literal notranslate"><span class="pre">plot_predicted_components</span></code> to visualize the decomposition. This works for both MAP and MCMC estimation.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>week</th>
+      <th>claims</th>
+      <th>trend.unemploy</th>
+      <th>trend.filling</th>
+      <th>trend.job</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2010-01-03</td>
+      <td>13.386595</td>
+      <td>0.168876</td>
+      <td>-0.328309</td>
+      <td>0.113033</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2010-01-10</td>
+      <td>13.624218</td>
+      <td>0.168876</td>
+      <td>-0.204695</td>
+      <td>0.164326</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2010-01-17</td>
+      <td>13.398741</td>
+      <td>0.185136</td>
+      <td>-0.302334</td>
+      <td>0.113033</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2010-01-24</td>
+      <td>13.137549</td>
+      <td>0.152346</td>
+      <td>-0.204695</td>
+      <td>0.102451</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2010-01-31</td>
+      <td>13.196760</td>
+      <td>0.083354</td>
+      <td>-0.252323</td>
+      <td>0.070016</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df_tmp</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">df_tmp</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;week&#39;</span><span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">df_tmp</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">subplots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+array([&lt;matplotlib.axes._subplots.AxesSubplot object at 0x13cf05320&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x13ef5e5c0&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x13ef975c0&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x13efcc5c0&gt;],
+      dtype=object)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_decompose_prediction_7_1.png" src="../docs/_images/tutorials_decompose_prediction_7_1.png" />
+</div>
+</div>
+<p>In orbit, <strong>DLT</strong> model is a variation of traditioal exponential smoothing models. The model results can be decomposed into <strong>trend</strong>, <strong>seasonality</strong> and <strong>regression</strong>.</p>
+<div class="math notranslate nohighlight">
+\[\hat{y}_t=\mu_t + s_t + r_t\]</div>
+<p>Where <span class="math notranslate nohighlight">\(\mu_t\)</span> is the trend, <span class="math notranslate nohighlight">\(s_t\)</span> is the seasonality and <span class="math notranslate nohighlight">\(r_t\)</span> is the regression.</p>
+<p>Here we will train the model dlt model and use <code class="docutils literal notranslate"><span class="pre">decompose=True</span></code> within <code class="docutils literal notranslate"><span class="pre">.predict()</span></code> to decompose the prediction. We transorformed the data to use the multiplicative form. After that, we can use <code class="docutils literal notranslate"><span class="pre">plot_predicted_components</span></code> to visualize the decomposition. This works for both MAP and MCMC estimation.</p>
 </div>
 <div class="section" id="MAP-Estimation">
 <h2>MAP Estimation<a class="headerlink" href="#MAP-Estimation" title="Permalink to this headline">¶</a></h2>
+<p>First, we will train DLT model with ‘claims’ as the dependent vairable, and ‘unemploy’, ‘filling’ and ‘job’ as regressors. We will use data from 2010 to 2016 as in sample, and the rest as out-of-sample</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">train_df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;week&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="s1">&#39;2017-01-01&#39;</span><span class="p">]</span>
+<span class="n">test_df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;week&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="s1">&#39;2017-01-01&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -503,32 +639,125 @@ div.rendered_html tbody tr:hover {
     <span class="n">seed</span><span class="o">=</span><span class="mi">2020</span><span class="p">,</span>
     <span class="n">global_trend_option</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-<span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="Plot-Predicted-Data">
+<h3>Plot Predicted Data<a class="headerlink" href="#Plot-Predicted-Data" title="Permalink to this headline">¶</a></h3>
+<p>After fitting the model, we can plot in-sample predicted value with train response in the same figure. Here we showed claims data from 2010 to 2018.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_decompose_prediction_15_0.png" src="../docs/_images/tutorials_decompose_prediction_15_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x13f2bd390&gt;
+</pre></div></div>
+</div>
+<p>We can also plot future forecasting. Here we can predct the weekly claims after 2016</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">future_df</span> <span class="o">=</span> <span class="n">test_df</span><span class="p">[[</span><span class="s1">&#39;week&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">future_df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plot_predicted_components</span><span class="p">(</span><span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="p">)</span>
+<span></span><span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
+                    <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
+<div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_decompose_prediction_9_0.png" src="../_images/tutorials_decompose_prediction_9_0.png" />
+<img alt="../docs/_images/tutorials_decompose_prediction_19_0.png" src="../docs/_images/tutorials_decompose_prediction_19_0.png" />
 </div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x13f5d7390&gt;
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Plot-Predicted-Components">
+<h3>Plot Predicted Components<a class="headerlink" href="#Plot-Predicted-Components" title="Permalink to this headline">¶</a></h3>
+<p>To further understand the fitted model, we can decomponse the fitted value into trend, seasonlity and regression, and plot them on the same graph.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">plot_predicted_components</span><span class="p">(</span><span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_decompose_prediction_22_0.png" src="../docs/_images/tutorials_decompose_prediction_22_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+array([&lt;matplotlib.axes._subplots.AxesSubplot object at 0x13f677198&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x13f69ee10&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x13f6df080&gt;],
+      dtype=object)
+</pre></div></div>
+</div>
+<p>The three componts are shown seperately. Multiplying them together will give us the total predicted value shown in the last section. We can clearly see a yearly decrease in trend, but similary yearly seasonality over the years. We can do the same for future forecasted value.</p>
 </div>
 </div>
 <div class="section" id="MCMC-Estimation">
 <h2>MCMC Estimation<a class="headerlink" href="#MCMC-Estimation" title="Permalink to this headline">¶</a></h2>
+<p>We can do the same thing for MCMC estimation.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -540,8 +769,7 @@ div.rendered_html tbody tr:hover {
     <span class="n">seed</span><span class="o">=</span><span class="mi">2020</span><span class="p">,</span>
     <span class="n">prediction_percentiles</span><span class="o">=</span><span class="p">[</span><span class="mi">5</span><span class="p">,</span><span class="mi">95</span><span class="p">],</span>
 <span class="p">)</span>
-<span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-<span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_df</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -554,20 +782,103 @@ WARNING:pystan:Maximum (flat) parameter count (1000) exceeded: skipping diagnost
 To run all diagnostics call pystan.check_hmc_diagnostics(fit)
 </pre></div></div>
 </div>
+<div class="section" id="id1">
+<h3>Plot Predicted Data<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plot_predicted_components</span><span class="p">(</span><span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="p">)</span>
+<span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
+<div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_decompose_prediction_12_0.png" src="../_images/tutorials_decompose_prediction_12_0.png" />
+<img alt="../docs/_images/tutorials_decompose_prediction_28_0.png" src="../docs/_images/tutorials_decompose_prediction_28_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x13f905390&gt;
+</pre></div></div>
+</div>
+<p>Predict the weekly claims after 2016</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">future_df</span> <span class="o">=</span> <span class="n">test_df</span><span class="p">[[</span><span class="s1">&#39;week&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]]</span>
+<span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">future_df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
+                    <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_decompose_prediction_30_0.png" src="../docs/_images/tutorials_decompose_prediction_30_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x13f69ef28&gt;
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="id2">
+<h3>Plot Predicted Components<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">plot_predicted_components</span><span class="p">(</span><span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_decompose_prediction_32_0.png" src="../docs/_images/tutorials_decompose_prediction_32_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+array([&lt;matplotlib.axes._subplots.AxesSubplot object at 0x13f72e748&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x13f992a20&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x13fa4a208&gt;],
+      dtype=object)
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
+</div>
 </div>
 </div>
 </div>
@@ -578,37 +889,29 @@ To run all diagnostics call pystan.check_hmc_diagnostics(fit)
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="pyro_basic.html" class="btn btn-neutral float-right" title="Pyro in Orbit" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="regression.html" class="btn btn-neutral float-left" title="Regression with Orbit" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="pyro_basic.html" class="btn btn-neutral float-right" title="Pyro in Orbit" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="regression.html" class="btn btn-neutral float-left" title="Regression with Orbit" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Uber Technologies, Inc
+        &#169; Copyright 2020, Uber Technologies, Inc.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 

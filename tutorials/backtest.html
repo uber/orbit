@@ -3,11 +3,11 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Backtest Orbit Model &mdash; orbit 1.0.6 documentation</title>
+  <title>Backtest Orbit Model &mdash; orbit 1.0.10 documentation</title>
   
 
   
@@ -18,7 +18,10 @@
   
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
   
+
   
+  
+
   
 
   
@@ -31,7 +34,6 @@
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-        <script src="../_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
@@ -42,7 +44,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="API Docs" href="../modules.html" />
-    <link rel="prev" title="Diagnostics" href="model_diagnostics.html" /> 
+    <link rel="prev" title="MCMC Model Visual Diagnostics" href="model_diagnostics.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -56,7 +58,7 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> orbit
+            <a href="../index.html" class="icon icon-home"> orbit
           
 
           
@@ -69,7 +71,7 @@
             
             
               <div class="version">
-                1.0.6
+                1.0.10
               </div>
             
           
@@ -98,20 +100,20 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="quick_start.html">Quick Start</a></li>
-<li class="toctree-l2"><a class="reference internal" href="lgt.html">LGT Model</a></li>
-<li class="toctree-l2"><a class="reference internal" href="dlt.html">DLT Model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="regression.html">Regression with Orbit</a></li>
-<li class="toctree-l2"><a class="reference internal" href="decompose_prediction.html">Decomposing Prediction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#iclaims-Data">iclaims Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#Regression-on-Simulated-Dataset">Regression on Simulated Dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decompose_prediction.html">decompose_prediction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pyro_basic.html">Pyro in Orbit</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_diagnostics.html">Diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="model_diagnostics.html">MCMC Model Visual Diagnostics</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Backtest Orbit Model</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Load-data">Load data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Data---Initial-Claim">Data - Initial Claim</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#Create-a-TimeSeriesSplitter">Create a TimeSeriesSplitter</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#Create-a-BackTester">Create a BackTester</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#Backtest-fit-and-predict">Backtest fit and predict</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#Backtest-Scoring">Backtest Scoring</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#Backtest-Get-Models">Backtest Get Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Hyperparameter_Tunning">Hyperparameter_Tunning</a></li>
 </ul>
 </li>
 </ul>
@@ -157,6 +159,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -170,7 +174,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             
               <a href="https://github.com/uber/orbit/blob/master/docs/tutorials/backtest.ipynb" class="fa fa-github"> Edit on GitHub</a>
             
@@ -460,7 +464,7 @@ div.rendered_html tbody tr:hover {
 <h1>Backtest Orbit Model<a class="headerlink" href="#Backtest-Orbit-Model" title="Permalink to this headline">¶</a></h1>
 <p>The way to gauge the performance of a time-series model is through re-training models with different historic periods and check their forecast within certain steps. This is similar to a time-based style cross-validation. More often, we called it <code class="docutils literal notranslate"><span class="pre">backtest</span></code> in time-series modeling.</p>
 <p>The purpose of this notebook is to illustrate how to do ‘backtest’ on a single model using <code class="docutils literal notranslate"><span class="pre">BackTester</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">BackTester</span></code> will compose a <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code> within it, but <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code> is useful as a standalone, in case there are other tasks to perform that requires splitting but not backtesting. You can also retrieve the composed <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code> object from <code class="docutils literal notranslate"><span class="pre">BackTester</span></code> to utilize the additional methods in <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">BackTester</span></code> will compose a <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code> within it, but <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code> is useful as a standalone, in case there are other tasks to perform that requires splitting but not backtesting. <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code> implemented each ‘slices’ as genertor, i.e it can be used in a for loop. You can also retrieve the composed <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code> object from <code class="docutils literal notranslate"><span class="pre">BackTester</span></code> to utilize the additional methods in <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code></p>
 <p>Currently, there are two schemes supported for the back-testing engine: expanding window and rolling window.</p>
 <ul class="simple">
 <li><p>expanding window: for each back-testing model training, the train start date is fixed, while the train end date is extended forward.</p></li>
@@ -481,40 +485,161 @@ div.rendered_html tbody tr:hover {
 <span class="kn">from</span> <span class="nn">orbit.models.dlt</span> <span class="kn">import</span> <span class="n">DLTMAP</span>
 <span class="kn">from</span> <span class="nn">orbit.diagnostics.backtest</span> <span class="kn">import</span> <span class="n">BackTester</span><span class="p">,</span> <span class="n">TimeSeriesSplitter</span>
 <span class="kn">from</span> <span class="nn">orbit.utils.dataset</span> <span class="kn">import</span> <span class="n">load_iclaims</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="section" id="Load-data">
-<h2>Load data<a class="headerlink" href="#Load-data" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Data---Initial-Claim">
+<h2>Data - Initial Claim<a class="headerlink" href="#Data---Initial-Claim" title="Permalink to this headline">¶</a></h2>
+<p>First, let’s load the example data set. Here we used weekly initial claims data from U.S. Employment and Training Administration. An initial claim is a claim filed by an unemployed individual after a separation from an employer. The claim requests a determination of basic eligibility for the Unemployment Insurance program.</p>
+<p>The dataset has 5 colums: ‘week’, ‘claims’, ‘trend.unemploy’, ‘trend.filling’ and ‘trend.job’.</p>
+<p>U.S. Employment and Training Administration, Initial Claims [ICNSA], retrieved from FRED, Federal Reserve Bank of St. Louis; <a class="reference external" href="https://fred.stlouisfed.org/series/ICNSA">https://fred.stlouisfed.org/series/ICNSA</a>, January 3, 2021.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">data</span> <span class="o">=</span> <span class="n">load_iclaims</span><span class="p">()</span>
-<span class="n">data</span><span class="p">[[</span><span class="s1">&#39;claims&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]]</span> <span class="o">=</span> \
-    <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">data</span><span class="p">[[</span><span class="s1">&#39;claims&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]])</span>
 </pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">data</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>week</th>
+      <th>claims</th>
+      <th>trend.unemploy</th>
+      <th>trend.filling</th>
+      <th>trend.job</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2010-01-03</td>
+      <td>13.386595</td>
+      <td>0.168876</td>
+      <td>-0.328309</td>
+      <td>0.113033</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2010-01-10</td>
+      <td>13.624218</td>
+      <td>0.168876</td>
+      <td>-0.204695</td>
+      <td>0.164326</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2010-01-17</td>
+      <td>13.398741</td>
+      <td>0.185136</td>
+      <td>-0.302334</td>
+      <td>0.113033</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2010-01-24</td>
+      <td>13.137549</td>
+      <td>0.152346</td>
+      <td>-0.204695</td>
+      <td>0.102451</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2010-01-31</td>
+      <td>13.196760</td>
+      <td>0.083354</td>
+      <td>-0.252323</td>
+      <td>0.070016</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df_tmp</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">df_tmp</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;week&#39;</span><span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">df_tmp</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">subplots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+array([&lt;matplotlib.axes._subplots.AxesSubplot object at 0x131a6d6d8&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x133ace978&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x133b06978&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x133b3a978&gt;],
+      dtype=object)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_backtest_7_1.png" src="../docs/_images/tutorials_backtest_7_1.png" />
 </div>
 </div>
 </div>
 <div class="section" id="Create-a-TimeSeriesSplitter">
 <h2>Create a TimeSeriesSplitter<a class="headerlink" href="#Create-a-TimeSeriesSplitter" title="Permalink to this headline">¶</a></h2>
+<p>There two main way to splitting a timeseries: expanding and rolling. Expanding window has a fixed starting point, and the window length grows as we move forward in timeseries. It is useful when we want to incoporate all historical information. On the other hand, rolling window has a fixed window length, and the starting point of the window moves forward as we move forward in timeseries. Now, we will illustrate how to use <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code> to split the claims timeseries.</p>
 <div class="section" id="Expanding-window">
 <h3>Expanding window<a class="headerlink" href="#Expanding-window" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">min_train_len</span> <span class="o">=</span> <span class="mi">380</span>
-<span class="n">forecast_len</span> <span class="o">=</span> <span class="mi">20</span>
-<span class="n">incremental_len</span> <span class="o">=</span> <span class="mi">20</span>
+<span></span><span class="c1"># configs</span>
+<span class="n">min_train_len</span> <span class="o">=</span> <span class="mi">380</span> <span class="c1"># minimal length of window length</span>
+<span class="n">forecast_len</span> <span class="o">=</span> <span class="mi">20</span> <span class="c1"># length forecast window</span>
+<span class="n">incremental_len</span> <span class="o">=</span> <span class="mi">20</span> <span class="c1"># step length for moving forward</span>
 </pre></div>
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -524,7 +649,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -558,8 +683,9 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 
 </pre></div></div>
 </div>
+<p>We can visualize the splits, green is training window and yellow it the forecasting windown. The starting point is always 0 for three splits but window length increases from 380 to 420.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -568,26 +694,38 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.axes._subplots.AxesSubplot at 0x13b868b10&gt;
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x133e471d0&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_backtest_10_1.png" src="../_images/tutorials_backtest_10_1.png" />
+<img alt="../docs/_images/tutorials_backtest_15_1.png" src="../docs/_images/tutorials_backtest_15_1.png" />
 </div>
 </div>
 </div>
 <div class="section" id="Rolling-window">
 <h3>Rolling window<a class="headerlink" href="#Rolling-window" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># configs</span>
+<span class="n">min_train_len</span> <span class="o">=</span> <span class="mi">380</span> <span class="c1"># in case of rolling window, this specify the length of window length</span>
+<span class="n">forecast_len</span> <span class="o">=</span> <span class="mi">20</span> <span class="c1"># length forecast window</span>
+<span class="n">incremental_len</span> <span class="o">=</span> <span class="mi">20</span> <span class="c1"># step length for moving forward</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -596,8 +734,9 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </pre></div>
 </div>
 </div>
+<p>We can visualize the splits, green is training window and yellow it the forecasting windown. The window length is always 380, while the starting point moves forward 20 weeks each steps.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -606,19 +745,19 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.axes._subplots.AxesSubplot at 0x13b9ab1d0&gt;
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x133e3cd68&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_backtest_13_1.png" src="../_images/tutorials_backtest_13_1.png" />
+<img alt="../docs/_images/tutorials_backtest_20_1.png" src="../docs/_images/tutorials_backtest_20_1.png" />
 </div>
 </div>
 </div>
@@ -626,7 +765,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 <h3>Specifying number of splits<a class="headerlink" href="#Specifying-number-of-splits" title="Permalink to this headline">¶</a></h3>
 <p>User can also define number of splits using <code class="docutils literal notranslate"><span class="pre">n_splits</span></code> instead of specifying minimum training length. That way, minimum training length will be automatically calculated.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -636,7 +775,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -645,32 +784,57 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.axes._subplots.AxesSubplot at 0x13ba18350&gt;
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x133edef28&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_backtest_17_1.png" src="../_images/tutorials_backtest_17_1.png" />
+<img alt="../docs/_images/tutorials_backtest_24_1.png" src="../docs/_images/tutorials_backtest_24_1.png" />
 </div>
+</div>
+</div>
+<div class="section" id="TimeSeriesSplitter-as-generator">
+<h3>TimeSeriesSplitter as generator<a class="headerlink" href="#TimeSeriesSplitter-as-generator" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code> is implemented as a genetor, therefore we can call <code class="docutils literal notranslate"><span class="pre">split()</span></code> to loop through it. It comes handy even for tasks other than backtest.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span> <span class="k">for</span> <span class="n">train_df</span><span class="p">,</span> <span class="n">test_df</span><span class="p">,</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">roll_splitter</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Initial Claim slice </span><span class="si">{}</span><span class="s1"> rolling mean:</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">train_df</span><span class="p">[</span><span class="s1">&#39;claims&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Initial Claim slice 0 rolling mean:12.712341458856958
+Initial Claim slice 1 rolling mean:12.67144746151623
+Initial Claim slice 2 rolling mean:12.64657747604057
+</pre></div></div>
 </div>
 </div>
 </div>
 <div class="section" id="Create-a-BackTester">
 <h2>Create a BackTester<a class="headerlink" href="#Create-a-BackTester" title="Permalink to this headline">¶</a></h2>
+<p>Now, we are ready to do backtest, first let’s initialize a <code class="docutils literal notranslate"><span class="pre">DLT</span></code> model and a <code class="docutils literal notranslate"><span class="pre">BackTester</span></code>. You pass in <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code> parameters to <code class="docutils literal notranslate"><span class="pre">BackTester</span></code>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># instantiate a model</span>
-<span class="n">lgt</span> <span class="o">=</span> <span class="n">LGTMAP</span><span class="p">(</span>
+<span class="n">dlt</span> <span class="o">=</span> <span class="n">DLTMAP</span><span class="p">(</span>
     <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;week&#39;</span><span class="p">,</span>
     <span class="n">response_col</span><span class="o">=</span><span class="s1">&#39;claims&#39;</span><span class="p">,</span>
     <span class="n">regressor_col</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">],</span>
@@ -680,16 +844,23 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">bt</span> <span class="o">=</span> <span class="n">BackTester</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="n">lgt</span><span class="p">,</span>
+<span></span><span class="c1"># configs</span>
+<span class="n">min_train_len</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">forecast_len</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">incremental_len</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">window_type</span> <span class="o">=</span> <span class="s1">&#39;expanding&#39;</span>
+
+<span class="n">bt</span> <span class="o">=</span> <span class="n">BackTester</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">dlt</span><span class="p">,</span>
     <span class="n">df</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
-    <span class="n">min_train_len</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-    <span class="n">incremental_len</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-    <span class="n">forecast_len</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">min_train_len</span><span class="p">,</span>
+    <span class="n">incremental_len</span><span class="p">,</span>
+    <span class="n">forecast_len</span><span class="p">,</span>
+    <span class="n">window_type</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -699,7 +870,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 <h2>Backtest fit and predict<a class="headerlink" href="#Backtest-fit-and-predict" title="Permalink to this headline">¶</a></h2>
 <p>The most expensive portion of backtesting is fitting the model iteratively. Thus, we separate the api calls for <code class="docutils literal notranslate"><span class="pre">fit_predict</span></code> and <code class="docutils literal notranslate"><span class="pre">score</span></code> to avoid redundant computation for multiple metrics or scoring methods</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -709,7 +880,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 <p>Once <code class="docutils literal notranslate"><span class="pre">fit_predict()</span></code> is called, the fitted models and predictions can be easily retrieved from <code class="docutils literal notranslate"><span class="pre">BackTester</span></code>. Here the data is grouped by the date, split_key, and whether or not that observation is part of the training or test data</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -719,7 +890,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -763,7 +934,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
       <td>0</td>
       <td>True</td>
       <td>13.624218</td>
-      <td>13.642762</td>
+      <td>13.647009</td>
     </tr>
     <tr>
       <th>2</th>
@@ -771,7 +942,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
       <td>0</td>
       <td>True</td>
       <td>13.398741</td>
-      <td>13.368397</td>
+      <td>13.371699</td>
     </tr>
     <tr>
       <th>3</th>
@@ -779,7 +950,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
       <td>0</td>
       <td>True</td>
       <td>13.137549</td>
-      <td>13.216143</td>
+      <td>13.210528</td>
     </tr>
     <tr>
       <th>4</th>
@@ -787,7 +958,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
       <td>0</td>
       <td>True</td>
       <td>13.196760</td>
-      <td>13.181666</td>
+      <td>13.187624</td>
     </tr>
   </tbody>
 </table>
@@ -796,7 +967,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 <p>Users might find this useful for any custom computations that may need to be performed on the set of predicted data. Note that the columns are renamed to generic and consistent names.</p>
 <p>Sometimes, it might be useful to match the data back to the original dataset for ad-hoc diagnostics. This can easily be done by merging back to the orignal dataset</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -805,7 +976,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -898,7 +1069,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
       <td>0</td>
       <td>True</td>
       <td>13.624218</td>
-      <td>13.642762</td>
+      <td>13.647009</td>
       <td>2010-01-10</td>
       <td>13.624218</td>
       <td>0.168876</td>
@@ -924,7 +1095,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
       <td>3</td>
       <td>False</td>
       <td>12.568616</td>
-      <td>12.572997</td>
+      <td>12.566179</td>
       <td>2017-12-17</td>
       <td>12.568616</td>
       <td>0.247657</td>
@@ -937,7 +1108,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
       <td>3</td>
       <td>False</td>
       <td>12.691451</td>
-      <td>12.679446</td>
+      <td>12.675558</td>
       <td>2017-12-24</td>
       <td>12.691451</td>
       <td>0.277510</td>
@@ -950,7 +1121,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
       <td>3</td>
       <td>False</td>
       <td>12.769532</td>
-      <td>12.729614</td>
+      <td>12.782945</td>
       <td>2017-12-31</td>
       <td>12.769532</td>
       <td>0.452451</td>
@@ -963,7 +1134,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
       <td>3</td>
       <td>False</td>
       <td>12.908227</td>
-      <td>12.906919</td>
+      <td>12.799636</td>
       <td>2018-01-07</td>
       <td>12.908227</td>
       <td>0.476842</td>
@@ -976,7 +1147,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
       <td>3</td>
       <td>False</td>
       <td>12.777193</td>
-      <td>12.695067</td>
+      <td>12.536317</td>
       <td>2018-01-14</td>
       <td>12.777193</td>
       <td>0.414711</td>
@@ -994,7 +1165,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 <p>The main purpose of <code class="docutils literal notranslate"><span class="pre">BackTester</span></code> are the evaluation metrics. Some of the most widely used metrics are implemented and built into the <code class="docutils literal notranslate"><span class="pre">BackTester</span></code> API.</p>
 <p>The default metric list is <strong>smape, wmape, mape, mse, mae, rmsse</strong>.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1003,7 +1174,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -1034,37 +1205,37 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
     <tr>
       <th>0</th>
       <td>smape</td>
-      <td>0.006691</td>
+      <td>0.006744</td>
       <td>False</td>
     </tr>
     <tr>
       <th>1</th>
       <td>wmape</td>
-      <td>0.006687</td>
+      <td>0.006740</td>
       <td>False</td>
     </tr>
     <tr>
       <th>2</th>
       <td>mape</td>
-      <td>0.006676</td>
+      <td>0.006726</td>
       <td>False</td>
     </tr>
     <tr>
       <th>3</th>
       <td>mse</td>
-      <td>0.012735</td>
+      <td>0.013021</td>
       <td>False</td>
     </tr>
     <tr>
       <th>4</th>
       <td>mae</td>
-      <td>0.084943</td>
+      <td>0.085628</td>
       <td>False</td>
     </tr>
     <tr>
       <th>5</th>
       <td>rmsse</td>
-      <td>0.805472</td>
+      <td>0.814492</td>
       <td>False</td>
     </tr>
   </tbody>
@@ -1074,7 +1245,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 <p>It is possible to filter for only specific metrics of interest, or even implement your own callable and pass into the <code class="docutils literal notranslate"><span class="pre">score()</span></code> method. For example, see this function that uses last observed value as a predictor and computes the <code class="docutils literal notranslate"><span class="pre">mse</span></code>. Or <code class="docutils literal notranslate"><span class="pre">naive_error</span></code> which computes the error as the delta between predicted values and the training period mean.</p>
 <p>Note these are not really useful error metrics, just showing some examples of callables you can use ;)</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1090,7 +1261,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1099,7 +1270,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -1136,7 +1307,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
     <tr>
       <th>1</th>
       <td>naive_error</td>
-      <td>0.234580</td>
+      <td>0.230315</td>
       <td>False</td>
     </tr>
   </tbody>
@@ -1146,7 +1317,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 <p>It doesn’t take additional time to refit and predict the model, since the results are stored when <code class="docutils literal notranslate"><span class="pre">fit_predict()</span></code> is called. Check docstrings for function criteria that is required for it to be supported with this api.</p>
 <p>In some cases, we may want to evaluate our metrics on both train and test data. To do this you can call score again with the following indicator</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1155,7 +1326,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -1186,67 +1357,67 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
     <tr>
       <th>0</th>
       <td>smape</td>
-      <td>0.006691</td>
+      <td>0.006744</td>
       <td>False</td>
     </tr>
     <tr>
       <th>1</th>
       <td>wmape</td>
-      <td>0.006687</td>
+      <td>0.006740</td>
       <td>False</td>
     </tr>
     <tr>
       <th>2</th>
       <td>mape</td>
-      <td>0.006676</td>
+      <td>0.006726</td>
       <td>False</td>
     </tr>
     <tr>
       <th>3</th>
       <td>mse</td>
-      <td>0.012735</td>
+      <td>0.013021</td>
       <td>False</td>
     </tr>
     <tr>
       <th>4</th>
       <td>mae</td>
-      <td>0.084943</td>
+      <td>0.085628</td>
       <td>False</td>
     </tr>
     <tr>
       <th>5</th>
       <td>rmsse</td>
-      <td>0.805472</td>
+      <td>0.814492</td>
       <td>False</td>
     </tr>
     <tr>
       <th>6</th>
       <td>smape</td>
-      <td>0.002682</td>
+      <td>0.002739</td>
       <td>True</td>
     </tr>
     <tr>
       <th>7</th>
       <td>wmape</td>
-      <td>0.002678</td>
+      <td>0.002742</td>
       <td>True</td>
     </tr>
     <tr>
       <th>8</th>
       <td>mape</td>
-      <td>0.002681</td>
+      <td>0.002738</td>
       <td>True</td>
     </tr>
     <tr>
       <th>9</th>
       <td>mse</td>
-      <td>0.002966</td>
+      <td>0.003118</td>
       <td>True</td>
     </tr>
     <tr>
       <th>10</th>
       <td>mae</td>
-      <td>0.034221</td>
+      <td>0.035041</td>
       <td>True</td>
     </tr>
   </tbody>
@@ -1258,7 +1429,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 <h2>Backtest Get Models<a class="headerlink" href="#Backtest-Get-Models" title="Permalink to this headline">¶</a></h2>
 <p>In cases where <code class="docutils literal notranslate"><span class="pre">BackTester</span></code> doesn’t cut it or for more custom use-cases, there’s an interface to export the <code class="docutils literal notranslate"><span class="pre">TimeSeriesSplitter</span></code> and predicted data, as shown earlier. It’s also possible to get each of the fitted models for deeper diving</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1267,7 +1438,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1277,7 +1448,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -1309,19 +1480,19 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
       <th>0</th>
       <td>trend.unemploy</td>
       <td>Regular</td>
-      <td>-0.048042</td>
+      <td>-0.045671</td>
     </tr>
     <tr>
       <th>1</th>
       <td>trend.filling</td>
       <td>Regular</td>
-      <td>-0.154309</td>
+      <td>-0.108378</td>
     </tr>
     <tr>
       <th>2</th>
       <td>trend.job</td>
       <td>Regular</td>
-      <td>-0.014131</td>
+      <td>0.031345</td>
     </tr>
   </tbody>
 </table>
@@ -1330,7 +1501,7 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 <p>BackTester composes a TimeSeriesSplitter within it, but TimeSeriesSplitter can also be created on its own as a standalone object. See section below on TimeSeriesSplitter for more details on how to use the splitter.</p>
 <p>All of the additional TimeSeriesSplitter args can also be passed into BackTester on instantiation</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1340,19 +1511,329 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.axes._subplots.AxesSubplot at 0x13ba1d4d0&gt;
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x133f9a748&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_backtest_40_1.png" src="../_images/tutorials_backtest_40_1.png" />
+<img alt="../docs/_images/tutorials_backtest_51_1.png" src="../docs/_images/tutorials_backtest_51_1.png" />
+</div>
+</div>
+</div>
+<div class="section" id="Hyperparameter_Tunning">
+<h2>Hyperparameter_Tunning<a class="headerlink" href="#Hyperparameter_Tunning" title="Permalink to this headline">¶</a></h2>
+<p>After seeing the results fromt the backtest, users may wish to fine tune the hyperparmeters. Orbit also provide a <code class="docutils literal notranslate"><span class="pre">grid_search_orbit</span></code> utilities for parameter searching. It uses <code class="docutils literal notranslate"><span class="pre">Backtester</span></code> under the hood so users can compare backtest metrics for different paramters combination.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">orbit.diagnostics.backtest</span> <span class="kn">import</span> <span class="n">grid_search_orbit</span>
+<span class="c1"># defining the search space for level smoothing paramter and seasonality smooth paramter</span>
+<span class="n">param_grid</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;level_sm_input&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">],</span>
+    <span class="s1">&#39;seasonality_sm_input&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">],</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># configs</span>
+<span class="n">min_train_len</span> <span class="o">=</span> <span class="mi">380</span> <span class="c1"># in case of rolling window, this specify the length of window length</span>
+<span class="n">forecast_len</span> <span class="o">=</span> <span class="mi">20</span> <span class="c1"># length forecast window</span>
+<span class="n">incremental_len</span> <span class="o">=</span> <span class="mi">20</span> <span class="c1"># step length for moving forward</span>
+<span class="n">best_params</span><span class="p">,</span> <span class="n">tuned_df</span> <span class="o">=</span> <span class="n">grid_search_orbit</span><span class="p">(</span><span class="n">param_grid</span><span class="p">,</span>
+                                        <span class="n">model</span><span class="o">=</span><span class="n">dlt</span><span class="p">,</span>
+                                        <span class="n">df</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                                        <span class="n">min_train_len</span><span class="p">,</span> <span class="n">incremental_len</span><span class="p">,</span> <span class="n">forecast_len</span><span class="p">,</span>
+                                        <span class="n">metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">criteria</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+  0%|          | 0/9 [00:00&lt;?, ?it/s]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tuning hyper-params {&#39;level_sm_input&#39;: 0.3, &#39;seasonality_sm_input&#39;: 0.3}
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+ 11%|█         | 1/9 [00:00&lt;00:03,  2.51it/s]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tuning metric:0.0069549
+tuning hyper-params {&#39;level_sm_input&#39;: 0.3, &#39;seasonality_sm_input&#39;: 0.5}
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+ 22%|██▏       | 2/9 [00:00&lt;00:02,  2.49it/s]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tuning metric:0.0064769
+tuning hyper-params {&#39;level_sm_input&#39;: 0.3, &#39;seasonality_sm_input&#39;: 0.8}
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+ 33%|███▎      | 3/9 [00:01&lt;00:02,  2.49it/s]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tuning metric:0.0062834
+tuning hyper-params {&#39;level_sm_input&#39;: 0.5, &#39;seasonality_sm_input&#39;: 0.3}
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+ 44%|████▍     | 4/9 [00:01&lt;00:02,  2.37it/s]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tuning metric:0.0074489
+tuning hyper-params {&#39;level_sm_input&#39;: 0.5, &#39;seasonality_sm_input&#39;: 0.5}
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+ 56%|█████▌    | 5/9 [00:02&lt;00:01,  2.39it/s]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tuning metric:0.0070464
+tuning hyper-params {&#39;level_sm_input&#39;: 0.5, &#39;seasonality_sm_input&#39;: 0.8}
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+ 67%|██████▋   | 6/9 [00:02&lt;00:01,  2.25it/s]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tuning metric:0.0066297
+tuning hyper-params {&#39;level_sm_input&#39;: 0.8, &#39;seasonality_sm_input&#39;: 0.3}
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+ 78%|███████▊  | 7/9 [00:03&lt;00:01,  1.95it/s]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tuning metric:0.0094182
+tuning hyper-params {&#39;level_sm_input&#39;: 0.8, &#39;seasonality_sm_input&#39;: 0.5}
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+ 89%|████████▉ | 8/9 [00:03&lt;00:00,  1.85it/s]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tuning metric:0.0088091
+tuning hyper-params {&#39;level_sm_input&#39;: 0.8, &#39;seasonality_sm_input&#39;: 0.8}
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+100%|██████████| 9/9 [00:04&lt;00:00,  2.05it/s]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+tuning metric:0.0078637
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">tuned_df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span> <span class="c1"># backtest output for each parameter searched</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>level_sm_input</th>
+      <th>seasonality_sm_input</th>
+      <th>metrics</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0.3</td>
+      <td>0.3</td>
+      <td>0.006955</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>0.3</td>
+      <td>0.5</td>
+      <td>0.006477</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0.3</td>
+      <td>0.8</td>
+      <td>0.006283</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>0.5</td>
+      <td>0.3</td>
+      <td>0.007449</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>0.5</td>
+      <td>0.5</td>
+      <td>0.007046</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">best_params</span> <span class="c1"># output best parameters</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[{&#39;level_sm_input&#39;: 0.3, &#39;seasonality_sm_input&#39;: 0.8}]
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
 </div>
 </div>
 </div>
@@ -1363,37 +1844,29 @@ Test start date: 2018-01-21 00:00:00 Test end date: 2018-06-03 00:00:00
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="../modules.html" class="btn btn-neutral float-right" title="API Docs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="model_diagnostics.html" class="btn btn-neutral float-left" title="Diagnostics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="../modules.html" class="btn btn-neutral float-right" title="API Docs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="model_diagnostics.html" class="btn btn-neutral float-left" title="MCMC Model Visual Diagnostics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Uber Technologies, Inc
+        &#169; Copyright 2020, Uber Technologies, Inc.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 

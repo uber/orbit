@@ -3,11 +3,11 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Regression with Orbit &mdash; orbit 1.0.6 documentation</title>
+  <title>Regression with Orbit &mdash; orbit 1.0.10 documentation</title>
   
 
   
@@ -18,7 +18,10 @@
   
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
   
+
   
+  
+
   
 
   
@@ -31,7 +34,6 @@
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-        <script src="../_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
@@ -41,8 +43,8 @@
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Decomposing Prediction" href="decompose_prediction.html" />
-    <link rel="prev" title="DLT Model" href="dlt.html" /> 
+    <link rel="next" title="decompose_prediction" href="decompose_prediction.html" />
+    <link rel="prev" title="Tutorials" href="../tutorials.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -56,7 +58,7 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> orbit
+            <a href="../index.html" class="icon icon-home"> orbit
           
 
           
@@ -69,7 +71,7 @@
             
             
               <div class="version">
-                1.0.6
+                1.0.10
               </div>
             
           
@@ -98,19 +100,16 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="quick_start.html">Quick Start</a></li>
-<li class="toctree-l2"><a class="reference internal" href="lgt.html">LGT Model</a></li>
-<li class="toctree-l2"><a class="reference internal" href="dlt.html">DLT Model</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Regression with Orbit</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#load-data">load data</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#Use-regressors-and-specify-their-signs">Use regressors and specify their signs</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#Regression-Types">Regression Types</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#Adjust-pirors-for-regressor-beta-and-regressor-standard-deviation">Adjust pirors for regressor beta and regressor standard deviation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Regression with Orbit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#iclaims-Data">iclaims Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Without-Regression">Without Regression</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#With-Regression">With Regression</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="decompose_prediction.html">Decomposing Prediction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Regression-on-Simulated-Dataset">Regression on Simulated Dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decompose_prediction.html">decompose_prediction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pyro_basic.html">Pyro in Orbit</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_diagnostics.html">Diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="model_diagnostics.html">MCMC Model Visual Diagnostics</a></li>
 <li class="toctree-l2"><a class="reference internal" href="backtest.html">Backtest Orbit Model</a></li>
 </ul>
 </li>
@@ -155,6 +154,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -168,7 +169,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             
               <a href="https://github.com/uber/orbit/blob/master/docs/tutorials/regression.ipynb" class="fa fa-github"> Edit on GitHub</a>
             
@@ -456,362 +457,322 @@ div.rendered_html tbody tr:hover {
 </style>
 <div class="section" id="Regression-with-Orbit">
 <h1>Regression with Orbit<a class="headerlink" href="#Regression-with-Orbit" title="Permalink to this headline">¶</a></h1>
-<p>In this demo, we want to demonstartate how to use the different arguments in the model classes (LGT or DLT) to realize different setups for the regressors. Those could be very useful in practice when tuning the models.</p>
+<p>In this notebook, we want to demonstartate how to use the different arguments in DLT model to realize different setups for the regressors. Those could be very useful in practice when tuning the models. Here includes two examples, one with the icliams dataset and one for the simulation data.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">orbit.models.lgt</span> <span class="kn">import</span> <span class="n">LGTMAP</span><span class="p">,</span> <span class="n">LGTAggregated</span><span class="p">,</span> <span class="n">LGTFull</span>
-<span class="kn">from</span> <span class="nn">orbit.models.dlt</span> <span class="kn">import</span> <span class="n">DLTMAP</span><span class="p">,</span> <span class="n">DLTAggregated</span><span class="p">,</span> <span class="n">DLTFull</span>
-<span class="kn">from</span> <span class="nn">orbit.diagnostics.plot</span> <span class="kn">import</span> <span class="n">plot_predicted_data</span>
-<span class="kn">from</span> <span class="nn">orbit.diagnostics.plot</span> <span class="kn">import</span> <span class="n">plot_predicted_components</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">from</span> <span class="nn">orbit.models.dlt</span> <span class="kn">import</span> <span class="n">DLTFull</span>
+<span class="kn">from</span> <span class="nn">orbit.diagnostics.plot</span> <span class="kn">import</span> <span class="n">plot_predicted_data</span><span class="p">,</span> <span class="n">plot_predicted_components</span>
+<span class="kn">from</span> <span class="nn">orbit.utils.simulation</span> <span class="kn">import</span> <span class="n">make_regression</span>
+<span class="kn">from</span> <span class="nn">orbit.constants.palette</span> <span class="kn">import</span> <span class="n">QualitativePalette</span>
 <span class="kn">from</span> <span class="nn">orbit.utils.dataset</span> <span class="kn">import</span> <span class="n">load_iclaims</span>
+<span class="kn">from</span> <span class="nn">orbit.diagnostics.metrics</span> <span class="kn">import</span> <span class="n">smape</span>
+
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">minmax_scale</span>
+<span class="kn">from</span> <span class="nn">pylab</span> <span class="kn">import</span> <span class="n">rcParams</span>
+
+<span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.figsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">8</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;fivethirtyeight&#39;</span><span class="p">)</span>
+
+<span class="o">%</span><span class="k">matplotlib</span> inline
 </pre></div>
 </div>
 </div>
-<div class="section" id="load-data">
-<h2>load data<a class="headerlink" href="#load-data" title="Permalink to this headline">¶</a></h2>
-<div class="nbinput nblast docutils container">
+</div>
+<div class="section" id="iclaims-Data">
+<h1>iclaims Data<a class="headerlink" href="#iclaims-Data" title="Permalink to this headline">¶</a></h1>
+<p><em>iclaims_example</em> is a dataset containing the weekly initial claims for US unemployment benefits against a few related google trend queries (unemploy, filling and job) from Jan 2010 - June 2018. This aims to mimick the dataset from the paper <a class="reference external" href="https://people.ischool.berkeley.edu/~hal/Papers/2013/pred-present-with-bsts.pdf">Predicting the Present with Bayesian Structural Time Series</a> by SCOTT and VARIAN (2014).</p>
+<p>Number of claims are obtained from <a class="reference external" href="https://fred.stlouisfed.org/series/ICNSA">Federal Reserve Bank of St. Louis</a> while google queries are obtained through <a class="reference external" href="https://trends.google.com/trends/?geo=US">Google Trends API</a>.</p>
+<p>In order to use this data to nowcast the US unemployment claims during COVID-19 period, we extended the dataset to Jan 2021 and added the <a class="reference external" href="https://finance.yahoo.com/quote/%5EGSPC/history?period1=1264032000&amp;period2=1611187200&amp;interval=1wk&amp;filter=history&amp;frequency=1wk&amp;includeAdjustedClose=true">S&amp;P 500 (^GSPC)</a> and <a class="reference external" href="https://finance.yahoo.com/quote/%5EVIX/history?p=%5EVIX">VIX</a> Index historical data for the same period.</p>
+<p>The data is standardized and log-transformed for the model fitting purpose.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># load data</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">load_iclaims</span><span class="p">(</span><span class="n">end_date</span><span class="o">=</span><span class="s1">&#39;2021-01-03&#39;</span><span class="p">)</span>
+<span class="n">date_col</span> <span class="o">=</span> <span class="s1">&#39;week&#39;</span>
+<span class="n">response_col</span> <span class="o">=</span> <span class="s1">&#39;claims&#39;</span>
+<span class="n">df</span><span class="o">.</span><span class="n">dtypes</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+week              datetime64[ns]
+claims                   float64
+trend.unemploy           float64
+trend.filling            float64
+trend.job                float64
+sp500                    float64
+vix                      float64
+dtype: object
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">df</span> <span class="o">=</span> <span class="n">load_iclaims</span><span class="p">()</span>
-<span class="n">df</span><span class="p">[[</span><span class="s1">&#39;claims&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]]</span> <span class="o">=</span> \
-    <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">df</span><span class="p">[[</span><span class="s1">&#39;claims&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]])</span>
+<span></span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
 </div>
-<div class="section" id="Use-regressors-and-specify-their-signs">
-<h2>Use regressors and specify their signs<a class="headerlink" href="#Use-regressors-and-specify-their-signs" title="Permalink to this headline">¶</a></h2>
-<p>The regressor columns can be supplied via argument <code class="docutils literal notranslate"><span class="pre">regressor_col</span></code>. Their signs can be specified via <code class="docutils literal notranslate"><span class="pre">regressor_sign</span></code>, with values either ‘=’ (regular, no restriction) or ‘+’ (positive). These two lists should be of the same lenght. The default values of <code class="docutils literal notranslate"><span class="pre">regressor_sign</span></code> is all ‘=’.</p>
-<div class="nbinput nblast docutils container">
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>week</th>
+      <th>claims</th>
+      <th>trend.unemploy</th>
+      <th>trend.filling</th>
+      <th>trend.job</th>
+      <th>sp500</th>
+      <th>vix</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2010-01-03</td>
+      <td>13.386595</td>
+      <td>-0.480203</td>
+      <td>-0.356956</td>
+      <td>0.120096</td>
+      <td>-0.598259</td>
+      <td>0.018626</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2010-01-10</td>
+      <td>13.624218</td>
+      <td>-0.480203</td>
+      <td>-0.233342</td>
+      <td>0.171390</td>
+      <td>-0.606106</td>
+      <td>0.006417</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2010-01-17</td>
+      <td>13.398741</td>
+      <td>-0.463943</td>
+      <td>-0.330981</td>
+      <td>0.120096</td>
+      <td>-0.645855</td>
+      <td>0.428310</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2010-01-24</td>
+      <td>13.137549</td>
+      <td>-0.496732</td>
+      <td>-0.233342</td>
+      <td>0.109514</td>
+      <td>-0.662377</td>
+      <td>0.324617</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2010-01-31</td>
+      <td>13.196760</td>
+      <td>-0.565725</td>
+      <td>-0.280970</td>
+      <td>0.077079</td>
+      <td>-0.669555</td>
+      <td>0.383376</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>We can see form the plot below, there are seasonlity trend and as well as a huge changpoint due the impact of COVID-19.</p>
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">DATE_COL</span><span class="o">=</span><span class="s2">&quot;week&quot;</span>
-<span class="n">RESPONSE_COL</span><span class="o">=</span><span class="s2">&quot;claims&quot;</span>
-<span class="n">REGRESSOR_COL</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]</span>
+<span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;week&#39;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;claims&#39;</span><span class="p">])</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Unemployment Claims&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;week&#39;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;trend.unemploy&#39;</span><span class="p">],</span> <span class="s1">&#39;tab:orange&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Google trend - unemploy&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;week&#39;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;vix&#39;</span><span class="p">],</span> <span class="s1">&#39;tab:green&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;VIX&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;week&#39;</span><span class="p">],</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;sp500&#39;</span><span class="p">],</span> <span class="s1">&#39;tab:red&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;S&amp;P500&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Text(0.5, 1.0, &#39;S&amp;P500&#39;)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_regression_8_1.png" src="../docs/_images/tutorials_regression_8_1.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgt_mod</span><span class="o">=</span><span class="n">LGTAggregated</span><span class="p">(</span>
-    <span class="n">response_col</span><span class="o">=</span><span class="n">RESPONSE_COL</span><span class="p">,</span>
-    <span class="n">date_col</span><span class="o">=</span><span class="n">DATE_COL</span><span class="p">,</span>
-    <span class="n">regressor_col</span><span class="o">=</span><span class="n">REGRESSOR_COL</span><span class="p">,</span>
-    <span class="n">regressor_sign</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="s1">&#39;=&#39;</span><span class="p">],</span>
-    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
-    <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="n">lgt_mod</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
+<span></span><span class="c1"># split the dataset</span>
+<span class="c1"># only use the data after 2018 as we observed from above chart that it has the more clear relationship between trend.unemploy and claims</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;week&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="s1">&#39;2018-01-01&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">test_size</span> <span class="o">=</span> <span class="mi">26</span>
+<span class="n">train_df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[:</span><span class="o">-</span><span class="n">test_size</span><span class="p">]</span>
+<span class="n">test_df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="o">-</span><span class="n">test_size</span><span class="p">:]</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-WARNING:pystan:Maximum (flat) parameter count (1000) exceeded: skipping diagnostic tests for n_eff and Rhat.
-To run all diagnostics call pystan.check_hmc_diagnostics(fit)
-WARNING:pystan:4 of 100 iterations ended with a divergence (4 %).
-WARNING:pystan:Try running with adapt_delta larger than 0.8 to remove the divergences.
-</pre></div></div>
-</div>
-<p>The estimated regressor coefficients can be retrieved via <code class="docutils literal notranslate"><span class="pre">.aggregated_posteriors</span></code>.</p>
-<div class="nbinput docutils container">
+<div class="section" id="Without-Regression">
+<h2>Without Regression<a class="headerlink" href="#Without-Regression" title="Permalink to this headline">¶</a></h2>
+<p>We will use the DLT models here to compare the model performance without vs. with regression.</p>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgt_mod</span><span class="o">.</span><span class="n">get_regression_coefs</span><span class="p">()</span>
+<span></span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">8888</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
-</pre></div>
-</div>
-<div class="output_area rendered_html docutils container">
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>regressor</th>
-      <th>regressor_sign</th>
-      <th>coefficient</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>trend.unemploy</td>
-      <td>Positive</td>
-      <td>0.053995</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>trend.filling</td>
-      <td>Positive</td>
-      <td>0.076244</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>trend.job</td>
-      <td>Regular</td>
-      <td>-0.070255</td>
-    </tr>
-  </tbody>
-</table>
-</div></div>
-</div>
-</div>
-<div class="section" id="Regression-Types">
-<h2>Regression Types<a class="headerlink" href="#Regression-Types" title="Permalink to this headline">¶</a></h2>
-<p>In orbit, we have different prior types for the regressiont coefficients:</p>
-<ul class="simple">
-<li><p>Fixed Ridge</p></li>
-<li><p>Lasso</p></li>
-<li><p>Auto Ridge</p></li>
-</ul>
-<p>In <strong>Fixed Ridge</strong>, it is assumed that</p>
-<div class="math notranslate nohighlight">
-\[\beta \sim Gaussian(\beta_{prior}, \sigma_{prior})\]</div>
-<p>In <strong>Lasso</strong>, it is assumed that</p>
-<div class="math notranslate nohighlight">
-\[\beta \sim Laplace(\beta_{prior}, \sigma_{prior})\]</div>
-<p>In <strong>Auto Ridge</strong>, it is assumed that</p>
-<div class="math notranslate nohighlight">
-\[\beta \sim Gaussian(\beta_{prior}, \sigma_{\beta})\]</div>
-<p>,</p>
-<div class="math notranslate nohighlight">
-\[\sigma_\beta \sim \text{Half-Cauchy}(0, \text{ridge_scale})\]</div>
-<div class="section" id="Fixed-Ridge">
-<h3>Fixed Ridge<a class="headerlink" href="#Fixed-Ridge" title="Permalink to this headline">¶</a></h3>
-<div class="nbinput docutils container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgt_mod</span> <span class="o">=</span> <span class="n">LGTAggregated</span><span class="p">(</span>
-    <span class="n">response_col</span><span class="o">=</span><span class="n">RESPONSE_COL</span><span class="p">,</span>
-    <span class="n">date_col</span><span class="o">=</span><span class="n">DATE_COL</span><span class="p">,</span>
-    <span class="n">regressor_col</span><span class="o">=</span><span class="n">REGRESSOR_COL</span><span class="p">,</span>
-    <span class="n">regressor_sign</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="s1">&#39;=&#39;</span><span class="p">],</span>
+<span></span><span class="n">dlt</span> <span class="o">=</span> <span class="n">DLTFull</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span>
     <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
-    <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">regression_penalty</span><span class="o">=</span><span class="s2">&quot;fixed_ridge&quot;</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">8888</span><span class="p">,</span>
+    <span class="n">num_warmup</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span>
+    <span class="n">n_bootstrap_draws</span><span class="o">=</span><span class="mi">4000</span>
 <span class="p">)</span>
-<span class="n">lgt_mod</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-WARNING:pystan:Maximum (flat) parameter count (1000) exceeded: skipping diagnostic tests for n_eff and Rhat.
-To run all diagnostics call pystan.check_hmc_diagnostics(fit)
-WARNING:pystan:4 of 100 iterations ended with a divergence (4 %).
-WARNING:pystan:Try running with adapt_delta larger than 0.8 to remove the divergences.
-</pre></div></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgt_mod</span><span class="o">.</span><span class="n">get_regression_coefs</span><span class="p">()</span>
+<span></span><span class="o">%%time</span>
+<span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">)</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+WARNING:pystan:n_eff / iter below 0.001 indicates that the effective sample size has likely been overestimated
+WARNING:pystan:Rhat above 1.1 or below 0.9 indicates that the chains very likely have not mixed
+</pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
-</pre></div>
+<div class="prompt empty docutils container">
 </div>
-<div class="output_area rendered_html docutils container">
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>regressor</th>
-      <th>regressor_sign</th>
-      <th>coefficient</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>trend.unemploy</td>
-      <td>Positive</td>
-      <td>0.053995</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>trend.filling</td>
-      <td>Positive</td>
-      <td>0.076244</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>trend.job</td>
-      <td>Regular</td>
-      <td>-0.070255</td>
-    </tr>
-  </tbody>
-</table>
-</div></div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 174 ms, sys: 77.9 ms, total: 252 ms
+Wall time: 13.7 s
+</pre></div></div>
 </div>
-</div>
-<div class="section" id="Lasso">
-<h3>Lasso<a class="headerlink" href="#Lasso" title="Permalink to this headline">¶</a></h3>
-<div class="nbinput docutils container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgt_mod</span> <span class="o">=</span> <span class="n">LGTAggregated</span><span class="p">(</span>
-    <span class="n">response_col</span><span class="o">=</span><span class="n">RESPONSE_COL</span><span class="p">,</span>
-    <span class="n">date_col</span><span class="o">=</span><span class="n">DATE_COL</span><span class="p">,</span>
-    <span class="n">regressor_col</span><span class="o">=</span><span class="n">REGRESSOR_COL</span><span class="p">,</span>
-    <span class="n">regressor_sign</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="s1">&#39;=&#39;</span><span class="p">],</span>
-    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
-    <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">regression_penalty</span><span class="o">=</span><span class="s2">&quot;lasso&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="n">lgt_mod</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
+<span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">test_df</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-WARNING:pystan:Maximum (flat) parameter count (1000) exceeded: skipping diagnostic tests for n_eff and Rhat.
-To run all diagnostics call pystan.check_hmc_diagnostics(fit)
-WARNING:pystan:3 of 100 iterations ended with a divergence (3 %).
-WARNING:pystan:Try running with adapt_delta larger than 0.8 to remove the divergences.
-</pre></div></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgt_mod</span><span class="o">.</span><span class="n">get_regression_coefs</span><span class="p">()</span>
+<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
+                        <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+                        <span class="n">test_actual_df</span><span class="o">=</span><span class="n">test_df</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Prediction without Regression - SMAPE:</span><span class="si">{:.3f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="n">smape</span><span class="p">(</span><span class="n">predicted_df</span><span class="p">[</span><span class="s1">&#39;prediction&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">test_df</span><span class="p">[</span><span class="s1">&#39;claims&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+                            <span class="p">)</span>
+                       <span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
-</pre></div>
+<div class="prompt empty docutils container">
 </div>
-<div class="output_area rendered_html docutils container">
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>regressor</th>
-      <th>regressor_sign</th>
-      <th>coefficient</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>trend.unemploy</td>
-      <td>Positive</td>
-      <td>0.049352</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>trend.filling</td>
-      <td>Positive</td>
-      <td>0.068068</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>trend.job</td>
-      <td>Regular</td>
-      <td>-0.058273</td>
-    </tr>
-  </tbody>
-</table>
-</div></div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_regression_16_0.png" src="../docs/_images/tutorials_regression_16_0.png" />
 </div>
 </div>
-<div class="section" id="Auto-Ridge">
-<h3>Auto Ridge<a class="headerlink" href="#Auto-Ridge" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="With-Regression">
+<h2>With Regression<a class="headerlink" href="#With-Regression" title="Permalink to this headline">¶</a></h2>
+<p>The regressor columns can be supplied via argument <code class="docutils literal notranslate"><span class="pre">regressor_col</span></code>.</p>
+<div class="section" id="Regressor-with-the-sign">
+<h3>Regressor with the sign<a class="headerlink" href="#Regressor-with-the-sign" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgt_mod</span> <span class="o">=</span> <span class="n">LGTAggregated</span><span class="p">(</span>
-    <span class="n">response_col</span><span class="o">=</span><span class="n">RESPONSE_COL</span><span class="p">,</span>
-    <span class="n">date_col</span><span class="o">=</span><span class="n">DATE_COL</span><span class="p">,</span>
+<span></span><span class="n">REGRESSOR_COL</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">,</span> <span class="s1">&#39;sp500&#39;</span><span class="p">,</span> <span class="s1">&#39;vix&#39;</span><span class="p">]</span>
+<span class="n">dlt_reg</span> <span class="o">=</span> <span class="n">DLTFull</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span>
     <span class="n">regressor_col</span><span class="o">=</span><span class="n">REGRESSOR_COL</span><span class="p">,</span>
-    <span class="n">regressor_sign</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="s1">&#39;=&#39;</span><span class="p">],</span>
     <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
-    <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">regression_penalty</span><span class="o">=</span><span class="s2">&quot;auto_ridge&quot;</span><span class="p">,</span>
-    <span class="n">auto_ridge_scale</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">8888</span><span class="p">,</span>
+    <span class="n">num_warmup</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span>
+    <span class="n">n_bootstrap_draws</span><span class="o">=</span><span class="mi">4000</span>
 <span class="p">)</span>
-<span class="n">lgt_mod</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
+<span class="n">dlt_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -820,18 +781,17 @@ WARNING:pystan:Try running with adapt_delta larger than 0.8 to remove the diverg
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-WARNING:pystan:Maximum (flat) parameter count (1000) exceeded: skipping diagnostic tests for n_eff and Rhat.
-To run all diagnostics call pystan.check_hmc_diagnostics(fit)
-WARNING:pystan:3 of 100 iterations ended with a divergence (3 %).
-WARNING:pystan:Try running with adapt_delta larger than 0.8 to remove the divergences.
+WARNING:pystan:n_eff / iter below 0.001 indicates that the effective sample size has likely been overestimated
+WARNING:pystan:Rhat above 1.1 or below 0.9 indicates that the chains very likely have not mixed
 </pre></div></div>
 </div>
+<p>The estimated regressor coefficients can be retrieved via <code class="docutils literal notranslate"><span class="pre">.aggregated_posteriors</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgt_mod</span><span class="o">.</span><span class="n">get_regression_coefs</span><span class="p">()</span>
+<span></span><span class="n">dlt_reg</span><span class="o">.</span><span class="n">get_regression_coefs</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -867,49 +827,43 @@ WARNING:pystan:Try running with adapt_delta larger than 0.8 to remove the diverg
     <tr>
       <th>0</th>
       <td>trend.unemploy</td>
-      <td>Positive</td>
-      <td>0.044648</td>
+      <td>Regular</td>
+      <td>0.844820</td>
     </tr>
     <tr>
       <th>1</th>
       <td>trend.filling</td>
-      <td>Positive</td>
-      <td>0.052548</td>
+      <td>Regular</td>
+      <td>0.416744</td>
     </tr>
     <tr>
       <th>2</th>
       <td>trend.job</td>
       <td>Regular</td>
-      <td>-0.050318</td>
+      <td>0.011019</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>sp500</td>
+      <td>Regular</td>
+      <td>-0.457475</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>vix</td>
+      <td>Regular</td>
+      <td>0.035758</td>
     </tr>
   </tbody>
 </table>
 </div></div>
 </div>
-</div>
-</div>
-<div class="section" id="Adjust-pirors-for-regressor-beta-and-regressor-standard-deviation">
-<h2>Adjust pirors for regressor beta and regressor standard deviation<a class="headerlink" href="#Adjust-pirors-for-regressor-beta-and-regressor-standard-deviation" title="Permalink to this headline">¶</a></h2>
-<p>In the model, it is assumed</p>
-<div class="math notranslate nohighlight">
-\[\beta \sim Gaussian(\beta_{prior}, \sigma_{prior})\]</div>
-<p>The default values for <span class="math notranslate nohighlight">\(\beta_{prior}\)</span> and <span class="math notranslate nohighlight">\(\sigma_{prior}\)</span> are 0 and 1, respectively.</p>
-<p>Users could adjust them via arguments <code class="docutils literal notranslate"><span class="pre">regressor_beta_prior</span></code> and <code class="docutils literal notranslate"><span class="pre">regressor_sigma_prior</span></code>. These two lists should be of the same lenght as <code class="docutils literal notranslate"><span class="pre">regressor_col</span></code>.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgt_mod</span> <span class="o">=</span> <span class="n">LGTAggregated</span><span class="p">(</span>
-    <span class="n">response_col</span><span class="o">=</span><span class="n">RESPONSE_COL</span><span class="p">,</span>
-    <span class="n">date_col</span><span class="o">=</span><span class="n">DATE_COL</span><span class="p">,</span>
-    <span class="n">regressor_col</span><span class="o">=</span><span class="n">REGRESSOR_COL</span><span class="p">,</span>
-    <span class="n">regressor_sign</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="s1">&#39;=&#39;</span><span class="p">],</span>
-    <span class="n">regressor_beta_prior</span><span class="o">=</span><span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
-    <span class="n">regressor_sigma_prior</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span>
-    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
-    <span class="n">seed</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-<span class="p">)</span>
+<span></span><span class="n">predicted_df_reg</span> <span class="o">=</span> <span class="n">dlt_reg</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test_df</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -918,25 +872,363 @@ WARNING:pystan:Try running with adapt_delta larger than 0.8 to remove the diverg
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgt_mod</span><span class="o">.</span><span class="n">regression_penalty</span>
+<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df_reg</span><span class="p">,</span>
+                        <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+                        <span class="n">test_actual_df</span><span class="o">=</span><span class="n">test_df</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Prediction with Regression - SMAPE:</span><span class="si">{:.4f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="n">smape</span><span class="p">(</span><span class="n">predicted_df_reg</span><span class="p">[</span><span class="s1">&#39;prediction&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">test_df</span><span class="p">[</span><span class="s1">&#39;claims&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+                            <span class="p">)</span>
+                       <span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
-</pre></div>
+<div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-&#39;fixed_ridge&#39;
-</pre></div></div>
+<img alt="../docs/_images/tutorials_regression_24_0.png" src="../docs/_images/tutorials_regression_24_0.png" />
 </div>
+</div>
+<p>After adding the regressor, prediction results are more closer to the real response compared to without using regression.</p>
+</div>
+<div class="section" id="Adjust-pirors-for-regressor-beta-and-standard-deviation">
+<h3>Adjust pirors for regressor beta and standard deviation<a class="headerlink" href="#Adjust-pirors-for-regressor-beta-and-standard-deviation" title="Permalink to this headline">¶</a></h3>
+<p>In the model, it is assumed</p>
+<div class="math notranslate nohighlight">
+\[\beta \sim Gaussian(\beta_{prior}, \sigma_{prior})\]</div>
+<p>The default values for <span class="math notranslate nohighlight">\(\beta_{prior}\)</span> and <span class="math notranslate nohighlight">\(\sigma_{prior}\)</span> are 0 and 1, respectively.</p>
+<p>Assuming users obtain further knowledge on each regressor, they could adjust prior knowledge on the coefficients via arguments <code class="docutils literal notranslate"><span class="pre">regressor_beta_prior</span></code> and <code class="docutils literal notranslate"><span class="pre">regressor_sigma_prior</span></code>. These two lists should be of the same lenght as <code class="docutils literal notranslate"><span class="pre">regressor_col</span></code>.</p>
+<p>Also, Assuming users have some prior knowledge on direction of impact by each regressor, users can specifiy them via <code class="docutils literal notranslate"><span class="pre">regressor_sign</span></code>, with a list of values consist ‘=’ (regular, no restriction), ‘+’ (positive) or ‘-’ (negative). Such list should be of the same length. The default values of <code class="docutils literal notranslate"><span class="pre">regressor_sign</span></code> is all ‘=’.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgt_mod</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
+<span></span><span class="n">dlt_reg_adjust</span> <span class="o">=</span> <span class="n">DLTFull</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span>
+    <span class="n">regressor_col</span><span class="o">=</span><span class="n">REGRESSOR_COL</span><span class="p">,</span>
+    <span class="n">regressor_sign</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;+&quot;</span><span class="p">,</span> <span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="s1">&#39;=&#39;</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;+&#39;</span><span class="p">],</span>
+    <span class="n">regressor_beta_prior</span><span class="o">=</span><span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.07</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.03</span><span class="p">],</span>
+    <span class="n">regressor_sigma_prior</span><span class="o">=</span><span class="p">[</span><span class="mf">0.05</span><span class="p">]</span> <span class="o">*</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">8888</span><span class="p">,</span>
+    <span class="n">num_warmup</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span>
+    <span class="n">n_bootstrap_draws</span><span class="o">=</span><span class="mi">4000</span>
+<span class="p">)</span>
+<span class="n">dlt_reg_adjust</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+WARNING:pystan:n_eff / iter below 0.001 indicates that the effective sample size has likely been overestimated
+WARNING:pystan:Rhat above 1.1 or below 0.9 indicates that the chains very likely have not mixed
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">dlt_reg_adjust</span><span class="o">.</span><span class="n">get_regression_coefs</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>regressor</th>
+      <th>regressor_sign</th>
+      <th>coefficient</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>trend.unemploy</td>
+      <td>Positive</td>
+      <td>0.458371</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>trend.filling</td>
+      <td>Positive</td>
+      <td>0.272345</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>vix</td>
+      <td>Positive</td>
+      <td>0.053327</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>sp500</td>
+      <td>Negative</td>
+      <td>-0.300603</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>trend.job</td>
+      <td>Regular</td>
+      <td>0.056018</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">predicted_df_reg_adjust</span> <span class="o">=</span> <span class="n">dlt_reg_adjust</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test_df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df_reg_adjust</span><span class="p">,</span>
+                        <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+                        <span class="n">test_actual_df</span><span class="o">=</span><span class="n">test_df</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Prediction with Regression using adjust priors - SMAPE:</span><span class="si">{:.4f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">smape</span><span class="p">(</span><span class="n">predicted_df_reg_adjust</span><span class="p">[</span><span class="s1">&#39;prediction&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">test_df</span><span class="p">[</span><span class="s1">&#39;claims&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
+                       <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_regression_31_0.png" src="../docs/_images/tutorials_regression_31_0.png" />
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="Regression-on-Simulated-Dataset">
+<h1>Regression on Simulated Dataset<a class="headerlink" href="#Regression-on-Simulated-Dataset" title="Permalink to this headline">¶</a></h1>
+<p>Leverage the simulation function to generate a dateset with regression terms</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># To scale regressor values in a nicer way</span>
+<span class="n">SEED</span> <span class="o">=</span> <span class="mi">2020</span>
+<span class="n">NUM_OF_REGRESSORS</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">COEFS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="o">.</span><span class="mi">03</span><span class="p">,</span> <span class="o">.</span><span class="mi">1</span><span class="p">,</span> <span class="n">NUM_OF_REGRESSORS</span><span class="p">)</span>
+<span class="n">COEFS</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+array([ 0.15602066,  0.05231785,  0.16325487, -0.11182046,  0.0027203 ])
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">coefs</span> <span class="o">=</span> <span class="n">make_regression</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="n">COEFS</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">SEED</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">regressor_cols</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;regressor_</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">NUM_OF_REGRESSORS</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+<span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">regressor_cols</span>
+<span class="c1">#df[regressor_cols] = df[regressor_cols]/REG_BASE</span>
+<span class="c1">#df[regressor_cols] = df[regressor_cols].apply(np.log1p)</span>
+
+<span class="c1"># min max scale to avoid negetive values</span>
+<span class="n">response_col</span> <span class="o">=</span> <span class="s2">&quot;response&quot;</span>
+<span class="n">df</span><span class="p">[</span><span class="n">response_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+<span class="n">df</span><span class="p">[</span><span class="n">response_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">minmax_scale</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">response_col</span><span class="p">])</span>
+
+<span class="c1"># add the date column</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">&#39;date&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="s1">&#39;2016-01-04&#39;</span><span class="p">,</span> <span class="n">periods</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;1W&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>regressor_1</th>
+      <th>regressor_2</th>
+      <th>regressor_3</th>
+      <th>regressor_4</th>
+      <th>regressor_5</th>
+      <th>response</th>
+      <th>date</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0.630103</td>
+      <td>0.111589</td>
+      <td>0.000000</td>
+      <td>-0.709102</td>
+      <td>-0.136399</td>
+      <td>0.724856</td>
+      <td>2016-01-10</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>0.000000</td>
+      <td>0.125509</td>
+      <td>0.136342</td>
+      <td>-0.880252</td>
+      <td>0.543985</td>
+      <td>0.535811</td>
+      <td>2016-01-17</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>-0.000000</td>
+      <td>0.292064</td>
+      <td>0.192392</td>
+      <td>0.000000</td>
+      <td>0.042711</td>
+      <td>0.713783</td>
+      <td>2016-01-24</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>0.666333</td>
+      <td>-0.000000</td>
+      <td>-0.240312</td>
+      <td>-0.408502</td>
+      <td>0.000000</td>
+      <td>0.248319</td>
+      <td>2016-01-31</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>0.593637</td>
+      <td>-0.256724</td>
+      <td>-0.000000</td>
+      <td>0.031756</td>
+      <td>0.546676</td>
+      <td>0.440959</td>
+      <td>2016-02-07</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;response&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[&lt;matplotlib.lines.Line2D at 0x13e434810&gt;]
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_regression_38_1.png" src="../docs/_images/tutorials_regression_38_1.png" />
+</div>
+</div>
+<p>Instead of using fixed standard deviations for regressors, a hyperprior can be assigned to them, i.e.</p>
+<div class="math notranslate nohighlight">
+\[\sigma_\beta \sim \text{Half-Cauchy}(0, \text{ridge_scale})\]</div>
+<p>This can be done by setting <code class="docutils literal notranslate"><span class="pre">regression_penalty=&quot;auto_ridge&quot;</span></code>. Notice there is a hyperprior <code class="docutils literal notranslate"><span class="pre">auto_ridge_scale</span></code> for tuning with a default of <code class="docutils literal notranslate"><span class="pre">0.5</span></code>. We can also supply stan config such as <code class="docutils literal notranslate"><span class="pre">adapt_delta</span></code> to reduce divergence see <a class="reference external" href="https://mc-stan.org/rstanarm/reference/adapt_delta.html">here</a> for details.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">mod_auto_ridge</span> <span class="o">=</span> <span class="n">DLTFull</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="s2">&quot;date&quot;</span><span class="p">,</span>
+    <span class="n">regressor_col</span><span class="o">=</span><span class="n">regressor_cols</span><span class="p">,</span>
+    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="n">SEED</span><span class="p">,</span>
+    <span class="n">regression_penalty</span><span class="o">=</span><span class="s1">&#39;auto_ridge&#39;</span><span class="p">,</span>
+    <span class="n">num_warmup</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span>
+    <span class="n">num_sample</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">stan_mcmc_control</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;adapt_delta&#39;</span><span class="p">:</span><span class="mf">0.9</span><span class="p">}</span>
+<span class="p">)</span>
+<span class="n">mod_auto_ridge</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -947,10 +1239,42 @@ WARNING:pystan:Try running with adapt_delta larger than 0.8 to remove the diverg
 <div class="highlight"><pre>
 WARNING:pystan:Maximum (flat) parameter count (1000) exceeded: skipping diagnostic tests for n_eff and Rhat.
 To run all diagnostics call pystan.check_hmc_diagnostics(fit)
+WARNING:pystan:22 of 1000 iterations ended with a divergence (2.2 %).
+WARNING:pystan:Try running with adapt_delta larger than 0.9 to remove the divergences.
 </pre></div></div>
 </div>
-<p>One can notice the significant changes in the estimted coefficients by using different priors.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
 </div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">coef_auto_ridge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">mod_auto_ridge</span><span class="o">.</span><span class="n">_posterior_samples</span><span class="p">[</span><span class="s1">&#39;beta&#39;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">lw</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Copmparsion of the Coefficients from Different Models&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">coef_auto_ridge</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">QualitativePalette</span><span class="o">.</span><span class="n">Line4</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">lw</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Auto Ridge&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">coefs</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="n">lw</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Ground truth&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_regression_43_0.png" src="../docs/_images/tutorials_regression_43_0.png" />
+</div>
+</div>
+<p>The result looks reasonable comparing to the true coefficients.</p>
 </div>
 
 
@@ -958,37 +1282,29 @@ To run all diagnostics call pystan.check_hmc_diagnostics(fit)
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="decompose_prediction.html" class="btn btn-neutral float-right" title="Decomposing Prediction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="dlt.html" class="btn btn-neutral float-left" title="DLT Model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="decompose_prediction.html" class="btn btn-neutral float-right" title="decompose_prediction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../tutorials.html" class="btn btn-neutral float-left" title="Tutorials" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Uber Technologies, Inc
+        &#169; Copyright 2020, Uber Technologies, Inc.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 

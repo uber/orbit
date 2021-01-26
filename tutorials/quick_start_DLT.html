@@ -1,0 +1,1432 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Damped-Local-Trend(DLT) Example &mdash; orbit 1.0.10 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/orbit.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> orbit
+          
+
+          
+            
+            <img src="../_static/orbit-logo-black.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.10
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Orbit Core</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">API Docs</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">orbit</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Damped-Local-Trend(DLT) Example</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/uber/orbit/blob/master/docs/tutorials/quick_start_DLT.ipynb" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    /*background: #f5f5f5;*/
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+    margin: 0;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="Damped-Local-Trend(DLT)-Example">
+<h1>Damped-Local-Trend(DLT) Example<a class="headerlink" href="#Damped-Local-Trend(DLT)-Example" title="Permalink to this headline">¶</a></h1>
+<p><strong>DLT</strong> stands for Damped Local Trend model, which is an important model type in orbit package. In the model equation, there is a local trend term and a global trend term.</p>
+<p>In this notebook we will show how to use Orbit DLT models with the US unemployment claims data and different gloabl trend options</p>
+<p><strong>Note: Negative response values are not allowed in dlt model, due to the existence of the global trend term.</strong></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">timedelta</span>
+
+<span class="kn">from</span> <span class="nn">orbit.models.dlt</span> <span class="kn">import</span> <span class="n">DLTMAP</span><span class="p">,</span> <span class="n">DLTAggregated</span><span class="p">,</span> <span class="n">DLTFull</span>
+<span class="kn">from</span> <span class="nn">orbit.diagnostics.plot</span> <span class="kn">import</span> <span class="n">plot_predicted_data</span>
+<span class="kn">from</span> <span class="nn">orbit.diagnostics.plot</span> <span class="kn">import</span> <span class="n">plot_predicted_components</span>
+<span class="kn">from</span> <span class="nn">orbit.utils.dataset</span> <span class="kn">import</span> <span class="n">load_iclaims</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="Data">
+<h2>Data<a class="headerlink" href="#Data" title="Permalink to this headline">¶</a></h2>
+<p><em>iclaims_example</em> is a dataset containing the weekly initial claims for US unemployment benefits against a few related google trend queries (unemploy, filling and job)from Jan 2010 - June 2018. This aims to mimick the dataset from the paper <a class="reference external" href="https://people.ischool.berkeley.edu/~hal/Papers/2013/pred-present-with-bsts.pdf">Predicting the Present with Bayesian Structural Time Series</a> by SCOTT and VARIAN (2014).</p>
+<p>Number of claims are obtained from <a class="reference external" href="https://fred.stlouisfed.org/series/ICNSA">Federal Reserve Bank of St. Louis</a> while google queries are obtained through <a class="reference external" href="https://trends.google.com/trends/?geo=US">Google Trends API</a>. Note that dataset is transformed by natural log before fitting in order to be fitted as a multiplicative model.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># load data</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">load_iclaims</span><span class="p">()</span>
+<span class="n">date_col</span> <span class="o">=</span> <span class="s1">&#39;week&#39;</span>
+<span class="n">response_col</span> <span class="o">=</span> <span class="s1">&#39;claims&#39;</span>
+<span class="n">df</span><span class="o">.</span><span class="n">dtypes</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+week              datetime64[ns]
+claims                   float64
+trend.unemploy           float64
+trend.filling            float64
+trend.job                float64
+sp500                    float64
+vix                      float64
+dtype: object
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>week</th>
+      <th>claims</th>
+      <th>trend.unemploy</th>
+      <th>trend.filling</th>
+      <th>trend.job</th>
+      <th>sp500</th>
+      <th>vix</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2010-01-03</td>
+      <td>13.386595</td>
+      <td>-0.480203</td>
+      <td>-0.356956</td>
+      <td>0.120096</td>
+      <td>-0.598259</td>
+      <td>0.018626</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2010-01-10</td>
+      <td>13.624218</td>
+      <td>-0.480203</td>
+      <td>-0.233342</td>
+      <td>0.171390</td>
+      <td>-0.606106</td>
+      <td>0.006417</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2010-01-17</td>
+      <td>13.398741</td>
+      <td>-0.463943</td>
+      <td>-0.330981</td>
+      <td>0.120096</td>
+      <td>-0.645855</td>
+      <td>0.428310</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2010-01-24</td>
+      <td>13.137549</td>
+      <td>-0.496732</td>
+      <td>-0.233342</td>
+      <td>0.109514</td>
+      <td>-0.662377</td>
+      <td>0.324617</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2010-01-31</td>
+      <td>13.196760</td>
+      <td>-0.565725</td>
+      <td>-0.280970</td>
+      <td>0.077079</td>
+      <td>-0.669555</td>
+      <td>0.383376</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="section" id="Train-/-Test-Split">
+<h3>Train / Test Split<a class="headerlink" href="#Train-/-Test-Split" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">test_size</span> <span class="o">=</span> <span class="mi">52</span>
+<span class="n">train_df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[:</span><span class="o">-</span><span class="n">test_size</span><span class="p">]</span>
+<span class="n">test_df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="o">-</span><span class="n">test_size</span><span class="p">:]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">train_df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>week</th>
+      <th>claims</th>
+      <th>trend.unemploy</th>
+      <th>trend.filling</th>
+      <th>trend.job</th>
+      <th>sp500</th>
+      <th>vix</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2010-01-03</td>
+      <td>13.386595</td>
+      <td>-0.480203</td>
+      <td>-0.356956</td>
+      <td>0.120096</td>
+      <td>-0.598259</td>
+      <td>0.018626</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2010-01-10</td>
+      <td>13.624218</td>
+      <td>-0.480203</td>
+      <td>-0.233342</td>
+      <td>0.171390</td>
+      <td>-0.606106</td>
+      <td>0.006417</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2010-01-17</td>
+      <td>13.398741</td>
+      <td>-0.463943</td>
+      <td>-0.330981</td>
+      <td>0.120096</td>
+      <td>-0.645855</td>
+      <td>0.428310</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2010-01-24</td>
+      <td>13.137549</td>
+      <td>-0.496732</td>
+      <td>-0.233342</td>
+      <td>0.109514</td>
+      <td>-0.662377</td>
+      <td>0.324617</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2010-01-31</td>
+      <td>13.196760</td>
+      <td>-0.565725</td>
+      <td>-0.280970</td>
+      <td>0.077079</td>
+      <td>-0.669555</td>
+      <td>0.383376</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</div>
+</div>
+<div class="section" id="DLT-Model">
+<h2>DLT Model<a class="headerlink" href="#DLT-Model" title="Permalink to this headline">¶</a></h2>
+<p><strong>DLT</strong> stands for Damped Local Trend model,</p>
+<div class="math notranslate nohighlight">
+\[y_{t}  = \hat{y}_t + \epsilon\]</div>
+<div class="math notranslate nohighlight">
+\[\hat{y}_t=\mu_t + s_t + r_t\]</div>
+<div class="math notranslate nohighlight">
+\[\mu_t=D(t) + l_{t-1} +  \theta{b_{t-1}}\]</div>
+<p>with the update process as such</p>
+<div class="math notranslate nohighlight">
+\[g_t = D(t)\]</div>
+<div class="math notranslate nohighlight">
+\[l_t = \rho_l(y_t - g_{t} - s_t - r_t) + (1-\rho_l)l_{t-1}\]</div>
+<div class="math notranslate nohighlight">
+\[b_t=  \rho_b(l_t - l_{t-1}) + (1-\rho_b)\theta{b_{t-1}}\]</div>
+<div class="math notranslate nohighlight">
+\[s_{t+m} =  \rho_s(y_t - l_t - r_t) + (1-\rho_s)s_t\]</div>
+<div class="math notranslate nohighlight">
+\[r_t =  \Sigma_{j}\beta_j x_{jt}\]</div>
+<p>There are a few choices of <span class="math notranslate nohighlight">\(D(t)\)</span> as a global trend, such as linear, log-linear and logistic. Another feature of DLT is the regression component <span class="math notranslate nohighlight">\(r_t\)</span>. This serves the purpose of nowcasting or forecasting when exogenous regressors are known such as events and holidays. Without losing generality, assume</p>
+<div class="math notranslate nohighlight">
+\[\beta_j ~\sim \mathtt{Normal}(\mu_j, \sigma_j)\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mu_j = 0\)</span> and <span class="math notranslate nohighlight">\(\sigma_j = 1\)</span> by default as a non-informative prior. There are more choices of priors for the regression component in the package.</p>
+<p>In orbit, we have three different wrappers for DLT models, <code class="docutils literal notranslate"><span class="pre">DLTMAP</span></code>, <code class="docutils literal notranslate"><span class="pre">DLTAggregated</span></code> and <code class="docutils literal notranslate"><span class="pre">DLTFull</span></code></p>
+<div class="section" id="DLTMAP">
+<h3>DLTMAP<a class="headerlink" href="#DLTMAP" title="Permalink to this headline">¶</a></h3>
+<p>DLT model for MAP (Maximum a Posteriori) prediction</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">dlt</span> <span class="o">=</span> <span class="n">DLTMAP</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span>
+    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">8888</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%%time</span>
+<span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 126 ms, sys: 8.56 ms, total: 134 ms
+Wall time: 294 ms
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">test_df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
+                    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+                    <span class="n">test_actual_df</span><span class="o">=</span><span class="n">test_df</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Prediction with DLTMAP Model&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_quick_start_DLT_19_0.png" src="../docs/_images/tutorials_quick_start_DLT_19_0.png" />
+</div>
+</div>
+</div>
+<div class="section" id="DLTFull">
+<h3>DLTFull<a class="headerlink" href="#DLTFull" title="Permalink to this headline">¶</a></h3>
+<p>LGT model for full prediction. In full prediction, the prediction occurs as a function of each parameter posterior sample, and the prediction results are aggregated after prediction. Prediction will always return the median (aka 50th percentile) along with any additional percentiles that are specified.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">dlt</span> <span class="o">=</span> <span class="n">DLTFull</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span>
+    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">8888</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%%time</span>
+<span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+WARNING:pystan:Maximum (flat) parameter count (1000) exceeded: skipping diagnostic tests for n_eff and Rhat.
+To run all diagnostics call pystan.check_hmc_diagnostics(fit)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 72.8 ms, sys: 64.4 ms, total: 137 ms
+Wall time: 5.1 s
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">test_df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">predicted_df</span><span class="o">.</span><span class="n">tail</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>week</th>
+      <th>prediction_5</th>
+      <th>prediction</th>
+      <th>prediction_95</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>47</th>
+      <td>2018-05-27</td>
+      <td>12.110832</td>
+      <td>12.236411</td>
+      <td>12.365385</td>
+    </tr>
+    <tr>
+      <th>48</th>
+      <td>2018-06-03</td>
+      <td>12.059123</td>
+      <td>12.178334</td>
+      <td>12.289549</td>
+    </tr>
+    <tr>
+      <th>49</th>
+      <td>2018-06-10</td>
+      <td>12.091117</td>
+      <td>12.275301</td>
+      <td>12.384388</td>
+    </tr>
+    <tr>
+      <th>50</th>
+      <td>2018-06-17</td>
+      <td>12.117888</td>
+      <td>12.241044</td>
+      <td>12.329424</td>
+    </tr>
+    <tr>
+      <th>51</th>
+      <td>2018-06-24</td>
+      <td>12.170938</td>
+      <td>12.299122</td>
+      <td>12.382156</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
+                    <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">,</span>
+                    <span class="n">test_actual_df</span><span class="o">=</span><span class="n">test_df</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Prediction with DLTFull Model&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_quick_start_DLT_26_0.png" src="../docs/_images/tutorials_quick_start_DLT_26_0.png" />
+</div>
+</div>
+</div>
+<div class="section" id="DLTAggregated">
+<h3>DLTAggregated<a class="headerlink" href="#DLTAggregated" title="Permalink to this headline">¶</a></h3>
+<p>DLT model for aggregated posterior prediction. In aggregated prediction, the parameter posterior samples are reduced using <code class="docutils literal notranslate"><span class="pre">aggregate_method</span> <span class="pre">({</span> <span class="pre">'mean',</span> <span class="pre">'median'</span> <span class="pre">})</span></code> before performing a single prediction.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">dlt</span> <span class="o">=</span> <span class="n">DLTAggregated</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span>
+    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">8888</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%%time</span>
+<span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+WARNING:pystan:Maximum (flat) parameter count (1000) exceeded: skipping diagnostic tests for n_eff and Rhat.
+To run all diagnostics call pystan.check_hmc_diagnostics(fit)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 81.8 ms, sys: 72.2 ms, total: 154 ms
+Wall time: 5.01 s
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">test_df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">predicted_df</span><span class="o">.</span><span class="n">tail</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>week</th>
+      <th>prediction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>47</th>
+      <td>2018-05-27</td>
+      <td>12.235614</td>
+    </tr>
+    <tr>
+      <th>48</th>
+      <td>2018-06-03</td>
+      <td>12.173141</td>
+    </tr>
+    <tr>
+      <th>49</th>
+      <td>2018-06-10</td>
+      <td>12.267156</td>
+    </tr>
+    <tr>
+      <th>50</th>
+      <td>2018-06-17</td>
+      <td>12.235667</td>
+    </tr>
+    <tr>
+      <th>51</th>
+      <td>2018-06-24</td>
+      <td>12.282595</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
+                    <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">,</span>
+                    <span class="n">test_actual_df</span><span class="o">=</span><span class="n">test_df</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Prediction with DLTAggregated Model&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_quick_start_DLT_33_0.png" src="../docs/_images/tutorials_quick_start_DLT_33_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;matplotlib.axes._subplots.AxesSubplot at 0x134a0efd0&gt;
+</pre></div></div>
+</div>
+</div>
+</div>
+<div class="section" id="DLT-Model-with-Global-Trend">
+<h2>DLT Model with Global Trend<a class="headerlink" href="#DLT-Model-with-Global-Trend" title="Permalink to this headline">¶</a></h2>
+<p>The main differences between <code class="docutils literal notranslate"><span class="pre">DLT</span></code> and <code class="docutils literal notranslate"><span class="pre">LGT</span></code> are mainly:</p>
+<ul class="simple">
+<li><p>It introduces a damped factor on local trend</p></li>
+<li><p>It models global trend as a determinstic projection</p></li>
+</ul>
+<p>There are four options in modeling the <code class="docutils literal notranslate"><span class="pre">global</span> <span class="pre">trend</span></code> with the <code class="docutils literal notranslate"><span class="pre">global_trend_option</span></code> arguemnt:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">linear</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">loglinear</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">logistic</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">flat</span></code></p></li>
+</ol>
+<p>The behavior of these three options will depend on the condition of <code class="docutils literal notranslate"><span class="pre">is_multiplicative</span></code> as well. Below, we only show cases with condition when <code class="docutils literal notranslate"><span class="pre">is_multiplicative</span></code> as <code class="docutils literal notranslate"><span class="pre">True</span></code> since it is the default.</p>
+<div class="section" id="id1">
+<h3>Data<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>Instead of splitting the data into train and test. We will the full data set to train and simulate the multiplicative prediction data in the following 4 years:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">num_periods</span> <span class="o">=</span> <span class="mi">52</span> <span class="o">*</span> <span class="mi">4</span>
+<span class="n">freq</span> <span class="o">=</span> <span class="mi">7</span>
+<span class="n">last_dt</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">date_col</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">to_pydatetime</span><span class="p">())[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">dts</span> <span class="o">=</span> <span class="p">[</span><span class="n">last_dt</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">x</span> <span class="o">*</span> <span class="n">freq</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_periods</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+<span class="n">future_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">dts</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="n">date_col</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Linear-Trend">
+<h3>Linear Trend<a class="headerlink" href="#Linear-Trend" title="Permalink to this headline">¶</a></h3>
+<p>In multiplicative model, the linear trend as default will be transformed as exponential growh/decay.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">dlt</span> <span class="o">=</span> <span class="n">DLTMAP</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span>
+    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">8888</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%%time</span>
+<span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 95.7 ms, sys: 7.13 ms, total: 103 ms
+Wall time: 103 ms
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">future_df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
+                        <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">,</span>
+                        <span class="n">title</span><span class="o">=</span><span class="s1">&#39;DLT Model with Linear Trend&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_quick_start_DLT_44_0.png" src="../docs/_images/tutorials_quick_start_DLT_44_0.png" />
+</div>
+</div>
+</div>
+<div class="section" id="Log-Linear-Trend">
+<h3>Log-Linear Trend<a class="headerlink" href="#Log-Linear-Trend" title="Permalink to this headline">¶</a></h3>
+<p>For users who want to maintain linear trend assumption in the multiplicative model, they can switch to <code class="docutils literal notranslate"><span class="pre">loglinear</span></code> global trend.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">dlt_log</span> <span class="o">=</span> <span class="n">DLTMAP</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span>
+    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">8888</span><span class="p">,</span>
+    <span class="n">global_trend_option</span><span class="o">=</span><span class="s1">&#39;loglinear&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%%time</span>
+<span class="n">dlt_log</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 132 ms, sys: 5.28 ms, total: 137 ms
+Wall time: 138 ms
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">predicted_df_dlt_log</span> <span class="o">=</span> <span class="n">dlt_log</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">future_df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df_dlt_log</span><span class="p">,</span>
+                        <span class="n">date_col</span><span class="o">=</span><span class="n">dlt_log</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt_log</span><span class="o">.</span><span class="n">response_col</span><span class="p">,</span>
+                        <span class="n">title</span><span class="o">=</span><span class="s1">&#39;DLT Model with Log-Linear Trend&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_quick_start_DLT_50_0.png" src="../docs/_images/tutorials_quick_start_DLT_50_0.png" />
+</div>
+</div>
+</div>
+<div class="section" id="Logistic-Trend">
+<h3>Logistic Trend<a class="headerlink" href="#Logistic-Trend" title="Permalink to this headline">¶</a></h3>
+<p>In case of modeling logistic growth/decay, user can switch to <code class="docutils literal notranslate"><span class="pre">logistic</span></code> in the <code class="docutils literal notranslate"><span class="pre">global_trend_option</span></code>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">dlt_logit</span> <span class="o">=</span> <span class="n">DLTMAP</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span>
+    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">8888</span><span class="p">,</span>
+    <span class="n">global_trend_option</span><span class="o">=</span><span class="s1">&#39;logistic&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%%time</span>
+<span class="n">dlt_logit</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 116 ms, sys: 6.87 ms, total: 123 ms
+Wall time: 126 ms
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">predicted_df_dlt_logit</span> <span class="o">=</span> <span class="n">dlt_logit</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">future_df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df_dlt_logit</span><span class="p">,</span>
+                        <span class="n">date_col</span><span class="o">=</span><span class="n">dlt_log</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt_log</span><span class="o">.</span><span class="n">response_col</span><span class="p">,</span>
+                        <span class="n">title</span><span class="o">=</span><span class="s1">&#39;DLT Model with Log-Linear Trend&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_quick_start_DLT_56_0.png" src="../docs/_images/tutorials_quick_start_DLT_56_0.png" />
+</div>
+</div>
+</div>
+<div class="section" id="Flat-Trend">
+<h3>Flat Trend<a class="headerlink" href="#Flat-Trend" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">dlt_logit</span> <span class="o">=</span> <span class="n">DLTMAP</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span>
+    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">8888</span><span class="p">,</span>
+    <span class="n">global_trend_option</span><span class="o">=</span><span class="s1">&#39;flat&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%%time</span>
+<span class="n">dlt_logit</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 84.9 ms, sys: 5.88 ms, total: 90.8 ms
+Wall time: 91 ms
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">predicted_df_dlt_logit</span> <span class="o">=</span> <span class="n">dlt_logit</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">future_df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df_dlt_logit</span><span class="p">,</span>
+                        <span class="n">date_col</span><span class="o">=</span><span class="n">dlt_log</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt_log</span><span class="o">.</span><span class="n">response_col</span><span class="p">,</span>
+                        <span class="n">title</span><span class="o">=</span><span class="s1">&#39;DLT Model with Flat Trend&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_quick_start_DLT_61_0.png" src="../docs/_images/tutorials_quick_start_DLT_61_0.png" />
+</div>
+</div>
+<p>More details for each method are available in the docstrings and also here: <a class="reference external" href="https://uber.github.io/orbit/orbit.models.html#module-orbit.models.dlt">https://uber.github.io/orbit/orbit.models.html#module-orbit.models.dlt</a></p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, Uber Technologies, Inc.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

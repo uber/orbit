@@ -3,11 +3,11 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Index &mdash; orbit 1.0.6 documentation</title>
+  <title>Index &mdash; orbit 1.0.10 documentation</title>
   
 
   
@@ -18,7 +18,10 @@
   
     <link rel="shortcut icon" href="_static/favicon.ico"/>
   
+
   
+  
+
   
 
   
@@ -31,7 +34,6 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
@@ -54,7 +56,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> orbit
+            <a href="index.html" class="icon icon-home"> orbit
           
 
           
@@ -67,7 +69,7 @@
             
             
               <div class="version">
-                1.0.6
+                1.0.10
               </div>
             
           
@@ -137,6 +139,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -148,7 +152,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             
               <a href="https://github.com/uber/orbit/blob/master/docs/genindex" class="fa fa-github"> Edit on GitHub</a>
             
@@ -322,12 +326,6 @@
 </li>
         <li><a href="orbit.estimators.html#orbit.estimators.stan_estimator.StanEstimatorVI.fit">(orbit.estimators.stan_estimator.StanEstimatorVI method)</a>
 </li>
-        <li><a href="orbit.models.html#orbit.models.lgt.BaseLGT.fit">(orbit.models.lgt.BaseLGT method)</a>
-</li>
-        <li><a href="orbit.models.html#orbit.models.lgt.LGTAggregated.fit">(orbit.models.lgt.LGTAggregated method)</a>
-</li>
-        <li><a href="orbit.models.html#orbit.models.lgt.LGTMAP.fit">(orbit.models.lgt.LGTMAP method)</a>
-</li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -355,9 +353,17 @@
 </li>
       <li><a href="orbit.utils.html#orbit.utils.pyro.get_pyro_model">get_pyro_model() (in module orbit.utils.pyro)</a>
 </li>
-      <li><a href="orbit.models.html#orbit.models.lgt.BaseLGT.get_regression_coefs">get_regression_coefs() (orbit.models.lgt.BaseLGT method)</a>
+      <li><a href="orbit.models.html#orbit.models.dlt.BaseDLT.get_regression_coefs">get_regression_coefs() (orbit.models.dlt.BaseDLT method)</a>
 
       <ul>
+        <li><a href="orbit.models.html#orbit.models.dlt.DLTAggregated.get_regression_coefs">(orbit.models.dlt.DLTAggregated method)</a>
+</li>
+        <li><a href="orbit.models.html#orbit.models.dlt.DLTFull.get_regression_coefs">(orbit.models.dlt.DLTFull method)</a>
+</li>
+        <li><a href="orbit.models.html#orbit.models.dlt.DLTMAP.get_regression_coefs">(orbit.models.dlt.DLTMAP method)</a>
+</li>
+        <li><a href="orbit.models.html#orbit.models.lgt.BaseLGT.get_regression_coefs">(orbit.models.lgt.BaseLGT method)</a>
+</li>
         <li><a href="orbit.models.html#orbit.models.lgt.LGTAggregated.get_regression_coefs">(orbit.models.lgt.LGTAggregated method)</a>
 </li>
         <li><a href="orbit.models.html#orbit.models.lgt.LGTFull.get_regression_coefs">(orbit.models.lgt.LGTFull method)</a>
@@ -394,8 +400,6 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="orbit.utils.html#orbit.utils.general.is_empty_dataframe">is_empty_dataframe() (in module orbit.utils.general)</a>
-</li>
-      <li><a href="orbit.models.html#orbit.models.lgt.BaseLGT.is_fitted">is_fitted() (orbit.models.lgt.BaseLGT method)</a>
 </li>
       <li><a href="orbit.utils.html#orbit.utils.general.is_ordered_datetime">is_ordered_datetime() (in module orbit.utils.general)</a>
 </li>
@@ -742,34 +746,20 @@
 </li>
       <li><a href="orbit.constants.html#orbit.constants.constants.PlotLabels">PlotLabels (class in orbit.constants.constants)</a>
 </li>
-      <li><a href="orbit.constants.html#orbit.constants.dlt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA">POSITIVE_REGRESSOR_BETA (orbit.constants.dlt.RegressionSamplingParameters attribute)</a>
-
-      <ul>
-        <li><a href="orbit.constants.html#orbit.constants.lgt.RegressionSamplingParameters.POSITIVE_REGRESSOR_BETA">(orbit.constants.lgt.RegressionSamplingParameters attribute)</a>
-</li>
-      </ul></li>
       <li><a href="orbit.constants.html#orbit.constants.palette.QualitativePalette.PostQ">PostQ (orbit.constants.palette.QualitativePalette attribute)</a>
 </li>
       <li><a href="orbit.constants.html#orbit.constants.constants.BacktestFitColumnNames.PRED">PRED (orbit.constants.constants.BacktestFitColumnNames attribute)</a>
 </li>
       <li><a href="orbit.constants.html#orbit.constants.constants.BacktestFitColumnNames.PRED_HORIZON">PRED_HORIZON (orbit.constants.constants.BacktestFitColumnNames attribute)</a>
 </li>
-      <li><a href="orbit.models.html#orbit.models.lgt.LGTAggregated.predict">predict() (orbit.models.lgt.LGTAggregated method)</a>
-
-      <ul>
-        <li><a href="orbit.models.html#orbit.models.lgt.LGTFull.predict">(orbit.models.lgt.LGTFull method)</a>
-</li>
-        <li><a href="orbit.models.html#orbit.models.lgt.LGTMAP.predict">(orbit.models.lgt.LGTMAP method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="orbit.constants.html#orbit.constants.constants.PlotLabels.PREDICTED_RESPONSE">PREDICTED_RESPONSE (orbit.constants.constants.PlotLabels attribute)</a>
 
       <ul>
         <li><a href="orbit.constants.html#orbit.constants.constants.PredictionColumnNames.PREDICTED_RESPONSE">(orbit.constants.constants.PredictionColumnNames attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="orbit.constants.html#orbit.constants.constants.PredictedComponents">PredictedComponents (class in orbit.constants.constants)</a>
 </li>
       <li><a href="orbit.constants.html#orbit.constants.constants.PredictionColumnNames">PredictionColumnNames (class in orbit.constants.constants)</a>
@@ -802,6 +792,12 @@
 </li>
       <li><a href="orbit.constants.html#orbit.constants.constants.PredictedComponents.REGRESSION">REGRESSION (orbit.constants.constants.PredictedComponents attribute)</a>
 </li>
+      <li><a href="orbit.constants.html#orbit.constants.dlt.RegressionSamplingParameters.REGRESSION_COEFFICIENTS">REGRESSION_COEFFICIENTS (orbit.constants.dlt.RegressionSamplingParameters attribute)</a>
+
+      <ul>
+        <li><a href="orbit.constants.html#orbit.constants.lgt.RegressionSamplingParameters.REGRESSION_COEFFICIENTS">(orbit.constants.lgt.RegressionSamplingParameters attribute)</a>
+</li>
+      </ul></li>
       <li><a href="orbit.constants.html#orbit.constants.dlt.RegressionPenalty">RegressionPenalty (class in orbit.constants.dlt)</a>
 
       <ul>
@@ -814,18 +810,12 @@
         <li><a href="orbit.constants.html#orbit.constants.lgt.RegressionSamplingParameters">(class in orbit.constants.lgt)</a>
 </li>
       </ul></li>
-      <li><a href="orbit.constants.html#orbit.constants.constants.PredictionColumnNames.REGRESSOR">REGRESSOR (orbit.constants.constants.PredictionColumnNames attribute)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="orbit.constants.html#orbit.constants.constants.PredictionColumnNames.REGRESSOR">REGRESSOR (orbit.constants.constants.PredictionColumnNames attribute)</a>
+</li>
       <li><a href="orbit.constants.html#orbit.constants.constants.StanModelKeys.REGRESSOR_COLUMNS">REGRESSOR_COLUMNS (orbit.constants.constants.StanModelKeys attribute)</a>
 </li>
-      <li><a href="orbit.constants.html#orbit.constants.dlt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA">REGULAR_REGRESSOR_BETA (orbit.constants.dlt.RegressionSamplingParameters attribute)</a>
-
-      <ul>
-        <li><a href="orbit.constants.html#orbit.constants.lgt.RegressionSamplingParameters.REGULAR_REGRESSOR_BETA">(orbit.constants.lgt.RegressionSamplingParameters attribute)</a>
-</li>
-      </ul></li>
       <li><a href="orbit.constants.html#orbit.constants.dlt.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM">RESIDUAL_DEGREE_OF_FREEDOM (orbit.constants.dlt.BaseSamplingParameters attribute)</a>
 
       <ul>
@@ -951,28 +941,25 @@
            
           </div>
           <footer>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Uber Technologies, Inc
+        &#169; Copyright 2020, Uber Technologies, Inc.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 

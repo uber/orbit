@@ -3,11 +3,11 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Diagnostics &mdash; orbit 1.0.6 documentation</title>
+  <title>MCMC Model Visual Diagnostics &mdash; orbit 1.0.10 documentation</title>
   
 
   
@@ -18,7 +18,10 @@
   
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
   
+
   
+  
+
   
 
   
@@ -31,7 +34,6 @@
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
-        <script src="../_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
@@ -56,7 +58,7 @@
           
 
           
-            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> orbit
+            <a href="../index.html" class="icon icon-home"> orbit
           
 
           
@@ -69,7 +71,7 @@
             
             
               <div class="version">
-                1.0.6
+                1.0.10
               </div>
             
           
@@ -98,14 +100,13 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="quick_start.html">Quick Start</a></li>
-<li class="toctree-l2"><a class="reference internal" href="lgt.html">LGT Model</a></li>
-<li class="toctree-l2"><a class="reference internal" href="dlt.html">DLT Model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="regression.html">Regression with Orbit</a></li>
-<li class="toctree-l2"><a class="reference internal" href="decompose_prediction.html">Decomposing Prediction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#iclaims-Data">iclaims Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#Regression-on-Simulated-Dataset">Regression on Simulated Dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decompose_prediction.html">decompose_prediction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pyro_basic.html">Pyro in Orbit</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Diagnostics</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#load-data">load data</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">MCMC Model Visual Diagnostics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Data---Initial-Claim">Data - Initial Claim</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#Fit-a-Model">Fit a Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#Posterior-Diagnostic-Viz">Posterior Diagnostic Viz</a></li>
 </ul>
@@ -154,6 +155,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -162,12 +165,12 @@
         
           <li><a href="../tutorials.html">Tutorials</a> &raquo;</li>
         
-      <li>Diagnostics</li>
+      <li>MCMC Model Visual Diagnostics</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             
               <a href="https://github.com/uber/orbit/blob/master/docs/tutorials/model_diagnostics.ipynb" class="fa fa-github"> Edit on GitHub</a>
             
@@ -453,17 +456,16 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<div class="section" id="Diagnostics">
-<h1>Diagnostics<a class="headerlink" href="#Diagnostics" title="Permalink to this headline">¶</a></h1>
-<p>In this section, we want to demonstrate how to use the plotting utilities to visualize the posterior samples of Orbit MCMC models. Those could be very useful in practice when checking the convergence of MCMC.</p>
+<div class="section" id="MCMC-Model-Visual-Diagnostics">
+<h1>MCMC Model Visual Diagnostics<a class="headerlink" href="#MCMC-Model-Visual-Diagnostics" title="Permalink to this headline">¶</a></h1>
+<p>In this tutorial, we want to demonstrate how to use the plotting utilities to diagnose Orbit MCMC models. Those could be very useful in practice when checking the convergence of MCMC.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">orbit.models.lgt</span> <span class="kn">import</span> <span class="n">LGTMAP</span><span class="p">,</span> <span class="n">LGTAggregated</span><span class="p">,</span> <span class="n">LGTFull</span>
 <span class="kn">from</span> <span class="nn">orbit.models.dlt</span> <span class="kn">import</span> <span class="n">DLTMAP</span><span class="p">,</span> <span class="n">DLTAggregated</span><span class="p">,</span> <span class="n">DLTFull</span>
 <span class="kn">from</span> <span class="nn">orbit.diagnostics.plot</span> <span class="kn">import</span> <span class="n">plot_posterior_params</span>
 <span class="kn">from</span> <span class="nn">orbit.utils.dataset</span> <span class="kn">import</span> <span class="n">load_iclaims</span>
@@ -471,24 +473,144 @@ div.rendered_html tbody tr:hover {
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="o">%</span><span class="k">matplotlib</span> inline
 <span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;seaborn&#39;</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="section" id="load-data">
-<h2>load data<a class="headerlink" href="#load-data" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Data---Initial-Claim">
+<h2>Data - Initial Claim<a class="headerlink" href="#Data---Initial-Claim" title="Permalink to this headline">¶</a></h2>
+<p>First, let’s load the example data set. Here we used weekly initial claims data from U.S. Employment and Training Administration. An initial claim is a claim filed by an unemployed individual after a separation from an employer. The claim requests a determination of basic eligibility for the Unemployment Insurance program.</p>
+<p>The dataset has 5 colums: ‘week’, ‘claims’, ‘trend.unemploy’, ‘trend.filling’ and ‘trend.job’.</p>
+<p>U.S. Employment and Training Administration, Initial Claims [ICNSA], retrieved from FRED, Federal Reserve Bank of St. Louis; <a class="reference external" href="https://fred.stlouisfed.org/series/ICNSA">https://fred.stlouisfed.org/series/ICNSA</a>, January 3, 2021.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">df</span> <span class="o">=</span> <span class="n">load_iclaims</span><span class="p">()</span>
-<span class="n">df</span><span class="p">[[</span><span class="s1">&#39;claims&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]]</span> <span class="o">=</span> \
-    <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">df</span><span class="p">[[</span><span class="s1">&#39;claims&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]])</span>
 </pre></div>
 </div>
 </div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>week</th>
+      <th>claims</th>
+      <th>trend.unemploy</th>
+      <th>trend.filling</th>
+      <th>trend.job</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2010-01-03</td>
+      <td>13.386595</td>
+      <td>0.168876</td>
+      <td>-0.328309</td>
+      <td>0.113033</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2010-01-10</td>
+      <td>13.624218</td>
+      <td>0.168876</td>
+      <td>-0.204695</td>
+      <td>0.164326</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2010-01-17</td>
+      <td>13.398741</td>
+      <td>0.185136</td>
+      <td>-0.302334</td>
+      <td>0.113033</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2010-01-24</td>
+      <td>13.137549</td>
+      <td>0.152346</td>
+      <td>-0.204695</td>
+      <td>0.102451</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2010-01-31</td>
+      <td>13.196760</td>
+      <td>0.083354</td>
+      <td>-0.252323</td>
+      <td>0.070016</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">df_tmp</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">df_tmp</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;week&#39;</span><span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">df_tmp</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">subplots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+array([&lt;matplotlib.axes._subplots.AxesSubplot object at 0x131785048&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x1337d2668&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x133806a58&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x13383be48&gt;],
+      dtype=object)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../docs/_images/tutorials_model_diagnostics_7_1.png" src="../docs/_images/tutorials_model_diagnostics_7_1.png" />
+</div>
+</div>
+<p>Spliting the data into train and test. We use the last 52 weeks as test df.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -501,8 +623,9 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="section" id="Fit-a-Model">
 <h2>Fit a Model<a class="headerlink" href="#Fit-a-Model" title="Permalink to this headline">¶</a></h2>
+<p>Before we show the diagnostic tool, we will fit a DLT model with claims data. There are three regressors: ‘unemploy’, ‘filling’ and ‘job’. We set <code class="docutils literal notranslate"><span class="pre">seasaonlity</span> <span class="pre">=</span> <span class="pre">'52'</span></code>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -513,11 +636,11 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgt_mcmc</span> <span class="o">=</span> <span class="n">LGTFull</span><span class="p">(</span>
+<span></span><span class="n">dlt_mcmc</span> <span class="o">=</span> <span class="n">DLTFull</span><span class="p">(</span>
     <span class="n">response_col</span><span class="o">=</span><span class="n">RESPONSE_COL</span><span class="p">,</span>
     <span class="n">date_col</span><span class="o">=</span><span class="n">DATE_COL</span><span class="p">,</span>
     <span class="n">regressor_col</span><span class="o">=</span><span class="n">REGRESSOR_COL</span><span class="p">,</span>
@@ -531,11 +654,11 @@ div.rendered_html tbody tr:hover {
 <div class="section" id="Posterior-Diagnostic-Viz">
 <h2>Posterior Diagnostic Viz<a class="headerlink" href="#Posterior-Diagnostic-Viz" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgt_mcmc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">)</span>
+<span></span><span class="n">dlt_mcmc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -550,14 +673,15 @@ To run all diagnostics call pystan.check_hmc_diagnostics(fit)
 </div>
 <div class="section" id="density/histogram">
 <h3>density/histogram<a class="headerlink" href="#density/histogram" title="Permalink to this headline">¶</a></h3>
+<p>By setting <code class="docutils literal notranslate"><span class="pre">kind</span> <span class="pre">=</span> <span class="pre">'density'</span></code>, we get posterior paramter density plot. It shows the mean, median and Confidence Interval (95% by default)</p>
 <p>If you see certain warning message related to <code class="docutils literal notranslate"><span class="pre">scipy</span></code>, which can be resolved by upgrading to <code class="docutils literal notranslate"><span class="pre">scipy&gt;=1.2</span></code> for python &gt;= 3.6.</p>
 <p>You can specify a path string (e.g., ‘./density.png’) to save the chart.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_posterior_params</span><span class="p">(</span><span class="n">lgt_mcmc</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;density&#39;</span><span class="p">,</span>
+<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_posterior_params</span><span class="p">(</span><span class="n">dlt_mcmc</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;density&#39;</span><span class="p">,</span>
                           <span class="n">incl_trend_params</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">incl_smooth_params</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -566,19 +690,19 @@ To run all diagnostics call pystan.check_hmc_diagnostics(fit)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_model_diagnostics_13_0.png" src="../_images/tutorials_model_diagnostics_13_0.png" />
+<img alt="../docs/_images/tutorials_model_diagnostics_18_0.png" src="../docs/_images/tutorials_model_diagnostics_18_0.png" />
 </div>
 </div>
 </div>
 <div class="section" id="trace">
 <h3>trace<a class="headerlink" href="#trace" title="Permalink to this headline">¶</a></h3>
-<p>Currently, trace plot may not represent the actual sample process for different chainse since this information is not stored in orbit model objects.</p>
+<p>trace plot shows the iterations of each paramter over the Markov chain. Currently, trace plot may not represent the actual sample process for different chainse since this information is not stored in orbit model objects.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_posterior_params</span><span class="p">(</span><span class="n">lgt_mcmc</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;trace&#39;</span><span class="p">,</span>
+<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_posterior_params</span><span class="p">(</span><span class="n">dlt_mcmc</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;trace&#39;</span><span class="p">,</span>
                           <span class="n">incl_trend_params</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">incl_smooth_params</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -587,18 +711,19 @@ To run all diagnostics call pystan.check_hmc_diagnostics(fit)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_model_diagnostics_16_0.png" src="../_images/tutorials_model_diagnostics_16_0.png" />
+<img alt="../docs/_images/tutorials_model_diagnostics_21_0.png" src="../docs/_images/tutorials_model_diagnostics_21_0.png" />
 </div>
 </div>
 </div>
 <div class="section" id="pair-plot">
 <h3>pair plot<a class="headerlink" href="#pair-plot" title="Permalink to this headline">¶</a></h3>
+<p>Setting <code class="docutils literal notranslate"><span class="pre">kind</span> <span class="pre">=</span> <span class="pre">'pair'</span></code> will generates a pair plot, which gives us the relationship between parameters.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_posterior_params</span><span class="p">(</span><span class="n">lgt_mcmc</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;pair&#39;</span><span class="p">,</span> <span class="n">pair_type</span><span class="o">=</span><span class="s1">&#39;scatter&#39;</span><span class="p">,</span>
+<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_posterior_params</span><span class="p">(</span><span class="n">dlt_mcmc</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;pair&#39;</span><span class="p">,</span> <span class="n">pair_type</span><span class="o">=</span><span class="s1">&#39;scatter&#39;</span><span class="p">,</span>
                           <span class="n">incl_trend_params</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">incl_smooth_params</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -607,15 +732,15 @@ To run all diagnostics call pystan.check_hmc_diagnostics(fit)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_model_diagnostics_18_0.png" src="../_images/tutorials_model_diagnostics_18_0.png" />
+<img alt="../docs/_images/tutorials_model_diagnostics_23_0.png" src="../docs/_images/tutorials_model_diagnostics_23_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_posterior_params</span><span class="p">(</span><span class="n">lgt_mcmc</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;pair&#39;</span><span class="p">,</span> <span class="n">pair_type</span><span class="o">=</span><span class="s1">&#39;reg&#39;</span><span class="p">,</span>
+<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_posterior_params</span><span class="p">(</span><span class="n">dlt_mcmc</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;pair&#39;</span><span class="p">,</span> <span class="n">pair_type</span><span class="o">=</span><span class="s1">&#39;reg&#39;</span><span class="p">,</span>
                           <span class="n">incl_trend_params</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">incl_smooth_params</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -624,7 +749,16 @@ To run all diagnostics call pystan.check_hmc_diagnostics(fit)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_model_diagnostics_19_0.png" src="../_images/tutorials_model_diagnostics_19_0.png" />
+<img alt="../docs/_images/tutorials_model_diagnostics_24_0.png" src="../docs/_images/tutorials_model_diagnostics_24_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
 </div>
 </div>
 </div>
@@ -636,37 +770,29 @@ To run all diagnostics call pystan.check_hmc_diagnostics(fit)
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="backtest.html" class="btn btn-neutral float-right" title="Backtest Orbit Model" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="pyro_basic.html" class="btn btn-neutral float-left" title="Pyro in Orbit" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="backtest.html" class="btn btn-neutral float-right" title="Backtest Orbit Model" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="pyro_basic.html" class="btn btn-neutral float-left" title="Pyro in Orbit" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Uber Technologies, Inc
+        &#169; Copyright 2020, Uber Technologies, Inc.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 

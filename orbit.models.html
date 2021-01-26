@@ -3,11 +3,11 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>orbit.models package &mdash; orbit 1.0.6 documentation</title>
+  <title>orbit.models package &mdash; orbit 1.0.10 documentation</title>
   
 
   
@@ -18,7 +18,10 @@
   
     <link rel="shortcut icon" href="_static/favicon.ico"/>
   
+
   
+  
+
   
 
   
@@ -31,7 +34,6 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
@@ -56,7 +58,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> orbit
+            <a href="index.html" class="icon icon-home"> orbit
           
 
           
@@ -69,7 +71,7 @@
             
             
               <div class="version">
-                1.0.6
+                1.0.10
               </div>
             
           
@@ -149,6 +151,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -164,7 +168,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             
               <a href="https://github.com/uber/orbit/blob/master/docs/orbit.models.rst" class="fa fa-github"> Edit on GitHub</a>
             
@@ -231,13 +235,29 @@ the provided <cite>estimator_type</cite> is supported for that particular model.
 <span id="orbit-models-dlt-module"></span><h2>orbit.models.dlt module<a class="headerlink" href="#module-orbit.models.dlt" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="orbit.models.dlt.BaseDLT">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.models.dlt.</code><code class="sig-name descname">BaseDLT</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">period</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">damped_factor</span><span class="o">=</span><span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">global_trend_option</span><span class="o">=</span><span class="default_value">'linear'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.dlt.BaseDLT" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#orbit.models.lgt.BaseLGT" title="orbit.models.lgt.BaseLGT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.BaseLGT</span></code></a></p>
+<em class="property">class </em><code class="sig-prename descclassname">orbit.models.dlt.</code><code class="sig-name descname">BaseDLT</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">regressor_col</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">regressor_sign</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">regressor_beta_prior</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">regressor_sigma_prior</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">regression_penalty</span><span class="o">=</span><span class="default_value">'fixed_ridge'</span></em>, <em class="sig-param"><span class="n">lasso_scale</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">auto_ridge_scale</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">slope_sm_input</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">period</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">damped_factor</span><span class="o">=</span><span class="default_value">0.8</span></em>, <em class="sig-param"><span class="n">global_trend_option</span><span class="o">=</span><span class="default_value">'linear'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.dlt.BaseDLT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.ets.BaseETS</span></code></p>
 <p>Base DLT model object with shared functionality for Full, Aggregated, and MAP methods</p>
 <p>The model arguments are the same as <cite>BaseLGT</cite> with some additional arguments</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
+<li><p><strong>regressor_col</strong> (<em>list</em>) – Names of regressor columns, if any</p></li>
+<li><p><strong>regressor_sign</strong> (<em>list</em>) – list with values { ‘+’, ‘-‘, ‘=’ } such that
+‘+’ indicates regressor coefficient estimates are constrained to [0, inf).
+‘-‘ indicates regressor coefficient estimates are constrained to (-inf, 0].
+‘=’ indicates regressor coefficient estimates can be any value between (-inf, inf).
+The length of <cite>regressor_sign</cite> must be the same length as <cite>regressor_col</cite>. If None,
+all elements of list will be set to ‘=’.</p></li>
+<li><p><strong>regressor_beta_prior</strong> (<em>list</em>) – list of prior float values for regressor coefficient betas. The length of <cite>regressor_beta_prior</cite>
+must be the same length as <cite>regressor_col</cite>. If None, use non-informative priors.</p></li>
+<li><p><strong>regressor_sigma_prior</strong> (<em>list</em>) – list of prior float values for regressor coefficient sigmas. The length of <cite>regressor_sigma_prior</cite>
+must be the same length as <cite>regressor_col</cite>. If None, use non-informative priors.</p></li>
+<li><p><strong>regression_penalty</strong> (<em>{ 'fixed_ridge'</em><em>, </em><em>'lasso'</em><em>, </em><em>'auto_ridge' }</em>) – regression penalty method</p></li>
+<li><p><strong>lasso_scale</strong> (<em>float</em>) – float value between [0, 1], applicable only if <cite>regression_penalty</cite> == ‘lasso’</p></li>
+<li><p><strong>auto_ridge_scale</strong> (<em>float</em>) – float value between [0, 1], applicable only if <cite>regression_penalty</cite> == ‘auto_ridge’</p></li>
+<li><p><strong>slope_sm_input</strong> (<em>float</em>) – float value between [0, 1]. A larger value puts more weight on the current slope.
+If None, the model will estimate this value.</p></li>
 <li><p><strong>period</strong> (<em>int</em>) – Used to set <cite>time_delta</cite> as <cite>1 / max(period, seasonality)</cite>. If None and no seasonality,
 then <cite>time_delta</cite> == 1</p></li>
 <li><p><strong>damped_factor</strong> (<em>float</em>) – Hyperparameter float value between [0, 1]. A smaller value further dampens the previous
@@ -246,46 +266,70 @@ global trend value. Default, 0.8</p></li>
 </ul>
 </dd>
 </dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="#orbit.models.lgt.BaseLGT" title="orbit.models.lgt.BaseLGT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">orbit.models.lgt.BaseLGT</span></code></a></p>
-</div>
+<dl class="py method">
+<dt id="orbit.models.dlt.BaseDLT.get_regression_coefs">
+<code class="sig-name descname">get_regression_coefs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">aggregate_method</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.dlt.BaseDLT.get_regression_coefs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return DataFrame regression coefficients</p>
+<p>If PredictMethod is <cite>full</cite> return <cite>mean</cite> of coefficients instead</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.models.dlt.DLTAggregated">
 <em class="property">class </em><code class="sig-prename descclassname">orbit.models.dlt.</code><code class="sig-name descname">DLTAggregated</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.dlt.DLTAggregated" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#orbit.models.lgt.LGTAggregated" title="orbit.models.lgt.LGTAggregated"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.LGTAggregated</span></code></a>, <a class="reference internal" href="#orbit.models.dlt.BaseDLT" title="orbit.models.dlt.BaseDLT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.dlt.BaseDLT</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.ets.ETSAggregated</span></code>, <a class="reference internal" href="#orbit.models.dlt.BaseDLT" title="orbit.models.dlt.BaseDLT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.dlt.BaseDLT</span></code></a></p>
 <p>Concrete DLT model for aggregated posterior prediction</p>
 <p>The model arguments are the same as <cite>LGTAggregated</cite> with some additional arguments</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="#orbit.models.lgt.LGTAggregated" title="orbit.models.lgt.LGTAggregated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">orbit.models.lgt.LGTAggregated</span></code></a></p>
 </div>
+<dl class="py method">
+<dt id="orbit.models.dlt.DLTAggregated.get_regression_coefs">
+<code class="sig-name descname">get_regression_coefs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.dlt.DLTAggregated.get_regression_coefs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return DataFrame regression coefficients</p>
+<p>If PredictMethod is <cite>full</cite> return <cite>mean</cite> of coefficients instead</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.models.dlt.DLTFull">
 <em class="property">class </em><code class="sig-prename descclassname">orbit.models.dlt.</code><code class="sig-name descname">DLTFull</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.dlt.DLTFull" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#orbit.models.lgt.LGTFull" title="orbit.models.lgt.LGTFull"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.LGTFull</span></code></a>, <a class="reference internal" href="#orbit.models.dlt.BaseDLT" title="orbit.models.dlt.BaseDLT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.dlt.BaseDLT</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.ets.ETSFull</span></code>, <a class="reference internal" href="#orbit.models.dlt.BaseDLT" title="orbit.models.dlt.BaseDLT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.dlt.BaseDLT</span></code></a></p>
 <p>Concrete DLT model for full prediction</p>
 <p>The model arguments are the same as <cite>LGTFull</cite> with some additional arguments</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><a class="reference internal" href="#orbit.models.lgt.LGTFull" title="orbit.models.lgt.LGTFull"><code class="xref py py-obj docutils literal notranslate"><span class="pre">orbit.models.lgt.LGTFull</span></code></a></p>
 </div>
+<dl class="py method">
+<dt id="orbit.models.dlt.DLTFull.get_regression_coefs">
+<code class="sig-name descname">get_regression_coefs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">aggregate_method</span><span class="o">=</span><span class="default_value">'mean'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.dlt.DLTFull.get_regression_coefs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return DataFrame regression coefficients</p>
+<p>If PredictMethod is <cite>full</cite> return <cite>mean</cite> of coefficients instead</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.models.dlt.DLTMAP">
 <em class="property">class </em><code class="sig-prename descclassname">orbit.models.dlt.</code><code class="sig-name descname">DLTMAP</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.dlt.DLTMAP" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#orbit.models.lgt.LGTMAP" title="orbit.models.lgt.LGTMAP"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.LGTMAP</span></code></a>, <a class="reference internal" href="#orbit.models.dlt.BaseDLT" title="orbit.models.dlt.BaseDLT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.dlt.BaseDLT</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.ets.ETSMAP</span></code>, <a class="reference internal" href="#orbit.models.dlt.BaseDLT" title="orbit.models.dlt.BaseDLT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.dlt.BaseDLT</span></code></a></p>
 <p>Concrete DLT model for MAP (Maximum a Posteriori) prediction</p>
 <p>The model arguments are the same as <cite>LGTNAP</cite> with some additional arguments</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p><code class="xref py py-obj docutils literal notranslate"><span class="pre">orbit.models.lgt.LGTNAP</span></code></p>
 </div>
+<dl class="py method">
+<dt id="orbit.models.dlt.DLTMAP.get_regression_coefs">
+<code class="sig-name descname">get_regression_coefs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.dlt.DLTMAP.get_regression_coefs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return DataFrame regression coefficients</p>
+<p>If PredictMethod is <cite>full</cite> return <cite>mean</cite> of coefficients instead</p>
+</dd></dl>
+
 </dd></dl>
 
 </div>
@@ -293,21 +337,19 @@ global trend value. Default, 0.8</p></li>
 <span id="orbit-models-lgt-module"></span><h2>orbit.models.lgt module<a class="headerlink" href="#module-orbit.models.lgt" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="orbit.models.lgt.BaseLGT">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.models.lgt.</code><code class="sig-name descname">BaseLGT</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">response_col</span><span class="o">=</span><span class="default_value">'y'</span></em>, <em class="sig-param"><span class="n">date_col</span><span class="o">=</span><span class="default_value">'ds'</span></em>, <em class="sig-param"><span class="n">regressor_col</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">seasonality</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">regressor_sign</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">regressor_beta_prior</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">regressor_sigma_prior</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">regression_penalty</span><span class="o">=</span><span class="default_value">'fixed_ridge'</span></em>, <em class="sig-param"><span class="n">lasso_scale</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">auto_ridge_scale</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">seasonality_sm_input</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">slope_sm_input</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">level_sm_input</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.BaseLGT" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#orbit.models.base_model.BaseModel" title="orbit.models.base_model.BaseModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.base_model.BaseModel</span></code></a></p>
+<em class="property">class </em><code class="sig-prename descclassname">orbit.models.lgt.</code><code class="sig-name descname">BaseLGT</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">regressor_col</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">regressor_sign</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">regressor_beta_prior</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">regressor_sigma_prior</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">regression_penalty</span><span class="o">=</span><span class="default_value">'fixed_ridge'</span></em>, <em class="sig-param"><span class="n">lasso_scale</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">auto_ridge_scale</span><span class="o">=</span><span class="default_value">0.5</span></em>, <em class="sig-param"><span class="n">slope_sm_input</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.BaseLGT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.ets.BaseETS</span></code></p>
 <p>Base LGT model object with shared functionality for Full, Aggregated, and MAP methods</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>response_col</strong> (<em>str</em>) – Name of response variable column, default ‘y’</p></li>
-<li><p><strong>date_col</strong> (<em>str</em>) – Name of date variable column, default ‘ds’</p></li>
 <li><p><strong>regressor_col</strong> (<em>list</em>) – Names of regressor columns, if any</p></li>
-<li><p><strong>seasonality</strong> (<em>int</em>) – Length of seasonality</p></li>
-<li><p><strong>regressor_sign</strong> (<em>list</em>) – list with values { ‘+’, ‘=’ }. ‘+’ indicates regressor coefficient estimates are
-constrained to [0, inf). ‘=’ indicates regressor coefficient estimates
-can be any value between (-inf, inf). The length of <cite>regressor_sign</cite> must be
-the same length as <cite>regressor_col</cite>. If None, all elements of list will be set
-to ‘=’.</p></li>
+<li><p><strong>regressor_sign</strong> (<em>list</em>) – list with values { ‘+’, ‘-‘, ‘=’ } such that
+‘+’ indicates regressor coefficient estimates are constrained to [0, inf).
+‘-‘ indicates regressor coefficient estimates are constrained to (-inf, 0].
+‘=’ indicates regressor coefficient estimates can be any value between (-inf, inf).
+The length of <cite>regressor_sign</cite> must be the same length as <cite>regressor_col</cite>. If None,
+all elements of list will be set to ‘=’.</p></li>
 <li><p><strong>regressor_beta_prior</strong> (<em>list</em>) – list of prior float values for regressor coefficient betas. The length of <cite>regressor_beta_prior</cite>
 must be the same length as <cite>regressor_col</cite>. If None, use non-informative priors.</p></li>
 <li><p><strong>regressor_sigma_prior</strong> (<em>list</em>) – list of prior float values for regressor coefficient sigmas. The length of <cite>regressor_sigma_prior</cite>
@@ -315,23 +357,12 @@ must be the same length as <cite>regressor_col</cite>. If None, use non-informat
 <li><p><strong>regression_penalty</strong> (<em>{ 'fixed_ridge'</em><em>, </em><em>'lasso'</em><em>, </em><em>'auto_ridge' }</em>) – regression penalty method</p></li>
 <li><p><strong>lasso_scale</strong> (<em>float</em>) – float value between [0, 1], applicable only if <cite>regression_penalty</cite> == ‘lasso’</p></li>
 <li><p><strong>auto_ridge_scale</strong> (<em>float</em>) – float value between [0, 1], applicable only if <cite>regression_penalty</cite> == ‘auto_ridge’</p></li>
-<li><p><strong>seasonality_sm_input</strong> (<em>float</em>) – float value between [0, 1], applicable only if <cite>seasonality</cite> &gt; 1. A larger value puts
-more weight on the current seasonality.
-If None, the model will estimate this value.</p></li>
 <li><p><strong>slope_sm_input</strong> (<em>float</em>) – float value between [0, 1]. A larger value puts more weight on the current slope.
-If None, the model will estimate this value.</p></li>
-<li><p><strong>level_sm_input</strong> (<em>float</em>) – float value between [0, 1]. A larger value puts more weight on the current level.
 If None, the model will estimate this value.</p></li>
 <li><p><strong>kwargs</strong> – To specify <cite>estimator_type</cite> or additional args for the specified <cite>estimator_type</cite></p></li>
 </ul>
 </dd>
 </dl>
-<dl class="py method">
-<dt id="orbit.models.lgt.BaseLGT.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.BaseLGT.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fit model to data and set extracted posterior samples</p>
-</dd></dl>
-
 <dl class="py method">
 <dt id="orbit.models.lgt.BaseLGT.get_regression_coefs">
 <code class="sig-name descname">get_regression_coefs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">aggregate_method</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.BaseLGT.get_regression_coefs" title="Permalink to this definition">¶</a></dt>
@@ -339,17 +370,12 @@ If None, the model will estimate this value.</p></li>
 <p>If PredictMethod is <cite>full</cite> return <cite>mean</cite> of coefficients instead</p>
 </dd></dl>
 
-<dl class="py method">
-<dt id="orbit.models.lgt.BaseLGT.is_fitted">
-<code class="sig-name descname">is_fitted</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.BaseLGT.is_fitted" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.models.lgt.LGTAggregated">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.models.lgt.</code><code class="sig-name descname">LGTAggregated</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">aggregate_method</span><span class="o">=</span><span class="default_value">'mean'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTAggregated" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#orbit.models.lgt.BaseLGT" title="orbit.models.lgt.BaseLGT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.BaseLGT</span></code></a></p>
+<em class="property">class </em><code class="sig-prename descclassname">orbit.models.lgt.</code><code class="sig-name descname">LGTAggregated</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTAggregated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.ets.ETSAggregated</span></code>, <a class="reference internal" href="#orbit.models.lgt.BaseLGT" title="orbit.models.lgt.BaseLGT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.BaseLGT</span></code></a></p>
 <p>Concrete LGT model for aggregated posterior prediction</p>
 <p>In aggregated prediction, the parameter posterior samples are reduced using <cite>aggregate_method</cite>
 before performing a single prediction.</p>
@@ -359,29 +385,18 @@ before performing a single prediction.</p>
 </dd>
 </dl>
 <dl class="py method">
-<dt id="orbit.models.lgt.LGTAggregated.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTAggregated.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fit model to data and set extracted posterior samples</p>
-</dd></dl>
-
-<dl class="py method">
 <dt id="orbit.models.lgt.LGTAggregated.get_regression_coefs">
 <code class="sig-name descname">get_regression_coefs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTAggregated.get_regression_coefs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return DataFrame regression coefficients</p>
 <p>If PredictMethod is <cite>full</cite> return <cite>mean</cite> of coefficients instead</p>
 </dd></dl>
 
-<dl class="py method">
-<dt id="orbit.models.lgt.LGTAggregated.predict">
-<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">decompose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTAggregated.predict" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.models.lgt.LGTFull">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.models.lgt.</code><code class="sig-name descname">LGTFull</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n_bootstrap_draws</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">prediction_percentiles</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTFull" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#orbit.models.lgt.BaseLGT" title="orbit.models.lgt.BaseLGT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.BaseLGT</span></code></a></p>
+<em class="property">class </em><code class="sig-prename descclassname">orbit.models.lgt.</code><code class="sig-name descname">LGTFull</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTFull" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.ets.ETSFull</span></code>, <a class="reference internal" href="#orbit.models.lgt.BaseLGT" title="orbit.models.lgt.BaseLGT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.BaseLGT</span></code></a></p>
 <p>Concrete LGT model for full prediction</p>
 <p>In full prediction, the prediction occurs as a function of each parameter posterior sample,
 and the prediction results are aggregated after prediction. Prediction will
@@ -405,39 +420,22 @@ confident intervals, pass an empty list</p></li>
 <p>If PredictMethod is <cite>full</cite> return <cite>mean</cite> of coefficients instead</p>
 </dd></dl>
 
-<dl class="py method">
-<dt id="orbit.models.lgt.LGTFull.predict">
-<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">decompose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTFull.predict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return model predictions as a function of fitted model and df</p>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.models.lgt.LGTMAP">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.models.lgt.</code><code class="sig-name descname">LGTMAP</code><span class="sig-paren">(</span><em class="sig-param">estimator_type=&lt;class 'orbit.estimators.stan_estimator.StanEstimatorMAP'&gt;</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTMAP" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#orbit.models.lgt.BaseLGT" title="orbit.models.lgt.BaseLGT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.BaseLGT</span></code></a></p>
+<em class="property">class </em><code class="sig-prename descclassname">orbit.models.lgt.</code><code class="sig-name descname">LGTMAP</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTMAP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.ets.ETSMAP</span></code>, <a class="reference internal" href="#orbit.models.lgt.BaseLGT" title="orbit.models.lgt.BaseLGT"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.models.lgt.BaseLGT</span></code></a></p>
 <p>Concrete LGT model for MAP (Maximum a Posteriori) prediction</p>
-<p>Similar to <cite>LGTAggregated</cite> but predition is based on Maximum a Posteriori (aka Mode)
+<p>Similar to :class: <cite>~orbit.models.LGTAggregated</cite> but prediction is based on Maximum a Posteriori (aka Mode)
 of the posterior.</p>
 <p>This model only supports MAP estimating <a href="#id1"><span class="problematic" id="id2">`</span></a>estimator_type`s</p>
-<dl class="py method">
-<dt id="orbit.models.lgt.LGTMAP.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTMAP.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fit model to data and set extracted posterior samples</p>
-</dd></dl>
-
 <dl class="py method">
 <dt id="orbit.models.lgt.LGTMAP.get_regression_coefs">
 <code class="sig-name descname">get_regression_coefs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTMAP.get_regression_coefs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return DataFrame regression coefficients</p>
 <p>If PredictMethod is <cite>full</cite> return <cite>mean</cite> of coefficients instead</p>
 </dd></dl>
-
-<dl class="py method">
-<dt id="orbit.models.lgt.LGTMAP.predict">
-<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">decompose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.models.lgt.LGTMAP.predict" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
 
 </dd></dl>
 
@@ -452,37 +450,29 @@ of the posterior.</p>
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="orbit.pyro.html" class="btn btn-neutral float-right" title="orbit.pyro package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="orbit.estimators.html" class="btn btn-neutral float-left" title="orbit.estimators package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="orbit.pyro.html" class="btn btn-neutral float-right" title="orbit.pyro package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="orbit.estimators.html" class="btn btn-neutral float-left" title="orbit.estimators package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Uber Technologies, Inc
+        &#169; Copyright 2020, Uber Technologies, Inc.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 
