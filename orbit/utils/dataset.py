@@ -27,16 +27,15 @@ def load_iclaims(end_date='2018-06-24'):
     # url = 'https://raw.githubusercontent.com/uber/orbit/master/examples/data/iclaims_example.csv'
     url = 'https://raw.githubusercontent.com/uber/orbit/d0b89757392e4423a629a67282961e84d2e1d923/examples/data/iclaims_example.csv'
     df = pd.read_csv(url, parse_dates=['week'])
+    df = df[df['week'] <= end_date]
 
     # standardize the regressors by mean; equivalent to subtracting mean after np.log
     regressors = ['trend.unemploy', 'trend.filling', 'trend.job', 'sp500', 'vix']
     df[regressors] = df[regressors] / df[regressors].apply(np.mean)
 
     # log transfer
-    df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job', 'sp500', 'vix']] = \
-        df[['claims', 'trend.unemploy', 'trend.filling', 'trend.job', 'sp500', 'vix']].apply(np.log)
+    df[regressors] = df[regressors].apply(np.log)
 
-    df = df[df['week'] <= end_date]
     return df
 
 
