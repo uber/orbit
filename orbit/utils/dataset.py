@@ -23,9 +23,7 @@ def load_iclaims(end_date='2018-06-24'):
     https://trends.google.com/trends/?geo=US
     https://finance.yahoo.com/
     """
-    # TODO: replace this back to master
-    # url = 'https://raw.githubusercontent.com/uber/orbit/master/examples/data/iclaims_example.csv'
-    url = 'https://raw.githubusercontent.com/uber/orbit/d0b89757392e4423a629a67282961e84d2e1d923/examples/data/iclaims_example.csv'
+    url = 'https://raw.githubusercontent.com/uber/orbit/master/examples/data/iclaims_example.csv'
     df = pd.read_csv(url, parse_dates=['week'])
     df = df[df['week'] <= end_date]
 
