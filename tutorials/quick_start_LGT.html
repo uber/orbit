@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Local-Global-Trend(LGT) Example &mdash; orbit 1.0.10 documentation</title>
+  <title>LGT Quick Start &mdash; orbit 1.0.10 documentation</title>
   
 
   
@@ -42,7 +42,9 @@
 
     
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" /> 
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Regression with Orbit" href="regression.html" />
+    <link rel="prev" title="DLT Quick Start" href="quick_start_DLT.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -95,9 +97,25 @@
             
             
               <p class="caption"><span class="caption-text">Orbit Core</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="quick_start_DLT.html">DLT Quick Start</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">LGT Quick Start</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Data">Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#LGT-Model">LGT Model</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html">Regression with Orbit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#iclaims-Data">iclaims Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="regression.html#Regression-on-Simulated-Dataset">Regression on Simulated Dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decompose_prediction.html">decompose_prediction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyro_basic.html">Pyro in Orbit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="model_diagnostics.html">MCMC Model Visual Diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backtest.html">Backtest Orbit Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utilities_simulation.html">Simulation Data</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../modules.html">API Docs</a></li>
 </ul>
 
@@ -147,7 +165,9 @@
     
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Local-Global-Trend(LGT) Example</li>
+          <li><a href="../tutorials.html">Tutorials</a> &raquo;</li>
+        
+      <li>LGT Quick Start</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -438,8 +458,8 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<div class="section" id="Local-Global-Trend(LGT)-Example">
-<h1>Local-Global-Trend(LGT) Example<a class="headerlink" href="#Local-Global-Trend(LGT)-Example" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="LGT-Quick-Start">
+<h1>LGT Quick Start<a class="headerlink" href="#LGT-Quick-Start" title="Permalink to this headline">¶</a></h1>
 <p>LGT stands for Local and Global Trend, which is an important model type in orbit package. In the model equation, there is a local trend term and a global trend term.</p>
 <p>In this notebook we will show how to use Orbit LGT models with the US unemployment claims data.</p>
 <p><strong>Note: Negative response values are not allowed in LGT model, due to the existence of the global trend term.</strong></p>
@@ -1069,6 +1089,10 @@ Wall time: 9.29 s
            
           </div>
           <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="regression.html" class="btn btn-neutral float-right" title="Regression with Orbit" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="quick_start_DLT.html" class="btn btn-neutral float-left" title="DLT Quick Start" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
 
   <hr/>
 
