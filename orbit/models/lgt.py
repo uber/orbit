@@ -594,8 +594,8 @@ class BaseLGT(BaseETS):
 
         # same note
         regressor_signs = ["Positive"] * self._num_of_positive_regressors + \
-            ["Negative"] * self._num_of_negative_regressors \
-            + ["Regular"] * self._num_of_regular_regressors
+            ["Negative"] * self._num_of_negative_regressors + \
+            ["Regular"] * self._num_of_regular_regressors
 
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR_SIGN] = regressor_signs
