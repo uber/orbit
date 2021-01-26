@@ -34,7 +34,7 @@ def load_iclaims(end_date='2018-06-24'):
     df[regressors] = df[regressors] / df[regressors].apply(np.mean)
 
     # log transfer
-    df[regressors] = df[regressors].apply(np.log)
+    df[['claims'] + regressors] = df[['claims'] + regressors].apply(np.log)
 
     return df
 
