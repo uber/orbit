@@ -73,6 +73,16 @@ class RegressionSamplingParameters(Enum):
     REGRESSION_COEFFICIENTS = 'beta'
 
 
+class LatentSamplingParameters(Enum):
+    """
+    The stan output sampling parameters related with regression component.
+    """
+    REGRESSION_POSITIVE_COEFFICIENTS = 'pr_beta'
+    REGRESSION_NEGATIVE_COEFFICIENTS = 'nr_beta'
+    REGRESSION_REGULAR_COEFFICIENTS = 'rr_beta'
+    INITIAL_SEASONALITY = 'init_sea'
+
+
 class RegressionPenalty(Enum):
     fixed_ridge = 0
     lasso = 1

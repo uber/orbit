@@ -28,8 +28,8 @@ class EstimatorOptionsMapper(Enum):
     set of options)
     """
     ENGINE_TO_SAMPLE = {
-        'stan': ['map','vi','mcmc'],
-        'pyro': ['map','vi']
+        'stan': ['map', 'vi', 'mcmc'],
+        'pyro': ['map', 'vi']
     }
     SAMPLE_TO_PREDICT = {
         'map': ['map'],
