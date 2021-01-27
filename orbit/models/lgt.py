@@ -73,8 +73,6 @@ class BaseLGT(BaseETS):
         self._max_nu = 40.
 
         self.slope_sm_input = slope_sm_input
-        print('LGT model')
-
         if regressor_col:
             print('warning')
             warnings.warn("Regression for LGT model will be deprecated in next version, please use DLT instead",
