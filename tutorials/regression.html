@@ -43,7 +43,7 @@
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="decompose_prediction" href="decompose_prediction.html" />
+    <link rel="next" title="Decompose Prediction" href="decompose_prediction.html" />
     <link rel="prev" title="LGT Quick Start" href="quick_start_LGT.html" /> 
 </head>
 
@@ -102,14 +102,12 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="quick_start_DLT.html">DLT Quick Start</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quick_start_LGT.html">LGT Quick Start</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Regression with Orbit</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#iclaims-Data">iclaims Data</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#Without-Regression">Without Regression</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#With-Regression">With Regression</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Regression with Orbit</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#iclaims-Data">iclaims Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Regression-on-Simulated-Dataset">Regression on Simulated Dataset</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#Regression-on-Simulated-Dataset">Regression on Simulated Dataset</a></li>
-<li class="toctree-l2"><a class="reference internal" href="decompose_prediction.html">decompose_prediction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decompose_prediction.html">Decompose Prediction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pyro_basic.html">Pyro in Orbit</a></li>
 <li class="toctree-l2"><a class="reference internal" href="model_diagnostics.html">MCMC Model Visual Diagnostics</a></li>
 <li class="toctree-l2"><a class="reference internal" href="backtest.html">Backtest Orbit Model</a></li>
@@ -488,9 +486,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-</div>
 <div class="section" id="iclaims-Data">
-<h1>iclaims Data<a class="headerlink" href="#iclaims-Data" title="Permalink to this headline">¶</a></h1>
+<h2>iclaims Data<a class="headerlink" href="#iclaims-Data" title="Permalink to this headline">¶</a></h2>
 <p><em>iclaims_example</em> is a dataset containing the weekly initial claims for US unemployment benefits against a few related google trend queries (unemploy, filling and job) from Jan 2010 - June 2018. This aims to mimick the dataset from the paper <a class="reference external" href="https://people.ischool.berkeley.edu/~hal/Papers/2013/pred-present-with-bsts.pdf">Predicting the Present with Bayesian Structural Time Series</a> by SCOTT and VARIAN (2014).</p>
 <p>Number of claims are obtained from <a class="reference external" href="https://fred.stlouisfed.org/series/ICNSA">Federal Reserve Bank of St. Louis</a> while google queries are obtained through <a class="reference external" href="https://trends.google.com/trends/?geo=US">Google Trends API</a>.</p>
 <p>In order to use this data to nowcast the US unemployment claims during COVID-19 period, we extended the dataset to Jan 2021 and added the <a class="reference external" href="https://finance.yahoo.com/quote/%5EGSPC/history?period1=1264032000&amp;period2=1611187200&amp;interval=1wk&amp;filter=history&amp;frequency=1wk&amp;includeAdjustedClose=true">S&amp;P 500 (^GSPC)</a> and <a class="reference external" href="https://finance.yahoo.com/quote/%5EVIX/history?p=%5EVIX">VIX</a> Index historical data for the same period.</p>
@@ -669,7 +666,7 @@ Text(0.5, 1.0, &#39;S&amp;P500&#39;)
 </div>
 </div>
 <div class="section" id="Without-Regression">
-<h2>Without Regression<a class="headerlink" href="#Without-Regression" title="Permalink to this headline">¶</a></h2>
+<h3>Without Regression<a class="headerlink" href="#Without-Regression" title="Permalink to this headline">¶</a></h3>
 <p>We will use the DLT models here to compare the model performance without vs. with regression.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
@@ -756,10 +753,10 @@ Wall time: 13.7 s
 </div>
 </div>
 <div class="section" id="With-Regression">
-<h2>With Regression<a class="headerlink" href="#With-Regression" title="Permalink to this headline">¶</a></h2>
+<h3>With Regression<a class="headerlink" href="#With-Regression" title="Permalink to this headline">¶</a></h3>
 <p>The regressor columns can be supplied via argument <code class="docutils literal notranslate"><span class="pre">regressor_col</span></code>.</p>
 <div class="section" id="Regressor-with-the-sign">
-<h3>Regressor with the sign<a class="headerlink" href="#Regressor-with-the-sign" title="Permalink to this headline">¶</a></h3>
+<h4>Regressor with the sign<a class="headerlink" href="#Regressor-with-the-sign" title="Permalink to this headline">¶</a></h4>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
@@ -788,7 +785,7 @@ WARNING:pystan:n_eff / iter below 0.001 indicates that the effective sample size
 WARNING:pystan:Rhat above 1.1 or below 0.9 indicates that the chains very likely have not mixed
 </pre></div></div>
 </div>
-<p>The estimated regressor coefficients can be retrieved via <code class="docutils literal notranslate"><span class="pre">.aggregated_posteriors</span></code>.</p>
+<p>The estimated regressor coefficients can be retrieved via <code class="docutils literal notranslate"><span class="pre">.get_regression_coefs()</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
@@ -894,7 +891,7 @@ WARNING:pystan:Rhat above 1.1 or below 0.9 indicates that the chains very likely
 <p>After adding the regressor, prediction results are more closer to the real response compared to without using regression.</p>
 </div>
 <div class="section" id="Adjust-pirors-for-regressor-beta-and-standard-deviation">
-<h3>Adjust pirors for regressor beta and standard deviation<a class="headerlink" href="#Adjust-pirors-for-regressor-beta-and-standard-deviation" title="Permalink to this headline">¶</a></h3>
+<h4>Adjust pirors for regressor beta and standard deviation<a class="headerlink" href="#Adjust-pirors-for-regressor-beta-and-standard-deviation" title="Permalink to this headline">¶</a></h4>
 <p>In the model, it is assumed</p>
 <div class="math notranslate nohighlight">
 \[\beta \sim Gaussian(\beta_{prior}, \sigma_{prior})\]</div>
@@ -1036,7 +1033,7 @@ WARNING:pystan:Rhat above 1.1 or below 0.9 indicates that the chains very likely
 </div>
 </div>
 <div class="section" id="Regression-on-Simulated-Dataset">
-<h1>Regression on Simulated Dataset<a class="headerlink" href="#Regression-on-Simulated-Dataset" title="Permalink to this headline">¶</a></h1>
+<h2>Regression on Simulated Dataset<a class="headerlink" href="#Regression-on-Simulated-Dataset" title="Permalink to this headline">¶</a></h2>
 <p>Leverage the simulation function to generate a dateset with regression terms</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
@@ -1211,6 +1208,8 @@ array([ 0.15602066,  0.05231785,  0.16325487, -0.11182046,  0.0027203 ])
 <img alt="../_images/tutorials_regression_38_1.png" src="../_images/tutorials_regression_38_1.png" />
 </div>
 </div>
+<div class="section" id="Use-data-driven-sigma-for-each-coefficients">
+<h3>Use data-driven sigma for each coefficients<a class="headerlink" href="#Use-data-driven-sigma-for-each-coefficients" title="Permalink to this headline">¶</a></h3>
 <p>Instead of using fixed standard deviations for regressors, a hyperprior can be assigned to them, i.e.</p>
 <div class="math notranslate nohighlight">
 \[\sigma_\beta \sim \text{Half-Cauchy}(0, \text{ridge_scale})\]</div>
@@ -1279,6 +1278,8 @@ WARNING:pystan:Try running with adapt_delta larger than 0.9 to remove the diverg
 </div>
 <p>The result looks reasonable comparing to the true coefficients.</p>
 </div>
+</div>
+</div>
 
 
            </div>
@@ -1286,7 +1287,7 @@ WARNING:pystan:Try running with adapt_delta larger than 0.9 to remove the diverg
           </div>
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="decompose_prediction.html" class="btn btn-neutral float-right" title="decompose_prediction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="decompose_prediction.html" class="btn btn-neutral float-right" title="Decompose Prediction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
         <a href="quick_start_LGT.html" class="btn btn-neutral float-left" title="LGT Quick Start" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 

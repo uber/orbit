@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>decompose_prediction &mdash; orbit 1.0.10 documentation</title>
+  <title>Decompose Prediction &mdash; orbit 1.0.10 documentation</title>
   
 
   
@@ -103,9 +103,7 @@
 <li class="toctree-l2"><a class="reference internal" href="quick_start_DLT.html">DLT Quick Start</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quick_start_LGT.html">LGT Quick Start</a></li>
 <li class="toctree-l2"><a class="reference internal" href="regression.html">Regression with Orbit</a></li>
-<li class="toctree-l2"><a class="reference internal" href="regression.html#iclaims-Data">iclaims Data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="regression.html#Regression-on-Simulated-Dataset">Regression on Simulated Dataset</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">decompose_prediction</a><ul>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Decompose Prediction</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#Data---Initial-Claim">Data - Initial Claim</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#MAP-Estimation">MAP Estimation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#MCMC-Estimation">MCMC Estimation</a></li>
@@ -168,7 +166,7 @@
         
           <li><a href="../tutorials.html">Tutorials</a> &raquo;</li>
         
-      <li>decompose_prediction</li>
+      <li>Decompose Prediction</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -459,8 +457,8 @@ div.rendered_html tbody tr:hover {
     text-align: unset;
 }
 </style>
-<div class="section" id="decompose_prediction">
-<h1>decompose_prediction<a class="headerlink" href="#decompose_prediction" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="Decompose-Prediction">
+<h1>Decompose Prediction<a class="headerlink" href="#Decompose-Prediction" title="Permalink to this headline">¶</a></h1>
 <p>This tutorial demonstrate a tools to visualize time series components from Orbit models</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
@@ -482,9 +480,9 @@ div.rendered_html tbody tr:hover {
 <div class="section" id="Data---Initial-Claim">
 <h2>Data - Initial Claim<a class="headerlink" href="#Data---Initial-Claim" title="Permalink to this headline">¶</a></h2>
 <p>First, let’s load the example data set. Here we used initial claims data from U.S. Employment and Training Administration. An initial claim is a claim filed by an unemployed individual after a separation from an employer. The claim requests a determination of basic eligibility for the Unemployment Insurance program.</p>
-<p>The dataset has 5 colums: ‘week’, ‘claims’, ‘trend.unemploy’, ‘trend.filling’ and ‘trend.job’.</p>
+<p>We will use following 5 columns from the dataset: ‘week’, ‘claims’, ‘trend.unemploy’, ‘trend.filling’ and ‘trend.job’.</p>
 <p>U.S. Employment and Training Administration, Initial Claims [ICNSA], retrieved from FRED, Federal Reserve Bank of St. Louis; <a class="reference external" href="https://fred.stlouisfed.org/series/ICNSA">https://fred.stlouisfed.org/series/ICNSA</a>, January 3, 2021.</p>
-<div class="nbinput nblast docutils container">
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
@@ -492,8 +490,18 @@ div.rendered_html tbody tr:hover {
 <span></span><span class="n">df</span> <span class="o">=</span> <span class="n">load_iclaims</span><span class="p">()</span>
 <span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;week&#39;</span>
 <span class="n">response_col</span><span class="o">=</span><span class="s1">&#39;claims&#39;</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span> <span class="p">[[</span><span class="s1">&#39;week&#39;</span><span class="p">,</span> <span class="s1">&#39;claims&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]]</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+INFO:numexpr.utils:Note: NumExpr detected 12 cores but &#34;NUMEXPR_MAX_THREADS&#34; not set, so enforcing safe limit of 8.
+INFO:numexpr.utils:NumExpr defaulting to 8 threads.
+</pre></div></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
@@ -596,10 +604,10 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-array([&lt;matplotlib.axes._subplots.AxesSubplot object at 0x13cf05320&gt;,
-       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x13ef5e5c0&gt;,
-       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x13ef975c0&gt;,
-       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x13efcc5c0&gt;],
+array([&lt;matplotlib.axes._subplots.AxesSubplot object at 0x7feb105132b0&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x7feb20d0b518&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x7feac063c518&gt;,
+       &lt;matplotlib.axes._subplots.AxesSubplot object at 0x7feb20d39518&gt;],
       dtype=object)
 </pre></div></div>
 </div>
@@ -655,7 +663,7 @@ array([&lt;matplotlib.axes._subplots.AxesSubplot object at 0x13cf05320&gt;,
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -699,8 +707,8 @@ array([&lt;matplotlib.axes._subplots.AxesSubplot object at 0x13cf05320&gt;,
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
-                    <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">)</span>
+<span></span><span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
+                        <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -730,7 +738,7 @@ array([&lt;matplotlib.axes._subplots.AxesSubplot object at 0x13cf05320&gt;,
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">plot_predicted_components</span><span class="p">(</span><span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_components</span><span class="p">(</span><span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -793,7 +801,7 @@ To run all diagnostics call pystan.check_hmc_diagnostics(fit)
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -821,8 +829,8 @@ To run all diagnostics call pystan.check_hmc_diagnostics(fit)
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">future_df</span> <span class="o">=</span> <span class="n">test_df</span><span class="p">[[</span><span class="s1">&#39;week&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.job&#39;</span><span class="p">]]</span>
 <span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">future_df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
-                    <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">training_actual_df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="o">=</span><span class="n">predicted_df</span><span class="p">,</span>
+                        <span class="n">date_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">date_col</span><span class="p">,</span> <span class="n">actual_col</span><span class="o">=</span><span class="n">dlt</span><span class="o">.</span><span class="n">response_col</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -851,7 +859,7 @@ To run all diagnostics call pystan.check_hmc_diagnostics(fit)
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">train_df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">plot_predicted_components</span><span class="p">(</span><span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_components</span><span class="p">(</span><span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -873,15 +881,6 @@ array([&lt;matplotlib.axes._subplots.AxesSubplot object at 0x13f72e748&gt;,
        &lt;matplotlib.axes._subplots.AxesSubplot object at 0x13fa4a208&gt;],
       dtype=object)
 </pre></div></div>
-</div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>
-</pre></div>
-</div>
 </div>
 </div>
 </div>
