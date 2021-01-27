@@ -19,6 +19,9 @@ from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..utils.general import is_ordered_datetime
 
+import warnings
+warnings.simplefilter('always', PendingDeprecationWarning)
+
 
 class BaseLGT(BaseETS):
     """Base LGT model object with shared functionality for Full, Aggregated, and MAP methods
@@ -70,7 +73,13 @@ class BaseLGT(BaseETS):
         self._max_nu = 40.
 
         self.slope_sm_input = slope_sm_input
+        print('LGT model')
 
+        if regressor_col:
+            print('warning')
+            warnings.warn("Regression for LGT model will be deprecated in next version, please use DLT instead",
+                           PendingDeprecationWarning
+            )
         self.regressor_col = regressor_col
         self.regressor_sign = regressor_sign
         self.regressor_beta_prior = regressor_beta_prior
