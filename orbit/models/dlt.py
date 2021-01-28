@@ -150,7 +150,8 @@ class BaseDLT(BaseETS):
         # partialfunc does not work when passed to PyStan because PyStan uses
         # inspect.getargspec(func) which seems to raise an exception with keyword-only args
         # caused by using partialfunc
-        # lambda as an alternative workaround
+        # lambda does not work in serialization in pickle
+        # callable object as an alternative workaround
         if self._seasonality > 1 or self._num_of_regressors > 0:
             init_values_callable = DLTInitializer(
                 self._seasonality, self._num_of_positive_regressors, self._num_of_negative_regressors,

@@ -10,6 +10,7 @@ from ..constants.constants import (
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
 from ..exceptions import IllegalArgument, ModelException, PredictionException
+from ..initializer.ets import ETSInitializer
 from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
 
@@ -113,26 +114,16 @@ class BaseETS(BaseModel):
         """Set init as a callable (for Stan ONLY)
         See: https://pystan.readthedocs.io/en/latest/api.htm
         """
-        def init_values_function(s):
-            init_values = dict()
-            if s > 1:
-                init_sea = np.random.normal(loc=0, scale=0.05, size=s-1)
-                # catch cases with extreme values
-                init_sea[init_sea > 1.0] = 1.0
-                init_sea[init_sea < -1.0] = -1.0
-                init_values['init_sea'] = init_sea
-
-            return init_values
-
-        seasonality = self._seasonality
-
         # init_values_partial = partial(init_values_callable, seasonality=seasonality)
         # partialfunc does not work when passed to PyStan because PyStan uses
         # inspect.getargspec(func) which seems to raise an exception with keyword-only args
         # caused by using partialfunc
-        # lambda as an alternative workaround
-        if seasonality > 1:
-            init_values_callable = lambda: init_values_function(seasonality)  # noqa
+        # lambda does not work in serialization in pickle
+        # callable object as an alternative workaround
+        if self._seasonality > 1:
+            init_values_callable = ETSInitializer(
+                self._seasonality
+            )
             self._init_values = init_values_callable
 
     def _set_static_data_attributes(self):
