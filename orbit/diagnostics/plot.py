@@ -49,7 +49,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         figsize pass through to `matplotlib.pyplot.figure()`
     path: str
         path to save the figure
-    fontzise: int
+    fontsize: int
         fontsize of the title
     Returns
     -------
@@ -146,7 +146,7 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
         figsize pass through to `matplotlib.pyplot.figure()`
     path: str; optional
         path to save the figure
-    fontzise: int; optional
+    fontsize: int; optional
         fontsize of the title
     is_visible: boolean
         whether we want to show the plot. If called from unittest, is_visible might = False.
