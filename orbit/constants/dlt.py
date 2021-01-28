@@ -53,7 +53,7 @@ class GlobalTrendOption(Enum):
 
 class BaseSamplingParameters(Enum):
     """
-    The stan output sampling parameters related with DLT base model.
+    base parameters in posteriors sampling
     """
     # ---------- Common Local Trend ---------- #
     LOCAL_TREND_LEVELS = 'l'
@@ -75,7 +75,7 @@ class GlobalTrendSamplingParameters(Enum):
 
 class SeasonalitySamplingParameters(Enum):
     """
-    The stan output sampling parameters related with seasonality component.
+    seasonality component related parameters in posteriors sampling
     """
     SEASONALITY_LEVELS = 's'
     SEASONALITY_SMOOTHING_FACTOR = 'sea_sm'
@@ -83,9 +83,19 @@ class SeasonalitySamplingParameters(Enum):
 
 class RegressionSamplingParameters(Enum):
     """
-    The stan output sampling parameters related with regression component.
+    regression component related parameters in posteriors sampling
     """
     REGRESSION_COEFFICIENTS = 'beta'
+
+
+class LatentSamplingParameters(Enum):
+    """
+    latent variables to be sampled
+    """
+    REGRESSION_POSITIVE_COEFFICIENTS = 'pr_beta'
+    REGRESSION_NEGATIVE_COEFFICIENTS = 'nr_beta'
+    REGRESSION_REGULAR_COEFFICIENTS = 'rr_beta'
+    INITIAL_SEASONALITY = 'init_sea'
 
 
 class RegressionPenalty(Enum):

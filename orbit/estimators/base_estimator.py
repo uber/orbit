@@ -1,4 +1,4 @@
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 import numpy as np
 
 
@@ -10,7 +10,7 @@ class BaseEstimator(object):
     seed : int
         seed number for initial random values
     verbose : bool
-        If True, output all stan diagnostics messages
+        If True, output all diagnostics messages from estimators
 
     """
     def __init__(self, seed=8888, verbose=False):
@@ -27,11 +27,11 @@ class BaseEstimator(object):
         Parameters
         ----------
         model_name : str
-            name of stan model
+            name of model - used in mapping the right sampling file (stan/pyro/...)
         model_param_names : list
             list of strings of model parameters names to extract
         data_input : dict
-            key-value pairs of data input as required by definition in stan model
+            key-value pairs of data input as required by definition in samplers (stan/pyro/...)
         init_values : float or np.array
             initial sampler value. If None, 'random' is used
 

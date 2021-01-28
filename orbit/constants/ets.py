@@ -3,9 +3,8 @@ from enum import Enum
 
 class DataInputMapper(Enum):
     """
-    mapping from object input to stan file
+    mapping from object input to sampler
     """
-    # All of the following have default defined in DEFAULT_SLGT_FIT_ATTRIBUTES
     # ----------  Data Input ---------- #
     # observation related
     _NUM_OF_OBSERVATIONS = 'NUM_OF_OBS'
@@ -21,7 +20,7 @@ class DataInputMapper(Enum):
 
 class BaseSamplingParameters(Enum):
     """
-    The stan output sampling parameters related with LGT base model.
+    base parameters in posteriors sampling
     """
     # ---------- Common Local Trend ---------- #
     LOCAL_TREND_LEVELS = 'l'
@@ -32,7 +31,14 @@ class BaseSamplingParameters(Enum):
 
 class SeasonalitySamplingParameters(Enum):
     """
-    The stan output sampling parameters related with seasonality component.
+    seasonality component related parameters in posteriors sampling
     """
     SEASONALITY_LEVELS = 's'
     SEASONALITY_SMOOTHING_FACTOR = 'sea_sm'
+
+
+class LatentSamplingParameters(Enum):
+    """
+    latent variables to be sampled
+    """
+    INITIAL_SEASONALITY = 'init_sea'

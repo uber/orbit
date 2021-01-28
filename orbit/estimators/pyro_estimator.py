@@ -111,10 +111,10 @@ class PyroEstimatorVI(PyroEstimator):
         # make sure that model param names are a subset of stan extract keys
         invalid_model_param = set(model_param_names) - set(list(extract.keys()))
         if invalid_model_param:
-            raise EstimatorException("Stan model definition does not contain required parameters")
+            raise EstimatorException("Pyro model definition does not contain required parameters")
 
         # `stan.optimizing` automatically returns all defined parameters
-        # filter out unecessary keys
+        # filter out unnecessary keys
         extract = {param: extract[param] for param in model_param_names}
 
         return extract
@@ -165,10 +165,10 @@ class PyroEstimatorMAP(PyroEstimator):
         # make sure that model param names are a subset of stan extract keys
         invalid_model_param = set(model_param_names) - set(list(extract.keys()))
         if invalid_model_param:
-            raise EstimatorException("Stan model definition does not contain required parameters")
+            raise EstimatorException("Pyro model definition does not contain required parameters")
 
         # `stan.optimizing` automatically returns all defined parameters
-        # filter out unecessary keys
+        # filter out unnecessary keys
         extract = {param: extract[param] for param in model_param_names}
 
         return extract
