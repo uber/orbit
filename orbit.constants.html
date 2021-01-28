@@ -3,9 +3,9 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8">
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <title>orbit.constants package &mdash; orbit 1.0.10 documentation</title>
   
@@ -18,10 +18,7 @@
   
     <link rel="shortcut icon" href="_static/favicon.ico"/>
   
-
   
-  
-
   
 
   
@@ -34,6 +31,7 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
@@ -58,7 +56,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> orbit
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> orbit
           
 
           
@@ -151,8 +149,6 @@
 
 
 
-
-
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -168,7 +164,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-          
+            
             
               <a href="https://github.com/uber/orbit/blob/master/docs/orbit.constants.rst" class="fa fa-github"> Edit on GitHub</a>
             
@@ -529,7 +525,7 @@ the model is the output of SLGT.fit() and input of SLGTModel.</p>
 <dt id="orbit.constants.dlt.BaseSamplingParameters">
 <em class="property">class </em><code class="sig-prename descclassname">orbit.constants.dlt.</code><code class="sig-name descname">BaseSamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
-<p>The stan output sampling parameters related with DLT base model.</p>
+<p>base parameters in posteriors sampling</p>
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR">
 <code class="sig-name descname">LEVEL_SMOOTHING_FACTOR</code><em class="property"> = 'lev_sm'</em><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR" title="Permalink to this definition">¶</a></dt>
@@ -639,6 +635,33 @@ the model is the output of SLGT.fit() and input of SLGTModel.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt id="orbit.constants.dlt.LatentSamplingParameters">
+<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.dlt.</code><code class="sig-name descname">LatentSamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.LatentSamplingParameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>latent variables to be sampled</p>
+<dl class="py attribute">
+<dt id="orbit.constants.dlt.LatentSamplingParameters.INITIAL_SEASONALITY">
+<code class="sig-name descname">INITIAL_SEASONALITY</code><em class="property"> = 'init_sea'</em><a class="headerlink" href="#orbit.constants.dlt.LatentSamplingParameters.INITIAL_SEASONALITY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="orbit.constants.dlt.LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS">
+<code class="sig-name descname">REGRESSION_NEGATIVE_COEFFICIENTS</code><em class="property"> = 'nr_beta'</em><a class="headerlink" href="#orbit.constants.dlt.LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="orbit.constants.dlt.LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS">
+<code class="sig-name descname">REGRESSION_POSITIVE_COEFFICIENTS</code><em class="property"> = 'pr_beta'</em><a class="headerlink" href="#orbit.constants.dlt.LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="orbit.constants.dlt.LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS">
+<code class="sig-name descname">REGRESSION_REGULAR_COEFFICIENTS</code><em class="property"> = 'rr_beta'</em><a class="headerlink" href="#orbit.constants.dlt.LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt id="orbit.constants.dlt.RegressionPenalty">
 <em class="property">class </em><code class="sig-prename descclassname">orbit.constants.dlt.</code><code class="sig-name descname">RegressionPenalty</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.RegressionPenalty" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
@@ -664,7 +687,7 @@ the model is the output of SLGT.fit() and input of SLGTModel.</p>
 <dt id="orbit.constants.dlt.RegressionSamplingParameters">
 <em class="property">class </em><code class="sig-prename descclassname">orbit.constants.dlt.</code><code class="sig-name descname">RegressionSamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.RegressionSamplingParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
-<p>The stan output sampling parameters related with regression component.</p>
+<p>regression component related parameters in posteriors sampling</p>
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.RegressionSamplingParameters.REGRESSION_COEFFICIENTS">
 <code class="sig-name descname">REGRESSION_COEFFICIENTS</code><em class="property"> = 'beta'</em><a class="headerlink" href="#orbit.constants.dlt.RegressionSamplingParameters.REGRESSION_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
@@ -676,7 +699,7 @@ the model is the output of SLGT.fit() and input of SLGTModel.</p>
 <dt id="orbit.constants.dlt.SeasonalitySamplingParameters">
 <em class="property">class </em><code class="sig-prename descclassname">orbit.constants.dlt.</code><code class="sig-name descname">SeasonalitySamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.SeasonalitySamplingParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
-<p>The stan output sampling parameters related with seasonality component.</p>
+<p>seasonality component related parameters in posteriors sampling</p>
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.SeasonalitySamplingParameters.SEASONALITY_LEVELS">
 <code class="sig-name descname">SEASONALITY_LEVELS</code><em class="property"> = 's'</em><a class="headerlink" href="#orbit.constants.dlt.SeasonalitySamplingParameters.SEASONALITY_LEVELS" title="Permalink to this definition">¶</a></dt>
@@ -696,7 +719,7 @@ the model is the output of SLGT.fit() and input of SLGTModel.</p>
 <dt id="orbit.constants.lgt.BaseSamplingParameters">
 <em class="property">class </em><code class="sig-prename descclassname">orbit.constants.lgt.</code><code class="sig-name descname">BaseSamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
-<p>The stan output sampling parameters related with LGT base model.</p>
+<p>base parameters in posteriors sampling</p>
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.BaseSamplingParameters.GLOBAL_TREND_COEF">
 <code class="sig-name descname">GLOBAL_TREND_COEF</code><em class="property"> = 'gt_coef'</em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.GLOBAL_TREND_COEF" title="Permalink to this definition">¶</a></dt>
@@ -767,6 +790,33 @@ the model is the output of SLGT.fit() and input of SLGTModel.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt id="orbit.constants.lgt.LatentSamplingParameters">
+<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.lgt.</code><code class="sig-name descname">LatentSamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.LatentSamplingParameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>latent variables to be sampled</p>
+<dl class="py attribute">
+<dt id="orbit.constants.lgt.LatentSamplingParameters.INITIAL_SEASONALITY">
+<code class="sig-name descname">INITIAL_SEASONALITY</code><em class="property"> = 'init_sea'</em><a class="headerlink" href="#orbit.constants.lgt.LatentSamplingParameters.INITIAL_SEASONALITY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="orbit.constants.lgt.LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS">
+<code class="sig-name descname">REGRESSION_NEGATIVE_COEFFICIENTS</code><em class="property"> = 'nr_beta'</em><a class="headerlink" href="#orbit.constants.lgt.LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="orbit.constants.lgt.LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS">
+<code class="sig-name descname">REGRESSION_POSITIVE_COEFFICIENTS</code><em class="property"> = 'pr_beta'</em><a class="headerlink" href="#orbit.constants.lgt.LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="orbit.constants.lgt.LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS">
+<code class="sig-name descname">REGRESSION_REGULAR_COEFFICIENTS</code><em class="property"> = 'rr_beta'</em><a class="headerlink" href="#orbit.constants.lgt.LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt id="orbit.constants.lgt.RegressionPenalty">
 <em class="property">class </em><code class="sig-prename descclassname">orbit.constants.lgt.</code><code class="sig-name descname">RegressionPenalty</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.RegressionPenalty" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
@@ -792,7 +842,7 @@ the model is the output of SLGT.fit() and input of SLGTModel.</p>
 <dt id="orbit.constants.lgt.RegressionSamplingParameters">
 <em class="property">class </em><code class="sig-prename descclassname">orbit.constants.lgt.</code><code class="sig-name descname">RegressionSamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.RegressionSamplingParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
-<p>The stan output sampling parameters related with regression component.</p>
+<p>regression component related parameters in posteriors sampling</p>
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.RegressionSamplingParameters.REGRESSION_COEFFICIENTS">
 <code class="sig-name descname">REGRESSION_COEFFICIENTS</code><em class="property"> = 'beta'</em><a class="headerlink" href="#orbit.constants.lgt.RegressionSamplingParameters.REGRESSION_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
@@ -804,7 +854,7 @@ the model is the output of SLGT.fit() and input of SLGTModel.</p>
 <dt id="orbit.constants.lgt.SeasonalitySamplingParameters">
 <em class="property">class </em><code class="sig-prename descclassname">orbit.constants.lgt.</code><code class="sig-name descname">SeasonalitySamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.SeasonalitySamplingParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
-<p>The stan output sampling parameters related with seasonality component.</p>
+<p>seasonality component related parameters in posteriors sampling</p>
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.SeasonalitySamplingParameters.SEASONALITY_LEVELS">
 <code class="sig-name descname">SEASONALITY_LEVELS</code><em class="property"> = 's'</em><a class="headerlink" href="#orbit.constants.lgt.SeasonalitySamplingParameters.SEASONALITY_LEVELS" title="Permalink to this definition">¶</a></dt>
@@ -863,29 +913,37 @@ the model is the output of SLGT.fit() and input of SLGTModel.</p>
            
           </div>
           <footer>
+  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="orbit.diagnostics.html" class="btn btn-neutral float-right" title="orbit.diagnostics package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-        <a href="orbit.html" class="btn btn-neutral float-left" title="orbit package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+      
+        <a href="orbit.diagnostics.html" class="btn btn-neutral float-right" title="orbit.diagnostics package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="orbit.html" class="btn btn-neutral float-left" title="orbit package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
     </div>
+  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &#169; Copyright 2020, Uber Technologies, Inc.
+        
+        &copy; Copyright 2020, Uber Technologies, Inc
 
     </p>
   </div>
     
     
     
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
+
         </div>
       </div>
 
