@@ -9,14 +9,14 @@ def reduce_by_max(x, n=2):
 
 # Gaussian-Kernel
 # https://en.wikipedia.org/wiki/Kernel_smoother
-def gauss_kernel(x, x_i, rho=1.0, alpha=1.0, n_reduce=-1):
+def gauss_kernel(x, x_i, rho=1.0, alpha=1.0, n_reduce=-1, point_to_flatten=1):
     """
     x: points required to compute kernel weight
     x_i: reference points location used to compute correspondent distance of each entry points
     rho: smoothing parameter known as "length-scale" in gaussian process
-    alpha: marginal standard deviation parameter in gaussian process; one should ignore in kernel regression (keep it = 1.0)
-    b[deprecated]: radius or sometime named as (2*rho) that controls strength of covariance; the smaller the shorter raidus (dist. to negihbour)
-    will take into effect
+    alpha: marginal standard deviation parameter in gaussian process; one should use 1 in kernel regression
+    point_to_flatten: the time point starting to flatten the weights; default is 1 for normalized time points
+
     Returns
     -------
         2D array with N x M such that
@@ -33,7 +33,11 @@ def gauss_kernel(x, x_i, rho=1.0, alpha=1.0, n_reduce=-1):
     alpha_sq = alpha ** 2
     rho_sq_t2 = 2 * rho ** 2
     for n in range(N):
-        k[n, :] = alpha_sq * np.exp(-1 * (x[n] - x_i) ** 2 / rho_sq_t2)
+        if x[n] <= point_to_flatten:
+            k[n, :] = alpha_sq * np.exp(-1 * (x[n] - x_i) ** 2 / rho_sq_t2)
+        else:
+            # last weights carried forward for future time points
+            k[n, :] = alpha_sq * np.exp(-1 * (point_to_flatten - x_i) ** 2 / rho_sq_t2)
 
     if n_reduce > 0:
        k = np.apply_along_axis(reduce_by_max, axis=1, arr=k, n=n_reduce)
