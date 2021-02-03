@@ -361,7 +361,7 @@ def test_dlt_regression_penalty(synthetic_data, regression_penalty):
         response_col='response',
         date_col='week',
         regressor_col=train_df.columns.tolist()[2:],
-        regressor_penalty=regression_penalty,
+        regression_penalty=regression_penalty,
         seasonality=52,
         num_warmup=50,
         verbose=False,
