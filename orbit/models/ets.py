@@ -28,7 +28,7 @@ class BaseETS(BaseModel):
         more weight on the current seasonality.
         If None, the model will estimate this value.
     level_sm_input : float
-        float value between [0.001, 1]. A larger value puts more weight on the current level.
+        float value between [0.0001, 1]. A larger value puts more weight on the current level.
         If None, the model will estimate this value.
     """
     _data_input_mapper = constants.DataInputMapper
@@ -98,6 +98,9 @@ class BaseETS(BaseModel):
             self._seasonality_sm_input = -1
         if self.level_sm_input is None:
             self._level_sm_input = -1
+        elif self.level_sm_input < 0.0001 or self.level_sm_input > 1:
+            raise IllegalArgument('only values between [0.0001, 1] are supported for level_sm_input '
+                                  'to build a model with meaningful trend.')
         if self.seasonality is None:
             self._seasonality = -1
 

@@ -383,7 +383,7 @@ def test_dlt_regression_penalty(synthetic_data, regression_penalty):
     assert num_regressors == len(train_df.columns.tolist()[2:])
 
 
-@pytest.mark.parametrize("level_sm_input", [0.001, 0.5, 1.0])
+@pytest.mark.parametrize("level_sm_input", [0.0001, 0.5, 1.0])
 @pytest.mark.parametrize("seasonality_sm_input", [0.0, 0.5, 1.0])
 @pytest.mark.parametrize("slope_sm_input", [0.0, 0.5, 1.0])
 def test_dlt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input, slope_sm_input):
