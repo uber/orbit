@@ -462,3 +462,33 @@ def test_lgt_full_reproducibility(synthetic_data, estimator_type, regressor_sign
 
     # assert prediction is reproducible
     assert all(predict_df_first == predict_df_second)
+
+
+@pytest.mark.parametrize("slope_sm_input", [0.0, 0.5, 1.0])
+def test_lgt_fixed_sm_input(synthetic_data, slope_sm_input):
+    train_df, test_df, coef = synthetic_data
+
+    lgt = LGTMAP(
+        response_col='response',
+        date_col='week',
+        regressor_col=train_df.columns.tolist()[2:],
+        slope_sm_input=slope_sm_input,
+        seasonality=52,
+        num_warmup=50,
+        verbose=False,
+    )
+
+    lgt.fit(train_df)
+    predict_df = lgt.predict(test_df)
+
+    regression_out = lgt.get_regression_coefs()
+    num_regressors = regression_out.shape[0]
+
+    expected_columns = ['week', 'prediction']
+    expected_shape = (51, len(expected_columns))
+    expected_regression_shape = (6, 3)
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+    assert regression_out.shape == expected_regression_shape
+    assert num_regressors == len(train_df.columns.tolist()[2:])
