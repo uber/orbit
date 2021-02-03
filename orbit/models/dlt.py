@@ -165,7 +165,7 @@ class BaseDLT(BaseETS):
                                    format(self.global_trend_option))
 
     def _validate_regression_penalties(self):
-        if not self.regressor_col in ['fixed_ridge', 'lasso', 'auto_ridge']:
+        if not self.regression_penalty in ['fixed_ridge', 'lasso', 'auto_ridge']:
             raise IllegalArgument("{} is not one of 'fixed_ridge', 'lasso', 'auto_ridge'".\
                                    format(self.regression_penalty))
 
