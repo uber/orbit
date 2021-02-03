@@ -467,7 +467,7 @@ def test_lgt_full_reproducibility(synthetic_data, estimator_type, regressor_sign
 @pytest.mark.parametrize("level_sm_input", [0.0, 0.5, 1.0])
 @pytest.mark.parametrize("seasonality_sm_input", [0.0, 0.5, 1.0])
 @pytest.mark.parametrize("slope_sm_input", [0.0, 0.5, 1.0])
-def test_lgt_fixed_sm_input(synthetic_data, slope_sm_input):
+def test_lgt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input, slope_sm_input):
     train_df, test_df, coef = synthetic_data
 
     lgt = LGTMAP(

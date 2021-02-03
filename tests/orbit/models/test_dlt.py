@@ -386,7 +386,7 @@ def test_dlt_regression_penalty(synthetic_data, regression_penalty):
 @pytest.mark.parametrize("level_sm_input", [0.0, 0.5, 1.0])
 @pytest.mark.parametrize("seasonality_sm_input", [0.0, 0.5, 1.0])
 @pytest.mark.parametrize("slope_sm_input", [0.0, 0.5, 1.0])
-def test_dlt_fixed_sm_input(synthetic_data, slope_sm_input):
+def test_dlt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input, slope_sm_input):
     train_df, test_df, coef = synthetic_data
 
     dlt = DLTMAP(
