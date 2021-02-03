@@ -75,7 +75,6 @@ class BaseLGT(BaseETS):
 
         self.slope_sm_input = slope_sm_input
         if regressor_col:
-            print('warning')
             warnings.warn("Regression for LGT model will be deprecated in next version, please use DLT instead",
                            PendingDeprecationWarning
             )

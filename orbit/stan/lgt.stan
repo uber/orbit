@@ -37,7 +37,7 @@ data {
   matrix[NUM_OF_OBS, NUM_OF_NR] NR_MAT; // negative coef regressors, less volatile range
   vector<lower=0>[NUM_OF_NR] NR_BETA_PRIOR;
   vector<lower=0>[NUM_OF_NR] NR_SIGMA_PRIOR;
-  
+
   // Regression Hyper Params
   // 0 As Fixed Ridge Penalty, 1 As Lasso, 2 As Auto-Ridge
   int <lower=0,upper=2> REG_PENALTY_TYPE;
@@ -55,7 +55,7 @@ data {
   // - 0.1 is made for point optimization to dodge boundary case
   real<lower=0> CAUCHY_SD; // derived by MAX(RESPONSE)/constant
   real<lower=1> MIN_NU; real<lower=1> MAX_NU;
-  
+
   // Seasonality Hyper-Params
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
 }
@@ -299,7 +299,7 @@ generated quantities {
     if (NUM_OF_RR > 0) {
       beta[idx:idx+NUM_OF_RR-1] = rr_beta;
     }
-    // truncate small numeric values 
+    // truncate small numeric values
     for(iidx in 1:NUM_OF_PR + NUM_OF_NR + NUM_OF_RR) {
       if (fabs(beta[iidx]) <= 1e-5) beta[iidx] = 0;
     }

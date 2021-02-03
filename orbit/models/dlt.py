@@ -159,9 +159,20 @@ class BaseDLT(BaseETS):
             )
             self._init_values = init_values_callable
 
+    def _validate_global_options(self):
+        if not self.global_trend_option in ['flat', 'linear', 'loglinear', 'logistic']:
+            raise IllegalArgument("{} is not one of 'flat', 'linear', 'loglinear', or 'logistic'".\
+                                   format(self.global_trend_option))
+
+    def _validate_regression_penalties(self):
+        if not self.regression_penalty in ['fixed_ridge', 'lasso', 'auto_ridge']:
+            raise IllegalArgument("{} is not one of 'fixed_ridge', 'lasso', 'auto_ridge'".\
+                                   format(self.regression_penalty))
+
     def _set_additional_trend_attributes(self):
         """Set additional trend attributes
         """
+        self._validate_global_options()
         self._global_trend_option = getattr(constants.GlobalTrendOption, self.global_trend_option).value
         self._time_delta = 1 / max(self.period, self._seasonality, 1)
 
@@ -208,8 +219,8 @@ class BaseDLT(BaseETS):
     def _set_regression_penalty(self):
         """set and validate regression penalty related attributes.
         """
-        regression_penalty = self.regression_penalty
-        self._regression_penalty = getattr(constants.RegressionPenalty, regression_penalty).value
+        self._validate_regression_penalties()
+        self._regression_penalty = getattr(constants.RegressionPenalty, self.regression_penalty).value
 
     def _set_static_regression_attributes(self):
         """set and validate regression related attributes.

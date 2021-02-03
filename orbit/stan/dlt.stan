@@ -199,7 +199,7 @@ transformed parameters {
   if (NUM_OF_NR > 0)
     nr = NR_MAT * nr_beta;
   else
-    nr = rep_vector(0, NUM_OF_OBS);   
+    nr = rep_vector(0, NUM_OF_OBS);
   if (NUM_OF_RR>0)
     rr = RR_MAT * rr_beta;
   else
@@ -367,7 +367,7 @@ generated quantities {
     if (NUM_OF_RR > 0) {
       beta[idx:idx+NUM_OF_RR-1] = rr_beta;
     }
-    // truncate small numeric values 
+    // truncate small numeric values
     for(iidx in 1:NUM_OF_PR + NUM_OF_NR + NUM_OF_RR) {
       if (fabs(beta[iidx]) <= 1e-5) beta[iidx] = 0;
     }

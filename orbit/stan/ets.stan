@@ -16,7 +16,7 @@ transformed data {
   int IS_SEASONAL;
   int<lower=0,upper=1> LEV_SM_SIZE;
   int<lower=0,upper=1> SEA_SM_SIZE;
-  
+
   LEV_SM_SIZE = 0;
   SEA_SM_SIZE = 0;
 
@@ -37,7 +37,7 @@ parameters {
 
   // initial seasonality
   vector<lower=-1,upper=1>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
-  
+
  real<lower=0, upper=RESPONSE_SD> obs_sigma;
 }
 transformed parameters {
