@@ -45,7 +45,7 @@ class Model:
         which_valid = self.which_valid_res
 
         n_obs = self.n_obs
-        n_valid = self.n_valid_res
+        # n_valid = self.n_valid_res
         sdy = self.sdy
         meany = self.mean_y
         dof = self.dof
@@ -176,7 +176,8 @@ class Model:
                 )
 
         # observation likelihood
-        yhat = lev + torch.einsum("ab,...ab->...a", regressors, coef)
+        # einsum might be faster but it doesn't work when no regressors
+        yhat = lev + (regressors * coef).sum(-1) #lev + torch.einsum("ab,...ab->...a", regressors, coef)
         obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy)).unsqueeze(-1)
         # with pyro.plate("response_plate", n_valid):
         #     pyro.sample("response",

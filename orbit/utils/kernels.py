@@ -51,10 +51,6 @@ def sandwich_kernel(x, x_i):
     """
     x: points required to compute kernel weight
     x_i: reference points location used to compute correspondent distance of each entry points
-    rho: smoothing parameter known as "length-scale" in gaussian process
-    alpha: marginal standard deviation parameter in gaussian process; one should ignore in kernel regression (keep it = 1.0)
-    b[deprecated]: radius or sometime named as (2*rho) that controls strength of covariance; the smaller the shorter raidus (dist. to negihbour)
-    will take into effect
     return:
         a matrix with N x M such that
         N as the number of entry points

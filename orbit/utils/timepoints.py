@@ -73,3 +73,18 @@ def generate_seas(df, date_col, training_df_meta, coef_knot_dates, coef_knot,
     seas = np.sum(sea_coefs * sea_regressor_matrix, axis=-1)
 
     return seas
+
+
+def get_gap_between_dates(start_date, end_date, freq):
+    diff = end_date - start_date
+    gap = np.array(diff / np.timedelta64(1, freq))
+
+    return gap
+
+
+def set_knots_tp(knots_distance, cutoff):
+    # start in the middle
+    knots_idx_start = round(knots_distance / 2)
+    knots_idx = np.arange(knots_idx_start, cutoff, knots_distance)
+
+    return knots_idx

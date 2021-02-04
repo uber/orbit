@@ -44,23 +44,23 @@ def simulate_seasonal_term(periodicity, total_cycles, noise_std=1.,
     return wanted_series
 
 
-def make_synthetic_series(seed=0):
+def make_synthetic_series(seed=0, date_col='week', periodicity=52, total_cycles=4, harmonics=3, freq='7D'):
     """Generate synthetic data with regressors"""
     np.random.seed(seed)
 
     # simulate seasonality
-    seasonality_term = simulate_seasonal_term(periodicity=52, total_cycles=4, harmonics=3)
+    seasonality_term = simulate_seasonal_term(periodicity=periodicity, total_cycles=total_cycles, harmonics=harmonics)
 
     # scale data
     scaler = MinMaxScaler(feature_range=(np.max(seasonality_term), np.max(seasonality_term) * 2))
     seasonality_term = scaler.fit_transform(seasonality_term[:, None])
 
     # datetime index
-    dt = pd.date_range(start='2016-01-04', periods=len(seasonality_term), freq='7D')
+    dt = pd.date_range(start='2016-01-04', periods=len(seasonality_term), freq=freq)
 
     # create df
     df = pd.DataFrame(seasonality_term, columns=['response'], index=dt).reset_index()
-    df = df.rename(columns={'index': 'week'})
+    df = df.rename(columns={'index': date_col})
 
     # make regression
     X, y, coef = make_regression(n_samples=df.shape[0], n_features=6, n_informative=3, random_state=seed, coef=True)

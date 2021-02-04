@@ -121,6 +121,16 @@ class BacktestAnalyzeKeys(Enum):
     METRIC_PER_HORIZON = 'metric_per_horizon'
 
 
+class CoefPriorDictKeys(Enum):
+    """ hash table keys for the dictionary of back-test aggregation analysis result
+    """
+    NAME = 'name'
+    PRIOR_START_TP_IDX = 'prior_start_tp_idx'
+    PRIOR_END_TP_IDX = 'prior_end_tp_idx'
+    PRIOR_MEAN = 'prior_mean'
+    PRIOR_SD = 'prior_sd'
+    PRIOR_REGRESSOR_COL = 'prior_regressor_col'
+
 # Misc constants
 THIS_FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 

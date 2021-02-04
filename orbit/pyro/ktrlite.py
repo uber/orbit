@@ -38,8 +38,8 @@ class Model:
         3. reduce ambigious by replacing all greeks by labels more intuitive
         use _coef, _weight etc. instead of _beta, use _scale instead of _sigma
         """
-        n_obs = self.n_obs
-        n_valid = self.n_valid_res
+        # n_obs = self.n_obs
+        # n_valid = self.n_valid_res
         sdy = self.sdy
         meany = self.mean_y
         dof = self.dof

@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 
 from ..constants import ktrx as constants
 from ..constants.constants import (
-    PredictMethod
+    PredictMethod,
+    CoefPriorDictKeys,
 )
 from ..constants.ktrx import (
     DEFAULT_REGRESSOR_SIGN,
@@ -17,13 +18,13 @@ from ..constants.ktrx import (
     DEFAULT_COEFFICIENTS_KNOT_SCALE,
 )
 
-from ..estimators.pyro_estimator import PyroEstimatorVI
+from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel, sandwich_kernel
-from ..utils.timepoints import generate_seas
 from ..utils.features import make_fourier_series_df
+from ..utils.timepoints import generate_seas, get_gap_between_dates, set_knots_tp
 
 
 class BaseKTRX(BaseModel):
@@ -35,10 +36,8 @@ class BaseKTRX(BaseModel):
         response column name
     date_col : str
         date column name
-    seasonality : int, or list of int
-        multiple seasonality
-    seasonality_fs_order : int, or list of int
-        fourier series order for seasonality
+    level_knot_scale : float
+        sigma for level; default to be .1
     regressor_col : array-like strings
         regressor columns
     regressor_sign : list
@@ -54,11 +53,30 @@ class BaseKTRX(BaseModel):
         window width to decide the number of windows for the regression term
     rho_coefficients : float
         sigma in the Gaussian kernel for the regression term
+    degree of freedom : int
+        degree of freedom for error t-distribution
     coef_prior_list : list of dicts
-        each dict in the list should have keys as 'name', 'prior_mean', 'prior_sd',
-        'prior_tp_idx', and 'prior_regressor_col', where values of 'prior_mean', 'prior_sd',
-        'prior_tp_idx' are lists of the same length.
-
+        each dict in the list should have keys as
+        'name', prior_start_tp_idx' (inclusive), 'prior_end_tp_idx' (not inclusive),
+        'prior_mean', 'prior_sd', and 'prior_regressor_col'
+    level_knot_dates : array like
+        list of pre-specified dates for level knots
+    level_knots : array like
+        list of knot locations for level
+        level_knot_dates and level_knots should be of the same length
+    seasonal_knots_input : dict
+         a dictionary for seasonality inputs with the following keys:
+            '_seas_coef_knot_dates' : knot dates for seasonal regressors
+            '_sea_coef_knot' : knot locations for sesonal regressors
+            '_sea_rho' : rho value for seasonal regressors
+            '_seasonality' : seasonality order
+            '_seasonality_fs_order' : fourier series order for seasonality
+    coefficients_knot_length : int
+        the distance between every two knots for coefficients
+    coefficients_knot_dates : array like
+        a list of pre-specified knot dates for coefficients
+    kwargs
+        To specify `estimator_type` or additional args for the specified `estimator_type`
 
     """
     _data_input_mapper = constants.DataInputMapper
@@ -78,11 +96,6 @@ class BaseKTRX(BaseModel):
                  span_coefficients=0.3,
                  rho_coefficients=0.15,
                  degree_of_freedom=30,
-                 # coef priors on specific time-point
-                 # insert_prior_regressor_col=None,
-                 # insert_prior_tp_idx=None,
-                 # insert_prior_mean=None,
-                 # insert_prior_sd=None,
                  coef_prior_list=None,
                  # knot customization
                  level_knot_dates=None,
@@ -108,10 +121,6 @@ class BaseKTRX(BaseModel):
         self.span_coefficients = span_coefficients
         self.rho_coefficients = rho_coefficients
 
-        # self.insert_prior_regressor_col = insert_prior_regressor_col
-        # self.insert_prior_tp_idx = insert_prior_tp_idx
-        # self.insert_prior_mean = insert_prior_mean
-        # self.insert_prior_sd = insert_prior_sd
         self.coef_prior_list = coef_prior_list
         self.level_knot_dates = level_knot_dates
         self.level_knots = level_knots
@@ -126,13 +135,6 @@ class BaseKTRX(BaseModel):
         self._regressor_knot_pooling_scale= self.regressor_knot_pooling_scale
         self._regressor_knot_scale = self.regressor_knot_scale
 
-        # self._insert_prior_regressor_col = self.insert_prior_regressor_col
-        # # self._insert_prior_idx = self.insert_prior_idx
-        # self._insert_prior_tp_idx = self.insert_prior_tp_idx
-        # self._insert_prior_mean = self.insert_prior_mean
-        # self._insert_prior_sd = self.insert_prior_sd
-        # self._insert_prior_idx = list()
-        # self._num_insert_prior = None
         self._coef_prior_list = []
         self._level_knot_dates = self.level_knot_dates
         self._level_knots = self.level_knots
@@ -210,16 +212,6 @@ class BaseKTRX(BaseModel):
     def _set_default_base_args(self):
         """Set default attributes for None
         """
-        # if self.insert_prior_regressor_col is None:
-        #     self._insert_prior_regressor_col = list()
-        # if self.insert_prior_tp_idx is None:
-        #     self._insert_prior_tp_idx = list()
-        # if self.insert_prior_mean is None:
-        #     self._insert_prior_mean = list()
-        # if self.insert_prior_sd is None:
-        #     self._insert_prior_sd = list()
-        # if self._num_insert_prior is None:
-        #     self._num_insert_prior = len(self._insert_prior_tp_idx)
         if self.coef_prior_list is not None:
             self._coef_prior_list = deepcopy(self.coef_prior_list)
         if self.level_knots is None:
@@ -246,14 +238,26 @@ class BaseKTRX(BaseModel):
                     raise IllegalArgument('Wrong dimension length in Regression Param Input')
 
         def _validate_insert_prior(coef_prior_list):
-            pass
-            # for test_dict in coef_prior_list:
-            #     len_insert_prior = list()
-            #     for key, val in test_dict.items():
-            #         if key in ['prior_mean', 'prior_sd', 'prior_tp_idx']:
-            #             len_insert_prior.append(len(val))
-            #     if not all(len_insert == len_insert_prior[0] for len_insert in len_insert_prior):
-            #         raise IllegalArgument('wrong dimension length in inserted prior list')
+            for test_dict in coef_prior_list:
+                if set(test_dict.keys()) != set([
+                            CoefPriorDictKeys.NAME.value,
+                            CoefPriorDictKeys.PRIOR_START_TP_IDX.value,
+                            CoefPriorDictKeys.PRIOR_END_TP_IDX.value,
+                            CoefPriorDictKeys.PRIOR_MEAN.value,
+                            CoefPriorDictKeys.PRIOR_SD.value,
+                            CoefPriorDictKeys.PRIOR_REGRESSOR_COL.value
+                    ]):
+                    raise IllegalArgument('wrong key name in inserted prior dict')
+                len_insert_prior = list()
+                for key, val in test_dict.items():
+                    if key in [
+                                CoefPriorDictKeys.PRIOR_MEAN.value,
+                                CoefPriorDictKeys.PRIOR_SD.value,
+                                CoefPriorDictKeys.PRIOR_REGRESSOR_COL.value,
+                              ]:
+                        len_insert_prior.append(len(val))
+                if not all(len_insert == len_insert_prior[0] for len_insert in len_insert_prior):
+                    raise IllegalArgument('wrong dimension length in inserted prior dict')
 
         def _validate_level_knot_inputs(level_knot_dates, level_knots):
             if len(level_knots) != len(level_knot_dates):
@@ -390,8 +394,6 @@ class BaseKTRX(BaseModel):
         tp = np.arange(1, self._num_of_observations + 1) / self._num_of_observations
         # this approach put knots in full range
         self._cutoff = self._num_of_observations
-        # cutoff last 20%
-        # self._cutoff = round(0.2 * self._num_of_observations)
         self._kernel_coefficients = np.zeros((self._num_of_observations, 0), dtype=np.double)
         self._num_knots_coefficients = 0
 
@@ -406,19 +408,20 @@ class BaseKTRX(BaseModel):
                     number_of_knots = round(1 / self.span_coefficients)
                     knots_distance = math.ceil(self._cutoff / number_of_knots)
 
-                # start in the middle
-                knots_idx_start_coef = round(knots_distance / 2)
-                knots_idx_coef = np.arange(knots_idx_start_coef, self._cutoff,  knots_distance)
+                knots_idx_coef = set_knots_tp(knots_distance, self._cutoff)
                 self._knots_tp_coefficients = (1 + knots_idx_coef) / self._num_of_observations
                 self._coefficients_knot_dates = df[self.date_col].values[knots_idx_coef]
             else:
                 # FIXME: this only works up to daily series (not working on hourly series)
                 self._coefficients_knot_dates = pd.to_datetime([
-                    x for x in self._coefficients_knot_dates if (x <= df[self.date_col].max()) and (x >= df[self.date_col].min())
+                    x for x in self._coefficients_knot_dates if (x <= df[self.date_col].max()) \
+                                                                and (x >= df[self.date_col].min())
                 ])
+                infer_freq = pd.infer_freq(df[self.date_col])[0]
+                start_date = self._training_df_meta['training_start']
                 self._knots_tp_coefficients = np.array(
-                    ((self._coefficients_knot_dates - self._training_df_meta['training_start']).days + 1) /
-                    ((self._training_df_meta['training_end'] - self._training_df_meta['training_start']).days + 1)
+                    (get_gap_between_dates(start_date, self._coefficients_knot_dates, infer_freq) + 1) /
+                    (get_gap_between_dates(start_date, self._training_df_meta['training_end'], infer_freq) + 1)
                 )
 
             kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
@@ -428,18 +431,24 @@ class BaseKTRX(BaseModel):
     def _set_levs_and_seas(self, df):
         tp = np.arange(1, self._num_of_observations + 1) / self._num_of_observations
         # trim level knots dates when they are beyond training dates
-        self._level_knot_dates = pd.to_datetime([x for x in self.level_knot_dates if x <= df[self.date_col].max()])
-        self._level_knots = self.level_knots[:len(self._level_knot_dates)]
+        lev_knot_dates = list()
+        lev_knots = list()
+        for i, x in enumerate(self.level_knot_dates):
+            if (x <= df[self.date_col].max()) and (x >= df[self.date_col].min()):
+                lev_knot_dates.append(x)
+                lev_knots.append(self.level_knots[i])
+        self._level_knot_dates = pd.to_datetime(lev_knot_dates)
+        self._level_knots = np.array(lev_knots)
+        infer_freq = pd.infer_freq(df[self.date_col])[0]
+        start_date = self._training_df_meta['training_start']
 
         if len(self.level_knots) > 0 and len(self.level_knot_dates) > 0:
-            # new_tp = generate_tp(self.level_knot_dates, self._training_df_meta)
-            # self._knots_tp_level = generate_insample_tp(self._training_df_meta['date_array'], self._training_df_meta)
             self._knots_tp_level = np.array(
-                ((self._level_knot_dates - self._training_df_meta['training_start']).days + 1) /
-                ((self._training_df_meta['training_end'] - self._training_df_meta['training_start']).days + 1)
+                (get_gap_between_dates(start_date, self._level_knot_dates, infer_freq) + 1) /
+                (get_gap_between_dates(start_date, self._training_df_meta['training_end'], infer_freq) + 1)
             )
         else:
-            raise ModelException("User need to supply list of level knots.")
+            raise ModelException("User need to supply a list of level knots.")
 
         kernel_level = sandwich_kernel(tp, self._knots_tp_level)
 
@@ -468,6 +477,7 @@ class BaseKTRX(BaseModel):
                     expected_shape = (end_tp_idx - start_tp_idx, len(prior_regressor_col))
                     test_dict.update({'prior_end_tp_idx': end_tp_idx})
                     test_dict.update({'prior_start_tp_idx': start_tp_idx})
+                    # mean/sd expanding
                     test_dict.update({'prior_mean': np.full(expected_shape, m)})
                     test_dict.update({'prior_sd': np.full(expected_shape, sd)})
                 else:
@@ -553,20 +563,13 @@ class BaseKTRX(BaseModel):
 
         return regressor_beta
 
-    def _predict(self, posterior_estimates, df, include_error=False, decompose=False, random_state=None):
+    def _predict(self, posterior_estimates, df, include_error=False, decompose=False):
         """Vectorized version of prediction math"""
         ################################################################
         # Model Attributes
         ################################################################
 
         model = deepcopy(posterior_estimates)
-        # for k, v in model.items():
-        #     model[k] = torch.from_numpy(v)
-
-        # We can pull any arbitrary value from the dictionary because we hold the
-        # safe assumption: the length of the first dimension is always the number of samples
-        # thus can be safely used to determine `num_sample`. If predict_method is anything
-        # other than full, the value here should be 1
         arbitrary_posterior_value = list(model.values())[0]
         num_sample = arbitrary_posterior_value.shape[0]
 
@@ -603,16 +606,10 @@ class BaseKTRX(BaseModel):
         # Here assume dates are ordered and consecutive
         # if prediction_df_meta['prediction_start'] > training_df_meta['training_end'],
         # assume prediction starts right after train end
-
-        # If we cannot find a match of prediction range, assume prediction starts right after train
-        # end
         if prediction_start > training_df_meta['training_end']:
-            forecast_dates = set(date_array)
+            # time index for prediction start
             start = trained_len
         else:
-            # compute how many steps to forecast
-            forecast_dates = set(date_array) - set(training_df_meta['date_array'])
-            # time index for prediction start
             start = pd.Index(training_df_meta['date_array']).get_loc(prediction_start)
 
         new_tp = np.arange(start + 1, start + output_len + 1) / trained_len
@@ -659,29 +656,23 @@ class BaseKTRX(BaseModel):
 
         if include_error:
             epsilon = nct.rvs(self.degree_of_freedom, nc=0, loc=0,
-                              scale=obs_scale, size=(num_sample, len(new_tp)), random_state=random_state)
+                              scale=obs_scale, size=(num_sample, len(new_tp)))
             pred_array = trend + seas + regression + epsilon
         else:
             pred_array = trend + seas + regression
 
         # if decompose output dictionary of components
         if decompose:
-            if self._seasonal_knots_input is not None:
-                decomp_dict = {
-                    'prediction': pred_array,
-                    'trend': trend,
-                    'seasonality_input': seas,
-                    'regression': regression
-                }
-            else:
-                decomp_dict = {
-                    'prediction': pred_array,
-                    'trend': trend,
-                }
+            decomp_dict = {
+                'prediction': pred_array,
+                'trend': trend,
+                'seasonality_input': seas,
+                'regression': regression
+            }
+        else:
+            decomp_dict = {'prediction': pred_array}
 
-            return decomp_dict
-
-        return {'prediction': pred_array}
+        return decomp_dict
 
     def _prepend_date_column(self, predicted_df, input_df):
         """Prepends date column from `input_df` to `predicted_df`"""
@@ -774,30 +765,16 @@ class BaseKTRX(BaseModel):
             trained_len = training_df_meta['df_length'] # i.e., self._num_of_observations
             output_len = len(date_array)
 
-            # If we cannot find a match of prediction range, assume prediction starts right after train
-            # end
+            # If we cannot find a match of prediction range, assume prediction starts right after train end
             if prediction_start > training_df_meta['training_end']:
-                forecast_dates = set(date_array)
                 # time index for prediction start
                 start = trained_len
             else:
-                # compute how many steps to forecast
-                forecast_dates = set(date_array) - set(training_df_meta['date_array'])
                 # time index for prediction start
                 start = pd.Index(training_df_meta['date_array']).get_loc(prediction_start)
 
             new_tp = np.arange(start + 1, start + output_len + 1) / trained_len
 
-            # Here assume dates are ordered and consecutive
-            # if prediction_df_meta['prediction_start'] > training_df_meta['training_end'],
-            # assume prediction starts right after train end
-            # # TODO: check utility?
-            # gap_time = prediction_start - training_df_meta['training_start']
-            # infer_freq = pd.infer_freq(training_df_meta['date_array'])[0]
-            # gap_int = int(gap_time / np.timedelta64(1, infer_freq))
-            #
-            # new_tp = np.arange(1 + gap_int, output_len + gap_int + 1)
-            # new_tp = new_tp / trained_len
             kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
             coef_knots = self._aggregate_posteriors \
                 .get(aggregate_method) \
@@ -929,7 +906,7 @@ class KTRXFull(BaseKTRX):
         if not self.n_bootstrap_draws:
             self._n_bootstrap_draws = -1
 
-    def _bootstrap(self, n, random_state=None):
+    def _bootstrap(self, n):
         """Draw `n` number of bootstrap samples from the posterior_samples.
 
         Args
@@ -943,8 +920,6 @@ class KTRXFull(BaseKTRX):
 
         if n < 2:
             raise IllegalArgument("Error: The number of bootstrap draws must be at least 2")
-        if random_state is not None:
-            np.random.seed(random_state)
         sample_idx = np.random.choice(
             range(num_samples),
             size=n,
@@ -979,14 +954,14 @@ class KTRXFull(BaseKTRX):
         aggregate_df = pd.DataFrame(aggregated_array.T, columns=columns)
         return aggregate_df
 
-    def predict(self, df, decompose=False, random_state=None):
+    def predict(self, df, decompose=False):
         """Return model predictions as a function of fitted model and df"""
         # raise if model is not fitted
         if not self.is_fitted():
             raise PredictionException("Model is not fitted yet.")
 
         # if bootstrap draws, replace posterior samples with bootstrap
-        posterior_samples = self._bootstrap(self._n_bootstrap_draws, random_state=random_state) \
+        posterior_samples = self._bootstrap(self._n_bootstrap_draws) \
             if self._n_bootstrap_draws > 1 \
             else self._posterior_samples
 
@@ -994,7 +969,6 @@ class KTRXFull(BaseKTRX):
             posterior_estimates=posterior_samples,
             df=df,
             include_error=True,
-            random_state=random_state,
             decompose=decompose,
         )
 
@@ -1104,6 +1078,81 @@ class KTRXAggregated(BaseKTRX):
 
     def get_regression_coefs_knots(self):
         return super().get_regression_coefs_knots(aggregate_method=self.aggregate_method)
+
+    def plot_regression_coefs(self, date_array=None, **kwargs):
+        coef_df = self.get_regression_coefs(date_array=date_array)
+        return super().plot_regression_coefs(coef_df=coef_df,
+                                             **kwargs)
+
+
+class KTRXMAP(BaseKTRX):
+    """Concrete KTRX model for MAP (Maximum a Posteriori) prediction
+    Similar to `KTRXAggregated` but predition is based on Maximum a Posteriori (aka Mode)
+    of the posterior.
+    This model only supports MAP estimating `estimator_type`s
+    """
+    _supported_estimator_types = [PyroEstimatorMAP]
+
+    def __init__(self, estimator_type=PyroEstimatorMAP, **kwargs):
+        super().__init__(estimator_type=estimator_type, **kwargs)
+
+        # override init aggregate posteriors
+        self._aggregate_posteriors = {
+            PredictMethod.MAP.value: dict(),
+        }
+
+        # validator model / estimator compatibility
+        self._validate_supported_estimator_type()
+
+    def _set_map_posterior(self):
+        posterior_samples = self._posterior_samples
+
+        map_posterior = {}
+        for param_name in self._model_param_names:
+            param_array = posterior_samples[param_name]
+            # add dimension so it works with vector math in `_predict`
+            param_array = np.expand_dims(param_array, axis=0)
+            map_posterior.update(
+                {param_name: param_array}
+            )
+
+        self._aggregate_posteriors[PredictMethod.MAP.value] = map_posterior
+
+    def fit(self, df):
+        """Fit model to data and set extracted posterior samples"""
+        super().fit(df)
+        self._set_map_posterior()
+
+    def predict(self, df, decompose=False):
+        # raise if model is not fitted
+        if not self.is_fitted():
+            raise PredictionException("Model is not fitted yet.")
+
+        aggregate_posteriors = self._aggregate_posteriors.get(PredictMethod.MAP.value)
+
+        predicted_dict = self._predict(
+            posterior_estimates=aggregate_posteriors,
+            df=df,
+            include_error=False,
+            decompose=decompose,
+        )
+
+        # must flatten to convert to DataFrame
+        for k, v in predicted_dict.items():
+            predicted_dict[k] = v.flatten()
+
+        predicted_df = pd.DataFrame(predicted_dict)
+        predicted_df = self._prepend_date_column(predicted_df, df)
+
+        return predicted_df
+
+    def get_regression_coefs(self, date_array=None):
+        return super().get_regression_coefs(aggregate_method=PredictMethod.MAP.value,
+                                            include_ci=False,
+                                            date_array=date_array)
+
+    def get_regression_coefs_knots(self):
+        return super().get_regression_coefs_knots(aggregate_method=PredictMethod.MAP.value)
 
     def plot_regression_coefs(self, date_array=None, **kwargs):
         coef_df = self.get_regression_coefs(date_array=date_array)

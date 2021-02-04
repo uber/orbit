@@ -17,6 +17,7 @@ from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel, sandwich_kernel
 from ..utils.features import make_fourier_series_df
+from ..utils.timepoints import get_gap_between_dates, set_knots_tp
 
 
 class BaseKTRLite(BaseModel):
@@ -32,6 +33,8 @@ class BaseKTRLite(BaseModel):
         multiple seasonality
     seasonality_fs_order : int, or list of int
         fourier series order for seasonality
+    level_knot_scale : float
+        sigma for level; default to be .5
     seasonal_knot_pooling_scale : float
         pooling sigma for seasonal fourier series regressors; default to be 1
     seasonal_knot_scale : float
@@ -43,6 +46,17 @@ class BaseKTRLite(BaseModel):
         window width to decide the number of windows for the regression term
     rho_coefficients : float
         sigma in the Gaussian kernel for the regression term
+    degree of freedom : int
+        degree of freedom for error t-distribution
+    level_knot_dates : array like
+        list of pre-specified dates for the level knots
+    level_knot_length : int
+        the distance between every two knots for level
+    coefficients_knot_length : int
+        the distance between every two knots for coefficients
+    kwargs
+        To specify `estimator_type` or additional args for the specified `estimator_type`
+
     """
     _data_input_mapper = constants.DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
@@ -154,12 +168,13 @@ class BaseKTRLite(BaseModel):
         """
         if self.seasonality is None:
             self._seasonality = list()
-        elif not isinstance(self.seasonality, list) and isinstance(self.seasonality * 1.0, float):
+            self._seasonality_fs_order = list()
+        elif not isinstance(self._seasonality, list) and isinstance(self._seasonality * 1.0, float):
             self._seasonality = [self.seasonality]
 
-        if self._seasonality and self.seasonality_fs_order is None:
+        if self._seasonality and self._seasonality_fs_order is None:
             self._seasonality_fs_order = [2] * len(self._seasonality)
-        elif not isinstance(self.seasonality_fs_order, list) and isinstance(self.seasonality_fs_order * 1.0, float):
+        elif not isinstance(self._seasonality_fs_order, list) and isinstance(self._seasonality_fs_order * 1.0, float):
             self._seasonality_fs_order = [self.seasonality_fs_order]
 
         if len(self._seasonality_fs_order) != len(self._seasonality):
@@ -287,8 +302,6 @@ class BaseKTRLite(BaseModel):
 
         # this approach put knots in full range
         self._cutoff = self._num_of_observations
-        # cutoff last 20%
-        # self._cutoff = round(0.2 * self._num_of_observations)
 
         # kernel of level calculations
         if self._level_knot_dates is None:
@@ -299,21 +312,23 @@ class BaseKTRLite(BaseModel):
                 number_of_knots = round(1 / self.span_level)
                 knots_distance = math.ceil(self._cutoff / number_of_knots)
 
-            # start in the middle
-            knots_idx_start_level = round(knots_distance / 2)
-            knots_idx_level = np.arange(knots_idx_start_level, self._cutoff, knots_distance)
+            knots_idx_level = set_knots_tp(knots_distance, self._cutoff)
             self._knots_tp_level = (1 + knots_idx_level) / self._num_of_observations
             self._level_knot_dates = df[self.date_col].values[knots_idx_level]
         else:
             # FIXME: this only works up to daily series (not working on hourly series)
-            self._level_knot_dates = pd.to_datetime([x for x in self._level_knot_dates if x <= df[self.date_col].max()])
+            self._level_knot_dates = pd.to_datetime([
+                x for x in self._level_knot_dates if (x <= df[self.date_col].max()) \
+                                                     and (x >= df[self.date_col].min())
+            ])
+            infer_freq = pd.infer_freq(df[self.date_col])[0]
+            start_date = self._training_df_meta['training_start']
             self._knots_tp_level = np.array(
-                ((self._level_knot_dates - self._training_df_meta['training_start']).days + 1) /
-                ((self._training_df_meta['training_end'] - self._training_df_meta['training_start']).days + 1)
+                (get_gap_between_dates(start_date, self._level_knot_dates, infer_freq) + 1) /
+                (get_gap_between_dates(start_date, self._training_df_meta['training_end'], infer_freq) + 1)
             )
 
-        kernel_level = sandwich_kernel(tp, self._knots_tp_level)
-        self._kernel_level = kernel_level/np.sum(kernel_level, axis=1, keepdims=True)
+        self._kernel_level = sandwich_kernel(tp, self._knots_tp_level)
         self._num_knots_level = len(self._knots_tp_level)
 
         self._kernel_coefficients = np.zeros((self._num_of_observations, 0), dtype=np.double)
@@ -322,15 +337,13 @@ class BaseKTRLite(BaseModel):
         # kernel of coefficients calculations
         if self._num_of_regressors > 0:
             if self.coefficients_knot_length is not None:
-                # TODO: approximation; can consider directly coefficients_knot_length it as step size
+                # TODO: approximation; can consider directly coefficients_knot_length as step size
                 knots_distance = self.coefficients_knot_length
             else:
                 number_of_knots = round(1 / self.span_coefficients)
                 knots_distance = math.ceil(self._cutoff / number_of_knots)
 
-            # start in the middle
-            knots_idx_start_coef = round(knots_distance / 2)
-            knots_idx_coef = np.arange(knots_idx_start_coef, self._cutoff,  knots_distance)
+            knots_idx_coef = set_knots_tp(knots_distance, self._cutoff)
             self._knots_tp_coefficients = (1 + knots_idx_coef) / self._num_of_observations
             self._coef_knot_dates = df[self.date_col].values[knots_idx_coef]
             self._kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
@@ -370,7 +383,6 @@ class BaseKTRLite(BaseModel):
             if input_value is None:
                 raise ModelException('{} is missing from data input'.format(key_lower))
             if isinstance(input_value, bool):
-                # stan accepts bool as int only
                 input_value = int(input_value)
             data_inputs[key.value] = input_value
 
@@ -383,7 +395,7 @@ class BaseKTRLite(BaseModel):
         # if empty dict false, else true
         return bool(self._posterior_samples)
 
-    def _predict(self, posterior_estimates, df, include_error=False, decompose=False, random_state=None):
+    def _predict(self, posterior_estimates, df, include_error=False, decompose=False):
         """Vectorized version of prediction math"""
         ################################################################
         # Model Attributes
@@ -425,33 +437,33 @@ class BaseKTRLite(BaseModel):
 
         trained_len = training_df_meta['df_length'] # i.e., self._num_of_observations
         output_len = prediction_df_meta['df_length']
-        date_array = prediction_df_meta['date_array']
         prediction_start = prediction_df_meta['prediction_start']
 
         # Here assume dates are ordered and consecutive
         # if prediction_df_meta['prediction_start'] > training_df_meta['training_end'],
         # assume prediction starts right after train end
 
-        # If we cannot find a match of prediction range, assume prediction starts right after train
-        # end
+        # If we cannot find a match of prediction range, assume prediction starts right after train end
         if prediction_start > training_df_meta['training_end']:
-            forecast_dates = set(date_array)
             # time index for prediction start
             start = trained_len
         else:
-            # compute how many steps to forecast
-            forecast_dates = set(date_array) - set(training_df_meta['date_array'])
             start = pd.Index(training_df_meta['date_array']).get_loc(prediction_start)
 
         df = self._make_seasonal_regressors(df, shift=start)
         new_tp = np.arange(start + 1, start + output_len + 1) / trained_len
-
+        print(new_tp)
+        print(self._knots_tp_level)
         kernel_level = sandwich_kernel(new_tp, self._knots_tp_level)
         lev_knot = model.get(constants.BaseSamplingParameters.LEVEL_KNOT.value)
         obs_scale = model.get(constants.BaseSamplingParameters.OBS_SCALE.value)
         obs_scale = obs_scale.reshape(-1, 1)
 
         trend = np.matmul(lev_knot, kernel_level.transpose(1, 0))
+        print(trend.shape)
+        print(trend)
+        print(lev_knot)
+        print(kernel_level)
         # init of regression matrix depends on length of response vector
         total_seas_regression = np.zeros(trend.shape, dtype=np.double)
         seas_decomp = {}
@@ -470,7 +482,7 @@ class BaseKTRLite(BaseModel):
                 total_seas_regression += seas_regression
         if include_error:
             epsilon = nct.rvs(self._degree_of_freedom, nc=0, loc=0,
-                              scale=obs_scale, size=(num_sample, len(new_tp)), random_state=random_state)
+                              scale=obs_scale, size=(num_sample, len(new_tp)))
             pred_array = trend + total_seas_regression + epsilon
         else:
             pred_array = trend + total_seas_regression
@@ -545,7 +557,7 @@ class BaseKTRLite(BaseModel):
 
 
 class KTRLiteFull(BaseKTRLite):
-    """Concrete LGT model for full prediction
+    """Concrete KTRLite model for full prediction
 
     In full prediction, the prediction occurs as a function of each parameter posterior sample,
     and the prediction results are aggregated after prediction. Prediction will
@@ -589,7 +601,7 @@ class KTRLiteFull(BaseKTRLite):
         if not self.n_bootstrap_draws:
             self._n_bootstrap_draws = -1
 
-    def _bootstrap(self, n, random_state=None):
+    def _bootstrap(self, n):
         """Draw `n` number of bootstrap samples from the posterior_samples.
 
         Args
@@ -603,8 +615,6 @@ class KTRLiteFull(BaseKTRLite):
 
         if n < 2:
             raise IllegalArgument("Error: The number of bootstrap draws must be at least 2")
-        if random_state is not None:
-            np.random.seed(random_state)
         sample_idx = np.random.choice(
             range(num_samples),
             size=n,
@@ -639,14 +649,14 @@ class KTRLiteFull(BaseKTRLite):
         aggregate_df = pd.DataFrame(aggregated_array.T, columns=columns)
         return aggregate_df
 
-    def predict(self, df, decompose=False, random_state=None):
+    def predict(self, df, decompose=False):
         """Return model predictions as a function of fitted model and df"""
         # raise if model is not fitted
         if not self.is_fitted():
             raise PredictionException("Model is not fitted yet.")
 
         # if bootstrap draws, replace posterior samples with bootstrap
-        posterior_samples = self._bootstrap(self._n_bootstrap_draws, random_state=random_state) \
+        posterior_samples = self._bootstrap(self._n_bootstrap_draws) \
             if self._n_bootstrap_draws > 1 \
             else self._posterior_samples
 
@@ -654,7 +664,6 @@ class KTRLiteFull(BaseKTRLite):
             posterior_estimates=posterior_samples,
             df=df,
             include_error=True,
-            random_state=random_state,
             decompose=decompose,
         )
 
@@ -678,9 +687,8 @@ class KTRLiteFull(BaseKTRLite):
 
 
 class KTRLiteMAP(BaseKTRLite):
-    """Concrete LGT model for MAP (Maximum a Posteriori) prediction
-    Similar to `LGTAggregated` but predition is based on Maximum a Posteriori (aka Mode)
-    of the posterior.
+    """Concrete KTRLite model for MAP (Maximum a Posteriori) prediction
+
     This model only supports MAP estimating `estimator_type`s
     """
     _supported_estimator_types = [StanEstimatorMAP, PyroEstimatorMAP]

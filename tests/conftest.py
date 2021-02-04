@@ -43,6 +43,16 @@ def synthetic_data():
 
 
 @pytest.fixture
+def synthetic_data_daily(seed=127, date_col='day', periodicity=365, total_cycles=4, harmonics=None, freq='1D'):
+    df, coef = make_synthetic_series(seed=127)
+
+    train_df = df[df['week'] <= '2019-01-01']
+    test_df = df[df['week'] > '2019-01-01']
+
+    return train_df, test_df, coef
+
+
+@pytest.fixture
 def valid_sample_predict_method_combo():
     valid_permutations = [
         ("map", "map"),

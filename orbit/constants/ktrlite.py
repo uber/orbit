@@ -10,10 +10,7 @@ class DataInputMapper(Enum):
     # observation related
     _NUM_OF_OBSERVATIONS = 'N_OBS'
     _RESPONSE = 'RESPONSE'
-    # used for pyro
-    # _IS_VALID_RESPONSE = 'IS_VALID_RES'
     _NUM_OF_VALID_RESPONSE = 'N_VALID_RES'
-    # mainly used for stan
     _WHICH_VALID_RESPONSE = 'WHICH_VALID_RES'
     _RESPONSE_SD = 'SDY'
     _RESPONSE_MEAN = 'MEAN_Y'
@@ -34,7 +31,7 @@ class DataInputMapper(Enum):
 
 class BaseSamplingParameters(Enum):
     """
-    The stan output sampling parameters related with LGT base model.
+    The output sampling parameters related with base model.
     """
     LEVEL_KNOT = 'lev_knot'
     LEVEL = 'lev'
@@ -44,7 +41,7 @@ class BaseSamplingParameters(Enum):
 
 class RegressionSamplingParameters(Enum):
     """
-    The stan output sampling parameters related with regression component.
+    The output sampling parameters related with regression component.
     """
     COEFFICIENTS_KNOT = 'coef_knot'
     COEFFICIENTS = 'coef'
