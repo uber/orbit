@@ -452,18 +452,12 @@ class BaseKTRLite(BaseModel):
 
         df = self._make_seasonal_regressors(df, shift=start)
         new_tp = np.arange(start + 1, start + output_len + 1) / trained_len
-        print(new_tp)
-        print(self._knots_tp_level)
         kernel_level = sandwich_kernel(new_tp, self._knots_tp_level)
         lev_knot = model.get(constants.BaseSamplingParameters.LEVEL_KNOT.value)
         obs_scale = model.get(constants.BaseSamplingParameters.OBS_SCALE.value)
         obs_scale = obs_scale.reshape(-1, 1)
 
         trend = np.matmul(lev_knot, kernel_level.transpose(1, 0))
-        print(trend.shape)
-        print(trend)
-        print(lev_knot)
-        print(kernel_level)
         # init of regression matrix depends on length of response vector
         total_seas_regression = np.zeros(trend.shape, dtype=np.double)
         seas_decomp = {}
