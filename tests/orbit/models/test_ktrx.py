@@ -207,10 +207,10 @@ def test_ktrx_regressor_sign(make_daily_data, regressor_signs):
             {
                 'name': 'test1',
                 'prior_start_tp_idx': 100,
-                'prior_end_tp_idx': 200,
-                'prior_mean': [0, 0],
-                'prior_sd': [1, 1],
-                'prior_regressor_col': ['reg2', 'reg3']
+                'prior_end_tp_idx': 120,
+                'prior_mean': [.25, 0.35],
+                'prior_sd': [.1, .2],
+                'prior_regressor_col': ['a', 'b']
 
             }
         ]
