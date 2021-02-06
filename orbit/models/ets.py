@@ -20,7 +20,6 @@ ci.add_style("numpy_with_merge_dedup", merge_numpy_docs_dedup)
 
 
 class BaseETS(BaseModel, metaclass=ci.DocInheritMeta(style="numpy_with_merge_dedup")):
-#class BaseETS(BaseModel):
     """
     Parameters
     ----------
