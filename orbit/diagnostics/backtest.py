@@ -116,9 +116,6 @@ class TimeSeriesSplitter(object):
 
     def split(self):
         """
-        Args
-        ----
-
         Returns
         -------
         iterables with (train_df, test_df, scheme, split_key) where
@@ -399,21 +396,35 @@ class BackTester(object):
 def grid_search_orbit(param_grid, model, df, min_train_len,
                       incremental_len, forecast_len, n_splits=None,
                       metrics=None, criteria=None, verbose=True, **kwargs):
-    """A gird search unitlity to tune the hyperparameters for orbit models using the inherent backtest module.
+    """A gird search unitlity to tune the hyperparameters for orbit models using the orbit.diagnostics.backtest modules.
     Parameters
     ----------
-    param_gird : a dict with candidate values for hyper-params to be tuned
-    model : model
-    data : data
-    min_train_len : scheduling parameter in backtest
-    incremental_len : scheduling parameter in backtest
-    forecast_len : scheduling parameter in backtest
-    n_splits : scheduling parameter in backtest
-    metrics : metric function, defaul smape defined in orbit.diagnostics.metrics
-    criteria : "min" or "max"; defatul is None ("min")
+    param_gird : dict
+        a dict with candidate values for hyper-params to be tuned
+    model : object
+        model object
+    df : pd.DataFrame
+    min_train_len : int
+        scheduling parameter in backtest
+    incremental_len : int
+        scheduling parameter in backtest
+    forecast_len : int
+        scheduling parameter in backtest
+    n_splits : int
+        scheduling parameter in backtest
+    metrics : function
+        metric function, defaul smape defined in orbit.diagnostics.metrics
+    criteria : str
+        "min" or "max"; defatul is None ("min")
+    verbose : bool
+
     Return
     ------
-    a tuple of best hyperparams and dataframe of tuning results
+    dict:
+        best hyperparams
+    pd.DataFrame:
+        data frame of tuning results
+
     """
     def _get_params(model):
         # get all the model params for orbit typed models
