@@ -58,6 +58,11 @@ class BaseDLT(BaseETS):
         global trend value. Default, 0.8
     global_trend_option : { 'flat', 'linear', 'loglinear', 'logistic' }
         Transformation function for the shape of the forecasted global trend.
+
+    Other Parameters
+    ----------------
+    **kwargs: additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
+
     See Also
     --------
     :class: `~orbit.models.lgt.BaseETS`
@@ -642,11 +647,11 @@ class BaseDLT(BaseETS):
 class DLTFull(ETSFull, BaseDLT):
     """Concrete DLT model for full prediction
 
-    The model arguments are the same as `LGTFull` with some additional arguments
+    The model arguments are the same as `ETSFull` with some additional arguments
 
     See Also
     --------
-    orbit.models.lgt.LGTFull
+    orbit.models.lgt.ETSFull
 
     """
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
@@ -662,11 +667,11 @@ class DLTFull(ETSFull, BaseDLT):
 class DLTAggregated(ETSAggregated, BaseDLT):
     """Concrete DLT model for aggregated posterior prediction
 
-    The model arguments are the same as `LGTAggregated` with some additional arguments
+    The model arguments are the same as `ETSAggregated` with some additional arguments
 
     See Also
     --------
-    orbit.models.lgt.LGTAggregated
+    orbit.models.lgt.ETSAggregated
 
     """
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
@@ -682,11 +687,11 @@ class DLTAggregated(ETSAggregated, BaseDLT):
 class DLTMAP(ETSMAP, BaseDLT):
     """Concrete DLT model for MAP (Maximum a Posteriori) prediction
 
-    The model arguments are the same as `LGTNAP` with some additional arguments
+    The model arguments are the same as `ETSMAP` with some additional arguments
 
     See Also
     --------
-    orbit.models.lgt.LGTNAP
+    orbit.models.lgt.ETSMAP
 
     """
     _supported_estimator_types = [StanEstimatorMAP]

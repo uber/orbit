@@ -12,7 +12,6 @@ from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
-from custom_inherit import DocInheritMeta
 from ..utils.docstring_style import merge_numpy_docs_dedup
 import custom_inherit as ci
 ci.store["numpy_with_merge_dedup"] = merge_numpy_docs_dedup
@@ -36,6 +35,10 @@ class BaseETS(BaseModel, metaclass=ci.DocInheritMeta(style="numpy_with_merge_ded
     level_sm_input : float
         float value between [0, 1]. A larger value puts more weight on the current level.
         If None, the model will estimate this value.
+
+    Other Parameters
+    ----------------
+    **kwargs: additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
     """
     _data_input_mapper = constants.DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
@@ -490,9 +493,6 @@ class ETSFull(BaseETS):
     prediction_percentiles : list
         List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
         confident intervals, pass an empty list
-    kwargs
-        Additional args to pass to parent classes.
-
     """
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
 
@@ -665,7 +665,7 @@ class ETSAggregated(BaseETS):
 class ETSMAP(BaseETS):
     """Concrete ETS model for MAP (Maximum a Posteriori) prediction
 
-    Similar to `ETSAggregated` but predition is based on Maximum a Posteriori (aka Mode)
+    Similar to `ETSAggregated` but prediction is based on Maximum a Posteriori (aka Mode)
     of the posterior.
 
     This model only supports MAP estimating `estimator_type`s

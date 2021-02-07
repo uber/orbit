@@ -5,8 +5,8 @@ from inspect import cleandoc
 from custom_inherit._doc_parse_tools.numpy_parse_tools import \
         parse_numpy_doc
 
-
 __all__ = ["merge_numpy_docs"]
+
 
 def merge_section(key, prnt_sec, child_sec, merge_within_sections=False):
     """ Synthesize a output numpy docstring section.
