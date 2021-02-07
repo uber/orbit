@@ -8,7 +8,7 @@ from custom_inherit._doc_parse_tools.numpy_parse_tools import \
 __all__ = ["merge_numpy_docs"]
 
 
-def merge_section(key, prnt_sec, child_sec, merge_within_sections=False):
+def merge_section(key, prnt_sec, child_sec, merge_within_sections=True):
     """ Synthesize a output numpy docstring section.
     Parameters
     ----------
@@ -18,6 +18,8 @@ def merge_section(key, prnt_sec, child_sec, merge_within_sections=False):
         The docstring section from the parent's attribute.
     child_sec: Optional[str]
         The docstring section from the child's attribute.
+    merge_within_sections: bool
+        merge parents and child docstring
     Returns
     -------
     Optional[str]
@@ -59,8 +61,10 @@ def merge_section(key, prnt_sec, child_sec, merge_within_sections=False):
             # only add same portion once
             common = common_start(prnt_sec, child_sec)
             n = len(common)
-            if child_sec[n:].startswith('\n'):
-                n = n + 1
+            # remove additional 'new line' when append child
+            n = n + 1 if child_sec[n:].startswith('\n') else n
+            # ensure the common substring to be at least 10 character long
+            n = 0 if  n < 10 else n
             body = '\n'.join((prnt_sec, child_sec[n:]))
     else:
         body = prnt_sec if child_sec is None else child_sec
@@ -68,12 +72,14 @@ def merge_section(key, prnt_sec, child_sec, merge_within_sections=False):
     return header + body
 
 
-def merge_all_sections(prnt_sctns, child_sctns, merge_within_sections=False):
+def merge_all_sections(prnt_sctns, child_sctns, merge_within_sections=True):
     """ Merge the doc-sections of the parent's and child's attribute into a single docstring.
     Parameters
     ----------
     prnt_sctns: OrderedDict[str, Union[None,str]]
     child_sctns: OrderedDict[str, Union[None,str]]
+    merge_within_sections: bool
+        merge parents and child docstring
     Returns
     -------
     str
@@ -112,6 +118,8 @@ def merge_numpy_docs_dedup(prnt_doc=None, child_doc=None, merge_within_sections=
         The docstring from the parent.
     child_doc: Optional[str]
         The docstring from the child.
+    merge_within_sections: bool
+        merge parents and child docstring
     Returns
     -------
     Union[str, None]
