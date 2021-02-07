@@ -66,7 +66,7 @@ class BaseDLT(BaseETS):
 
     See Also
     --------
-    :class: `~orbit.models.lgt.BaseETS`
+    :class: `~orbit.model.ets.BaseETS`
 
     """
     _data_input_mapper = constants.DataInputMapper

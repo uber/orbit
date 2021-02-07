@@ -55,7 +55,7 @@ class BaseLGT(BaseETS):
         If None, the model will estimate this value.
     See Also
     --------
-    :class: `~orbit.models.lgt.BaseETS`
+    :class: `~orbit.models.ets.BaseETS`
     """
     _data_input_mapper = constants.DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)

@@ -81,8 +81,6 @@ class StanEstimatorMCMC(StanEstimator):
         Supplemental stan control parameters to pass to PyStan.sampling()
     stan_mcmc_args : None
         Supplemental stan mcmc args to pass to PyStan.sampling()
-    kwargs
-        Additional `StanEstimator` class args
 
     """
     # is_mcmc boolean indicator -- some models are parameterized slightly different for
@@ -152,8 +150,7 @@ class StanEstimatorVI(StanEstimator):
     ----------
     stan_vi_args : None
         Supplemental stan vi args to pass to PyStan.vb()
-    kwargs
-        Additional `StanEstimator` class args
+
 
     """
     _is_mcmc_estimator = True
@@ -262,8 +259,6 @@ class StanEstimatorMAP(StanEstimator):
     ----------
     stan_map_args : None
         Supplemental stan vi args to pass to PyStan.optimizing()
-    kwargs
-        Additional `StanEstimator` class args
 
     """
 
