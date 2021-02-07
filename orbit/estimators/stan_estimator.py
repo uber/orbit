@@ -77,9 +77,9 @@ class StanEstimatorMCMC(StanEstimator):
 
     Parameters
     ----------
-    stan_mcmc_control : None
+    stan_mcmc_control : dict
         Supplemental stan control parameters to pass to PyStan.sampling()
-    stan_mcmc_args : None
+    stan_mcmc_args : dict
         Supplemental stan mcmc args to pass to PyStan.sampling()
 
     """
@@ -148,7 +148,7 @@ class StanEstimatorVI(StanEstimator):
 
     Parameters
     ----------
-    stan_vi_args : None
+    stan_vi_args : dict
         Supplemental stan vi args to pass to PyStan.vb()
 
 
@@ -257,7 +257,7 @@ class StanEstimatorMAP(StanEstimator):
 
     Parameters
     ----------
-    stan_map_args : None
+    stan_map_args : dict
         Supplemental stan vi args to pass to PyStan.optimizing()
 
     """
