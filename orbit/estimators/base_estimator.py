@@ -1,8 +1,12 @@
 from abc import ABCMeta, abstractmethod
 import numpy as np
+from ..utils.docstring_style import merge_numpy_docs_dedup
+import custom_inherit as ci
+ci.store["numpy_with_merge_dedup"] = merge_numpy_docs_dedup
+ci.add_style("numpy_with_merge_dedup", merge_numpy_docs_dedup)
 
 
-class BaseEstimator(object):
+class BaseEstimator(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_dedup")):
     """Base Estimator class for both Stan and Pyro Estimator
 
     Parameters

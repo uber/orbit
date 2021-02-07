@@ -12,13 +12,9 @@ from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
-from ..utils.docstring_style import merge_numpy_docs_dedup
-import custom_inherit as ci
-ci.store["numpy_with_merge_dedup"] = merge_numpy_docs_dedup
-ci.add_style("numpy_with_merge_dedup", merge_numpy_docs_dedup)
 
 
-class BaseETS(BaseModel, metaclass=ci.DocInheritMeta(style="numpy_with_merge_dedup")):
+class BaseETS(BaseModel):
     """
     Parameters
     ----------

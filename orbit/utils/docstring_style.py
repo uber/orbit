@@ -56,7 +56,10 @@ def merge_section(key, prnt_sec, child_sec, merge_within_sections=False):
             body = child_sec
         else:
             common = common_start(prnt_sec, child_sec) # only add same portion once 
-            body = ''.join((prnt_sec, child_sec[len(common):]))
+            n = len(common)
+            if child_sec[n:].startswith('\n'):
+                n = n + 1
+            body = '\n'.join((prnt_sec, child_sec[n:]))
     else:
         body = prnt_sec if child_sec is None else child_sec
 
