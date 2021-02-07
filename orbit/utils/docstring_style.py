@@ -21,7 +21,8 @@ def merge_section(key, prnt_sec, child_sec, merge_within_sections=False):
     Returns
     -------
     Optional[str]
-        The output docstring section."""
+        The output docstring section.
+    """
 
     doc_sections_that_cant_merge = [
         "Short Summary",
@@ -55,7 +56,8 @@ def merge_section(key, prnt_sec, child_sec, merge_within_sections=False):
         elif prnt_sec is None:
             body = child_sec
         else:
-            common = common_start(prnt_sec, child_sec) # only add same portion once 
+            # only add same portion once
+            common = common_start(prnt_sec, child_sec)
             n = len(common)
             if child_sec[n:].startswith('\n'):
                 n = n + 1
@@ -75,7 +77,8 @@ def merge_all_sections(prnt_sctns, child_sctns, merge_within_sections=False):
     Returns
     -------
     str
-        Output docstring of the merged docstrings."""
+        Output docstring of the merged docstrings.
+    """
     doc = []
 
     prnt_only_raises = prnt_sctns["Raises"] and not (
@@ -113,7 +116,7 @@ def merge_numpy_docs_dedup(prnt_doc=None, child_doc=None, merge_within_sections=
     -------
     Union[str, None]
         The merged docstring.
-        """
+    """
     return merge_all_sections(
         parse_numpy_doc(prnt_doc),
         parse_numpy_doc(child_doc),
