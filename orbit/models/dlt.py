@@ -341,6 +341,7 @@ class BaseDLT(BaseETS):
         # set the rest of attributes related to training df
         self._response = df[self.response_col].values
         self._num_of_observations = len(self._response)
+        # scalar value is suggested by the author of Rlgt
         self._cauchy_sd = max(self._response) / 30.0
 
         # extra settings for regression
