@@ -53,8 +53,6 @@ class BaseLGT(BaseETS):
     slope_sm_input : float
         float value between [0, 1]. A larger value puts more weight on the current slope.
         If None, the model will estimate this value.
-    kwargs
-        To specify `estimator_type` or additional args for the specified `estimator_type`
     See Also
     --------
     :class: `~orbit.models.lgt.BaseETS`
@@ -298,6 +296,7 @@ class BaseLGT(BaseETS):
         # set the rest of attributes related to training df
         self._response = df[self.response_col].values
         self._num_of_observations = len(self._response)
+        # scalar value is suggested by the author of Rlgt
         self._cauchy_sd = max(self._response) / 30.0
 
         # extra settings for regression
@@ -604,8 +603,6 @@ class LGTFull(ETSFull, BaseLGT):
     prediction_percentiles : list
         List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
         confident intervals, pass an empty list
-    kwargs
-        Additional args to pass to parent classes.
 
     """
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]

@@ -1,7 +1,11 @@
 from ..estimators.stan_estimator import StanEstimatorMCMC
+from ..utils.docstring_style import merge_numpy_docs_dedup
+import custom_inherit as ci
+ci.store["numpy_with_merge_dedup"] = merge_numpy_docs_dedup
+ci.add_style("numpy_with_merge_dedup", merge_numpy_docs_dedup)
 
 
-class BaseModel(object):
+class BaseModel(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_dedup")):
     """Base model class
 
     `BaseModel` will instantiate an estimator class of `estimator_type`.
