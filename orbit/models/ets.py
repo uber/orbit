@@ -17,6 +17,8 @@ from ..utils.general import is_ordered_datetime
 
 class BaseETS(BaseModel):
     """
+    Parameters
+    ----------
     response_col : str
         Name of response variable column, default 'y'
     date_col : str
@@ -30,6 +32,10 @@ class BaseETS(BaseModel):
     level_sm_input : float
         float value between [0.0001, 1]. A larger value puts more weight on the current level.
         If None, the model will estimate this value.
+
+    Other Parameters
+    ----------------
+    **kwargs: additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
     """
     _data_input_mapper = constants.DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
@@ -476,8 +482,6 @@ class ETSFull(BaseETS):
     prediction_percentiles : list
         List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
         confident intervals, pass an empty list
-    kwargs
-        Additional args to pass to parent classes.
 
     """
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
@@ -651,7 +655,7 @@ class ETSAggregated(BaseETS):
 class ETSMAP(BaseETS):
     """Concrete ETS model for MAP (Maximum a Posteriori) prediction
 
-    Similar to `ETSAggregated` but predition is based on Maximum a Posteriori (aka Mode)
+    Similar to `ETSAggregated` but prediction is based on Maximum a Posteriori (aka Mode)
     of the posterior.
 
     This model only supports MAP estimating `estimator_type`s
