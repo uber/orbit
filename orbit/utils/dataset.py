@@ -33,10 +33,11 @@ def load_iclaims(end_date='2018-06-24'):
     # convert to float
     for col in regressors:
         df[col] = df[col].astype(float)
-    df[regressors] = df[regressors] / df[regressors].apply(np.mean)
 
     # log transfer
     df[['claims'] + regressors] = df[['claims'] + regressors].apply(np.log)
+    # de-mean
+    df[regressors] = df[regressors] - df[regressors].apply(np.mean)
 
     return df
 
