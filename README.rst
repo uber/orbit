@@ -2,7 +2,7 @@
 
 -------------------------------------------
 
-|pypi| |travis| |downloads|
+|release|  |pypi| |travis| |downloads|
 
 Disclaimer
 ==========
@@ -143,6 +143,9 @@ Related projects
 - `Stan <https://github.com/stan-dev/stan>`__
 - `Rlgt <https://cran.r-project.org/web/packages/Rlgt/index.html>`__
 
+
+.. |release| image:: https://img.shields.io/github/v/release/uber/orbit
+   :alt: GitHub release (latest SemVer)
 
 .. |pypi| image:: https://badge.fury.io/py/orbit-ml.svg
     :target: https://badge.fury.io/py/orbit-ml
