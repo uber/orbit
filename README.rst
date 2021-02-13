@@ -2,7 +2,7 @@
 
 -------------------------------------------
 
-|release|  |pypi| |travis| |downloads|
+|release| |pypi| |travis| |python| |downloads|
 
 Disclaimer
 ==========
@@ -154,6 +154,9 @@ Related projects
 .. |travis| image:: https://travis-ci.com/uber/orbit.svg?branch=master
  :target: https://travis-ci.com/uber/orbit
  :alt: travis
+
+.. |python| image:: https://img.shields.io/pypi/pyversions/orbit-ml   
+:alt: PyPI - Python Version
 
 .. |downloads| image:: https://static.pepy.tech/personalized-badge/orbit-ml?period=total&units=international_system&left_color=blue&right_color=grey&left_text=Downloads
  :target: https://pepy.tech/project/orbit-ml
