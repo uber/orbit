@@ -43,8 +43,11 @@ class Model:
 
         # prior for residuals
         obs_sigma = pyro.sample("obs_sigma", dist.HalfCauchy(self.cauchy_sd))
+
+        # regression parameters
         if self.num_of_pr == 0:
             pr = torch.zeros(num_of_obs)
+            pr_beta = pyro.deterministic("pr_beta", torch.zeros(0))
         else:
             with pyro.plate("pr", self.num_of_pr):
                 # fixed scale ridge
@@ -65,9 +68,32 @@ class Model:
                                               dist.Laplace(self.pr_beta_prior, self.lasso_scale)))
             pr = pr_beta @ self.pr_mat.transpose(-1, -2)
 
-        # regression parameters
+        if self.num_of_nr == 0:
+            nr = torch.zeros(num_of_obs)
+            nr_beta = pyro.deterministic("nr_beta", torch.zeros(0))
+        else:
+            with pyro.plate("nr", self.num_of_nr):
+                # fixed scale ridge
+                if self.reg_penalty_type == 0:
+                    nr_sigma = self.nr_sigma_prior
+                # auto scale ridge
+                elif self.reg_penalty_type == 2:
+                    # weak prior for sigma
+                    nr_sigma = pyro.sample("nr_sigma", dist.HalfCauchy(self.auto_ridge_scale))
+                # case when it is not lasso
+                if self.reg_penalty_type != 1:
+                    # weak prior for betas
+                    nr_beta = pyro.sample("nr_beta", dist.FoldedDistribution(
+                        dist.Normal(self.nr_beta_prior, nr_sigma)))
+                else:
+                    nr_beta = pyro.sample("nr_beta",
+                                          dist.FoldedDistribution(
+                                              dist.Laplace(self.nr_beta_prior, self.lasso_scale)))
+            nr = nr_beta @ self.nr_mat.transpose(-1, -2)
+
         if self.num_of_rr == 0:
             rr = torch.zeros(num_of_obs)
+            rr_beta = pyro.deterministic("rr_beta", torch.zeros(0))
         else:
             with pyro.plate("rr", self.num_of_rr):
                 # fixed scale ridge
@@ -86,7 +112,7 @@ class Model:
             rr = rr_beta @ self.rr_mat.transpose(-1, -2)
 
         # a hack to make sure we don't use a dimension "1" due to rr_beta and pr_beta sampling
-        r = pr + rr
+        r = pr + nr + rr
         if r.dim() > 1:
             r = r.unsqueeze(-2)
 
@@ -163,6 +189,9 @@ class Model:
         with pyro.plate("response_plate", num_of_obs - 1):
             pyro.sample("response", dist.StudentT(nu, yhat[..., 1:], obs_sigma),
                         obs=response[1:])
+
+        # we care beta not the pr_beta, nr_beta, ...
+        extra_out['beta'] = torch.cat([pr_beta, nr_beta, rr_beta], dim=-1)
 
         extra_out.update({'b': b, 'l': l, 's': s, 'lgt_sum': lgt_sum})
         return extra_out

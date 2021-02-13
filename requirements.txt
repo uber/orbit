@@ -7,9 +7,9 @@ pystan==2.19.1.1
 matplotlib==3.2.1
 scipy>=1.4.1
 scikit-learn
-enum34==1.1.6
 torch
 tqdm
 seaborn>=0.10.0
 pyro-ppl>=1.4.0
 statsmodels>=0.11.1
+custom_inherit==2.3.1

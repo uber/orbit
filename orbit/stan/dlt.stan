@@ -1,15 +1,11 @@
 // Holt-Winters’ seasonal method
-// Additive Trend, Additive Seasonal and Additive Error model
-// as known as ETS(A,A,A)
+// Additive Trend, Additive Seasonal and Additive Error model with damped trend
+// as known as ETS(A,A_d,A)
 // Hyndman Exponential Smoothing Book page. 46
 // Using equation 3.16a-3.16e
 // Additional Regression Components are added as r[t]
 // normalized seasonal component using chapter 8.1 in initial components
-// can consider dynamic normalization later
-// lgt version provided an additional global power trend suggested by Slawek
-
-// damped trend method suppress the global trend
-// and follows Section 7.2 from Hyndman's blog
+// dynamic normalization seems not help much in terms of performance
 
 // rr stands for regular regressor(s) where the coef follows normal distribution
 // pr stands for positive regressor(s) where the coef follows truncated normal distribution
@@ -27,15 +23,18 @@ data {
   int<lower=1> NUM_OF_OBS; // number of observations
   vector[NUM_OF_OBS] RESPONSE;
   // Regression Data
-  int<lower=0> NUM_OF_PR; // number of positive regressors
-  matrix[NUM_OF_OBS, NUM_OF_PR] PR_MAT; // positive coef regressors, less volatile range
-  vector<lower=0>[NUM_OF_PR] PR_BETA_PRIOR;
-  vector<lower=0>[NUM_OF_PR] PR_SIGMA_PRIOR;
   int<lower=0> NUM_OF_RR; // number of regular regressors
   matrix[NUM_OF_OBS, NUM_OF_RR] RR_MAT; // regular coef regressors, more volatile range
   vector[NUM_OF_RR] RR_BETA_PRIOR;
   vector<lower=0>[NUM_OF_RR] RR_SIGMA_PRIOR;
-
+  int<lower=0> NUM_OF_PR; // number of positive regressors
+  matrix[NUM_OF_OBS, NUM_OF_PR] PR_MAT; // positive coef regressors, less volatile range
+  vector<lower=0>[NUM_OF_PR] PR_BETA_PRIOR;
+  vector<lower=0>[NUM_OF_PR] PR_SIGMA_PRIOR;
+  int<lower=0> NUM_OF_NR; // number of negative regressors
+  matrix[NUM_OF_OBS, NUM_OF_NR] NR_MAT; // negative coef regressors, less volatile range
+  vector<upper=0>[NUM_OF_NR] NR_BETA_PRIOR;
+  vector<lower=0>[NUM_OF_NR] NR_SIGMA_PRIOR;
   // Regression Hyper Params
   // 0 As Fixed Ridge Penalty, 1 As Lasso, 2 As Auto-Ridge
   int <lower=0,upper=2> REG_PENALTY_TYPE;
@@ -122,7 +121,9 @@ parameters {
   // regression parameters
   real<lower=0> pr_sigma[NUM_OF_PR * (USE_VARY_SIGMA)];
   real<lower=0> rr_sigma[NUM_OF_RR * (USE_VARY_SIGMA)];
+  real<lower=0> nr_sigma[NUM_OF_NR * (USE_VARY_SIGMA)];
   vector<lower=0>[NUM_OF_PR] pr_beta;
+  vector<upper=0>[NUM_OF_NR] nr_beta;
   vector[NUM_OF_RR] rr_beta;
 
   // smoothing parameters
@@ -156,6 +157,7 @@ transformed parameters {
   vector[NUM_OF_OBS] l; // local level
   vector[NUM_OF_OBS] b; // local slope
   vector[NUM_OF_OBS] pr; //positive regression component
+  vector[NUM_OF_OBS] nr; //positive regression component
   vector[NUM_OF_OBS] rr; //regular regression component
   vector[NUM_OF_OBS] r; //regression component
   vector[NUM_OF_OBS] gt_sum; // sum of global trend
@@ -194,11 +196,15 @@ transformed parameters {
     pr = PR_MAT * pr_beta;
   else
     pr = rep_vector(0, NUM_OF_OBS);
+  if (NUM_OF_NR > 0)
+    nr = NR_MAT * nr_beta;
+  else
+    nr = rep_vector(0, NUM_OF_OBS);
   if (NUM_OF_RR>0)
     rr = RR_MAT * rr_beta;
   else
     rr = rep_vector(0, NUM_OF_OBS);
-  r = pr + rr;
+  r = pr + nr + rr;
 
   // states initial condition
   if (IS_SEASONAL) {
@@ -298,19 +304,33 @@ model {
   // 2. https://betanalpha.github.io/assets/case_studies/bayes_sparse_regression.html#33_wide_weakly_informative_prior
   if (NUM_OF_PR > 0) {
     if (REG_PENALTY_TYPE== 0) {
-      // fixed penalty ridge
       pr_beta ~ normal(PR_BETA_PRIOR, PR_SIGMA_PRIOR);
     } else if (REG_PENALTY_TYPE == 1) {
       // lasso penalty
       pr_beta ~ double_exponential(PR_BETA_PRIOR, LASSO_SCALE);
     } else if (REG_PENALTY_TYPE == 2) {
       // data-driven penalty for ridge
-      //weak prior for sigma
       for(i in 1:NUM_OF_PR) {
+        //weak prior for sigma
         pr_sigma[i] ~ cauchy(0, AUTO_RIDGE_SCALE) T[0,];
       }
       //weak prior for betas
       pr_beta ~ normal(PR_BETA_PRIOR, pr_sigma);
+    }
+  }
+  if (NUM_OF_NR > 0) {
+    if (REG_PENALTY_TYPE == 0) {
+      nr_beta ~ normal(NR_BETA_PRIOR, NR_SIGMA_PRIOR);
+    } else if (REG_PENALTY_TYPE == 1) {
+      // lasso penalty
+      nr_beta ~ double_exponential(NR_BETA_PRIOR, LASSO_SCALE);
+    } else if (REG_PENALTY_TYPE == 2) {
+      // data-driven penalty for ridge
+      for(i in 1:NUM_OF_NR) {
+        nr_sigma[i] ~ cauchy(0, AUTO_RIDGE_SCALE) T[0,];
+      }
+      //weak prior for betas
+      nr_beta ~ normal(NR_BETA_PRIOR, nr_sigma);
     }
   }
   if (NUM_OF_RR > 0) {
@@ -322,12 +342,34 @@ model {
       rr_beta ~ double_exponential(RR_BETA_PRIOR, LASSO_SCALE);
     } else if (REG_PENALTY_TYPE == 2) {
       // data-driven penalty for ridge
-      //weak prior for sigma
       for(i in 1:NUM_OF_RR) {
         rr_sigma[i] ~ cauchy(0, AUTO_RIDGE_SCALE) T[0,];
       }
       //weak prior for betas
       rr_beta ~ normal(RR_BETA_PRIOR, rr_sigma);
+    }
+  }
+}
+generated quantities {
+  vector[NUM_OF_PR + NUM_OF_NR + NUM_OF_RR] beta;
+  int idx;
+  idx = 1;
+  // compute regression
+  if (NUM_OF_PR + NUM_OF_NR + NUM_OF_RR > 0) {
+    if (NUM_OF_PR > 0) {
+      beta[idx:idx+NUM_OF_PR-1] = pr_beta;
+      idx += NUM_OF_PR;
+    }
+    if (NUM_OF_NR > 0) {
+      beta[idx:idx+NUM_OF_NR-1] = nr_beta;
+      idx += NUM_OF_NR;
+    }
+    if (NUM_OF_RR > 0) {
+      beta[idx:idx+NUM_OF_RR-1] = rr_beta;
+    }
+    // truncate small numeric values
+    for(iidx in 1:NUM_OF_PR + NUM_OF_NR + NUM_OF_RR) {
+      if (fabs(beta[iidx]) <= 1e-5) beta[iidx] = 0;
     }
   }
 }

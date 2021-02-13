@@ -30,6 +30,10 @@ class DataInputMapper(Enum):
     _POSITIVE_REGRESSOR_MATRIX = 'PR_MAT'
     _POSITIVE_REGRESSOR_BETA_PRIOR = 'PR_BETA_PRIOR'
     _POSITIVE_REGRESSOR_SIGMA_PRIOR = 'PR_SIGMA_PRIOR'
+    _NUM_OF_NEGATIVE_REGRESSORS = 'NUM_OF_NR'
+    _NEGATIVE_REGRESSOR_MATRIX = 'NR_MAT'
+    _NEGATIVE_REGRESSOR_BETA_PRIOR = 'NR_BETA_PRIOR'
+    _NEGATIVE_REGRESSOR_SIGMA_PRIOR = 'NR_SIGMA_PRIOR'
     _NUM_OF_REGULAR_REGRESSORS = 'NUM_OF_RR'
     _REGULAR_REGRESSOR_MATRIX = 'RR_MAT'
     _REGULAR_REGRESSOR_BETA_PRIOR = 'RR_BETA_PRIOR'
@@ -49,7 +53,7 @@ class GlobalTrendOption(Enum):
 
 class BaseSamplingParameters(Enum):
     """
-    The stan output sampling parameters related with DLT base model.
+    base parameters in posteriors sampling
     """
     # ---------- Common Local Trend ---------- #
     LOCAL_TREND_LEVELS = 'l'
@@ -71,7 +75,7 @@ class GlobalTrendSamplingParameters(Enum):
 
 class SeasonalitySamplingParameters(Enum):
     """
-    The stan output sampling parameters related with seasonality component.
+    seasonality component related parameters in posteriors sampling
     """
     SEASONALITY_LEVELS = 's'
     SEASONALITY_SMOOTHING_FACTOR = 'sea_sm'
@@ -79,10 +83,19 @@ class SeasonalitySamplingParameters(Enum):
 
 class RegressionSamplingParameters(Enum):
     """
-    The stan output sampling parameters related with regression component.
+    regression component related parameters in posteriors sampling
     """
-    POSITIVE_REGRESSOR_BETA = 'pr_beta'
-    REGULAR_REGRESSOR_BETA = 'rr_beta'
+    REGRESSION_COEFFICIENTS = 'beta'
+
+
+class LatentSamplingParameters(Enum):
+    """
+    latent variables to be sampled
+    """
+    REGRESSION_POSITIVE_COEFFICIENTS = 'pr_beta'
+    REGRESSION_NEGATIVE_COEFFICIENTS = 'nr_beta'
+    REGRESSION_REGULAR_COEFFICIENTS = 'rr_beta'
+    INITIAL_SEASONALITY = 'init_sea'
 
 
 class RegressionPenalty(Enum):

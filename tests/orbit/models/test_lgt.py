@@ -1,3 +1,4 @@
+import copy
 import pytest
 import numpy as np
 
@@ -161,7 +162,7 @@ def test_lgt_non_seasonal_fit(synthetic_data, estimator_type):
     lgt.fit(train_df)
     predict_df = lgt.predict(test_df)
 
-    expected_columns =    ['week', 'prediction_5', 'prediction', 'prediction_95']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 11
 
@@ -197,10 +198,11 @@ def test_lgt_non_seasonal_fit_pyro(synthetic_data):
     "regressor_signs",
     [
         ["+", "+", "+", "+", "+", "+"],
+        ["-", "-", "-", "-", "-", "-"],
         ["=", "=", "=", "=", "=", "="],
-        ["+", "=", "+", "=", "+", "+"]
+        ["+", "=", "+", "=", "-", "-"]
     ],
-    ids=['positive_only', 'regular_only', 'mixed_signs']
+    ids=['positive_only', 'negative_only', 'regular_only', 'mixed_signs']
 )
 def test_lgt_full_with_regression(synthetic_data, estimator_type, regressor_signs):
     train_df, test_df, coef = synthetic_data
@@ -251,10 +253,11 @@ def test_lgt_full_with_regression(synthetic_data, estimator_type, regressor_sign
     "regressor_signs",
     [
         ["+", "+", "+", "+", "+", "+"],
+        ["-", "-", "-", "-", "-", "-"],
         ["=", "=", "=", "=", "=", "="],
-        ["+", "=", "+", "=", "+", "+"]
+        ["+", "=", "+", "=", "-", "-"],
     ],
-    ids=['positive_only', 'regular_only', 'mixed_signs']
+    ids=['positive_only', 'negative_only', 'regular_only', 'mixed_signs']
 )
 def test_lgt_aggregated_with_regression(synthetic_data, estimator_type, regressor_signs):
     train_df, test_df, coef = synthetic_data
@@ -297,51 +300,60 @@ def test_lgt_aggregated_with_regression(synthetic_data, estimator_type, regresso
     assert regression_out.shape == expected_regression_shape
     assert num_regressors == len(train_df.columns.tolist()[2:])
 
+    predict_df = lgt.predict(test_df, decompose=True)
+    assert any(predict_df['regression'].values)
 
-def test_lgt_predict_all_positive_reg(iclaims_training_data):
+
+@pytest.mark.parametrize(
+    "regressor_signs",
+    [
+        ['=', '=', '+'],
+    ],
+    ids=['positive_mixed']
+)
+def test_lgt_mixed_signs_and_order(iclaims_training_data, regressor_signs):
     df = iclaims_training_data
+    df['claims'] = np.log(df['claims'])
+    raw_regressor_col = ['trend.unemploy', 'trend.filling', 'trend.job']
+    new_regressor_col = [raw_regressor_col[idx] for idx in [2, 1, 0]]
+    new_regressor_signs = [regressor_signs[idx] for idx in [2, 1, 0]]
+    # mixiing ordering of cols in df of prediction
+    new_df = df[['claims', 'week'] + new_regressor_col]
 
     lgt = LGTMAP(
         response_col='claims',
         date_col='week',
-        regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
-        regressor_sign=['+', '+', '+'],
-        seasonality=52,
-        seed=8888,
-    )
-
-    lgt.fit(df)
-    predicted_df = lgt.predict(df, decompose=True)
-
-    assert any(predicted_df['regression'].values)
-
-
-def test_lgt_predict_mixed_regular_positive(iclaims_training_data):
-    df = iclaims_training_data
-
-    lgt = LGTMAP(
-        response_col='claims',
-        date_col='week',
-        regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
-        regressor_sign=['=', '+', '='],
+        regressor_col=raw_regressor_col,
+        regressor_sign=regressor_signs,
         seasonality=52,
         seed=8888,
     )
     lgt.fit(df)
-    predicted_df = lgt.predict(df)
+    predicted_df_v1 = lgt.predict(df)
+    predicted_df_v2 = lgt.predict(new_df)
 
+    # mixing ordering of signs
     lgt_new = LGTMAP(
         response_col='claims',
         date_col='week',
-        regressor_col=['trend.unemploy', 'trend.job', 'trend.filling'],
-        regressor_sign=['=', '=', '+'],
+        regressor_col=new_regressor_col,
+        regressor_sign=new_regressor_signs,
         seasonality=52,
         seed=8888,
     )
     lgt_new.fit(df)
-    predicted_df_new = lgt_new.predict(df)
+    predicted_df_v3 = lgt_new.predict(df)
+    predicted_df_v4 = lgt_new.predict(new_df)
 
-    assert np.allclose(predicted_df['prediction'].values, predicted_df_new['prediction'].values)
+    pred_v1 = predicted_df_v1['prediction'].values
+    pred_v2 = predicted_df_v2['prediction'].values
+    pred_v3 = predicted_df_v3['prediction'].values
+    pred_v4 = predicted_df_v4['prediction'].values
+
+    # they should be all identical; ordering of signs or columns in prediction show not matter
+    assert np.allclose(pred_v1, pred_v2, atol=1e-3)
+    assert np.allclose(pred_v1, pred_v3, atol=1e-3)
+    assert np.allclose(pred_v1, pred_v4, atol=1e-3)
 
 
 @pytest.mark.parametrize("prediction_percentiles", [None, [5, 10, 95]])
@@ -357,7 +369,7 @@ def test_prediction_percentiles(iclaims_training_data, prediction_percentiles):
     )
 
     if not prediction_percentiles:
-        p_labels  = ['_5', '', '_95']
+        p_labels = ['_5', '', '_95']
     else:
         p_labels = ['_5', '_10', '', '_95']
 
@@ -382,4 +394,105 @@ def test_prediction_percentiles(iclaims_training_data, prediction_percentiles):
     assert predicted_df.shape[0] == df.shape[0]
 
 
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
+@pytest.mark.parametrize(
+    "regressor_signs",
+    [
+        ["+", "+", "+", "+", "+", "+"],
+        ["=", "=", "=", "=", "=", "="],
+        ["+", "=", "+", "=", "+", "+"]
+    ],
+    ids=['positive_only', 'regular_only', 'mixed_signs']
+)
+@pytest.mark.parametrize("seasonality", [1, 52])
+def test_lgt_full_reproducibility(synthetic_data, estimator_type, regressor_signs, seasonality):
+    train_df, test_df, coef = synthetic_data
 
+    lgt_first = LGTFull(
+        response_col='response',
+        date_col='week',
+        regressor_col=train_df.columns.tolist()[2:],
+        regressor_sign=regressor_signs,
+        prediction_percentiles=[5, 95],
+        seasonality=seasonality,
+        num_warmup=50,
+        verbose=False,
+        estimator_type=estimator_type
+    )
+
+    # first fit and predict
+    lgt_first.fit(train_df)
+    posteriors_first = copy.copy(lgt_first._posterior_samples)
+    predict_df_first = lgt_first.predict(test_df)
+    regression_out_first = lgt_first.get_regression_coefs()
+
+    # second fit and predict
+    # note a new instance must be created to reset the seed
+    # note both fit and predict contain random generation processes
+    lgt_second = LGTFull(
+        response_col='response',
+        date_col='week',
+        regressor_col=train_df.columns.tolist()[2:],
+        regressor_sign=regressor_signs,
+        prediction_percentiles=[5, 95],
+        seasonality=seasonality,
+        num_warmup=50,
+        verbose=False,
+        estimator_type=estimator_type
+    )
+
+    lgt_second.fit(train_df)
+    posteriors_second = copy.copy(lgt_second._posterior_samples)
+    predict_df_second = lgt_second.predict(test_df)
+    regression_out_second = lgt_second.get_regression_coefs()
+
+    posterior_keys = posteriors_first.keys()
+
+    # assert same posterior keys
+    assert set(posteriors_first.keys()) == set(posteriors_second.keys())
+
+    # assert posterior draws are reproducible
+    for k, v in posteriors_first.items():
+        assert np.allclose(posteriors_first[k], posteriors_second[k])
+
+    # assert identical regression columns
+    # this is also checked in posterior samples, but an extra layer just in case
+    # since this one very commonly retrieved by end users
+    assert all(regression_out_first == regression_out_second)
+
+    # assert prediction is reproducible
+    assert all(predict_df_first == predict_df_second)
+
+
+@pytest.mark.parametrize("level_sm_input", [0.0001, 0.5, 1.0])
+@pytest.mark.parametrize("seasonality_sm_input", [0.0, 0.5, 1.0])
+@pytest.mark.parametrize("slope_sm_input", [0.0, 0.5, 1.0])
+def test_lgt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input, slope_sm_input):
+    train_df, test_df, coef = synthetic_data
+
+    lgt = LGTMAP(
+        response_col='response',
+        date_col='week',
+        regressor_col=train_df.columns.tolist()[2:],
+        level_sm_input=level_sm_input,
+        seasonality_sm_input=seasonality_sm_input,
+        slope_sm_input=slope_sm_input,
+        seasonality=52,
+        num_warmup=50,
+        verbose=False,
+    )
+
+    lgt.fit(train_df)
+    predict_df = lgt.predict(test_df)
+
+    regression_out = lgt.get_regression_coefs()
+    num_regressors = regression_out.shape[0]
+
+    expected_columns = ['week', 'prediction']
+    expected_shape = (51, len(expected_columns))
+    expected_regression_shape = (6, 3)
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+    assert regression_out.shape == expected_regression_shape
+    assert num_regressors == len(train_df.columns.tolist()[2:])

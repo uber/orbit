@@ -77,12 +77,10 @@ class StanEstimatorMCMC(StanEstimator):
 
     Parameters
     ----------
-    stan_mcmc_control : None
+    stan_mcmc_control : dict
         Supplemental stan control parameters to pass to PyStan.sampling()
-    stan_mcmc_args : None
+    stan_mcmc_args : dict
         Supplemental stan mcmc args to pass to PyStan.sampling()
-    kwargs
-        Additional `StanEstimator` class args
 
     """
     # is_mcmc boolean indicator -- some models are parameterized slightly different for
@@ -150,10 +148,9 @@ class StanEstimatorVI(StanEstimator):
 
     Parameters
     ----------
-    stan_vi_args : None
+    stan_vi_args : dict
         Supplemental stan vi args to pass to PyStan.vb()
-    kwargs
-        Additional `StanEstimator` class args
+
 
     """
     _is_mcmc_estimator = True
@@ -260,10 +257,8 @@ class StanEstimatorMAP(StanEstimator):
 
     Parameters
     ----------
-    stan_map_args : None
+    stan_map_args : dict
         Supplemental stan vi args to pass to PyStan.optimizing()
-    kwargs
-        Additional `StanEstimator` class args
 
     """
 
@@ -284,7 +279,7 @@ class StanEstimatorMAP(StanEstimator):
     def fit(self, model_name, model_param_names, data_input, init_values=None):
         compiled_stan_file = get_compiled_stan_model(model_name)
 
-        #   passing callable from the model as seen in `initfun1()`
+        # passing callable from the model as seen in `initfun1()`
         init_values = init_values or self.stan_init
 
         # in case optimizing fails with given algorithm fallback to `Newton`

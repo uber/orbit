@@ -23,21 +23,22 @@ data {
   // number of observations
   int<lower=1> NUM_OF_OBS;
   vector<lower=0>[NUM_OF_OBS] RESPONSE;
-  // 4 for quarterly, 12 for monthly, 52 for weekly
-  int SEASONALITY;
+
   // Regression Data
-  int<lower=0> NUM_OF_PR; // number of positive regressors
-  matrix[NUM_OF_OBS, NUM_OF_PR] PR_MAT; // positive coef regressors, less volatile range
   int<lower=0> NUM_OF_RR; // number of regular regressors
   matrix[NUM_OF_OBS, NUM_OF_RR] RR_MAT; // regular coef regressors, more volatile range
-
-  // Priors, Hyper-Priors and Other Configuration
-  // Regression
-  vector<lower=0>[NUM_OF_PR] PR_BETA_PRIOR;
-  vector<lower=0>[NUM_OF_PR] PR_SIGMA_PRIOR;
   vector[NUM_OF_RR] RR_BETA_PRIOR;
   vector<lower=0>[NUM_OF_RR] RR_SIGMA_PRIOR;
-  // Regression Penalty
+  int<lower=0> NUM_OF_PR; // number of positive regressors
+  matrix[NUM_OF_OBS, NUM_OF_PR] PR_MAT; // positive coef regressors, less volatile range
+  vector<lower=0>[NUM_OF_PR] PR_BETA_PRIOR;
+  vector<lower=0>[NUM_OF_PR] PR_SIGMA_PRIOR;
+  int<lower=0> NUM_OF_NR; // number of negative regressors
+  matrix[NUM_OF_OBS, NUM_OF_NR] NR_MAT; // negative coef regressors, less volatile range
+  vector<lower=0>[NUM_OF_NR] NR_BETA_PRIOR;
+  vector<lower=0>[NUM_OF_NR] NR_SIGMA_PRIOR;
+
+  // Regression Hyper Params
   // 0 As Fixed Ridge Penalty, 1 As Lasso, 2 As Auto-Ridge
   int <lower=0,upper=2> REG_PENALTY_TYPE;
   real<lower=0> AUTO_RIDGE_SCALE;
@@ -54,6 +55,9 @@ data {
   // - 0.1 is made for point optimization to dodge boundary case
   real<lower=0> CAUCHY_SD; // derived by MAX(RESPONSE)/constant
   real<lower=1> MIN_NU; real<lower=1> MAX_NU;
+
+  // Seasonality Hyper-Params
+  int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
 }
 transformed data {
   int<lower=0,upper=1>  IS_SEASONAL;
@@ -71,7 +75,7 @@ transformed data {
   SLP_SM_SIZE = 0;
   SEA_SM_SIZE = 0;
   if (SEASONALITY > 1) IS_SEASONAL = 1;
-  # Only auto-ridge is using pr_sigma and rr_sigma
+  // Only auto-ridge is using pr_sigma and rr_sigma
   if (REG_PENALTY_TYPE == 2) USE_VARY_SIGMA = 1;
 
   if (LEV_SM_INPUT < 0) LEV_SM_SIZE = 1;
@@ -80,11 +84,12 @@ transformed data {
 }
 parameters {
   // regression parameters
-  vector<lower=0>[NUM_OF_PR] pr_beta;
-  vector[NUM_OF_RR] rr_beta;
-
   real<lower=0> pr_sigma[NUM_OF_PR * (USE_VARY_SIGMA)];
   real<lower=0> rr_sigma[NUM_OF_RR * (USE_VARY_SIGMA)];
+  real<lower=0> nr_sigma[NUM_OF_NR * (USE_VARY_SIGMA)];
+  vector<lower=0>[NUM_OF_PR] pr_beta;
+  vector<upper=0>[NUM_OF_NR] nr_beta;
+  vector[NUM_OF_RR] rr_beta;
 
   // smoothing parameters
   //level smoothing parameter
@@ -231,19 +236,33 @@ model {
   // 2. https://betanalpha.github.io/assets/case_studies/bayes_sparse_regression.html#33_wide_weakly_informative_prior
   if (NUM_OF_PR > 0) {
     if (REG_PENALTY_TYPE== 0) {
-      // fixed penalty ridge
       pr_beta ~ normal(PR_BETA_PRIOR, PR_SIGMA_PRIOR);
     } else if (REG_PENALTY_TYPE == 1) {
       // lasso penalty
       pr_beta ~ double_exponential(PR_BETA_PRIOR, LASSO_SCALE);
     } else if (REG_PENALTY_TYPE == 2) {
       // data-driven penalty for ridge
-      //weak prior for sigma
       for(i in 1:NUM_OF_PR) {
+        //weak prior for sigma
         pr_sigma[i] ~ cauchy(0, AUTO_RIDGE_SCALE) T[0,];
       }
       //weak prior for betas
       pr_beta ~ normal(PR_BETA_PRIOR, pr_sigma);
+    }
+  }
+  if (NUM_OF_NR > 0) {
+    if (REG_PENALTY_TYPE == 0) {
+      nr_beta ~ normal(NR_BETA_PRIOR, NR_SIGMA_PRIOR);
+    } else if (REG_PENALTY_TYPE == 1) {
+      // lasso penalty
+      nr_beta ~ double_exponential(NR_BETA_PRIOR, LASSO_SCALE);
+    } else if (REG_PENALTY_TYPE == 2) {
+      // data-driven penalty for ridge
+      for(i in 1:NUM_OF_NR) {
+        nr_sigma[i] ~ cauchy(0, AUTO_RIDGE_SCALE) T[0,];
+      }
+      //weak prior for betas
+      nr_beta ~ normal(NR_BETA_PRIOR, nr_sigma);
     }
   }
   if (NUM_OF_RR > 0) {
@@ -255,12 +274,34 @@ model {
       rr_beta ~ double_exponential(RR_BETA_PRIOR, LASSO_SCALE);
     } else if (REG_PENALTY_TYPE == 2) {
       // data-driven penalty for ridge
-      //weak prior for sigma
       for(i in 1:NUM_OF_RR) {
         rr_sigma[i] ~ cauchy(0, AUTO_RIDGE_SCALE) T[0,];
       }
       //weak prior for betas
       rr_beta ~ normal(RR_BETA_PRIOR, rr_sigma);
+    }
+  }
+}
+generated quantities {
+  vector[NUM_OF_PR + NUM_OF_NR + NUM_OF_RR] beta;
+  int idx;
+  idx = 1;
+  // compute regression
+  if (NUM_OF_PR + NUM_OF_NR + NUM_OF_RR > 0) {
+    if (NUM_OF_PR > 0) {
+      beta[idx:idx+NUM_OF_PR-1] = pr_beta;
+      idx += NUM_OF_PR;
+    }
+    if (NUM_OF_NR > 0) {
+      beta[idx:idx+NUM_OF_NR-1] = nr_beta;
+      idx += NUM_OF_NR;
+    }
+    if (NUM_OF_RR > 0) {
+      beta[idx:idx+NUM_OF_RR-1] = rr_beta;
+    }
+    // truncate small numeric values
+    for(iidx in 1:NUM_OF_PR + NUM_OF_NR + NUM_OF_RR) {
+      if (fabs(beta[iidx]) <= 1e-5) beta[iidx] = 0;
     }
   }
 }

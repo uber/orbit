@@ -1,20 +1,43 @@
 import pandas as pd
+import numpy as np
 
 
-def load_iclaims():
+def load_iclaims(end_date='2018-06-24'):
     """Load iclaims dataset
 
     Returns
     -------
-        pandas DataFrame
+        pd.DataFrame
 
     Notes
     -----
+    iclaims is a dataset containing the weekly initial claims for US unemployment benefits against a few related google
+    trend queries (unemploy, filling and job)from Jan 2010 - June 2018. This aims to mimick the dataset from the paper
+    Predicting the Present with Bayesian Structural Time Series by SCOTT and VARIAN (2014).
+    Number of claims are obtained from [Federal Reserve Bank of St. Louis] while google queries are obtained through
+    Google Trends API.
+
+    Note that dataset is transformed by natural log before fitting in order to be fitted as a multiplicative model.
+
     https://fred.stlouisfed.org/series/ICNSA
     https://trends.google.com/trends/?geo=US
+    https://finance.yahoo.com/
     """
     url = 'https://raw.githubusercontent.com/uber/orbit/master/examples/data/iclaims_example.csv'
     df = pd.read_csv(url, parse_dates=['week'])
+    df = df[df['week'] <= end_date]
+
+    # standardize the regressors by mean; equivalent to subtracting mean after np.log
+    regressors = ['trend.unemploy', 'trend.filling', 'trend.job', 'sp500', 'vix']
+
+    # convert to float
+    for col in regressors:
+        df[col] = df[col].astype(float)
+
+    # log transfer
+    df[['claims'] + regressors] = df[['claims'] + regressors].apply(np.log)
+    # de-mean
+    df[regressors] = df[regressors] - df[regressors].apply(np.mean)
 
     return df
 
@@ -109,5 +132,3 @@ def load_air_passengers():
     df = pd.read_csv(url, parse_dates=['ds'])
 
     return df
-
-
