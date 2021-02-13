@@ -1,4 +1,4 @@
-.. image:: docs/img/orbit-banner.png
+.. image:: https://raw.githubusercontent.com/uber/orbit/dev/docs/img/orbit-banner.png
 
 -------------------------------------------
 
@@ -104,7 +104,7 @@ Damped-Local-Trend (DLT) Model with FULL Bayesian Prediction
         test_actual_df=test_df
     )
 
-.. image:: docs/img/dlt-mcmc-pred.png
+.. image:: https://raw.githubusercontent.com/uber/orbit/dev/docs/img/dlt-mcmc-pred.png
 
 References
 ===========
