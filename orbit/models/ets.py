@@ -13,6 +13,7 @@ from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..initializer.ets import ETSInitializer
 from .base_model import BaseModel
 from ..utils.general import is_ordered_datetime
+from ..utils.predictions import prepend_date_column, aggregate_predictions
 
 
 class BaseETS(BaseModel):
@@ -408,20 +409,6 @@ class BaseETS(BaseModel):
 
         return {'prediction': pred_array}
 
-    def _prepend_date_column(self, predicted_df, input_df):
-        """Prepends date column from `input_df` to `predicted_df`"""
-
-        other_cols = list(predicted_df.columns)
-
-        # add date column
-        predicted_df[self.date_col] = input_df[self.date_col].reset_index(drop=True)
-
-        # re-order columns so date is first
-        col_order = [self.date_col] + other_cols
-        predicted_df = predicted_df[col_order]
-
-        return predicted_df
-
     def _set_aggregate_posteriors(self):
         posterior_samples = self._posterior_samples
 
@@ -506,6 +493,10 @@ class ETSFull(BaseETS):
         else:
             self._prediction_percentiles = copy(self.prediction_percentiles)
 
+        self._prediction_percentiles += [50]  # always find median
+        self._prediction_percentiles = list(set(self._prediction_percentiles))  # unique set
+        self._prediction_percentiles.sort()
+
         if not self.n_bootstrap_draws:
             self._n_bootstrap_draws = -1
 
@@ -522,7 +513,7 @@ class ETSFull(BaseETS):
         posterior_samples = self._posterior_samples
 
         if n < 2:
-            raise IllegalArgument("Error: The number of bootstrap draws must be at least 2")
+            raise IllegalArgument("Error: Number of bootstrap draws must be at least 2")
 
         sample_idx = np.random.choice(
             range(num_samples),
@@ -535,29 +526,6 @@ class ETSFull(BaseETS):
             bootstrap_samples_dict[k] = v[sample_idx]
 
         return bootstrap_samples_dict
-
-    @staticmethod
-    def _aggregate_full_predictions(array, label, percentiles):
-        """Aggregates the mcmc prediction to a point estimate
-        Args
-        ----
-        array: np.ndarray
-            A 2d numpy array of shape (`num_samples`, prediction df length)
-        label: str
-            A string used for labeling output dataframe columns
-        percentiles: list
-            A sorted list of one or three percentile(s) which will be used to aggregate lower, mid and upper values
-        Returns
-        -------
-        pd.DataFrame
-            The aggregated across mcmc samples with columns for `50` aka median
-            and all other percentiles specified in `percentiles`.
-        """
-
-        aggregated_array = np.percentile(array, percentiles, axis=0)
-        columns = [label + "_" + str(p) if p != 50 else label for p in percentiles]
-        aggregate_df = pd.DataFrame(aggregated_array.T, columns=columns)
-        return aggregate_df
 
     def predict(self, df, decompose=False):
         """Return model predictions as a function of fitted model and df"""
@@ -576,23 +544,8 @@ class ETSFull(BaseETS):
             include_error=True,
             decompose=decompose,
         )
-
-        # MUST copy, or else instance var persists in memory
-        percentiles = copy(self._prediction_percentiles)
-        percentiles += [50]  # always find median
-        percentiles = list(set(percentiles))  # unique set
-        percentiles.sort()
-
-        for k, v in predicted_dict.items():
-            predicted_dict[k] = self._aggregate_full_predictions(
-                array=v,
-                label=k,
-                percentiles=percentiles,
-            )
-
-        aggregated_df = pd.concat(predicted_dict, axis=1)
-        aggregated_df.columns = aggregated_df.columns.droplevel()
-        aggregated_df = self._prepend_date_column(aggregated_df, df)
+        aggregated_df = aggregate_predictions(predicted_dict, self._prediction_percentiles)
+        aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
         return aggregated_df
 
 
@@ -610,14 +563,33 @@ class ETSAggregated(BaseETS):
     """
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
 
-    def __init__(self, aggregate_method='mean', **kwargs):
+    def __init__(self, aggregate_method='mean', n_bootstrap_draws=1000, prediction_percentiles=None, **kwargs):
         super().__init__(**kwargs)
-        self.aggregate_method = aggregate_method
+        # n_bootstrap_draws here only to provide empirical prediction precentiles;
+        # mid-point estimate is always replaced
+        self.n_bootstrap_draws = n_bootstrap_draws
+        self.prediction_percentiles = prediction_percentiles
+        self._prediction_percentiles = None
+        self._set_default_args()
 
+        self.aggregate_method = aggregate_method
         self._validate_aggregate_method()
 
         # validator model / estimator compatibility
         self._validate_supported_estimator_type()
+
+    def _set_default_args(self):
+        if self.prediction_percentiles is None:
+            self._prediction_percentiles = [5, 95]
+        else:
+            self._prediction_percentiles = copy(self.prediction_percentiles)
+
+        self._prediction_percentiles += [50]  # always find median
+        self._prediction_percentiles = list(set(self._prediction_percentiles ))  # unique set
+        self._prediction_percentiles .sort()
+
+        if self.n_bootstrap_draws < 2:
+            raise IllegalArgument("Error: Number of bootstrap draws must be at least 2")
 
     def _validate_aggregate_method(self):
         if self.aggregate_method not in list(self._aggregate_posteriors.keys()):
@@ -635,21 +607,36 @@ class ETSAggregated(BaseETS):
 
         aggregate_posteriors = self._aggregate_posteriors.get(self.aggregate_method)
 
+        # compute inference
+        posterior_samples = {}
+        for k, v in aggregate_posteriors.items():
+            # in_shape = v.shape[1:]
+            # create and np.tile on first (batch) dimension
+            posterior_samples[k] = np.repeat(v, self.n_bootstrap_draws, axis=0)
+
+        predicted_dict = self._predict(
+            posterior_estimates=posterior_samples,
+            df=df,
+            include_error=True,
+            decompose=decompose,
+        )
+        aggregated_df = aggregate_predictions(predicted_dict, self._prediction_percentiles)
+        aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
+
+        # compute mid-point prediction
         predicted_dict = self._predict(
             posterior_estimates=aggregate_posteriors,
             df=df,
             include_error=False,
             decompose=decompose
         )
+        # replacing mid-point estimation
+        # TODO: this seems hacky, maybe replace the labels by some class constants
+        aggregated_df['prediction'] = predicted_dict['prediction'].flatten()
+        aggregated_df['trend'] = predicted_dict['trend'].flatten()
+        aggregated_df['seasonality'] = predicted_dict['seasonality'].flatten()
 
-        # must flatten to convert to DataFrame
-        for k, v in predicted_dict.items():
-            predicted_dict[k] = v.flatten()
-
-        predicted_df = pd.DataFrame(predicted_dict)
-        predicted_df = self._prepend_date_column(predicted_df, df)
-
-        return predicted_df
+        return aggregated_df
 
 
 class ETSMAP(BaseETS):
@@ -663,8 +650,14 @@ class ETSMAP(BaseETS):
     """
     _supported_estimator_types = [StanEstimatorMAP, PyroEstimatorMAP]
 
-    def __init__(self, estimator_type=StanEstimatorMAP, **kwargs):
+    def __init__(self, estimator_type=StanEstimatorMAP, n_bootstrap_draws=1000, prediction_percentiles=None, **kwargs):
         super().__init__(estimator_type=estimator_type, **kwargs)
+        # n_bootstrap_draws here only to provide empirical prediction precentiles;
+        # mid-point estimate is always replaced
+        self.n_bootstrap_draws = n_bootstrap_draws
+        self.prediction_percentiles = prediction_percentiles
+        self._prediction_percentiles = None
+        self._set_default_args()
 
         # override init aggregate posteriors
         self._aggregate_posteriors = {
@@ -674,9 +667,21 @@ class ETSMAP(BaseETS):
         # validator model / estimator compatibility
         self._validate_supported_estimator_type()
 
+    def _set_default_args(self):
+        if self.prediction_percentiles is None:
+            self._prediction_percentiles = [5, 95]
+        else:
+            self._prediction_percentiles = copy(self.prediction_percentiles)
+
+        self._prediction_percentiles += [50]  # always find median
+        self._prediction_percentiles = list(set(self._prediction_percentiles ))  # unique set
+        self._prediction_percentiles .sort()
+
+        if self.n_bootstrap_draws < 2:
+            raise IllegalArgument("Error: Number of bootstrap draws must be at least 2")
+
     def _set_map_posterior(self):
         posterior_samples = self._posterior_samples
-
         map_posterior = {}
         for param_name in self._model_param_names:
             param_array = posterior_samples[param_name]
@@ -700,18 +705,34 @@ class ETSMAP(BaseETS):
 
         aggregate_posteriors = self._aggregate_posteriors.get(PredictMethod.MAP.value)
 
+        # compute inference
+        posterior_samples = {}
+        for k, v in aggregate_posteriors.items():
+            # in_shape = v.shape[1:]
+            # create and np.tile on first (batch) dimension
+            posterior_samples[k] = np.repeat(v, self.n_bootstrap_draws, axis=0)
+
+        predicted_dict = self._predict(
+            posterior_estimates=posterior_samples,
+            df=df,
+            include_error=True,
+            decompose=decompose,
+        )
+        aggregated_df = aggregate_predictions(predicted_dict, self._prediction_percentiles)
+        aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
+
+        # compute mid-point prediction; we always use this way for mid-point estimate
+        # since we assume the close form with MAP estimation
         predicted_dict = self._predict(
             posterior_estimates=aggregate_posteriors,
             df=df,
             include_error=False,
             decompose=decompose
         )
+        # replacing mid-point estimation
+        # TODO: this seems hacky, maybe replace the labels by some class constants
+        aggregated_df['prediction'] = predicted_dict['prediction'].flatten()
+        aggregated_df['trend'] = predicted_dict['trend'].flatten()
+        aggregated_df['seasonality'] = predicted_dict['seasonality'].flatten()
 
-        # must flatten to convert to DataFrame
-        for k, v in predicted_dict.items():
-            predicted_dict[k] = v.flatten()
-
-        predicted_df = pd.DataFrame(predicted_dict)
-        predicted_df = self._prepend_date_column(predicted_df, df)
-
-        return predicted_df
+        return aggregated_df
