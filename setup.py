@@ -21,7 +21,7 @@ AUTHOR = '''
     '''
 
 
-def read_long_description(filename="README.rst"):
+def read_long_description(filename="README.md"):
     with open(filename) as f:
         return f.read().strip()
 
