@@ -195,7 +195,7 @@ def test_dlt_aggregated_with_regression(synthetic_data, estimator_type, regresso
     regression_out = dlt.get_regression_coefs()
     num_regressors = regression_out.shape[0]
 
-    expected_columns = ['week', 'prediction']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_regression_shape = (6, 3)
 
@@ -418,7 +418,7 @@ def test_dlt_regression_penalty(synthetic_data, regression_penalty):
     regression_out = dlt.get_regression_coefs()
     num_regressors = regression_out.shape[0]
 
-    expected_columns = ['week', 'prediction']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_regression_shape = (6, 3)
 
