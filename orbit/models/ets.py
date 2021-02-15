@@ -4,26 +4,18 @@ import torch
 from copy import copy, deepcopy
 
 from ..constants import ets as constants
-from ..constants.constants import (
-    PredictMethod
-)
-from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
-from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
+from ..constants.constants import PredictMethod
+from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP, StanEstimatorVI
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..initializer.ets import ETSInitializer
-from .base_model import BaseModel
+from .module import BaseModule, FullPredictionModule, AggregatedPredictionModule, MAPModule
 from ..utils.general import is_ordered_datetime
-from ..utils.predictions import prepend_date_column, aggregate_predictions
 
 
-class BaseETS(BaseModel):
+class BaseETS(BaseModule):
     """
     Parameters
     ----------
-    response_col : str
-        Name of response variable column, default 'y'
-    date_col : str
-        Name of date variable column, default 'ds'
     seasonality : int
         Length of seasonality
     seasonality_sm_input : float
@@ -38,17 +30,12 @@ class BaseETS(BaseModel):
     ----------------
     **kwargs: additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
     """
+    # data labels for sampler API (stan, pyro, numpyro etc.)
     _data_input_mapper = constants.DataInputMapper
-    # stan or pyro model name (e.g. name of `*.stan` file in package)
     _model_name = 'ets'
-    _supported_estimator_types = None  # set for each model
 
-    def __init__(self, response_col='y', date_col='ds', seasonality=None,
-                 seasonality_sm_input=None, level_sm_input=None,
-                 **kwargs):
+    def __init__(self, seasonality=None, seasonality_sm_input=None, level_sm_input=None, **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
-        self.response_col = response_col
-        self.date_col = date_col
         self.seasonality = seasonality
 
         # fixed smoothing parameters config
@@ -64,7 +51,6 @@ class BaseETS(BaseModel):
         self._seasonality_sm_input = self.seasonality_sm_input
         self._level_sm_input = self.level_sm_input
 
-        self._model_param_names = list()
         self._training_df_meta = None
         self._model_data_input = dict()
 
@@ -87,10 +73,6 @@ class BaseETS(BaseModel):
         self._response = None
         self._num_of_observations = None
         self._repsonse_sd = None
-
-        # init posterior samples
-        # `_posterior_samples` is set by `fit()`
-        self._posterior_samples = dict()
 
         # init aggregate posteriors
         self._aggregate_posteriors = {
@@ -141,13 +123,6 @@ class BaseETS(BaseModel):
         self._set_default_base_args()
         self._set_with_mcmc()
         self._set_init_values()
-
-    def _validate_supported_estimator_type(self):
-        if self.estimator_type not in self._supported_estimator_types:
-            msg_template = "Model class: {} is incompatible with Estimator: {}"
-            model_class = type(self)
-            estimator_type = self.estimator_type
-            raise IllegalArgument(msg_template.format(model_class, estimator_type))
 
     def _set_training_df_meta(self, df):
         # Date Metadata
@@ -221,10 +196,6 @@ class BaseETS(BaseModel):
 
     def _get_init_values(self):
         return self._init_values
-
-    def is_fitted(self):
-        # if empty dict false, else true
-        return bool(self._posterior_samples)
 
     def _predict(self, posterior_estimates, df, include_error=False, decompose=False):
         """Vectorized version of prediction math"""
@@ -453,193 +424,7 @@ class BaseETS(BaseModel):
         self._posterior_samples = model_extract
 
 
-class ETSFull(BaseETS):
-    """Concrete ETS model for full prediction
-
-    In full prediction, the prediction occurs as a function of each parameter posterior sample,
-    and the prediction results are aggregated after prediction. Prediction will
-    always return the median (aka 50th percentile) along with any additional percentiles that
-    are specified.
-
-    Parameters
-    ----------
-    n_bootstrap_draws : int
-        Number of bootstrap samples to draw from the initial MCMC or VI posterior samples.
-        If None, use the original posterior draws.
-    prediction_percentiles : list
-        List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
-        confident intervals, pass an empty list
-
-    """
-    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
-
-    def __init__(self, n_bootstrap_draws=None, prediction_percentiles=None, **kwargs):
-        # todo: assert compatible estimator
-        super().__init__(**kwargs)
-        self.n_bootstrap_draws = n_bootstrap_draws
-        self.prediction_percentiles = prediction_percentiles
-
-        # set default args
-        self._prediction_percentiles = None
-        self._n_bootstrap_draws = self.n_bootstrap_draws
-        self._set_default_args()
-
-        # validator model / estimator compatibility
-        self._validate_supported_estimator_type()
-
-    def _set_default_args(self):
-        if self.prediction_percentiles is None:
-            self._prediction_percentiles = [5, 95]
-        else:
-            self._prediction_percentiles = copy(self.prediction_percentiles)
-
-        self._prediction_percentiles += [50]  # always find median
-        self._prediction_percentiles = list(set(self._prediction_percentiles))  # unique set
-        self._prediction_percentiles.sort()
-
-        if not self.n_bootstrap_draws:
-            self._n_bootstrap_draws = -1
-
-    def _bootstrap(self, n):
-        """Draw `n` number of bootstrap samples from the posterior_samples.
-
-        Args
-        ----
-        n : int
-            The number of bootstrap samples to draw
-
-        """
-        num_samples = self.estimator.num_sample
-        posterior_samples = self._posterior_samples
-
-        if n < 2:
-            raise IllegalArgument("Error: Number of bootstrap draws must be at least 2")
-
-        sample_idx = np.random.choice(
-            range(num_samples),
-            size=n,
-            replace=True
-        )
-
-        bootstrap_samples_dict = {}
-        for k, v in posterior_samples.items():
-            bootstrap_samples_dict[k] = v[sample_idx]
-
-        return bootstrap_samples_dict
-
-    def predict(self, df, decompose=False):
-        """Return model predictions as a function of fitted model and df"""
-        # raise if model is not fitted
-        if not self.is_fitted():
-            raise PredictionException("Model is not fitted yet.")
-
-        # if bootstrap draws, replace posterior samples with bootstrap
-        posterior_samples = self._bootstrap(self._n_bootstrap_draws) \
-            if self._n_bootstrap_draws > 1 \
-            else self._posterior_samples
-
-        predicted_dict = self._predict(
-            posterior_estimates=posterior_samples,
-            df=df,
-            include_error=True,
-            decompose=decompose,
-        )
-        aggregated_df = aggregate_predictions(predicted_dict, self._prediction_percentiles)
-        aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
-        return aggregated_df
-
-
-class ETSAggregated(BaseETS):
-    """Concrete ETS model for aggregated posterior prediction
-
-    In aggregated prediction, the parameter posterior samples are reduced using `aggregate_method`
-    before performing a single prediction.
-
-    Parameters
-    ----------
-    aggregate_method : { 'mean', 'median' }
-        Method used to reduce parameter posterior samples
-
-    """
-    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
-
-    def __init__(self, aggregate_method='mean', n_bootstrap_draws=1000, prediction_percentiles=None, **kwargs):
-        super().__init__(**kwargs)
-        # n_bootstrap_draws here only to provide empirical prediction precentiles;
-        # mid-point estimate is always replaced
-        self.n_bootstrap_draws = n_bootstrap_draws
-        self.prediction_percentiles = prediction_percentiles
-        self._prediction_percentiles = None
-        self._set_default_args()
-
-        self.aggregate_method = aggregate_method
-        self._validate_aggregate_method()
-
-        # validator model / estimator compatibility
-        self._validate_supported_estimator_type()
-
-    def _set_default_args(self):
-        if self.prediction_percentiles is None:
-            self._prediction_percentiles = [5, 95]
-        else:
-            self._prediction_percentiles = copy(self.prediction_percentiles)
-
-        self._prediction_percentiles += [50]  # always find median
-        self._prediction_percentiles = list(set(self._prediction_percentiles ))  # unique set
-        self._prediction_percentiles .sort()
-
-        if self.n_bootstrap_draws < 2:
-            raise IllegalArgument("Error: Number of bootstrap draws must be at least 2")
-
-    def _validate_aggregate_method(self):
-        if self.aggregate_method not in list(self._aggregate_posteriors.keys()):
-            raise PredictionException("No aggregate method defined for: `{}`".format(self.aggregate_method))
-
-    def fit(self, df):
-        """Fit model to data and set extracted posterior samples"""
-        super().fit(df)
-        self._set_aggregate_posteriors()
-
-    def predict(self, df, decompose=False):
-        # raise if model is not fitted
-        if not self.is_fitted():
-            raise PredictionException("Model is not fitted yet.")
-
-        aggregate_posteriors = self._aggregate_posteriors.get(self.aggregate_method)
-
-        # compute inference
-        posterior_samples = {}
-        for k, v in aggregate_posteriors.items():
-            # in_shape = v.shape[1:]
-            # create and np.tile on first (batch) dimension
-            posterior_samples[k] = np.repeat(v, self.n_bootstrap_draws, axis=0)
-
-        predicted_dict = self._predict(
-            posterior_estimates=posterior_samples,
-            df=df,
-            include_error=True,
-            decompose=decompose,
-        )
-        aggregated_df = aggregate_predictions(predicted_dict, self._prediction_percentiles)
-        aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
-
-        # compute mid-point prediction
-        predicted_dict = self._predict(
-            posterior_estimates=aggregate_posteriors,
-            df=df,
-            include_error=False,
-            decompose=decompose
-        )
-        # replacing mid-point estimation
-        # TODO: this seems hacky, maybe replace the labels by some class constants
-        aggregated_df['prediction'] = predicted_dict['prediction'].flatten()
-        aggregated_df['trend'] = predicted_dict['trend'].flatten()
-        aggregated_df['seasonality'] = predicted_dict['seasonality'].flatten()
-
-        return aggregated_df
-
-
-class ETSMAP(BaseETS):
+class ETSMAP(BaseETS, MAPModule):
     """Concrete ETS model for MAP (Maximum a Posteriori) prediction
 
     Similar to `ETSAggregated` but prediction is based on Maximum a Posteriori (aka Mode)
@@ -648,91 +433,42 @@ class ETSMAP(BaseETS):
     This model only supports MAP estimating `estimator_type`s
 
     """
-    _supported_estimator_types = [StanEstimatorMAP, PyroEstimatorMAP]
+    _supported_estimator_types = [StanEstimatorMAP]
 
-    def __init__(self, estimator_type=StanEstimatorMAP, n_bootstrap_draws=1000, prediction_percentiles=None, **kwargs):
+    def __init__(self, estimator_type=StanEstimatorMAP, **kwargs):
         super().__init__(estimator_type=estimator_type, **kwargs)
-        # n_bootstrap_draws here only to provide empirical prediction precentiles;
-        # mid-point estimate is always replaced
-        self.n_bootstrap_draws = n_bootstrap_draws
-        self.prediction_percentiles = prediction_percentiles
-        self._prediction_percentiles = None
-        self._set_default_args()
-
-        # override init aggregate posteriors
-        self._aggregate_posteriors = {
-            PredictMethod.MAP.value: dict(),
-        }
-
-        # validator model / estimator compatibility
-        self._validate_supported_estimator_type()
-
-    def _set_default_args(self):
-        if self.prediction_percentiles is None:
-            self._prediction_percentiles = [5, 95]
-        else:
-            self._prediction_percentiles = copy(self.prediction_percentiles)
-
-        self._prediction_percentiles += [50]  # always find median
-        self._prediction_percentiles = list(set(self._prediction_percentiles ))  # unique set
-        self._prediction_percentiles .sort()
-
-        if self.n_bootstrap_draws < 2:
-            raise IllegalArgument("Error: Number of bootstrap draws must be at least 2")
-
-    def _set_map_posterior(self):
-        posterior_samples = self._posterior_samples
-        map_posterior = {}
-        for param_name in self._model_param_names:
-            param_array = posterior_samples[param_name]
-            # add dimension so it works with vector math in `_predict`
-            param_array = np.expand_dims(param_array, axis=0)
-            map_posterior.update(
-                {param_name: param_array}
-            )
-
-        self._aggregate_posteriors[PredictMethod.MAP.value] = map_posterior
 
     def fit(self, df):
-        """Fit model to data and set extracted posterior samples"""
         super().fit(df)
         self._set_map_posterior()
 
-    def predict(self, df, decompose=False):
-        # raise if model is not fitted
-        if not self.is_fitted():
-            raise PredictionException("Model is not fitted yet.")
+    def predict(self, df, decompose=False, **kwargs):
+        return self._map_predict(df, self._predict, decompose=decompose)
 
-        aggregate_posteriors = self._aggregate_posteriors.get(PredictMethod.MAP.value)
 
-        # compute inference
-        posterior_samples = {}
-        for k, v in aggregate_posteriors.items():
-            # in_shape = v.shape[1:]
-            # create and np.tile on first (batch) dimension
-            posterior_samples[k] = np.repeat(v, self.n_bootstrap_draws, axis=0)
+class ETSFull(BaseETS, FullPredictionModule):
+    """Concrete ETS model for full Bayesian prediction"""
+    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
 
-        predicted_dict = self._predict(
-            posterior_estimates=posterior_samples,
-            df=df,
-            include_error=True,
-            decompose=decompose,
-        )
-        aggregated_df = aggregate_predictions(predicted_dict, self._prediction_percentiles)
-        aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-        # compute mid-point prediction; we always use this way for mid-point estimate
-        # since we assume the close form with MAP estimation
-        predicted_dict = self._predict(
-            posterior_estimates=aggregate_posteriors,
-            df=df,
-            include_error=False,
-            decompose=decompose
-        )
-        # replacing mid-point estimation
-        # TODO: this seems hacky, maybe replace the labels by some class constants
-        aggregated_df['prediction'] = predicted_dict['prediction'].flatten()
-        aggregated_df['trend'] = predicted_dict['trend'].flatten()
-        aggregated_df['seasonality'] = predicted_dict['seasonality'].flatten()
+    def predict(self, df, decompose=False, **kwargs):
+        return self._full_bayes_predict(df, self._predict, decompose=decompose)
 
-        return aggregated_df
+
+class ETSAggregated(BaseETS, AggregatedPredictionModule):
+    """Concrete ETS model for aggregated posterior prediction"""
+    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def fit(self, df):
+        super().fit(df)
+        self._set_aggregate_posteriors()
+
+    def predict(self, df, decompose=False, **kwargs):
+        return self._aggregate_predict(df, self._predict, decompose=decompose)
+
+
