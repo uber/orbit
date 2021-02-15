@@ -148,15 +148,15 @@ Related projects
    :alt: GitHub release (latest SemVer)
 
 .. |pypi| image:: https://badge.fury.io/py/orbit-ml.svg
-    :target: https://badge.fury.io/py/orbit-ml
-    :alt: pypi
+   :target: https://badge.fury.io/py/orbit-ml
+   :alt: pypi
 
 .. |travis| image:: https://travis-ci.com/uber/orbit.svg?branch=master
  :target: https://travis-ci.com/uber/orbit
  :alt: travis
 
 .. |python| image:: https://img.shields.io/pypi/pyversions/orbit-ml   
-:alt: PyPI - Python Version
+   :alt: python-version
 
 .. |downloads| image:: https://static.pepy.tech/personalized-badge/orbit-ml?period=total&units=international_system&left_color=blue&right_color=grey&left_text=Downloads
  :target: https://pepy.tech/project/orbit-ml
