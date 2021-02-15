@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-import copy
+from copy import copy
 
 from orbit.models.dlt import DLTFull, DLTAggregated, DLTMAP
 from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI
@@ -315,7 +315,7 @@ def test_dlt_full_reproducibility(synthetic_data, estimator_type, regressor_sign
 
     # first fit and predict
     dlt_first.fit(train_df)
-    posteriors_first = copy.copy(dlt_first._posterior_samples)
+    posteriors_first = copy(dlt_first._posterior_samples)
     predict_df_first = dlt_first.predict(test_df)
     regression_out_first = dlt_first.get_regression_coefs()
 
@@ -335,7 +335,7 @@ def test_dlt_full_reproducibility(synthetic_data, estimator_type, regressor_sign
     )
 
     dlt_second.fit(train_df)
-    posteriors_second = copy.copy(dlt_second._posterior_samples)
+    posteriors_second = copy(dlt_second._posterior_samples)
     predict_df_second = dlt_second.predict(test_df)
     regression_out_second = dlt_second.get_regression_coefs()
 
@@ -351,10 +351,51 @@ def test_dlt_full_reproducibility(synthetic_data, estimator_type, regressor_sign
     # assert identical regression columns
     # this is also checked in posterior samples, but an extra layer just in case
     # since this one very commonly retrieved by end users
-    assert all(regression_out_first == regression_out_second)
+    assert regression_out_first.equals(regression_out_second)
 
     # assert prediction is reproducible
-    assert all(predict_df_first == predict_df_second)
+    assert predict_df_first.equals(predict_df_second)
+
+
+@pytest.mark.parametrize("seasonality", [1, 52])
+def test_dlt_map_reproducibility(synthetic_data, seasonality):
+    train_df, test_df, coef = synthetic_data
+
+    dlt1 = DLTMAP(
+        response_col='response',
+        date_col='week',
+        prediction_percentiles=[5, 95],
+        seasonality=seasonality,
+    )
+
+    # first fit and predict
+    dlt1.fit(train_df)
+    posteriors1 = copy(dlt1._aggregate_posteriors['map'])
+    prediction1 = dlt1.predict(test_df)
+
+    # second fit and predict
+    # note a new instance must be created to reset the seed
+    # note both fit and predict contain random generation processes
+    dlt2 = DLTMAP(
+        response_col='response',
+        date_col='week',
+        prediction_percentiles=[5, 95],
+        seasonality=seasonality,
+    )
+
+    dlt2.fit(train_df)
+    posteriors2 = copy(dlt2._aggregate_posteriors['map'])
+    prediction2 = dlt2.predict(test_df)
+
+    # assert same posterior keys
+    assert set(posteriors1.keys()) == set(posteriors2.keys())
+
+    # assert posterior draws are reproducible
+    for k, v in posteriors1.items():
+        assert np.allclose(posteriors1[k], posteriors2[k])
+
+    # assert prediction is reproducible
+    assert np.allclose(prediction1['prediction'].values, prediction2['prediction'].values)
 
 
 @pytest.mark.parametrize("regression_penalty", ['fixed_ridge', 'lasso', 'auto_ridge'])
@@ -411,7 +452,7 @@ def test_dlt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input
     regression_out = dlt.get_regression_coefs()
     num_regressors = regression_out.shape[0]
 
-    expected_columns = ['week', 'prediction']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_regression_shape = (6, 3)
 
