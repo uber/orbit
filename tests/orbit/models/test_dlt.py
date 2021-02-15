@@ -2,23 +2,27 @@ import pytest
 import numpy as np
 import copy
 
-from orbit.models.dlt import BaseDLT, DLTFull, DLTAggregated, DLTMAP
+from orbit.models.dlt import DLTFull, DLTAggregated, DLTMAP
 from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI
 
 
-def test_base_dlt_init():
-    dlt = BaseDLT()
+@pytest.mark.parametrize("model_class", [DLTMAP, DLTFull, DLTAggregated])
+def test_base_ets_init(model_class):
+    lgt = model_class()
 
-    is_fitted = dlt.is_fitted()
+    is_fitted = lgt.is_fitted()
 
-    model_data_input = dlt._get_model_data_input()
-    model_param_names = dlt._get_model_param_names()
-    init_values = dlt._get_init_values()
+    model_data_input = lgt._get_model_data_input()
+    model_param_names = lgt._get_model_param_names()
+    init_values = lgt._get_init_values()
 
-    assert not is_fitted  # model is not yet fitted
-    assert not model_data_input  # should only be initialized and not set
-    assert model_param_names  # model param names should already be set
-    # todo: change when init_values callable is implemented
+    # model is not yet fitted
+    assert not is_fitted
+    # should only be initialized and not set
+    assert not model_data_input
+    # model param names should already be set
+    assert model_param_names
+    # callable is not implemented yet
     assert not init_values
 
 
@@ -64,7 +68,7 @@ def test_dlt_aggregated_univariate(synthetic_data, estimator_type):
     dlt.fit(train_df)
     predict_df = dlt.predict(test_df)
 
-    expected_columns = ['week', 'prediction']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 13
 
@@ -87,7 +91,7 @@ def test_dlt_map_univariate(synthetic_data):
     dlt.fit(train_df)
     predict_df = dlt.predict(test_df)
 
-    expected_columns = ['week', 'prediction']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     expected_num_parameters = 12  # no `lp__` parameter in optimizing()
 

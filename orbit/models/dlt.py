@@ -596,7 +596,7 @@ class BaseDLT(BaseETS):
 
         return {'prediction': pred_array}
 
-    def get_regression_coefs(self, aggregate_method):
+    def _get_regression_coefs(self, aggregate_method):
         """Return DataFrame regression coefficients
 
         If PredictMethod is `full` return `mean` of coefficients instead
@@ -634,6 +634,25 @@ class BaseDLT(BaseETS):
         return coef_df
 
 
+class DLTMAP(ETSMAP, BaseDLT):
+    """Concrete DLT model for MAP (Maximum a Posteriori) prediction
+
+    The model arguments are the same as `ETSMAP` with some additional arguments
+
+    See Also
+    --------
+    orbit.models.ets.ETSMAP
+
+    """
+    _supported_estimator_types = [StanEstimatorMAP]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def get_regression_coefs(self):
+        return super()._get_regression_coefs(aggregate_method=PredictMethod.MAP.value)
+
+
 class DLTFull(ETSFull, BaseDLT):
     """Concrete DLT model for full prediction
 
@@ -651,7 +670,7 @@ class DLTFull(ETSFull, BaseDLT):
 
     def get_regression_coefs(self, aggregate_method='mean'):
         self._set_aggregate_posteriors()
-        return super().get_regression_coefs(aggregate_method=aggregate_method)
+        return super()._get_regression_coefs(aggregate_method=aggregate_method)
 
 
 class DLTAggregated(ETSAggregated, BaseDLT):
@@ -671,23 +690,7 @@ class DLTAggregated(ETSAggregated, BaseDLT):
 
     def get_regression_coefs(self):
         self._set_aggregate_posteriors()
-        return super().get_regression_coefs(aggregate_method=self.aggregate_method)
+        return super()._get_regression_coefs(aggregate_method=self.aggregate_method)
 
 
-class DLTMAP(ETSMAP, BaseDLT):
-    """Concrete DLT model for MAP (Maximum a Posteriori) prediction
 
-    The model arguments are the same as `ETSMAP` with some additional arguments
-
-    See Also
-    --------
-    orbit.models.ets.ETSMAP
-
-    """
-    _supported_estimator_types = [StanEstimatorMAP]
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def get_regression_coefs(self):
-        return super().get_regression_coefs(aggregate_method=PredictMethod.MAP.value)
