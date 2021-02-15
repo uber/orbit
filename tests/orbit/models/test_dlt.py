@@ -222,7 +222,7 @@ def test_dlt_map_global_trend(synthetic_data, global_trend_option):
     dlt.fit(train_df)
     predict_df = dlt.predict(test_df)
 
-    expected_columns = ['week', 'prediction']
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
