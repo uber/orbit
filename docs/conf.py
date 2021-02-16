@@ -21,7 +21,7 @@ import orbit
 
 project = 'orbit'
 copyright = '2020, Uber Technologies, Inc'
-author = 'Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang'
+author = 'Edwin Ng, Steve Yang, Zhishi Wang, Yifeng Wu, Jing Pan'
 
 # The short X.Y version.
 version = orbit.__version__
