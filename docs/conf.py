@@ -82,7 +82,7 @@ html_logo = 'img/orbit-logo-black.png'
 #
 html_theme_options = {
     # 'logo_only': False,
-    'navigation_depth': 3,
+    'navigation_depth': 1,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
