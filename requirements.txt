@@ -4,7 +4,7 @@ python-dateutil==2.8.0
 pytz==2019.2
 six==1.12.0
 pystan==2.19.1.1
-matplotlib==3.2.1
+matplotlib==3.3.4
 scipy>=1.4.1
 scikit-learn
 torch
