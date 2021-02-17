@@ -13,7 +13,7 @@ ci.store["numpy_with_merge_dedup"] = merge_numpy_docs_dedup
 ci.add_style("numpy_with_merge_dedup", merge_numpy_docs_dedup)
 
 
-class BaseModule(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_dedup")):
+class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_dedup")):
     """Base module for model creation
 
     `BaseModule` will instantiate an estimator class of `estimator_type`.
@@ -73,14 +73,14 @@ class BaseModule(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_ded
         raise AbstractMethodException("Abstract method.  Model should implement concrete .predict().")
 
 
-class MAPModule(BaseModule):
+class MAPTemplate(BaseTemplate):
     """ Abstract class for MAP (Maximum a Posteriori) prediction
 
     In this module, prediction is based on Maximum a Posteriori (aka Mode) of the posterior.
     This model only supports MAP estimating `estimator_type`s
     """
 
-    def __init__(self, n_bootstrap_draws=10000, prediction_percentiles=None, **kwargs):
+    def __init__(self, n_bootstrap_draws=1e4, prediction_percentiles=None, **kwargs):
         super().__init__(**kwargs)
         # n_bootstrap_draws here only to provide empirical prediction percentiles;
         # mid-point estimate is always replaced
@@ -146,7 +146,7 @@ class MAPModule(BaseModule):
         return aggregated_df
 
 
-class FullBayesianModule(BaseModule):
+class FullBayesianTemplate(BaseTemplate):
     """ Abstract class for full Bayesian prediction
 
     In full prediction, the prediction occurs as a function of each parameter posterior sample,
@@ -223,7 +223,7 @@ class FullBayesianModule(BaseModule):
         return aggregated_df
 
 
-class AggregatedPosteriorModule(BaseModule):
+class AggregatedPosteriorTemplate(BaseTemplate):
     """ Abstract class for full aggregated posteriors prediction
 
     In aggregated prediction, the parameter posterior samples are reduced using `aggregate_method`
@@ -234,7 +234,7 @@ class AggregatedPosteriorModule(BaseModule):
     aggregate_method : { 'mean', 'median' }
         Method used to reduce parameter posterior samples
     """
-    def __init__(self, aggregate_method='mean', n_bootstrap_draws=5000, prediction_percentiles=None, **kwargs):
+    def __init__(self, aggregate_method='mean', n_bootstrap_draws=1e4, prediction_percentiles=None, **kwargs):
         super().__init__(**kwargs)
         # n_bootstrap_draws here only to provide empirical prediction percentiles;
         # mid-point estimate is always replaced

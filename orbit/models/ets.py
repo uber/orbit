@@ -8,11 +8,11 @@ from ..constants.constants import PredictMethod
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP, StanEstimatorVI
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..initializer.ets import ETSInitializer
-from .module import BaseModule, FullBayesianModule, AggregatedPosteriorModule, MAPModule
+from .template import BaseTemplate, FullBayesianTemplate, AggregatedPosteriorTemplate, MAPTemplate
 from ..utils.general import is_ordered_datetime
 
 
-class BaseETS(BaseModule):
+class BaseETS(BaseTemplate):
     """
     Parameters
     ----------
@@ -424,7 +424,7 @@ class BaseETS(BaseModule):
         self._posterior_samples = model_extract
 
 
-class ETSMAP(BaseETS, MAPModule):
+class ETSMAP(BaseETS, MAPTemplate):
     """Concrete ETS model for MAP (Maximum a Posteriori) prediction
 
     Similar to `ETSAggregated` but prediction is based on Maximum a Posteriori (aka Mode)
@@ -446,7 +446,7 @@ class ETSMAP(BaseETS, MAPModule):
         return self._map_predict(df, self._predict, decompose=decompose)
 
 
-class ETSFull(BaseETS, FullBayesianModule):
+class ETSFull(BaseETS, FullBayesianTemplate):
     """Concrete ETS model for full Bayesian prediction"""
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
 
@@ -457,7 +457,7 @@ class ETSFull(BaseETS, FullBayesianModule):
         return self._full_bayes_predict(df, self._predict, decompose=decompose)
 
 
-class ETSAggregated(BaseETS, AggregatedPosteriorModule):
+class ETSAggregated(BaseETS, AggregatedPosteriorTemplate):
     """Concrete ETS model for aggregated posterior prediction"""
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
 

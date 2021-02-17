@@ -164,6 +164,8 @@ def test_lgt_full_with_regression(synthetic_data, estimator_type, regressor_sign
             verbose=False,
             estimator_type=estimator_type
         )
+    else:
+        return None
 
     lgt.fit(train_df)
     predict_df = lgt.predict(test_df)
@@ -217,6 +219,8 @@ def test_lgt_aggregated_with_regression(synthetic_data, estimator_type, regresso
             verbose=False,
             estimator_type=estimator_type
         )
+    else:
+        return None
 
     lgt.fit(train_df)
     predict_df = lgt.predict(test_df)
@@ -375,8 +379,6 @@ def test_lgt_full_reproducibility(synthetic_data, estimator_type, regressor_sign
     posteriors_second = copy(lgt_second._posterior_samples)
     predict_df_second = lgt_second.predict(test_df)
     regression_out_second = lgt_second.get_regression_coefs()
-
-    posterior_keys = posteriors_first.keys()
 
     # assert same posterior keys
     assert set(posteriors_first.keys()) == set(posteriors_second.keys())

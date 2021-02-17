@@ -8,13 +8,13 @@ from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI
 
 @pytest.mark.parametrize("model_class", [DLTMAP, DLTFull, DLTAggregated])
 def test_base_ets_init(model_class):
-    lgt = model_class()
+    dlt = model_class()
 
-    is_fitted = lgt.is_fitted()
+    is_fitted = dlt.is_fitted()
 
-    model_data_input = lgt._get_model_data_input()
-    model_param_names = lgt._get_model_param_names()
-    init_values = lgt._get_init_values()
+    model_data_input = dlt._get_model_data_input()
+    model_param_names = dlt._get_model_param_names()
+    init_values = dlt._get_init_values()
 
     # model is not yet fitted
     assert not is_fitted
@@ -247,7 +247,7 @@ def test_dlt_mixed_signs_and_order(iclaims_training_data, regressor_signs):
     # mixiing ordering of cols in df of prediction
     new_df = df[['claims', 'week'] + new_regressor_col]
 
-    lgt = DLTMAP(
+    dlt = DLTMAP(
         response_col='claims',
         date_col='week',
         regressor_col=raw_regressor_col,
@@ -255,12 +255,12 @@ def test_dlt_mixed_signs_and_order(iclaims_training_data, regressor_signs):
         seasonality=52,
         seed=8888,
     )
-    lgt.fit(df)
-    predicted_df_v1 = lgt.predict(df)
-    predicted_df_v2 = lgt.predict(new_df)
+    dlt.fit(df)
+    predicted_df_v1 = dlt.predict(df)
+    predicted_df_v2 = dlt.predict(new_df)
 
     # mixing ordering of signs
-    lgt_new = DLTMAP(
+    dlt_new = DLTMAP(
         response_col='claims',
         date_col='week',
         regressor_col=new_regressor_col,
@@ -268,9 +268,9 @@ def test_dlt_mixed_signs_and_order(iclaims_training_data, regressor_signs):
         seasonality=52,
         seed=8888,
     )
-    lgt_new.fit(df)
-    predicted_df_v3 = lgt_new.predict(df)
-    predicted_df_v4 = lgt_new.predict(new_df)
+    dlt_new.fit(df)
+    predicted_df_v3 = dlt_new.predict(df)
+    predicted_df_v4 = dlt_new.predict(new_df)
 
     pred_v1 = predicted_df_v1['prediction'].values
     pred_v2 = predicted_df_v2['prediction'].values
@@ -338,8 +338,6 @@ def test_dlt_full_reproducibility(synthetic_data, estimator_type, regressor_sign
     posteriors_second = copy(dlt_second._posterior_samples)
     predict_df_second = dlt_second.predict(test_df)
     regression_out_second = dlt_second.get_regression_coefs()
-
-    posterior_keys = posteriors_first.keys()
 
     # assert same posterior keys
     assert set(posteriors_first.keys()) == set(posteriors_second.keys())
