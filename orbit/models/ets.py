@@ -8,7 +8,7 @@ from ..constants.constants import PredictMethod
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP, StanEstimatorVI
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..initializer.ets import ETSInitializer
-from .module import BaseModule, FullPredictionModule, AggregatedPredictionModule, MAPModule
+from .module import BaseModule, FullBayesianModule, AggregatedPosteriorModule, MAPModule
 from ..utils.general import is_ordered_datetime
 
 
@@ -446,7 +446,7 @@ class ETSMAP(BaseETS, MAPModule):
         return self._map_predict(df, self._predict, decompose=decompose)
 
 
-class ETSFull(BaseETS, FullPredictionModule):
+class ETSFull(BaseETS, FullBayesianModule):
     """Concrete ETS model for full Bayesian prediction"""
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
 
@@ -457,7 +457,7 @@ class ETSFull(BaseETS, FullPredictionModule):
         return self._full_bayes_predict(df, self._predict, decompose=decompose)
 
 
-class ETSAggregated(BaseETS, AggregatedPredictionModule):
+class ETSAggregated(BaseETS, AggregatedPosteriorModule):
     """Concrete ETS model for aggregated posterior prediction"""
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
 

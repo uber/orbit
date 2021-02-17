@@ -146,7 +146,7 @@ class MAPModule(BaseModule):
         return aggregated_df
 
 
-class FullPredictionModule(BaseModule):
+class FullBayesianModule(BaseModule):
     """ Abstract class for full Bayesian prediction
 
     In full prediction, the prediction occurs as a function of each parameter posterior sample,
@@ -223,7 +223,7 @@ class FullPredictionModule(BaseModule):
         return aggregated_df
 
 
-class AggregatedPredictionModule(BaseModule):
+class AggregatedPosteriorModule(BaseModule):
     """ Abstract class for full aggregated posteriors prediction
 
     In aggregated prediction, the parameter posterior samples are reduced using `aggregate_method`
