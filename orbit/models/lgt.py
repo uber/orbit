@@ -3,6 +3,7 @@ import numpy as np
 from scipy.stats import nct
 import torch
 from copy import deepcopy
+import warnings
 
 from ..constants import lgt as constants
 from ..constants.constants import (
@@ -13,14 +14,14 @@ from ..constants.constants import (
     PredictMethod
 )
 
-from ..models.ets import BaseETS, ETSMAP, ETSFull, ETSAggregated
+from ..models.ets import BaseETS
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..initializer.lgt import LGTInitializer
 from ..utils.general import is_ordered_datetime
+from ..models.ets import ETSMAP, ETSFull, ETSAggregated
 
-import warnings
 warnings.simplefilter('always', PendingDeprecationWarning)
 
 
@@ -58,24 +59,22 @@ class BaseLGT(BaseETS):
     :class: `~orbit.models.ets.BaseETS`
     """
     _data_input_mapper = constants.DataInputMapper
-    # stan or pyro model name (e.g. name of `*.stan` file in package)
     _model_name = 'lgt'
-    _supported_estimator_types = None  # set for each model
 
     def __init__(self, regressor_col=None, regressor_sign=None,
                  regressor_beta_prior=None, regressor_sigma_prior=None,
                  regression_penalty='fixed_ridge', lasso_scale=0.5, auto_ridge_scale=0.5,
                  slope_sm_input=None,
                  **kwargs):
-
+        # introduce extra parameters
         self._min_nu = 5.
         self._max_nu = 40.
 
         self.slope_sm_input = slope_sm_input
         if regressor_col:
             warnings.warn("Regression for LGT model will be deprecated in next version, please use DLT instead",
-                           PendingDeprecationWarning
-            )
+                          PendingDeprecationWarning
+                          )
         self.regressor_col = regressor_col
         self.regressor_sign = regressor_sign
         self.regressor_beta_prior = regressor_beta_prior
@@ -221,7 +220,7 @@ class BaseLGT(BaseETS):
                 self._regular_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
 
         self._regressor_col = self._positive_regressor_col + self._negative_regressor_col + \
-            self._regular_regressor_col
+                              self._regular_regressor_col
 
     def _set_static_data_attributes(self):
         """Cast data to the proper type mostly to match Stan required static data types
@@ -390,7 +389,7 @@ class BaseLGT(BaseETS):
             # check if prediction df is a subset of training df
             # e.g. "negative" forecast steps
             n_forecast_steps = len(forecast_dates) or \
-                -(len(set(training_df_meta['date_array']) - set(prediction_df_meta['date_array'])))
+                               -(len(set(training_df_meta['date_array']) - set(prediction_df_meta['date_array'])))
             # time index for prediction start
             start = pd.Index(
                 training_df_meta['date_array']).get_loc(prediction_df_meta['prediction_start'])
@@ -550,7 +549,7 @@ class BaseLGT(BaseETS):
 
         return {'prediction': pred_array}
 
-    def get_regression_coefs(self, aggregate_method):
+    def _get_regression_coefs(self, aggregate_method):
         """Return DataFrame regression coefficients
 
         If PredictMethod is `full` return `mean` of coefficients instead
@@ -577,8 +576,8 @@ class BaseLGT(BaseETS):
 
         # same note
         regressor_signs = ["Positive"] * self._num_of_positive_regressors + \
-            ["Negative"] * self._num_of_negative_regressors + \
-            ["Regular"] * self._num_of_regular_regressors
+                          ["Negative"] * self._num_of_negative_regressors + \
+                          ["Regular"] * self._num_of_regular_regressors
 
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR_SIGN] = regressor_signs
@@ -587,57 +586,7 @@ class BaseLGT(BaseETS):
         return coef_df
 
 
-class LGTFull(ETSFull, BaseLGT):
-    """Concrete LGT model for full prediction
-
-    In full prediction, the prediction occurs as a function of each parameter posterior sample,
-    and the prediction results are aggregated after prediction. Prediction will
-    always return the median (aka 50th percentile) along with any additional percentiles that
-    are specified.
-
-    Parameters
-    ----------
-    n_bootstrap_draws : int
-        Number of bootstrap samples to draw from the initial MCMC or VI posterior samples.
-        If None, use the original posterior draws.
-    prediction_percentiles : list
-        List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
-        confident intervals, pass an empty list
-
-    """
-    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def get_regression_coefs(self, aggregate_method='mean'):
-        self._set_aggregate_posteriors()
-        return super().get_regression_coefs(aggregate_method=aggregate_method)
-
-
-class LGTAggregated(ETSAggregated, BaseLGT):
-    """Concrete LGT model for aggregated posterior prediction
-
-    In aggregated prediction, the parameter posterior samples are reduced using `aggregate_method`
-    before performing a single prediction.
-
-    Parameters
-    ----------
-    aggregate_method : { 'mean', 'median' }
-        Method used to reduce parameter posterior samples
-
-    """
-    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def get_regression_coefs(self):
-        self._set_aggregate_posteriors()
-        return super().get_regression_coefs(aggregate_method=self.aggregate_method)
-
-
-class LGTMAP(ETSMAP, BaseLGT):
+class LGTMAP(BaseLGT, ETSMAP):
     """Concrete LGT model for MAP (Maximum a Posteriori) prediction
 
     Similar to :class: `~orbit.models.LGTAggregated` but prediction is based on Maximum a Posteriori (aka Mode)
@@ -648,10 +597,31 @@ class LGTMAP(ETSMAP, BaseLGT):
     """
     _supported_estimator_types = [StanEstimatorMAP, PyroEstimatorMAP]
 
+    def get_regression_coefs(self):
+        return super()._get_regression_coefs(aggregate_method=PredictMethod.MAP.value)
+
+
+class LGTFull(BaseLGT, ETSFull):
+    """Concrete LGT model for full Bayesian prediction"""
+    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def get_regression_coefs(self, aggregate_method='mean'):
+        self._set_aggregate_posteriors()
+        return super()._get_regression_coefs(aggregate_method=aggregate_method)
+
+
+class LGTAggregated(BaseLGT, ETSAggregated):
+    """Concrete LGT model for aggregated posterior prediction"""
+    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def get_regression_coefs(self):
-        return super().get_regression_coefs(aggregate_method=PredictMethod.MAP.value)
+        self._set_aggregate_posteriors()
+        return super()._get_regression_coefs(aggregate_method=self.aggregate_method)
 
 
