@@ -12,6 +12,7 @@ Welcome to Orbit's Documentation!
    :caption: Basic
    :name: basic
 
+   about
    installation
    tutorials/quick_start
    tutorials/model_estimations
