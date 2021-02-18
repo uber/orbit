@@ -8,7 +8,7 @@ the hood.
 
 Currently, it supports the following models:
 
--  Exponential Smoothing (estimate)
+-  Exponential Smoothing (ETS)
 -  Local Global Trend (LGT)
 -  Damped Local Trend (DLT)
 
@@ -23,7 +23,7 @@ model estimation:
 Quick Example
 -------------
 
-Orbit APIs follow a Scikit-learn stype API design, with user-friendly interface. After instansiating a model
+Orbit APIs follow a Scikit-learn stype API design, with a user-friendly interface. After instantiating a model
 object, one can use .fit and .predict for model training and prediction. Below is a quick illustration using the DLT model.
 
 .. code:: python
