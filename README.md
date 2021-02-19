@@ -1,6 +1,8 @@
-![orbit-logo](https://raw.githubusercontent.com/uber/orbit/dev/docs/img/orbit-banner.png)
+<div align="center">
+  <a href="https://github.com/uber/orbit"><img src="https://raw.githubusercontent.com/uber/orbit/dev/docs/img/orbit-banner.png"></a>
+</div>
 
--------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/uber/orbit)
 ![PyPI](https://img.shields.io/pypi/v/orbit-ml)
 [![Build Status](https://travis-ci.com/uber/orbit.svg?branch=dev)](https://travis-ci.com/uber/orbit)
