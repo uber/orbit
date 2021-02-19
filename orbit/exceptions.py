@@ -19,3 +19,7 @@ class PredictionException(Exception):
 
 class BacktestException(Exception):
     pass
+
+
+class AbstractMethodException(Exception):
+    pass

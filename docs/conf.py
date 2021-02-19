@@ -21,7 +21,7 @@ import orbit
 
 project = 'orbit'
 copyright = '2020, Uber Technologies, Inc'
-author = 'Edwin Ng, Steve Yang, Huigang Chen, Zhishi Wang'
+author = 'Edwin Ng, Steve Yang, Zhishi Wang, Yifeng Wu, Jing Pan'
 
 # The short X.Y version.
 version = orbit.__version__
@@ -82,7 +82,7 @@ html_logo = 'img/orbit-logo-black.png'
 #
 html_theme_options = {
     # 'logo_only': False,
-    'navigation_depth': 3,
+    'navigation_depth': 1,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

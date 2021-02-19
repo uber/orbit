@@ -12,7 +12,7 @@ class LGTInitializer(object):
     def __call__(self):
         init_values = dict()
         if self.s > 1:
-            init_sea = np.random.normal(loc=0, scale=0.05, size=self.s  - 1)
+            init_sea = np.random.normal(loc=0, scale=0.05, size=self.s - 1)
             # catch cases with extreme values
             init_sea[init_sea > 1.0] = 1.0
             init_sea[init_sea < -1.0] = -1.0
