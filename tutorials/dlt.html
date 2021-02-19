@@ -1,0 +1,784 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Damped Local Trend (DLT) &mdash; orbit 1.0.12 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/orbit.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Local Global Trend (LGT)" href="lgt.html" />
+    <link rel="prev" title="Using Pyro for Estimation" href="pyro_basic.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> orbit
+          
+
+          
+            
+            <img src="../_static/orbit-logo-black.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.12
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Basic</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About Orbit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_estimations.html">Methods of Estimations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pyro_basic.html">Using Pyro for Estimation</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Exponential Smoothing Models</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Damped Local Trend (DLT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lgt.html">Local Global Trend (LGT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="regression.html">Regression with DLT</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="decompose_prediction.html">Decompose Prediction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_diagnostics.html">MCMC Model Visual Diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="backtest.html">Backtest Orbit Model</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Other Utilities</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="utilities_simulation.html">Simulation Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">API Docs</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">orbit</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Damped Local Trend (DLT)</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            
+              <a href="https://github.com/uber/orbit/blob/master/docs/tutorials/dlt.ipynb" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    /*background: #f5f5f5;*/
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+    margin: 0;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="Damped-Local-Trend-(DLT)">
+<h1>Damped Local Trend (DLT)<a class="headerlink" href="#Damped-Local-Trend-(DLT)" title="Permalink to this headline">¶</a></h1>
+<p>In this section, we will cover:</p>
+<ul class="simple">
+<li><p>DLT model structure</p></li>
+<li><p>DLT global trend configurations</p></li>
+<li><p>Adding regressors in DLT</p></li>
+<li><p>Other configurations</p></li>
+</ul>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+
+<span class="kn">import</span> <span class="nn">orbit</span>
+<span class="kn">from</span> <span class="nn">orbit.models.dlt</span> <span class="kn">import</span> <span class="n">DLTMAP</span>
+<span class="kn">from</span> <span class="nn">orbit.diagnostics.plot</span> <span class="kn">import</span> <span class="n">plot_predicted_data</span><span class="p">,</span> <span class="n">plot_predicted_components</span>
+<span class="kn">from</span> <span class="nn">orbit.utils.dataset</span> <span class="kn">import</span> <span class="n">load_iclaims</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">assert</span> <span class="n">orbit</span><span class="o">.</span><span class="n">__version__</span> <span class="o">==</span> <span class="s1">&#39;1.0.12&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="Model-Structure">
+<h2>Model Structure<a class="headerlink" href="#Model-Structure" title="Permalink to this headline">¶</a></h2>
+<p><strong>DLT</strong> is one of the main exponential smoothing models we support in <code class="docutils literal notranslate"><span class="pre">orbit</span></code>. Performance is benchmarked with M3 monthly, M4 weekly dataset and some Uber internal dataset <a class="reference external" href="https://arxiv.org/abs/2004.08492">(Ng and Wang et al., 2020)</a>. The model is a fusion between the classical ETS <a class="reference external" href="http://www.exponentialsmoothing.net/home">(Hyndman et. al., 2008)</a>) with some refinement leveraging ideas from Rlgt <a class="reference external" href="https://cran.r-project.org/web/packages/Rlgt/index.html">(Smyl et al., 2019)</a>. The
+model has a structural forecast equations</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{align*}
+y_t &amp;=\mu_t + s_t + r_t +  \epsilon_t \\
+\mu_t &amp;=g_t + l_{t-1} +  \theta{b_{t-1}} \\
+\epsilon_t  &amp;~\sim \mathtt{Student}(\nu, 0, \sigma)\\
+\sigma &amp;~\sim  \mathtt{HalfCauchy}(0, \gamma_0)
+\end{align*}\end{split}\]</div>
+<p>with the update process</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{align*}
+g_t &amp;= D(t)\\
+l_t &amp;= \rho_l(y_t - g_{t} - s_t - r_t) + (1-\rho_l)(l_{t-1} + \theta b_{t-1})\\
+b_t &amp;=  \rho_b(l_t - l_{t-1}) + (1-\rho_b)\theta b_{t-1}\\
+s_{t+m} &amp;=  \rho_s(y_t - l_t - r_t) + (1-\rho_s)s_t\\
+r_t &amp;=  \Sigma_{j}\beta_j x_{jt}
+\end{align*}\end{split}\]</div>
+<p>One important point is that using <span class="math notranslate nohighlight">\(y_t\)</span> as a log-transformed response usually yield better result, especially we can interpret such log-transformed model as a <em>multiplicative form</em> of the original model. Besides, there are two new additional components compared to the classical damped ETS model:</p>
+<ol class="arabic simple">
+<li><p><span class="math notranslate nohighlight">\(D(t)\)</span> as the deterministic trend process</p></li>
+<li><p><span class="math notranslate nohighlight">\(r\)</span> as the regression component with <span class="math notranslate nohighlight">\(x\)</span> as the regressors</p></li>
+</ol>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># load log-transformed data</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">load_iclaims</span><span class="p">()</span>
+<span class="n">test_size</span> <span class="o">=</span> <span class="mi">52</span> <span class="o">*</span> <span class="mi">3</span>
+<span class="n">train_df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[:</span><span class="o">-</span><span class="n">test_size</span><span class="p">]</span>
+<span class="n">test_df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="o">-</span><span class="n">test_size</span><span class="p">:]</span>
+<span class="n">response_col</span> <span class="o">=</span> <span class="s1">&#39;claims&#39;</span>
+<span class="n">date_col</span> <span class="o">=</span> <span class="s1">&#39;week&#39;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Global-Trend-Configurations">
+<h2>Global Trend Configurations<a class="headerlink" href="#Global-Trend-Configurations" title="Permalink to this headline">¶</a></h2>
+<p>There are a few choices of <span class="math notranslate nohighlight">\(D(t)\)</span> configured by <code class="docutils literal notranslate"><span class="pre">global_trend_option</span></code>:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">loglinear</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">linear</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">flat</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">logistic</span></code></p></li>
+</ol>
+<p>To show the difference among these options, we project the predictions in the charts below. Note that the default is set to <code class="docutils literal notranslate"><span class="pre">linear</span></code> which we find a better fit for a log-transformed model. Such default is also used in the benchmarking process mentioned previously.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%%time</span>
+<span class="c1"># linear global trend</span>
+<span class="n">dlt</span> <span class="o">=</span> <span class="n">DLTMAP</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span>
+    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">8888</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_df</span><span class="p">)</span>
+<span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test_df</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="p">,</span> <span class="n">response_col</span><span class="p">,</span>  <span class="n">title</span><span class="o">=</span><span class="s1">&#39;DLT Linear Global Trend&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/tutorials_dlt_8_0.png" src="../_images/tutorials_dlt_8_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 1.4 s, sys: 363 ms, total: 1.76 s
+Wall time: 2.02 s
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%%time</span>
+<span class="c1"># log-linear global trend</span>
+<span class="n">dlt</span> <span class="o">=</span> <span class="n">DLTMAP</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span>
+    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">8888</span><span class="p">,</span>
+    <span class="n">global_trend_option</span><span class="o">=</span><span class="s1">&#39;loglinear&#39;</span>
+<span class="p">)</span>
+
+<span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_df</span><span class="p">)</span>
+<span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test_df</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="p">,</span> <span class="n">response_col</span><span class="p">,</span>  <span class="n">title</span><span class="o">=</span><span class="s1">&#39;DLT Log-Linear Global Trend&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/tutorials_dlt_9_0.png" src="../_images/tutorials_dlt_9_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 1.29 s, sys: 292 ms, total: 1.58 s
+Wall time: 1.43 s
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%%time</span>
+<span class="c1"># log-linear global trend</span>
+<span class="n">dlt</span> <span class="o">=</span> <span class="n">DLTMAP</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span>
+    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">8888</span><span class="p">,</span>
+    <span class="n">global_trend_option</span><span class="o">=</span><span class="s1">&#39;flat&#39;</span>
+<span class="p">)</span>
+
+<span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_df</span><span class="p">)</span>
+<span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test_df</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="p">,</span> <span class="n">response_col</span><span class="p">,</span>  <span class="n">title</span><span class="o">=</span><span class="s1">&#39;DLT Flat Global Trend&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/tutorials_dlt_10_0.png" src="../_images/tutorials_dlt_10_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 1.22 s, sys: 288 ms, total: 1.51 s
+Wall time: 1.36 s
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%%time</span>
+<span class="c1"># logistic global trend</span>
+<span class="n">dlt</span> <span class="o">=</span> <span class="n">DLTMAP</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span>
+    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">8888</span><span class="p">,</span>
+    <span class="n">global_trend_option</span><span class="o">=</span><span class="s1">&#39;logistic&#39;</span>
+<span class="p">)</span>
+
+<span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_df</span><span class="p">)</span>
+<span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">test_df</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_data</span><span class="p">(</span><span class="n">train_df</span><span class="p">,</span> <span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="p">,</span> <span class="n">response_col</span><span class="p">,</span>  <span class="n">title</span><span class="o">=</span><span class="s1">&#39;DLT Logistic Global Trend&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/tutorials_dlt_11_0.png" src="../_images/tutorials_dlt_11_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 1.36 s, sys: 300 ms, total: 1.66 s
+Wall time: 1.54 s
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Regression">
+<h2>Regression<a class="headerlink" href="#Regression" title="Permalink to this headline">¶</a></h2>
+<p>You can also add regressors into the model by specifying <code class="docutils literal notranslate"><span class="pre">regressor_col</span></code>. This serves the purpose of nowcasting or forecasting when exogenous regressors are known such as events and holidays. Without losing generality, the interface is set to be</p>
+<div class="math notranslate nohighlight">
+\[\beta_j ~\sim \mathcal{N}(\mu_j, \sigma_j^2)\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mu_j = 0\)</span> and <span class="math notranslate nohighlight">\(\sigma_j = 1\)</span> by default as a non-informative prior. These two parameters are set by the arguments <code class="docutils literal notranslate"><span class="pre">regressor_beta_prior</span></code> and <code class="docutils literal notranslate"><span class="pre">regressor_sigma_prior</span></code> as a list. For example,</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">dlt</span> <span class="o">=</span> <span class="n">DLTMAP</span><span class="p">(</span>
+    <span class="n">response_col</span><span class="o">=</span><span class="n">response_col</span><span class="p">,</span>
+    <span class="n">date_col</span><span class="o">=</span><span class="n">date_col</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">8888</span><span class="p">,</span>
+    <span class="n">seasonality</span><span class="o">=</span><span class="mi">52</span><span class="p">,</span>
+    <span class="n">regressor_col</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;trend.unemploy&#39;</span><span class="p">,</span> <span class="s1">&#39;trend.filling&#39;</span><span class="p">],</span>
+    <span class="n">regressor_beta_prior</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">],</span>
+    <span class="n">regressor_sigma_prior</span><span class="o">=</span><span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">dlt</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+<span class="n">predicted_df</span> <span class="o">=</span> <span class="n">dlt</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">decompose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">plot_predicted_components</span><span class="p">(</span><span class="n">predicted_df</span><span class="p">,</span> <span class="n">date_col</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/tutorials_dlt_14_0.png" src="../_images/tutorials_dlt_14_0.png" />
+</div>
+</div>
+<p>There are much more configurations on regression such as the regressor signs and penalty type. They will be discussed in later section.</p>
+</div>
+<div class="section" id="Other-Configurations">
+<h2>Other Configurations<a class="headerlink" href="#Other-Configurations" title="Permalink to this headline">¶</a></h2>
+<p>Just like other model, there are full Bayesian version and aggregated posteriors version for <code class="docutils literal notranslate"><span class="pre">DLT</span></code> named after <code class="docutils literal notranslate"><span class="pre">DLTAggregated</span></code> and <code class="docutils literal notranslate"><span class="pre">DLTFull</span></code>. They are usually more robust in regression but may take longer time to train. More details for each method are available in the docstrings and also here: <a class="reference external" href="https://uber.github.io/orbit/orbit.models.html#module-orbit.models.dlt">https://uber.github.io/orbit/orbit.models.html#module-orbit.models.dlt</a></p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="lgt.html" class="btn btn-neutral float-right" title="Local Global Trend (LGT)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="pyro_basic.html" class="btn btn-neutral float-left" title="Using Pyro for Estimation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, Uber Technologies, Inc.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

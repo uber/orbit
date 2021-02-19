@@ -3,11 +3,11 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Python Module Index &mdash; orbit 1.0.10 documentation</title>
+  <title>Python Module Index &mdash; orbit 1.0.12 documentation</title>
   
 
   
@@ -18,7 +18,10 @@
   
     <link rel="shortcut icon" href="_static/favicon.ico"/>
   
+
   
+  
+
   
 
   
@@ -31,14 +34,12 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+    <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
  
@@ -57,7 +58,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> orbit
+            <a href="index.html" class="icon icon-home"> orbit
           
 
           
@@ -70,7 +71,7 @@
             
             
               <div class="version">
-                1.0.10
+                1.0.12
               </div>
             
           
@@ -95,10 +96,29 @@
               
             
             
-              <p class="caption"><span class="caption-text">Orbit Core</span></p>
+              <p class="caption"><span class="caption-text">Basic</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Orbit</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/quick_start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/model_estimations.html">Methods of Estimations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/pyro_basic.html">Using Pyro for Estimation</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Exponential Smoothing Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/dlt.html">Damped Local Trend (DLT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/lgt.html">Local Global Trend (LGT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/regression.html">Regression with DLT</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/decompose_prediction.html">Decompose Prediction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/model_diagnostics.html">MCMC Model Visual Diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/backtest.html">Backtest Orbit Model</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Other Utilities</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/utilities_simulation.html">Simulation Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">API Docs</a></li>
 </ul>
 
@@ -125,6 +145,8 @@
         <div class="rst-content">
         
           
+
+
 
 
 
@@ -246,11 +268,6 @@
      <tr class="cg-1">
        <td></td>
        <td>&#160;&#160;&#160;
-       <a href="orbit.models.html#module-orbit.models.base_model"><code class="xref">orbit.models.base_model</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
        <a href="orbit.models.html#module-orbit.models.dlt"><code class="xref">orbit.models.dlt</code></a></td><td>
        <em></em></td></tr>
      <tr class="cg-1">
@@ -300,28 +317,25 @@
            
           </div>
           <footer>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Uber Technologies, Inc
+        &#169; Copyright 2020, Uber Technologies, Inc.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 

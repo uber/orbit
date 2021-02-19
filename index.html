@@ -3,11 +3,11 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Welcome to Orbit’s Documentation! &mdash; orbit 1.0.10 documentation</title>
+  <title>Welcome to Orbit’s Documentation! &mdash; orbit 1.0.12 documentation</title>
   
 
   
@@ -18,7 +18,10 @@
   
     <link rel="shortcut icon" href="_static/favicon.ico"/>
   
+
   
+  
+
   
 
   
@@ -31,17 +34,15 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+    <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Installation" href="installation.html" /> 
+    <link rel="next" title="About Orbit" href="about.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -55,7 +56,7 @@
           
 
           
-            <a href="#" class="icon icon-home" alt="Documentation Home"> orbit
+            <a href="#" class="icon icon-home"> orbit
           
 
           
@@ -68,7 +69,7 @@
             
             
               <div class="version">
-                1.0.10
+                1.0.12
               </div>
             
           
@@ -93,10 +94,29 @@
               
             
             
-              <p class="caption"><span class="caption-text">Orbit Core</span></p>
+              <p class="caption"><span class="caption-text">Basic</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Orbit</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/quick_start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/model_estimations.html">Methods of Estimations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/pyro_basic.html">Using Pyro for Estimation</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Exponential Smoothing Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/dlt.html">Damped Local Trend (DLT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/lgt.html">Local Global Trend (LGT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/regression.html">Regression with DLT</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Validation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/decompose_prediction.html">Decompose Prediction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/model_diagnostics.html">MCMC Model Visual Diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/backtest.html">Backtest Orbit Model</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Other Utilities</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/utilities_simulation.html">Simulation Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">API Docs</a></li>
 </ul>
 
@@ -138,6 +158,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -149,7 +171,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             
               <a href="https://github.com/uber/orbit/blob/master/docs/index.rst" class="fa fa-github"> Edit on GitHub</a>
             
@@ -191,11 +213,37 @@
 </style>
 <div class="section" id="welcome-to-orbit-s-documentation">
 <h1>Welcome to Orbit’s Documentation!<a class="headerlink" href="#welcome-to-orbit-s-documentation" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Orbit Core</span></p>
+<style> .red {color:red} </style><p><span class="red">The tutorial pages here will be deprecated in the near future. Please use</span> <a class="reference external" href="https://orbit-ml.readthedocs.io/en/stable/">this link</a>.</p>
+<div class="toctree-wrapper compound" id="basic">
+<p class="caption"><span class="caption-text">Basic</span><a class="headerlink" href="#basic" title="Permalink to this toctree">¶</a></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Orbit</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/quick_start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/model_estimations.html">Methods of Estimations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/pyro_basic.html">Using Pyro for Estimation</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound" id="exponential-smoothing-models">
+<p class="caption"><span class="caption-text">Exponential Smoothing Models</span><a class="headerlink" href="#exponential-smoothing-models" title="Permalink to this toctree">¶</a></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/dlt.html">Damped Local Trend (DLT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/lgt.html">Local Global Trend (LGT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/regression.html">Regression with DLT</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Validation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/decompose_prediction.html">Decompose Prediction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/model_diagnostics.html">MCMC Model Visual Diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/backtest.html">Backtest Orbit Model</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Other Utilities</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/utilities_simulation.html">Simulation Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">API Docs</a></li>
 </ul>
 </div>
@@ -214,35 +262,28 @@
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
+        <a href="about.html" class="btn btn-neutral float-right" title="About Orbit" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Uber Technologies, Inc
+        &#169; Copyright 2020, Uber Technologies, Inc.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 

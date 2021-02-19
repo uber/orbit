@@ -3,11 +3,11 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>orbit.estimators package &mdash; orbit 1.0.10 documentation</title>
+  <title>orbit.estimators package &mdash; orbit 1.0.12 documentation</title>
   
 
   
@@ -18,7 +18,10 @@
   
     <link rel="shortcut icon" href="_static/favicon.ico"/>
   
+
   
+  
+
   
 
   
@@ -31,14 +34,12 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+    <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="orbit.models package" href="orbit.models.html" />
@@ -56,7 +57,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> orbit
+            <a href="index.html" class="icon icon-home"> orbit
           
 
           
@@ -69,7 +70,7 @@
             
             
               <div class="version">
-                1.0.10
+                1.0.12
               </div>
             
           
@@ -94,21 +95,30 @@
               
             
             
-              <p class="caption"><span class="caption-text">Orbit Core</span></p>
-<ul class="current">
+              <p class="caption"><span class="caption-text">Basic</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Orbit</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Docs</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="orbit.html">orbit package</a><ul class="current">
-<li class="toctree-l3 current"><a class="reference internal" href="orbit.html#subpackages">Subpackages</a></li>
-<li class="toctree-l3"><a class="reference internal" href="orbit.html#submodules">Submodules</a></li>
-<li class="toctree-l3"><a class="reference internal" href="orbit.html#module-orbit.exceptions">orbit.exceptions module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="orbit.html#module-orbit.orbit">orbit.orbit module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="orbit.html#module-orbit">Module contents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/quick_start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/model_estimations.html">Methods of Estimations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/pyro_basic.html">Using Pyro for Estimation</a></li>
 </ul>
-</li>
+<p class="caption"><span class="caption-text">Exponential Smoothing Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/dlt.html">Damped Local Trend (DLT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/lgt.html">Local Global Trend (LGT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/regression.html">Regression with DLT</a></li>
 </ul>
-</li>
+<p class="caption"><span class="caption-text">Validation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/decompose_prediction.html">Decompose Prediction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/model_diagnostics.html">MCMC Model Visual Diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/backtest.html">Backtest Orbit Model</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Other Utilities</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tutorials/utilities_simulation.html">Simulation Data</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Docs</a></li>
 </ul>
 
             
@@ -149,6 +159,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -164,7 +176,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             
               <a href="https://github.com/uber/orbit/blob/master/docs/orbit.estimators.rst" class="fa fa-github"> Edit on GitHub</a>
             
@@ -213,7 +225,7 @@
 <span id="orbit-estimators-base-estimator-module"></span><h2>orbit.estimators.base_estimator module<a class="headerlink" href="#module-orbit.estimators.base_estimator" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="orbit.estimators.base_estimator.BaseEstimator">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.estimators.base_estimator.</code><code class="sig-name descname">BaseEstimator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">seed</span><span class="o">=</span><span class="default_value">8888</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.base_estimator.BaseEstimator" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.estimators.base_estimator.</span></code><code class="sig-name descname"><span class="pre">BaseEstimator</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8888</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.base_estimator.BaseEstimator" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Base Estimator class for both Stan and Pyro Estimator</p>
 <dl class="field-list simple">
@@ -226,7 +238,7 @@
 </dl>
 <dl class="py method">
 <dt id="orbit.estimators.base_estimator.BaseEstimator.fit">
-<em class="property">abstract </em><code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_name</span></em>, <em class="sig-param"><span class="n">model_param_names</span></em>, <em class="sig-param"><span class="n">data_input</span></em>, <em class="sig-param"><span class="n">init_values</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.base_estimator.BaseEstimator.fit" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">fit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_param_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.base_estimator.BaseEstimator.fit" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -253,19 +265,21 @@ and value is <cite>num_sample</cite> x posterior values</p>
 <span id="orbit-estimators-pyro-estimator-module"></span><h2>orbit.estimators.pyro_estimator module<a class="headerlink" href="#module-orbit.estimators.pyro_estimator" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="orbit.estimators.pyro_estimator.PyroEstimator">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.estimators.pyro_estimator.</code><code class="sig-name descname">PyroEstimator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">num_steps</span><span class="o">=</span><span class="default_value">101</span></em>, <em class="sig-param"><span class="n">learning_rate</span><span class="o">=</span><span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">learning_rate_total_decay</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">message</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimator" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.estimators.pyro_estimator.</span></code><code class="sig-name descname"><span class="pre">PyroEstimator</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">101</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate_total_decay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimator" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#orbit.estimators.base_estimator.BaseEstimator" title="orbit.estimators.base_estimator.BaseEstimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.estimators.base_estimator.BaseEstimator</span></code></a></p>
 <p>Abstract PyroEstimator with shared args for all PyroEstimator child classes</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
+<li><p><strong>seed</strong> (<em>int</em>) – seed number for initial random values</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – If True, output all diagnostics messages from estimators</p></li>
 <li><p><strong>num_steps</strong> (<em>int</em>) – Number of estimator steps in optimization</p></li>
 <li><p><strong>learning_rate</strong> (<em>float</em>) – Estimator learning rate</p></li>
 <li><p><strong>learning_rate_total_decay</strong> (<em>float</em>) – A config re-parameterized from <code class="docutils literal notranslate"><span class="pre">lrd</span></code> in <code class="xref py py-class docutils literal notranslate"><span class="pre">ClippedAdam</span></code>.
 Note this is the total decay over all <code class="docutils literal notranslate"><span class="pre">num_steps</span></code>, not the per-step decay factor.  Such
 parameter is independent from <code class="docutils literal notranslate"><span class="pre">num_steps</span></code>.  e.g. 1.0 means no decay and 0.1 means 90% decay
 at the final step.</p></li>
-<li><p><strong>seed</strong> (<em>int</em>) – Seed int</p></li>
+<li><p><strong>seed</strong> – Seed int</p></li>
 <li><p><strong>message</strong> (<em>int</em>) – Print to console every <cite>message</cite> number of steps</p></li>
 <li><p><strong>kwargs</strong> – Additional BaseEstimator args</p></li>
 </ul>
@@ -275,7 +289,7 @@ at the final step.</p></li>
 <p>See <a class="reference external" href="http://docs.pyro.ai/en/stable/_modules/pyro/optim/clipped_adam.html">http://docs.pyro.ai/en/stable/_modules/pyro/optim/clipped_adam.html</a> for optimizer details</p>
 <dl class="py method">
 <dt id="orbit.estimators.pyro_estimator.PyroEstimator.fit">
-<em class="property">abstract </em><code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_name</span></em>, <em class="sig-param"><span class="n">model_param_names</span></em>, <em class="sig-param"><span class="n">data_input</span></em>, <em class="sig-param"><span class="n">init_values</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimator.fit" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">fit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_param_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimator.fit" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -299,12 +313,31 @@ and value is <cite>num_sample</cite> x posterior values</p>
 
 <dl class="py class">
 <dt id="orbit.estimators.pyro_estimator.PyroEstimatorMAP">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.estimators.pyro_estimator.</code><code class="sig-name descname">PyroEstimatorMAP</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimatorMAP" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.estimators.pyro_estimator.</span></code><code class="sig-name descname"><span class="pre">PyroEstimatorMAP</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimatorMAP" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#orbit.estimators.pyro_estimator.PyroEstimator" title="orbit.estimators.pyro_estimator.PyroEstimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.estimators.pyro_estimator.PyroEstimator</span></code></a></p>
 <p>Pyro Estimator for MAP Posteriors</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seed</strong> (<em>int</em>) – seed number for initial random values</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – If True, output all diagnostics messages from estimators</p></li>
+<li><p><strong>num_steps</strong> (<em>int</em>) – Number of estimator steps in optimization</p></li>
+<li><p><strong>learning_rate</strong> (<em>float</em>) – Estimator learning rate</p></li>
+<li><p><strong>learning_rate_total_decay</strong> (<em>float</em>) – A config re-parameterized from <code class="docutils literal notranslate"><span class="pre">lrd</span></code> in <code class="xref py py-class docutils literal notranslate"><span class="pre">ClippedAdam</span></code>.
+Note this is the total decay over all <code class="docutils literal notranslate"><span class="pre">num_steps</span></code>, not the per-step decay factor.  Such
+parameter is independent from <code class="docutils literal notranslate"><span class="pre">num_steps</span></code>.  e.g. 1.0 means no decay and 0.1 means 90% decay
+at the final step.</p></li>
+<li><p><strong>seed</strong> – Seed int</p></li>
+<li><p><strong>message</strong> (<em>int</em>) – Print to console every <cite>message</cite> number of steps</p></li>
+<li><p><strong>kwargs</strong> – Additional BaseEstimator args</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>See <a class="reference external" href="http://docs.pyro.ai/en/stable/_modules/pyro/optim/clipped_adam.html">http://docs.pyro.ai/en/stable/_modules/pyro/optim/clipped_adam.html</a> for optimizer details</p>
 <dl class="py method">
 <dt id="orbit.estimators.pyro_estimator.PyroEstimatorMAP.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_name</span></em>, <em class="sig-param"><span class="n">model_param_names</span></em>, <em class="sig-param"><span class="n">data_input</span></em>, <em class="sig-param"><span class="n">init_values</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimatorMAP.fit" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">fit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_param_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimatorMAP.fit" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -328,21 +361,34 @@ and value is <cite>num_sample</cite> x posterior values</p>
 
 <dl class="py class">
 <dt id="orbit.estimators.pyro_estimator.PyroEstimatorVI">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.estimators.pyro_estimator.</code><code class="sig-name descname">PyroEstimatorVI</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">num_sample</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">num_particles</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimatorVI" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.estimators.pyro_estimator.</span></code><code class="sig-name descname"><span class="pre">PyroEstimatorVI</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_sample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_particles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimatorVI" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#orbit.estimators.pyro_estimator.PyroEstimator" title="orbit.estimators.pyro_estimator.PyroEstimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.estimators.pyro_estimator.PyroEstimator</span></code></a></p>
 <p>Pyro Estimator for VI Sampling</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
+<li><p><strong>seed</strong> (<em>int</em>) – seed number for initial random values</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – If True, output all diagnostics messages from estimators</p></li>
+<li><p><strong>num_steps</strong> (<em>int</em>) – Number of estimator steps in optimization</p></li>
+<li><p><strong>learning_rate</strong> (<em>float</em>) – Estimator learning rate</p></li>
+<li><p><strong>learning_rate_total_decay</strong> (<em>float</em>) – A config re-parameterized from <code class="docutils literal notranslate"><span class="pre">lrd</span></code> in <code class="xref py py-class docutils literal notranslate"><span class="pre">ClippedAdam</span></code>.
+Note this is the total decay over all <code class="docutils literal notranslate"><span class="pre">num_steps</span></code>, not the per-step decay factor.  Such
+parameter is independent from <code class="docutils literal notranslate"><span class="pre">num_steps</span></code>.  e.g. 1.0 means no decay and 0.1 means 90% decay
+at the final step.</p></li>
+<li><p><strong>seed</strong> – Seed int</p></li>
+<li><p><strong>message</strong> (<em>int</em>) – Print to console every <cite>message</cite> number of steps</p></li>
+<li><p><strong>kwargs</strong> – Additional BaseEstimator args</p></li>
 <li><p><strong>num_sample</strong> (<em>int</em>) – Number of samples ot draw for inference, default 100</p></li>
 <li><p><strong>num_particles</strong> (<em>int</em>) – Number of particles used in :class: <cite>~pyro.infer.Trace_ELBO</cite> for SVI optimization</p></li>
 <li><p><strong>kwargs</strong> – Additional <cite>PyroEstimator</cite> class args</p></li>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Notes</p>
+<p>See <a class="reference external" href="http://docs.pyro.ai/en/stable/_modules/pyro/optim/clipped_adam.html">http://docs.pyro.ai/en/stable/_modules/pyro/optim/clipped_adam.html</a> for optimizer details</p>
 <dl class="py method">
 <dt id="orbit.estimators.pyro_estimator.PyroEstimatorVI.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_name</span></em>, <em class="sig-param"><span class="n">model_param_names</span></em>, <em class="sig-param"><span class="n">data_input</span></em>, <em class="sig-param"><span class="n">init_values</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimatorVI.fit" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">fit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_param_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.pyro_estimator.PyroEstimatorVI.fit" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -369,12 +415,14 @@ and value is <cite>num_sample</cite> x posterior values</p>
 <span id="orbit-estimators-stan-estimator-module"></span><h2>orbit.estimators.stan_estimator module<a class="headerlink" href="#module-orbit.estimators.stan_estimator" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="orbit.estimators.stan_estimator.StanEstimator">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.estimators.stan_estimator.</code><code class="sig-name descname">StanEstimator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">num_warmup</span><span class="o">=</span><span class="default_value">900</span></em>, <em class="sig-param"><span class="n">num_sample</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">chains</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">cores</span><span class="o">=</span><span class="default_value">8</span></em>, <em class="sig-param"><span class="n">algorithm</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimator" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.estimators.stan_estimator.</span></code><code class="sig-name descname"><span class="pre">StanEstimator</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_warmup</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">900</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_sample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cores</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">algorithm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimator" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#orbit.estimators.base_estimator.BaseEstimator" title="orbit.estimators.base_estimator.BaseEstimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.estimators.base_estimator.BaseEstimator</span></code></a></p>
 <p>Abstract StanEstimator with shared args for all StanEstimator child classes</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
+<li><p><strong>seed</strong> (<em>int</em>) – seed number for initial random values</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – If True, output all diagnostics messages from estimators</p></li>
 <li><p><strong>num_warmup</strong> (<em>int</em>) – Number of samples to discard, default 900</p></li>
 <li><p><strong>num_sample</strong> (<em>int</em>) – Number of samples to return, default 100</p></li>
 <li><p><strong>chains</strong> (<em>int</em>) – Number of chains in stan sampler, default 4</p></li>
@@ -386,7 +434,7 @@ and value is <cite>num_sample</cite> x posterior values</p>
 </dl>
 <dl class="py method">
 <dt id="orbit.estimators.stan_estimator.StanEstimator.fit">
-<em class="property">abstract </em><code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_name</span></em>, <em class="sig-param"><span class="n">model_param_names</span></em>, <em class="sig-param"><span class="n">data_input</span></em>, <em class="sig-param"><span class="n">init_values</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimator.fit" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">abstract</span> </em><code class="sig-name descname"><span class="pre">fit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_param_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimator.fit" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -410,20 +458,27 @@ and value is <cite>num_sample</cite> x posterior values</p>
 
 <dl class="py class">
 <dt id="orbit.estimators.stan_estimator.StanEstimatorMAP">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.estimators.stan_estimator.</code><code class="sig-name descname">StanEstimatorMAP</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stan_map_args</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimatorMAP" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.estimators.stan_estimator.</span></code><code class="sig-name descname"><span class="pre">StanEstimatorMAP</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stan_map_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimatorMAP" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#orbit.estimators.stan_estimator.StanEstimator" title="orbit.estimators.stan_estimator.StanEstimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.estimators.stan_estimator.StanEstimator</span></code></a></p>
 <p>Stan Estimator for MAP Posteriors</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>stan_map_args</strong> (<em>None</em>) – Supplemental stan vi args to pass to PyStan.optimizing()</p></li>
-<li><p><strong>kwargs</strong> – Additional <cite>StanEstimator</cite> class args</p></li>
+<li><p><strong>seed</strong> (<em>int</em>) – seed number for initial random values</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – If True, output all diagnostics messages from estimators</p></li>
+<li><p><strong>num_warmup</strong> (<em>int</em>) – Number of samples to discard, default 900</p></li>
+<li><p><strong>num_sample</strong> (<em>int</em>) – Number of samples to return, default 100</p></li>
+<li><p><strong>chains</strong> (<em>int</em>) – Number of chains in stan sampler, default 4</p></li>
+<li><p><strong>cores</strong> (<em>int</em>) – Number of cores for parallel processing, default max(cores, multiprocessing.cpu_count())</p></li>
+<li><p><strong>algorithm</strong> (<em>str</em>) – If None, default to Stan defaults</p></li>
+<li><p><strong>kwargs</strong> – Additional <cite>BaseEstimator</cite> class args</p></li>
+<li><p><strong>stan_map_args</strong> (<em>dict</em>) – Supplemental stan vi args to pass to PyStan.optimizing()</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py method">
 <dt id="orbit.estimators.stan_estimator.StanEstimatorMAP.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_name</span></em>, <em class="sig-param"><span class="n">model_param_names</span></em>, <em class="sig-param"><span class="n">data_input</span></em>, <em class="sig-param"><span class="n">init_values</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimatorMAP.fit" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">fit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_param_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimatorMAP.fit" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -447,21 +502,28 @@ and value is <cite>num_sample</cite> x posterior values</p>
 
 <dl class="py class">
 <dt id="orbit.estimators.stan_estimator.StanEstimatorMCMC">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.estimators.stan_estimator.</code><code class="sig-name descname">StanEstimatorMCMC</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stan_mcmc_control</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">stan_mcmc_args</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimatorMCMC" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.estimators.stan_estimator.</span></code><code class="sig-name descname"><span class="pre">StanEstimatorMCMC</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stan_mcmc_control</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stan_mcmc_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimatorMCMC" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#orbit.estimators.stan_estimator.StanEstimator" title="orbit.estimators.stan_estimator.StanEstimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.estimators.stan_estimator.StanEstimator</span></code></a></p>
 <p>Stan Estimator for MCMC Sampling</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>stan_mcmc_control</strong> (<em>None</em>) – Supplemental stan control parameters to pass to PyStan.sampling()</p></li>
-<li><p><strong>stan_mcmc_args</strong> (<em>None</em>) – Supplemental stan mcmc args to pass to PyStan.sampling()</p></li>
-<li><p><strong>kwargs</strong> – Additional <cite>StanEstimator</cite> class args</p></li>
+<li><p><strong>seed</strong> (<em>int</em>) – seed number for initial random values</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – If True, output all diagnostics messages from estimators</p></li>
+<li><p><strong>num_warmup</strong> (<em>int</em>) – Number of samples to discard, default 900</p></li>
+<li><p><strong>num_sample</strong> (<em>int</em>) – Number of samples to return, default 100</p></li>
+<li><p><strong>chains</strong> (<em>int</em>) – Number of chains in stan sampler, default 4</p></li>
+<li><p><strong>cores</strong> (<em>int</em>) – Number of cores for parallel processing, default max(cores, multiprocessing.cpu_count())</p></li>
+<li><p><strong>algorithm</strong> (<em>str</em>) – If None, default to Stan defaults</p></li>
+<li><p><strong>kwargs</strong> – Additional <cite>BaseEstimator</cite> class args</p></li>
+<li><p><strong>stan_mcmc_control</strong> (<em>dict</em>) – Supplemental stan control parameters to pass to PyStan.sampling()</p></li>
+<li><p><strong>stan_mcmc_args</strong> (<em>dict</em>) – Supplemental stan mcmc args to pass to PyStan.sampling()</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py method">
 <dt id="orbit.estimators.stan_estimator.StanEstimatorMCMC.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_name</span></em>, <em class="sig-param"><span class="n">model_param_names</span></em>, <em class="sig-param"><span class="n">data_input</span></em>, <em class="sig-param"><span class="n">init_values</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimatorMCMC.fit" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">fit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_param_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimatorMCMC.fit" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -485,20 +547,27 @@ and value is <cite>num_sample</cite> x posterior values</p>
 
 <dl class="py class">
 <dt id="orbit.estimators.stan_estimator.StanEstimatorVI">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.estimators.stan_estimator.</code><code class="sig-name descname">StanEstimatorVI</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stan_vi_args</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimatorVI" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.estimators.stan_estimator.</span></code><code class="sig-name descname"><span class="pre">StanEstimatorVI</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stan_vi_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimatorVI" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#orbit.estimators.stan_estimator.StanEstimator" title="orbit.estimators.stan_estimator.StanEstimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">orbit.estimators.stan_estimator.StanEstimator</span></code></a></p>
 <p>Stan Estimator for VI Sampling</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>stan_vi_args</strong> (<em>None</em>) – Supplemental stan vi args to pass to PyStan.vb()</p></li>
-<li><p><strong>kwargs</strong> – Additional <cite>StanEstimator</cite> class args</p></li>
+<li><p><strong>seed</strong> (<em>int</em>) – seed number for initial random values</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em>) – If True, output all diagnostics messages from estimators</p></li>
+<li><p><strong>num_warmup</strong> (<em>int</em>) – Number of samples to discard, default 900</p></li>
+<li><p><strong>num_sample</strong> (<em>int</em>) – Number of samples to return, default 100</p></li>
+<li><p><strong>chains</strong> (<em>int</em>) – Number of chains in stan sampler, default 4</p></li>
+<li><p><strong>cores</strong> (<em>int</em>) – Number of cores for parallel processing, default max(cores, multiprocessing.cpu_count())</p></li>
+<li><p><strong>algorithm</strong> (<em>str</em>) – If None, default to Stan defaults</p></li>
+<li><p><strong>kwargs</strong> – Additional <cite>BaseEstimator</cite> class args</p></li>
+<li><p><strong>stan_vi_args</strong> (<em>dict</em>) – Supplemental stan vi args to pass to PyStan.vb()</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py method">
 <dt id="orbit.estimators.stan_estimator.StanEstimatorVI.fit">
-<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_name</span></em>, <em class="sig-param"><span class="n">model_param_names</span></em>, <em class="sig-param"><span class="n">data_input</span></em>, <em class="sig-param"><span class="n">init_values</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimatorVI.fit" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">fit</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_param_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_input</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.estimators.stan_estimator.StanEstimatorVI.fit" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -531,37 +600,29 @@ and value is <cite>num_sample</cite> x posterior values</p>
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="orbit.models.html" class="btn btn-neutral float-right" title="orbit.models package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="orbit.diagnostics.html" class="btn btn-neutral float-left" title="orbit.diagnostics package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="orbit.models.html" class="btn btn-neutral float-right" title="orbit.models package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="orbit.diagnostics.html" class="btn btn-neutral float-left" title="orbit.diagnostics package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Uber Technologies, Inc
+        &#169; Copyright 2020, Uber Technologies, Inc.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 

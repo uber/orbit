@@ -3,11 +3,11 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>orbit.constants package &mdash; orbit 1.0.10 documentation</title>
+  <title>orbit.constants package &mdash; orbit 1.0.12 documentation</title>
   
 
   
@@ -18,7 +18,10 @@
   
     <link rel="shortcut icon" href="_static/favicon.ico"/>
   
+
   
+  
+
   
 
   
@@ -31,14 +34,12 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+    <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="orbit.diagnostics package" href="orbit.diagnostics.html" />
@@ -56,7 +57,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> orbit
+            <a href="index.html" class="icon icon-home"> orbit
           
 
           
@@ -69,7 +70,7 @@
             
             
               <div class="version">
-                1.0.10
+                1.0.12
               </div>
             
           
@@ -94,21 +95,30 @@
               
             
             
-              <p class="caption"><span class="caption-text">Orbit Core</span></p>
-<ul class="current">
+              <p class="caption"><span class="caption-text">Basic</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Orbit</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Docs</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="orbit.html">orbit package</a><ul class="current">
-<li class="toctree-l3 current"><a class="reference internal" href="orbit.html#subpackages">Subpackages</a></li>
-<li class="toctree-l3"><a class="reference internal" href="orbit.html#submodules">Submodules</a></li>
-<li class="toctree-l3"><a class="reference internal" href="orbit.html#module-orbit.exceptions">orbit.exceptions module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="orbit.html#module-orbit.orbit">orbit.orbit module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="orbit.html#module-orbit">Module contents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/quick_start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/model_estimations.html">Methods of Estimations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/pyro_basic.html">Using Pyro for Estimation</a></li>
 </ul>
-</li>
+<p class="caption"><span class="caption-text">Exponential Smoothing Models</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/dlt.html">Damped Local Trend (DLT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/lgt.html">Local Global Trend (LGT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/regression.html">Regression with DLT</a></li>
 </ul>
-</li>
+<p class="caption"><span class="caption-text">Validation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/decompose_prediction.html">Decompose Prediction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/model_diagnostics.html">MCMC Model Visual Diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/backtest.html">Backtest Orbit Model</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Other Utilities</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tutorials/utilities_simulation.html">Simulation Data</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API Docs</a></li>
 </ul>
 
             
@@ -149,6 +159,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -164,7 +176,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             
               <a href="https://github.com/uber/orbit/blob/master/docs/orbit.constants.rst" class="fa fa-github"> Edit on GitHub</a>
             
@@ -213,307 +225,307 @@
 <span id="orbit-constants-constants-module"></span><h2>orbit.constants.constants module<a class="headerlink" href="#module-orbit.constants.constants" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="orbit.constants.constants.BacktestAnalyzeKeys">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.constants.</code><code class="sig-name descname">BacktestAnalyzeKeys</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.BacktestAnalyzeKeys" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.constants.</span></code><code class="sig-name descname"><span class="pre">BacktestAnalyzeKeys</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.BacktestAnalyzeKeys" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>hash table keys for the dictionary of back-test aggregation analysis result</p>
 <dl class="py attribute">
 <dt id="orbit.constants.constants.BacktestAnalyzeKeys.METRIC_GEO">
-<code class="sig-name descname">METRIC_GEO</code><em class="property"> = 'metric_geo'</em><a class="headerlink" href="#orbit.constants.constants.BacktestAnalyzeKeys.METRIC_GEO" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">METRIC_GEO</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'metric_geo'</span></em><a class="headerlink" href="#orbit.constants.constants.BacktestAnalyzeKeys.METRIC_GEO" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.BacktestAnalyzeKeys.METRIC_NAME">
-<code class="sig-name descname">METRIC_NAME</code><em class="property"> = 'metric_name'</em><a class="headerlink" href="#orbit.constants.constants.BacktestAnalyzeKeys.METRIC_NAME" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">METRIC_NAME</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'metric_name'</span></em><a class="headerlink" href="#orbit.constants.constants.BacktestAnalyzeKeys.METRIC_NAME" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.BacktestAnalyzeKeys.METRIC_PER_BTMOD">
-<code class="sig-name descname">METRIC_PER_BTMOD</code><em class="property"> = 'metric_per_btmod'</em><a class="headerlink" href="#orbit.constants.constants.BacktestAnalyzeKeys.METRIC_PER_BTMOD" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">METRIC_PER_BTMOD</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'metric_per_btmod'</span></em><a class="headerlink" href="#orbit.constants.constants.BacktestAnalyzeKeys.METRIC_PER_BTMOD" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.BacktestAnalyzeKeys.METRIC_PER_HORIZON">
-<code class="sig-name descname">METRIC_PER_HORIZON</code><em class="property"> = 'metric_per_horizon'</em><a class="headerlink" href="#orbit.constants.constants.BacktestAnalyzeKeys.METRIC_PER_HORIZON" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">METRIC_PER_HORIZON</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'metric_per_horizon'</span></em><a class="headerlink" href="#orbit.constants.constants.BacktestAnalyzeKeys.METRIC_PER_HORIZON" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.constants.BacktestFitColumnNames">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.constants.</code><code class="sig-name descname">BacktestFitColumnNames</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.BacktestFitColumnNames" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.constants.</span></code><code class="sig-name descname"><span class="pre">BacktestFitColumnNames</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.BacktestFitColumnNames" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>column names for the data frame of back-test fitting result</p>
 <dl class="py attribute">
 <dt id="orbit.constants.constants.BacktestFitColumnNames.ACTUAL">
-<code class="sig-name descname">ACTUAL</code><em class="property"> = 'actual'</em><a class="headerlink" href="#orbit.constants.constants.BacktestFitColumnNames.ACTUAL" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">ACTUAL</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'actual'</span></em><a class="headerlink" href="#orbit.constants.constants.BacktestFitColumnNames.ACTUAL" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.BacktestFitColumnNames.FORECAST_DATES">
-<code class="sig-name descname">FORECAST_DATES</code><em class="property"> = 'forecast_dates'</em><a class="headerlink" href="#orbit.constants.constants.BacktestFitColumnNames.FORECAST_DATES" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">FORECAST_DATES</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'forecast_dates'</span></em><a class="headerlink" href="#orbit.constants.constants.BacktestFitColumnNames.FORECAST_DATES" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.BacktestFitColumnNames.PRED">
-<code class="sig-name descname">PRED</code><em class="property"> = 'pred'</em><a class="headerlink" href="#orbit.constants.constants.BacktestFitColumnNames.PRED" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">PRED</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'pred'</span></em><a class="headerlink" href="#orbit.constants.constants.BacktestFitColumnNames.PRED" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.BacktestFitColumnNames.PRED_HORIZON">
-<code class="sig-name descname">PRED_HORIZON</code><em class="property"> = 'pred_horizon'</em><a class="headerlink" href="#orbit.constants.constants.BacktestFitColumnNames.PRED_HORIZON" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">PRED_HORIZON</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'pred_horizon'</span></em><a class="headerlink" href="#orbit.constants.constants.BacktestFitColumnNames.PRED_HORIZON" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.BacktestFitColumnNames.TRAIN_END_DATE">
-<code class="sig-name descname">TRAIN_END_DATE</code><em class="property"> = 'train_end_date'</em><a class="headerlink" href="#orbit.constants.constants.BacktestFitColumnNames.TRAIN_END_DATE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">TRAIN_END_DATE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'train_end_date'</span></em><a class="headerlink" href="#orbit.constants.constants.BacktestFitColumnNames.TRAIN_END_DATE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.BacktestFitColumnNames.TRAIN_START_DATE">
-<code class="sig-name descname">TRAIN_START_DATE</code><em class="property"> = 'train_start_date'</em><a class="headerlink" href="#orbit.constants.constants.BacktestFitColumnNames.TRAIN_START_DATE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">TRAIN_START_DATE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'train_start_date'</span></em><a class="headerlink" href="#orbit.constants.constants.BacktestFitColumnNames.TRAIN_START_DATE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.constants.DateInfo">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.constants.</code><code class="sig-name descname">DateInfo</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.DateInfo" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.constants.</span></code><code class="sig-name descname"><span class="pre">DateInfo</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.DateInfo" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>date_column: the data column name of the training/prediction data frame;
 starting_date: the date of first day of training data; format: yyyy-mm-dd
 date_interval: ‘day’, ‘week’, ‘month’</p>
 <dl class="py attribute">
 <dt id="orbit.constants.constants.DateInfo.DATE_COLUMN">
-<code class="sig-name descname">DATE_COLUMN</code><em class="property"> = 'date_column'</em><a class="headerlink" href="#orbit.constants.constants.DateInfo.DATE_COLUMN" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">DATE_COLUMN</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'date_column'</span></em><a class="headerlink" href="#orbit.constants.constants.DateInfo.DATE_COLUMN" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.DateInfo.DATE_COLUMN_NAME">
-<code class="sig-name descname">DATE_COLUMN_NAME</code><em class="property"> = 'date_column_name'</em><a class="headerlink" href="#orbit.constants.constants.DateInfo.DATE_COLUMN_NAME" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">DATE_COLUMN_NAME</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'date_column_name'</span></em><a class="headerlink" href="#orbit.constants.constants.DateInfo.DATE_COLUMN_NAME" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.DateInfo.DATE_INTERVAL">
-<code class="sig-name descname">DATE_INTERVAL</code><em class="property"> = 'date_interval'</em><a class="headerlink" href="#orbit.constants.constants.DateInfo.DATE_INTERVAL" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">DATE_INTERVAL</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'date_interval'</span></em><a class="headerlink" href="#orbit.constants.constants.DateInfo.DATE_INTERVAL" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.DateInfo.END_DATE">
-<code class="sig-name descname">END_DATE</code><em class="property"> = 'end_date'</em><a class="headerlink" href="#orbit.constants.constants.DateInfo.END_DATE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">END_DATE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'end_date'</span></em><a class="headerlink" href="#orbit.constants.constants.DateInfo.END_DATE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.DateInfo.START_DATE">
-<code class="sig-name descname">START_DATE</code><em class="property"> = 'start_date'</em><a class="headerlink" href="#orbit.constants.constants.DateInfo.START_DATE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">START_DATE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'start_date'</span></em><a class="headerlink" href="#orbit.constants.constants.DateInfo.START_DATE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.constants.EstimatorOptionsMapper">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.constants.</code><code class="sig-name descname">EstimatorOptionsMapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.EstimatorOptionsMapper" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.constants.</span></code><code class="sig-name descname"><span class="pre">EstimatorOptionsMapper</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.EstimatorOptionsMapper" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>Mapper for available options of a downstream input given an input upstream (within some other
 set of options)</p>
 <dl class="py attribute">
 <dt id="orbit.constants.constants.EstimatorOptionsMapper.ENGINE_TO_SAMPLE">
-<code class="sig-name descname">ENGINE_TO_SAMPLE</code><em class="property"> = {'pyro': ['map', 'vi'], 'stan': ['map', 'vi', 'mcmc']}</em><a class="headerlink" href="#orbit.constants.constants.EstimatorOptionsMapper.ENGINE_TO_SAMPLE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">ENGINE_TO_SAMPLE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">{'pyro':</span> <span class="pre">['map',</span> <span class="pre">'vi'],</span> <span class="pre">'stan':</span> <span class="pre">['map',</span> <span class="pre">'vi',</span> <span class="pre">'mcmc']}</span></em><a class="headerlink" href="#orbit.constants.constants.EstimatorOptionsMapper.ENGINE_TO_SAMPLE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.EstimatorOptionsMapper.SAMPLE_TO_PREDICT">
-<code class="sig-name descname">SAMPLE_TO_PREDICT</code><em class="property"> = {'map': ['map'], 'mcmc': ['mean', 'median', 'full'], 'vi': ['mean', 'median', 'full']}</em><a class="headerlink" href="#orbit.constants.constants.EstimatorOptionsMapper.SAMPLE_TO_PREDICT" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">SAMPLE_TO_PREDICT</span></code><em class="property"> <span class="pre">=</span> <span class="pre">{'map':</span> <span class="pre">['map'],</span> <span class="pre">'mcmc':</span> <span class="pre">['mean',</span> <span class="pre">'median',</span> <span class="pre">'full'],</span> <span class="pre">'vi':</span> <span class="pre">['mean',</span> <span class="pre">'median',</span> <span class="pre">'full']}</span></em><a class="headerlink" href="#orbit.constants.constants.EstimatorOptionsMapper.SAMPLE_TO_PREDICT" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.constants.InferMethod">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.constants.</code><code class="sig-name descname">InferMethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.InferMethod" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.constants.</span></code><code class="sig-name descname"><span class="pre">InferMethod</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.InferMethod" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>The predict method for all of the stan models. Often used are mean and median.</p>
 <dl class="py attribute">
 <dt id="orbit.constants.constants.InferMethod.MAP">
-<code class="sig-name descname">MAP</code><em class="property"> = 'map'</em><a class="headerlink" href="#orbit.constants.constants.InferMethod.MAP" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">MAP</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'map'</span></em><a class="headerlink" href="#orbit.constants.constants.InferMethod.MAP" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.InferMethod.MARKOV_CHAIN_MONTE_CARLO">
-<code class="sig-name descname">MARKOV_CHAIN_MONTE_CARLO</code><em class="property"> = 'mcmc'</em><a class="headerlink" href="#orbit.constants.constants.InferMethod.MARKOV_CHAIN_MONTE_CARLO" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">MARKOV_CHAIN_MONTE_CARLO</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'mcmc'</span></em><a class="headerlink" href="#orbit.constants.constants.InferMethod.MARKOV_CHAIN_MONTE_CARLO" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.InferMethod.VARIATIONAL_INFERENCE">
-<code class="sig-name descname">VARIATIONAL_INFERENCE</code><em class="property"> = 'vi'</em><a class="headerlink" href="#orbit.constants.constants.InferMethod.VARIATIONAL_INFERENCE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">VARIATIONAL_INFERENCE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'vi'</span></em><a class="headerlink" href="#orbit.constants.constants.InferMethod.VARIATIONAL_INFERENCE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.constants.PlotLabels">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.constants.</code><code class="sig-name descname">PlotLabels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.PlotLabels" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.constants.</span></code><code class="sig-name descname"><span class="pre">PlotLabels</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.PlotLabels" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>An enumeration.</p>
 <dl class="py attribute">
 <dt id="orbit.constants.constants.PlotLabels.ACTUAL_RESPONSE">
-<code class="sig-name descname">ACTUAL_RESPONSE</code><em class="property"> = 'actual_response'</em><a class="headerlink" href="#orbit.constants.constants.PlotLabels.ACTUAL_RESPONSE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">ACTUAL_RESPONSE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'actual_response'</span></em><a class="headerlink" href="#orbit.constants.constants.PlotLabels.ACTUAL_RESPONSE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.PlotLabels.PREDICTED_RESPONSE">
-<code class="sig-name descname">PREDICTED_RESPONSE</code><em class="property"> = 'predicted_response'</em><a class="headerlink" href="#orbit.constants.constants.PlotLabels.PREDICTED_RESPONSE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">PREDICTED_RESPONSE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'predicted_response'</span></em><a class="headerlink" href="#orbit.constants.constants.PlotLabels.PREDICTED_RESPONSE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.PlotLabels.TRAINING_ACTUAL_RESPONSE">
-<code class="sig-name descname">TRAINING_ACTUAL_RESPONSE</code><em class="property"> = 'training_actual_response'</em><a class="headerlink" href="#orbit.constants.constants.PlotLabels.TRAINING_ACTUAL_RESPONSE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">TRAINING_ACTUAL_RESPONSE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'training_actual_response'</span></em><a class="headerlink" href="#orbit.constants.constants.PlotLabels.TRAINING_ACTUAL_RESPONSE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.constants.PredictMethod">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.constants.</code><code class="sig-name descname">PredictMethod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.PredictMethod" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.constants.</span></code><code class="sig-name descname"><span class="pre">PredictMethod</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.PredictMethod" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>The predict method for all of the stan models. Often used are mean and median.</p>
 <dl class="py attribute">
 <dt id="orbit.constants.constants.PredictMethod.FULL_SAMPLING">
-<code class="sig-name descname">FULL_SAMPLING</code><em class="property"> = 'full'</em><a class="headerlink" href="#orbit.constants.constants.PredictMethod.FULL_SAMPLING" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">FULL_SAMPLING</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'full'</span></em><a class="headerlink" href="#orbit.constants.constants.PredictMethod.FULL_SAMPLING" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.PredictMethod.MAP">
-<code class="sig-name descname">MAP</code><em class="property"> = 'map'</em><a class="headerlink" href="#orbit.constants.constants.PredictMethod.MAP" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">MAP</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'map'</span></em><a class="headerlink" href="#orbit.constants.constants.PredictMethod.MAP" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.PredictMethod.MEAN">
-<code class="sig-name descname">MEAN</code><em class="property"> = 'mean'</em><a class="headerlink" href="#orbit.constants.constants.PredictMethod.MEAN" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">MEAN</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'mean'</span></em><a class="headerlink" href="#orbit.constants.constants.PredictMethod.MEAN" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.PredictMethod.MEDIAN">
-<code class="sig-name descname">MEDIAN</code><em class="property"> = 'median'</em><a class="headerlink" href="#orbit.constants.constants.PredictMethod.MEDIAN" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">MEDIAN</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'median'</span></em><a class="headerlink" href="#orbit.constants.constants.PredictMethod.MEDIAN" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.constants.PredictedComponents">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.constants.</code><code class="sig-name descname">PredictedComponents</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.PredictedComponents" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.constants.</span></code><code class="sig-name descname"><span class="pre">PredictedComponents</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.PredictedComponents" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>column names for the data frame of predicted result with decomposed components</p>
 <dl class="py attribute">
 <dt id="orbit.constants.constants.PredictedComponents.REGRESSION">
-<code class="sig-name descname">REGRESSION</code><em class="property"> = 'regression'</em><a class="headerlink" href="#orbit.constants.constants.PredictedComponents.REGRESSION" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">REGRESSION</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'regression'</span></em><a class="headerlink" href="#orbit.constants.constants.PredictedComponents.REGRESSION" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.PredictedComponents.SEASONALITY">
-<code class="sig-name descname">SEASONALITY</code><em class="property"> = 'seasonality'</em><a class="headerlink" href="#orbit.constants.constants.PredictedComponents.SEASONALITY" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">SEASONALITY</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'seasonality'</span></em><a class="headerlink" href="#orbit.constants.constants.PredictedComponents.SEASONALITY" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.PredictedComponents.TREND">
-<code class="sig-name descname">TREND</code><em class="property"> = 'trend'</em><a class="headerlink" href="#orbit.constants.constants.PredictedComponents.TREND" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">TREND</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'trend'</span></em><a class="headerlink" href="#orbit.constants.constants.PredictedComponents.TREND" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.constants.PredictionColumnNames">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.constants.</code><code class="sig-name descname">PredictionColumnNames</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.PredictionColumnNames" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.constants.</span></code><code class="sig-name descname"><span class="pre">PredictionColumnNames</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.PredictionColumnNames" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>In the output of SLGTModel.transform() and SLGT.predict(), the column names if
 ‘return_decomposed_components’ = True.</p>
 <dl class="py attribute">
 <dt id="orbit.constants.constants.PredictionColumnNames.ACTUAL_RESPONSE">
-<code class="sig-name descname">ACTUAL_RESPONSE</code><em class="property"> = 'actual'</em><a class="headerlink" href="#orbit.constants.constants.PredictionColumnNames.ACTUAL_RESPONSE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">ACTUAL_RESPONSE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'actual'</span></em><a class="headerlink" href="#orbit.constants.constants.PredictionColumnNames.ACTUAL_RESPONSE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.PredictionColumnNames.LEVEL">
-<code class="sig-name descname">LEVEL</code><em class="property"> = 'level'</em><a class="headerlink" href="#orbit.constants.constants.PredictionColumnNames.LEVEL" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">LEVEL</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'level'</span></em><a class="headerlink" href="#orbit.constants.constants.PredictionColumnNames.LEVEL" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.PredictionColumnNames.PREDICTED_RESPONSE">
-<code class="sig-name descname">PREDICTED_RESPONSE</code><em class="property"> = 'predicted'</em><a class="headerlink" href="#orbit.constants.constants.PredictionColumnNames.PREDICTED_RESPONSE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">PREDICTED_RESPONSE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'predicted'</span></em><a class="headerlink" href="#orbit.constants.constants.PredictionColumnNames.PREDICTED_RESPONSE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.PredictionColumnNames.REGRESSOR">
-<code class="sig-name descname">REGRESSOR</code><em class="property"> = 'regressor'</em><a class="headerlink" href="#orbit.constants.constants.PredictionColumnNames.REGRESSOR" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">REGRESSOR</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'regressor'</span></em><a class="headerlink" href="#orbit.constants.constants.PredictionColumnNames.REGRESSOR" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.PredictionColumnNames.SEASONALITY">
-<code class="sig-name descname">SEASONALITY</code><em class="property"> = 'seasonality'</em><a class="headerlink" href="#orbit.constants.constants.PredictionColumnNames.SEASONALITY" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">SEASONALITY</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'seasonality'</span></em><a class="headerlink" href="#orbit.constants.constants.PredictionColumnNames.SEASONALITY" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.constants.StanModelKeys">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.constants.</code><code class="sig-name descname">StanModelKeys</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.StanModelKeys" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.constants.</span></code><code class="sig-name descname"><span class="pre">StanModelKeys</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.StanModelKeys" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>All of the keys in the trained stan model from uTS. For example, for LGT/SLGT,
 the model is the output of SLGT.fit() and input of SLGTModel.</p>
 <dl class="py attribute">
 <dt id="orbit.constants.constants.StanModelKeys.DATE_INFO">
-<code class="sig-name descname">DATE_INFO</code><em class="property"> = 'date_info'</em><a class="headerlink" href="#orbit.constants.constants.StanModelKeys.DATE_INFO" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">DATE_INFO</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'date_info'</span></em><a class="headerlink" href="#orbit.constants.constants.StanModelKeys.DATE_INFO" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.StanModelKeys.MODELS">
-<code class="sig-name descname">MODELS</code><em class="property"> = 'models'</em><a class="headerlink" href="#orbit.constants.constants.StanModelKeys.MODELS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">MODELS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'models'</span></em><a class="headerlink" href="#orbit.constants.constants.StanModelKeys.MODELS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.StanModelKeys.REGRESSOR_COLUMNS">
-<code class="sig-name descname">REGRESSOR_COLUMNS</code><em class="property"> = 'regressor_columns'</em><a class="headerlink" href="#orbit.constants.constants.StanModelKeys.REGRESSOR_COLUMNS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">REGRESSOR_COLUMNS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'regressor_columns'</span></em><a class="headerlink" href="#orbit.constants.constants.StanModelKeys.REGRESSOR_COLUMNS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.StanModelKeys.RESPONSE_COLUMN">
-<code class="sig-name descname">RESPONSE_COLUMN</code><em class="property"> = 'response_column'</em><a class="headerlink" href="#orbit.constants.constants.StanModelKeys.RESPONSE_COLUMN" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">RESPONSE_COLUMN</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'response_column'</span></em><a class="headerlink" href="#orbit.constants.constants.StanModelKeys.RESPONSE_COLUMN" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.StanModelKeys.STAN_INPUTS">
-<code class="sig-name descname">STAN_INPUTS</code><em class="property"> = 'stan_inputs'</em><a class="headerlink" href="#orbit.constants.constants.StanModelKeys.STAN_INPUTS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">STAN_INPUTS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'stan_inputs'</span></em><a class="headerlink" href="#orbit.constants.constants.StanModelKeys.STAN_INPUTS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.constants.TimeSeriesSplitSchemeNames">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.constants.</code><code class="sig-name descname">TimeSeriesSplitSchemeNames</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.TimeSeriesSplitSchemeNames" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.constants.</span></code><code class="sig-name descname"><span class="pre">TimeSeriesSplitSchemeNames</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.constants.TimeSeriesSplitSchemeNames" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>hash table keys for the dictionary of back-test meta data</p>
 <dl class="py attribute">
 <dt id="orbit.constants.constants.TimeSeriesSplitSchemeNames.MODEL">
-<code class="sig-name descname">MODEL</code><em class="property"> = 'model'</em><a class="headerlink" href="#orbit.constants.constants.TimeSeriesSplitSchemeNames.MODEL" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">MODEL</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'model'</span></em><a class="headerlink" href="#orbit.constants.constants.TimeSeriesSplitSchemeNames.MODEL" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.TimeSeriesSplitSchemeNames.TEST_IDX">
-<code class="sig-name descname">TEST_IDX</code><em class="property"> = 'test_idx'</em><a class="headerlink" href="#orbit.constants.constants.TimeSeriesSplitSchemeNames.TEST_IDX" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">TEST_IDX</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'test_idx'</span></em><a class="headerlink" href="#orbit.constants.constants.TimeSeriesSplitSchemeNames.TEST_IDX" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.TimeSeriesSplitSchemeNames.TRAIN_END_DATE">
-<code class="sig-name descname">TRAIN_END_DATE</code><em class="property"> = 'train_end_date'</em><a class="headerlink" href="#orbit.constants.constants.TimeSeriesSplitSchemeNames.TRAIN_END_DATE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">TRAIN_END_DATE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'train_end_date'</span></em><a class="headerlink" href="#orbit.constants.constants.TimeSeriesSplitSchemeNames.TRAIN_END_DATE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.TimeSeriesSplitSchemeNames.TRAIN_IDX">
-<code class="sig-name descname">TRAIN_IDX</code><em class="property"> = 'train_idx'</em><a class="headerlink" href="#orbit.constants.constants.TimeSeriesSplitSchemeNames.TRAIN_IDX" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">TRAIN_IDX</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'train_idx'</span></em><a class="headerlink" href="#orbit.constants.constants.TimeSeriesSplitSchemeNames.TRAIN_IDX" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.constants.TimeSeriesSplitSchemeNames.TRAIN_START_DATE">
-<code class="sig-name descname">TRAIN_START_DATE</code><em class="property"> = 'train_start_date'</em><a class="headerlink" href="#orbit.constants.constants.TimeSeriesSplitSchemeNames.TRAIN_START_DATE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">TRAIN_START_DATE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'train_start_date'</span></em><a class="headerlink" href="#orbit.constants.constants.TimeSeriesSplitSchemeNames.TRAIN_START_DATE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -523,191 +535,191 @@ the model is the output of SLGT.fit() and input of SLGTModel.</p>
 <span id="orbit-constants-dlt-module"></span><h2>orbit.constants.dlt module<a class="headerlink" href="#module-orbit.constants.dlt" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="orbit.constants.dlt.BaseSamplingParameters">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.dlt.</code><code class="sig-name descname">BaseSamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.dlt.</span></code><code class="sig-name descname"><span class="pre">BaseSamplingParameters</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>base parameters in posteriors sampling</p>
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR">
-<code class="sig-name descname">LEVEL_SMOOTHING_FACTOR</code><em class="property"> = 'lev_sm'</em><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">LEVEL_SMOOTHING_FACTOR</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'lev_sm'</span></em><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.BaseSamplingParameters.LOCAL_TREND">
-<code class="sig-name descname">LOCAL_TREND</code><em class="property"> = 'lt_sum'</em><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters.LOCAL_TREND" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">LOCAL_TREND</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'lt_sum'</span></em><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters.LOCAL_TREND" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.BaseSamplingParameters.LOCAL_TREND_LEVELS">
-<code class="sig-name descname">LOCAL_TREND_LEVELS</code><em class="property"> = 'l'</em><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters.LOCAL_TREND_LEVELS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">LOCAL_TREND_LEVELS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'l'</span></em><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters.LOCAL_TREND_LEVELS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.BaseSamplingParameters.LOCAL_TREND_SLOPES">
-<code class="sig-name descname">LOCAL_TREND_SLOPES</code><em class="property"> = 'b'</em><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters.LOCAL_TREND_SLOPES" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">LOCAL_TREND_SLOPES</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'b'</span></em><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters.LOCAL_TREND_SLOPES" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM">
-<code class="sig-name descname">RESIDUAL_DEGREE_OF_FREEDOM</code><em class="property"> = 'nu'</em><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">RESIDUAL_DEGREE_OF_FREEDOM</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'nu'</span></em><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.BaseSamplingParameters.RESIDUAL_SIGMA">
-<code class="sig-name descname">RESIDUAL_SIGMA</code><em class="property"> = 'obs_sigma'</em><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters.RESIDUAL_SIGMA" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">RESIDUAL_SIGMA</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'obs_sigma'</span></em><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters.RESIDUAL_SIGMA" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.BaseSamplingParameters.SLOPE_SMOOTHING_FACTOR">
-<code class="sig-name descname">SLOPE_SMOOTHING_FACTOR</code><em class="property"> = 'slp_sm'</em><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters.SLOPE_SMOOTHING_FACTOR" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">SLOPE_SMOOTHING_FACTOR</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'slp_sm'</span></em><a class="headerlink" href="#orbit.constants.dlt.BaseSamplingParameters.SLOPE_SMOOTHING_FACTOR" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.dlt.DataInputMapper">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.dlt.</code><code class="sig-name descname">DataInputMapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.DataInputMapper" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.dlt.</span></code><code class="sig-name descname"><span class="pre">DataInputMapper</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.DataInputMapper" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>mapping from object input to stan file</p>
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.DataInputMapper.AUTO_RIDGE_SCALE">
-<code class="sig-name descname">AUTO_RIDGE_SCALE</code><em class="property"> = 'AUTO_RIDGE_SCALE'</em><a class="headerlink" href="#orbit.constants.dlt.DataInputMapper.AUTO_RIDGE_SCALE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">AUTO_RIDGE_SCALE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'AUTO_RIDGE_SCALE'</span></em><a class="headerlink" href="#orbit.constants.dlt.DataInputMapper.AUTO_RIDGE_SCALE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.DataInputMapper.DAMPED_FACTOR">
-<code class="sig-name descname">DAMPED_FACTOR</code><em class="property"> = 'DAMPED_FACTOR'</em><a class="headerlink" href="#orbit.constants.dlt.DataInputMapper.DAMPED_FACTOR" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">DAMPED_FACTOR</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'DAMPED_FACTOR'</span></em><a class="headerlink" href="#orbit.constants.dlt.DataInputMapper.DAMPED_FACTOR" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.DataInputMapper.LASSO_SCALE">
-<code class="sig-name descname">LASSO_SCALE</code><em class="property"> = 'LASSO_SCALE'</em><a class="headerlink" href="#orbit.constants.dlt.DataInputMapper.LASSO_SCALE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">LASSO_SCALE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'LASSO_SCALE'</span></em><a class="headerlink" href="#orbit.constants.dlt.DataInputMapper.LASSO_SCALE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.dlt.GlobalTrendOption">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.dlt.</code><code class="sig-name descname">GlobalTrendOption</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendOption" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.dlt.</span></code><code class="sig-name descname"><span class="pre">GlobalTrendOption</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendOption" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>An enumeration.</p>
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.GlobalTrendOption.flat">
-<code class="sig-name descname">flat</code><em class="property"> = 3</em><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendOption.flat" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">flat</span></code><em class="property"> <span class="pre">=</span> <span class="pre">3</span></em><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendOption.flat" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.GlobalTrendOption.linear">
-<code class="sig-name descname">linear</code><em class="property"> = 0</em><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendOption.linear" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">linear</span></code><em class="property"> <span class="pre">=</span> <span class="pre">0</span></em><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendOption.linear" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.GlobalTrendOption.logistic">
-<code class="sig-name descname">logistic</code><em class="property"> = 2</em><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendOption.logistic" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">logistic</span></code><em class="property"> <span class="pre">=</span> <span class="pre">2</span></em><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendOption.logistic" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.GlobalTrendOption.loglinear">
-<code class="sig-name descname">loglinear</code><em class="property"> = 1</em><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendOption.loglinear" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">loglinear</span></code><em class="property"> <span class="pre">=</span> <span class="pre">1</span></em><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendOption.loglinear" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.dlt.GlobalTrendSamplingParameters">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.dlt.</code><code class="sig-name descname">GlobalTrendSamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendSamplingParameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.dlt.</span></code><code class="sig-name descname"><span class="pre">GlobalTrendSamplingParameters</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendSamplingParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>An enumeration.</p>
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.GlobalTrendSamplingParameters.GLOBAL_TREND">
-<code class="sig-name descname">GLOBAL_TREND</code><em class="property"> = 'gt_sum'</em><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendSamplingParameters.GLOBAL_TREND" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">GLOBAL_TREND</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'gt_sum'</span></em><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendSamplingParameters.GLOBAL_TREND" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.GlobalTrendSamplingParameters.GLOBAL_TREND_LEVEL">
-<code class="sig-name descname">GLOBAL_TREND_LEVEL</code><em class="property"> = 'gl'</em><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendSamplingParameters.GLOBAL_TREND_LEVEL" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">GLOBAL_TREND_LEVEL</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'gl'</span></em><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendSamplingParameters.GLOBAL_TREND_LEVEL" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.GlobalTrendSamplingParameters.GLOBAL_TREND_SLOPE">
-<code class="sig-name descname">GLOBAL_TREND_SLOPE</code><em class="property"> = 'gb'</em><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendSamplingParameters.GLOBAL_TREND_SLOPE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">GLOBAL_TREND_SLOPE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'gb'</span></em><a class="headerlink" href="#orbit.constants.dlt.GlobalTrendSamplingParameters.GLOBAL_TREND_SLOPE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.dlt.LatentSamplingParameters">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.dlt.</code><code class="sig-name descname">LatentSamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.LatentSamplingParameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.dlt.</span></code><code class="sig-name descname"><span class="pre">LatentSamplingParameters</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.LatentSamplingParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>latent variables to be sampled</p>
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.LatentSamplingParameters.INITIAL_SEASONALITY">
-<code class="sig-name descname">INITIAL_SEASONALITY</code><em class="property"> = 'init_sea'</em><a class="headerlink" href="#orbit.constants.dlt.LatentSamplingParameters.INITIAL_SEASONALITY" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">INITIAL_SEASONALITY</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'init_sea'</span></em><a class="headerlink" href="#orbit.constants.dlt.LatentSamplingParameters.INITIAL_SEASONALITY" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS">
-<code class="sig-name descname">REGRESSION_NEGATIVE_COEFFICIENTS</code><em class="property"> = 'nr_beta'</em><a class="headerlink" href="#orbit.constants.dlt.LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">REGRESSION_NEGATIVE_COEFFICIENTS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'nr_beta'</span></em><a class="headerlink" href="#orbit.constants.dlt.LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS">
-<code class="sig-name descname">REGRESSION_POSITIVE_COEFFICIENTS</code><em class="property"> = 'pr_beta'</em><a class="headerlink" href="#orbit.constants.dlt.LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">REGRESSION_POSITIVE_COEFFICIENTS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'pr_beta'</span></em><a class="headerlink" href="#orbit.constants.dlt.LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS">
-<code class="sig-name descname">REGRESSION_REGULAR_COEFFICIENTS</code><em class="property"> = 'rr_beta'</em><a class="headerlink" href="#orbit.constants.dlt.LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">REGRESSION_REGULAR_COEFFICIENTS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'rr_beta'</span></em><a class="headerlink" href="#orbit.constants.dlt.LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.dlt.RegressionPenalty">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.dlt.</code><code class="sig-name descname">RegressionPenalty</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.RegressionPenalty" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.dlt.</span></code><code class="sig-name descname"><span class="pre">RegressionPenalty</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.RegressionPenalty" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>An enumeration.</p>
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.RegressionPenalty.auto_ridge">
-<code class="sig-name descname">auto_ridge</code><em class="property"> = 2</em><a class="headerlink" href="#orbit.constants.dlt.RegressionPenalty.auto_ridge" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">auto_ridge</span></code><em class="property"> <span class="pre">=</span> <span class="pre">2</span></em><a class="headerlink" href="#orbit.constants.dlt.RegressionPenalty.auto_ridge" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.RegressionPenalty.fixed_ridge">
-<code class="sig-name descname">fixed_ridge</code><em class="property"> = 0</em><a class="headerlink" href="#orbit.constants.dlt.RegressionPenalty.fixed_ridge" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">fixed_ridge</span></code><em class="property"> <span class="pre">=</span> <span class="pre">0</span></em><a class="headerlink" href="#orbit.constants.dlt.RegressionPenalty.fixed_ridge" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.RegressionPenalty.lasso">
-<code class="sig-name descname">lasso</code><em class="property"> = 1</em><a class="headerlink" href="#orbit.constants.dlt.RegressionPenalty.lasso" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">lasso</span></code><em class="property"> <span class="pre">=</span> <span class="pre">1</span></em><a class="headerlink" href="#orbit.constants.dlt.RegressionPenalty.lasso" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.dlt.RegressionSamplingParameters">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.dlt.</code><code class="sig-name descname">RegressionSamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.RegressionSamplingParameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.dlt.</span></code><code class="sig-name descname"><span class="pre">RegressionSamplingParameters</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.RegressionSamplingParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>regression component related parameters in posteriors sampling</p>
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.RegressionSamplingParameters.REGRESSION_COEFFICIENTS">
-<code class="sig-name descname">REGRESSION_COEFFICIENTS</code><em class="property"> = 'beta'</em><a class="headerlink" href="#orbit.constants.dlt.RegressionSamplingParameters.REGRESSION_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">REGRESSION_COEFFICIENTS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'beta'</span></em><a class="headerlink" href="#orbit.constants.dlt.RegressionSamplingParameters.REGRESSION_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.dlt.SeasonalitySamplingParameters">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.dlt.</code><code class="sig-name descname">SeasonalitySamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.SeasonalitySamplingParameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.dlt.</span></code><code class="sig-name descname"><span class="pre">SeasonalitySamplingParameters</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.dlt.SeasonalitySamplingParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>seasonality component related parameters in posteriors sampling</p>
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.SeasonalitySamplingParameters.SEASONALITY_LEVELS">
-<code class="sig-name descname">SEASONALITY_LEVELS</code><em class="property"> = 's'</em><a class="headerlink" href="#orbit.constants.dlt.SeasonalitySamplingParameters.SEASONALITY_LEVELS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">SEASONALITY_LEVELS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'s'</span></em><a class="headerlink" href="#orbit.constants.dlt.SeasonalitySamplingParameters.SEASONALITY_LEVELS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.dlt.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR">
-<code class="sig-name descname">SEASONALITY_SMOOTHING_FACTOR</code><em class="property"> = 'sea_sm'</em><a class="headerlink" href="#orbit.constants.dlt.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">SEASONALITY_SMOOTHING_FACTOR</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'sea_sm'</span></em><a class="headerlink" href="#orbit.constants.dlt.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -717,152 +729,152 @@ the model is the output of SLGT.fit() and input of SLGTModel.</p>
 <span id="orbit-constants-lgt-module"></span><h2>orbit.constants.lgt module<a class="headerlink" href="#module-orbit.constants.lgt" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="orbit.constants.lgt.BaseSamplingParameters">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.lgt.</code><code class="sig-name descname">BaseSamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.lgt.</span></code><code class="sig-name descname"><span class="pre">BaseSamplingParameters</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>base parameters in posteriors sampling</p>
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.BaseSamplingParameters.GLOBAL_TREND_COEF">
-<code class="sig-name descname">GLOBAL_TREND_COEF</code><em class="property"> = 'gt_coef'</em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.GLOBAL_TREND_COEF" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">GLOBAL_TREND_COEF</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'gt_coef'</span></em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.GLOBAL_TREND_COEF" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.BaseSamplingParameters.GLOBAL_TREND_POWER">
-<code class="sig-name descname">GLOBAL_TREND_POWER</code><em class="property"> = 'gt_pow'</em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.GLOBAL_TREND_POWER" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">GLOBAL_TREND_POWER</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'gt_pow'</span></em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.GLOBAL_TREND_POWER" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR">
-<code class="sig-name descname">LEVEL_SMOOTHING_FACTOR</code><em class="property"> = 'lev_sm'</em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">LEVEL_SMOOTHING_FACTOR</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'lev_sm'</span></em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.BaseSamplingParameters.LOCAL_GLOBAL_TREND_SUMS">
-<code class="sig-name descname">LOCAL_GLOBAL_TREND_SUMS</code><em class="property"> = 'lgt_sum'</em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.LOCAL_GLOBAL_TREND_SUMS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">LOCAL_GLOBAL_TREND_SUMS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'lgt_sum'</span></em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.LOCAL_GLOBAL_TREND_SUMS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.BaseSamplingParameters.LOCAL_TREND_COEF">
-<code class="sig-name descname">LOCAL_TREND_COEF</code><em class="property"> = 'lt_coef'</em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.LOCAL_TREND_COEF" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">LOCAL_TREND_COEF</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'lt_coef'</span></em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.LOCAL_TREND_COEF" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.BaseSamplingParameters.LOCAL_TREND_LEVELS">
-<code class="sig-name descname">LOCAL_TREND_LEVELS</code><em class="property"> = 'l'</em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.LOCAL_TREND_LEVELS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">LOCAL_TREND_LEVELS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'l'</span></em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.LOCAL_TREND_LEVELS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.BaseSamplingParameters.LOCAL_TREND_SLOPES">
-<code class="sig-name descname">LOCAL_TREND_SLOPES</code><em class="property"> = 'b'</em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.LOCAL_TREND_SLOPES" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">LOCAL_TREND_SLOPES</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'b'</span></em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.LOCAL_TREND_SLOPES" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM">
-<code class="sig-name descname">RESIDUAL_DEGREE_OF_FREEDOM</code><em class="property"> = 'nu'</em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">RESIDUAL_DEGREE_OF_FREEDOM</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'nu'</span></em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.BaseSamplingParameters.RESIDUAL_SIGMA">
-<code class="sig-name descname">RESIDUAL_SIGMA</code><em class="property"> = 'obs_sigma'</em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.RESIDUAL_SIGMA" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">RESIDUAL_SIGMA</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'obs_sigma'</span></em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.RESIDUAL_SIGMA" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.BaseSamplingParameters.SLOPE_SMOOTHING_FACTOR">
-<code class="sig-name descname">SLOPE_SMOOTHING_FACTOR</code><em class="property"> = 'slp_sm'</em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.SLOPE_SMOOTHING_FACTOR" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">SLOPE_SMOOTHING_FACTOR</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'slp_sm'</span></em><a class="headerlink" href="#orbit.constants.lgt.BaseSamplingParameters.SLOPE_SMOOTHING_FACTOR" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.lgt.DataInputMapper">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.lgt.</code><code class="sig-name descname">DataInputMapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.DataInputMapper" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.lgt.</span></code><code class="sig-name descname"><span class="pre">DataInputMapper</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.DataInputMapper" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>mapping from object input to stan file</p>
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.DataInputMapper.AUTO_RIDGE_SCALE">
-<code class="sig-name descname">AUTO_RIDGE_SCALE</code><em class="property"> = 'AUTO_RIDGE_SCALE'</em><a class="headerlink" href="#orbit.constants.lgt.DataInputMapper.AUTO_RIDGE_SCALE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">AUTO_RIDGE_SCALE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'AUTO_RIDGE_SCALE'</span></em><a class="headerlink" href="#orbit.constants.lgt.DataInputMapper.AUTO_RIDGE_SCALE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.DataInputMapper.LASSO_SCALE">
-<code class="sig-name descname">LASSO_SCALE</code><em class="property"> = 'LASSO_SCALE'</em><a class="headerlink" href="#orbit.constants.lgt.DataInputMapper.LASSO_SCALE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">LASSO_SCALE</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'LASSO_SCALE'</span></em><a class="headerlink" href="#orbit.constants.lgt.DataInputMapper.LASSO_SCALE" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.lgt.LatentSamplingParameters">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.lgt.</code><code class="sig-name descname">LatentSamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.LatentSamplingParameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.lgt.</span></code><code class="sig-name descname"><span class="pre">LatentSamplingParameters</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.LatentSamplingParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>latent variables to be sampled</p>
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.LatentSamplingParameters.INITIAL_SEASONALITY">
-<code class="sig-name descname">INITIAL_SEASONALITY</code><em class="property"> = 'init_sea'</em><a class="headerlink" href="#orbit.constants.lgt.LatentSamplingParameters.INITIAL_SEASONALITY" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">INITIAL_SEASONALITY</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'init_sea'</span></em><a class="headerlink" href="#orbit.constants.lgt.LatentSamplingParameters.INITIAL_SEASONALITY" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS">
-<code class="sig-name descname">REGRESSION_NEGATIVE_COEFFICIENTS</code><em class="property"> = 'nr_beta'</em><a class="headerlink" href="#orbit.constants.lgt.LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">REGRESSION_NEGATIVE_COEFFICIENTS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'nr_beta'</span></em><a class="headerlink" href="#orbit.constants.lgt.LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS">
-<code class="sig-name descname">REGRESSION_POSITIVE_COEFFICIENTS</code><em class="property"> = 'pr_beta'</em><a class="headerlink" href="#orbit.constants.lgt.LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">REGRESSION_POSITIVE_COEFFICIENTS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'pr_beta'</span></em><a class="headerlink" href="#orbit.constants.lgt.LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS">
-<code class="sig-name descname">REGRESSION_REGULAR_COEFFICIENTS</code><em class="property"> = 'rr_beta'</em><a class="headerlink" href="#orbit.constants.lgt.LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">REGRESSION_REGULAR_COEFFICIENTS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'rr_beta'</span></em><a class="headerlink" href="#orbit.constants.lgt.LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.lgt.RegressionPenalty">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.lgt.</code><code class="sig-name descname">RegressionPenalty</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.RegressionPenalty" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.lgt.</span></code><code class="sig-name descname"><span class="pre">RegressionPenalty</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.RegressionPenalty" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>An enumeration.</p>
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.RegressionPenalty.auto_ridge">
-<code class="sig-name descname">auto_ridge</code><em class="property"> = 2</em><a class="headerlink" href="#orbit.constants.lgt.RegressionPenalty.auto_ridge" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">auto_ridge</span></code><em class="property"> <span class="pre">=</span> <span class="pre">2</span></em><a class="headerlink" href="#orbit.constants.lgt.RegressionPenalty.auto_ridge" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.RegressionPenalty.fixed_ridge">
-<code class="sig-name descname">fixed_ridge</code><em class="property"> = 0</em><a class="headerlink" href="#orbit.constants.lgt.RegressionPenalty.fixed_ridge" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">fixed_ridge</span></code><em class="property"> <span class="pre">=</span> <span class="pre">0</span></em><a class="headerlink" href="#orbit.constants.lgt.RegressionPenalty.fixed_ridge" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.RegressionPenalty.lasso">
-<code class="sig-name descname">lasso</code><em class="property"> = 1</em><a class="headerlink" href="#orbit.constants.lgt.RegressionPenalty.lasso" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">lasso</span></code><em class="property"> <span class="pre">=</span> <span class="pre">1</span></em><a class="headerlink" href="#orbit.constants.lgt.RegressionPenalty.lasso" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.lgt.RegressionSamplingParameters">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.lgt.</code><code class="sig-name descname">RegressionSamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.RegressionSamplingParameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.lgt.</span></code><code class="sig-name descname"><span class="pre">RegressionSamplingParameters</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.RegressionSamplingParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>regression component related parameters in posteriors sampling</p>
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.RegressionSamplingParameters.REGRESSION_COEFFICIENTS">
-<code class="sig-name descname">REGRESSION_COEFFICIENTS</code><em class="property"> = 'beta'</em><a class="headerlink" href="#orbit.constants.lgt.RegressionSamplingParameters.REGRESSION_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">REGRESSION_COEFFICIENTS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'beta'</span></em><a class="headerlink" href="#orbit.constants.lgt.RegressionSamplingParameters.REGRESSION_COEFFICIENTS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt id="orbit.constants.lgt.SeasonalitySamplingParameters">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.lgt.</code><code class="sig-name descname">SeasonalitySamplingParameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.SeasonalitySamplingParameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.lgt.</span></code><code class="sig-name descname"><span class="pre">SeasonalitySamplingParameters</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.lgt.SeasonalitySamplingParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>seasonality component related parameters in posteriors sampling</p>
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.SeasonalitySamplingParameters.SEASONALITY_LEVELS">
-<code class="sig-name descname">SEASONALITY_LEVELS</code><em class="property"> = 's'</em><a class="headerlink" href="#orbit.constants.lgt.SeasonalitySamplingParameters.SEASONALITY_LEVELS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">SEASONALITY_LEVELS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'s'</span></em><a class="headerlink" href="#orbit.constants.lgt.SeasonalitySamplingParameters.SEASONALITY_LEVELS" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.lgt.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR">
-<code class="sig-name descname">SEASONALITY_SMOOTHING_FACTOR</code><em class="property"> = 'sea_sm'</em><a class="headerlink" href="#orbit.constants.lgt.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">SEASONALITY_SMOOTHING_FACTOR</span></code><em class="property"> <span class="pre">=</span> <span class="pre">'sea_sm'</span></em><a class="headerlink" href="#orbit.constants.lgt.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -872,32 +884,32 @@ the model is the output of SLGT.fit() and input of SLGTModel.</p>
 <span id="orbit-constants-palette-module"></span><h2>orbit.constants.palette module<a class="headerlink" href="#module-orbit.constants.palette" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="orbit.constants.palette.QualitativePalette">
-<em class="property">class </em><code class="sig-prename descclassname">orbit.constants.palette.</code><code class="sig-name descname">QualitativePalette</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.palette.QualitativePalette" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">orbit.constants.palette.</span></code><code class="sig-name descname"><span class="pre">QualitativePalette</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#orbit.constants.palette.QualitativePalette" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>Palette for visualizing discrete categorical data</p>
 <dl class="py attribute">
 <dt id="orbit.constants.palette.QualitativePalette.Bar5">
-<code class="sig-name descname">Bar5</code><em class="property"> = ['#ef476fff', '#ffd166ff', '#06d6a0ff', '#118ab2ff', '#073b4cff']</em><a class="headerlink" href="#orbit.constants.palette.QualitativePalette.Bar5" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">Bar5</span></code><em class="property"> <span class="pre">=</span> <span class="pre">['#ef476fff',</span> <span class="pre">'#ffd166ff',</span> <span class="pre">'#06d6a0ff',</span> <span class="pre">'#118ab2ff',</span> <span class="pre">'#073b4cff']</span></em><a class="headerlink" href="#orbit.constants.palette.QualitativePalette.Bar5" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.palette.QualitativePalette.Line4">
-<code class="sig-name descname">Line4</code><em class="property"> = ['#e6c72b', '#2be669', '#2b4ae6', '#e62ba8']</em><a class="headerlink" href="#orbit.constants.palette.QualitativePalette.Line4" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">Line4</span></code><em class="property"> <span class="pre">=</span> <span class="pre">['#e6c72b',</span> <span class="pre">'#2be669',</span> <span class="pre">'#2b4ae6',</span> <span class="pre">'#e62ba8']</span></em><a class="headerlink" href="#orbit.constants.palette.QualitativePalette.Line4" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.palette.QualitativePalette.PostQ">
-<code class="sig-name descname">PostQ</code><em class="property"> = ['#1fc600', '#ff4500']</em><a class="headerlink" href="#orbit.constants.palette.QualitativePalette.PostQ" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">PostQ</span></code><em class="property"> <span class="pre">=</span> <span class="pre">['#1fc600',</span> <span class="pre">'#ff4500']</span></em><a class="headerlink" href="#orbit.constants.palette.QualitativePalette.PostQ" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.palette.QualitativePalette.Rainbow8">
-<code class="sig-name descname">Rainbow8</code><em class="property"> = ['#ffadadff', '#ffd6a5ff', '#fdffb6ff', '#caffbfff', '#9bf6ffff', '#a0c4ffff', '#bdb2ffff', '#ffc6ffff']</em><a class="headerlink" href="#orbit.constants.palette.QualitativePalette.Rainbow8" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">Rainbow8</span></code><em class="property"> <span class="pre">=</span> <span class="pre">['#ffadadff',</span> <span class="pre">'#ffd6a5ff',</span> <span class="pre">'#fdffb6ff',</span> <span class="pre">'#caffbfff',</span> <span class="pre">'#9bf6ffff',</span> <span class="pre">'#a0c4ffff',</span> <span class="pre">'#bdb2ffff',</span> <span class="pre">'#ffc6ffff']</span></em><a class="headerlink" href="#orbit.constants.palette.QualitativePalette.Rainbow8" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt id="orbit.constants.palette.QualitativePalette.Stack">
-<code class="sig-name descname">Stack</code><em class="property"> = ['#12939A', '#F15C17', '#DDB27C', '#88572C', '#FF991F', '#DA70BF', '#125C77', '#4DC19C', '#776E57', '#17B8BE', '#F6D18A', '#B7885E', '#FFCB99', '#F89570', '#829AE3', '#E79FD5', '#1E96BE', '#89DAC1', '#B3AD9E']</em><a class="headerlink" href="#orbit.constants.palette.QualitativePalette.Stack" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">Stack</span></code><em class="property"> <span class="pre">=</span> <span class="pre">['#12939A',</span> <span class="pre">'#F15C17',</span> <span class="pre">'#DDB27C',</span> <span class="pre">'#88572C',</span> <span class="pre">'#FF991F',</span> <span class="pre">'#DA70BF',</span> <span class="pre">'#125C77',</span> <span class="pre">'#4DC19C',</span> <span class="pre">'#776E57',</span> <span class="pre">'#17B8BE',</span> <span class="pre">'#F6D18A',</span> <span class="pre">'#B7885E',</span> <span class="pre">'#FFCB99',</span> <span class="pre">'#F89570',</span> <span class="pre">'#829AE3',</span> <span class="pre">'#E79FD5',</span> <span class="pre">'#1E96BE',</span> <span class="pre">'#89DAC1',</span> <span class="pre">'#B3AD9E']</span></em><a class="headerlink" href="#orbit.constants.palette.QualitativePalette.Stack" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -913,37 +925,29 @@ the model is the output of SLGT.fit() and input of SLGTModel.</p>
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="orbit.diagnostics.html" class="btn btn-neutral float-right" title="orbit.diagnostics package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="orbit.html" class="btn btn-neutral float-left" title="orbit package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="orbit.diagnostics.html" class="btn btn-neutral float-right" title="orbit.diagnostics package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="orbit.html" class="btn btn-neutral float-left" title="orbit package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Uber Technologies, Inc
+        &#169; Copyright 2020, Uber Technologies, Inc.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 
