@@ -4,7 +4,7 @@
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/uber/orbit)
 ![PyPI](https://img.shields.io/pypi/v/orbit-ml)
 [![Build Status](https://travis-ci.com/uber/orbit.svg?branch=dev)](https://travis-ci.com/uber/orbit)
-![Travis (.com) branch](https://img.shields.io/travis/com/uber/orbit/docs?label=docs)
+[![Documentation Status](https://readthedocs.org/projects/orbit-ml/badge/?version=latest)](https://orbit-ml.readthedocs.io/en/latest/?badge=latest)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/orbit-ml)
 [![Downloads](https://pepy.tech/badge/orbit-ml)](https://pepy.tech/project/orbit-ml)
 
