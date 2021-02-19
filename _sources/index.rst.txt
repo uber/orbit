@@ -13,7 +13,8 @@ Welcome to Orbit's Documentation!
 
 .. role:: red
 
-:red:`The tutorial pages here will be deprecated in the near future. Please use` `this link <https://orbit-ml.readthedocs.io/en/stable/>`_.
+:red:`The tutorial pages here will be deprecated in the near future. Moving forward
+please use` `this link <https://orbit-ml.readthedocs.io/en/stable/>`_ :red:`for Orbit's documentation and tutorials.`
 
 .. toctree::
    :maxdepth: 1
