@@ -59,6 +59,7 @@ setup(
     test_suite='orbit.tests',
     license='Apache License 2.0',
     long_description=read_long_description(),
+    long_description_content_type='text/markdown',
     name='orbit-ml',
     packages=find_packages(),
     url='https://uber.github.io/orbit/',
