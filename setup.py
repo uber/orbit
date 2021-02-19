@@ -22,7 +22,8 @@ AUTHOR = '''
 
 
 def read_long_description(filename="README.md"):
-    with open(filename) as f:
+    # with open(filename) as f:
+    with open("README.md", "r", encoding="utf-8") as f:
         return f.read().strip()
 
 
