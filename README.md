@@ -17,23 +17,19 @@ This project
 - requires PyStan as a system dependency. PyStan is licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html), which is a free, copyleft license for software.
 
 
-# Orbit: A Python Package for Bayesian Forecasting 
+# Orbit: A Python Package for Bayesian Forecasting
 
-Orbit is a Python package for Bayesian forecasting models developed under object-oriented design. It provides a
-familiar and intuitive initialize-fit-predict interface for working with
-time series tasks, while utilizing probabilistic modeling api under
-the hood.
+Orbit is a Python package for Bayesian time series forecasting and inference. It provides a
+familiar and intuitive initialize-fit-predict interface for time series tasks, while utilizing probabilistic programing languages under the hood.
 
-The initial release supports concrete implementation for the following
+Currently, it supports concrete implementations for the following
 models:
 
+-  Exponential Smoothing (ETS)
 -  Damped Local Trend (DLT)
 -  Local Global Trend (LGT)
 
-Both models, which are variants of exponential smoothing, support
-seasonality and exogenous (time-independent) features.
-
-The initial release also supports the following sampling methods for
+It also supports the following sampling methods for
 model estimation:
 
 -  Markov-Chain Monte Carlo (MCMC) as a full sampling method
@@ -100,7 +96,7 @@ plot_predicted_data(
 # References
 ##  Documentation
 
-- [Orbit API Documentation and Examples](https://uber.github.io/orbit/>)
+- [Orbit API Documentation and Examples](https://uber.github.io/orbit/)
 
 ##  Papers
 
@@ -111,9 +107,9 @@ plot_predicted_data(
 
 ## Related projects
 
-- [Pyro](https://github.com/pyro-ppl/pyro>)
-- [Stan](https://github.com/stan-dev/stan>)
-- [Rlgt](https://cran.r-project.org/web/packages/Rlgt/index.html>)
+- [Pyro](https://github.com/pyro-ppl/pyro)
+- [Stan](https://github.com/stan-dev/stan)
+- [Rlgt](https://cran.r-project.org/web/packages/Rlgt/index.html)
 
 # Citation
 
@@ -124,13 +120,13 @@ To cite Orbit in publications, refer to the following whitepaper:
 Bibtex:
 ```
 @misc{
-    ng2020orbit, 
-    title={Orbit: Probabilistic Forecast with Exponential Smoothing}, 
-    author={Edwin Ng, 
-        Zhishi Wang, 
-        Huigang Chen, 
-        Steve Yang, 
-        Slawek Smyl}, 
+    ng2020orbit,
+    title={Orbit: Probabilistic Forecast with Exponential Smoothing},
+    author={Edwin Ng,
+        Zhishi Wang,
+        Huigang Chen,
+        Steve Yang,
+        Slawek Smyl},
     year={2020}, eprint={2004.08492}, archivePrefix={arXiv}, primaryClass={stat.CO}
 }
 ```
