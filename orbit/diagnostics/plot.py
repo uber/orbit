@@ -396,3 +396,28 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         plt.close()
 
     return axes
+
+
+def plot_ktr_lev_knots(training_actual_df, predicted_df,
+                       date_col, actual_col,
+                       level_knot_dates, level_knots,
+                       trend_col='trend', pred_col='prediction',
+                       path=None, is_visible=True, title="",
+                       fontsize=16, markersize=150, figsize=(16, 8)):
+    actuals = training_actual_df[actual_col]
+    # yhat = predicted_df[pred_col]
+    trend = predicted_df[trend_col]
+    fig, ax = plt.subplots(1, 1, figsize=figsize)
+    ax.plot(training_actual_df[date_col], actuals, color='black', lw=1, alpha=0.5, label='actual')
+    ax.plot(training_actual_df[date_col], trend, color='blue', lw=1, alpha=0.5, label='level/trend')
+    ax.scatter(level_knot_dates, level_knots, color='green', lw=1, s=markersize, marker='^', label='level-knot')
+    ax.legend()
+    ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
+    ax.set_title(title, fontsize=fontsize)
+    if path:
+        fig.savefig(path)
+    if is_visible:
+        plt.show()
+    else:
+        plt.close()
+    return ax
