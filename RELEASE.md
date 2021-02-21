@@ -16,6 +16,7 @@
     - Use version number for both the tag and title e.g. `v1.0.15`
     - Add a bulleted list of changes in the description; this can be similar to change logs from step 1.
 10. Click `Publish Release` once all changes are finalized and description is updated
+11. All the documentation should be refreshed and can be found in https://orbit-ml.readthedocs.io/en/stable/
 
 
 ## Quick Release
