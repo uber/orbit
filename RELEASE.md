@@ -1,17 +1,22 @@
 # Orbit Release Process
 
 ## Full Release
-1. Create a release branch from `dev`
-    - e.g. `release/v1.0.15`
-2. Update the version number in `orbit/__init__.py`. This version number will propagate to `docs/conf.py`, `setup.cfg`, and `setup.py`.
-3. Commit changes
-4. If necessary, additional PRs may be merged to the release branch directly, but this should be reserved for bug fixes only and should not add or change any features
-5. Merge the release branch to both `dev` and `master`
-6. Draft a new release: https://github.com/uber/orbit/releases/new
-    - Select the master branch as the target branch
-    - Use version number for both the tag and title
-    - Add a bulleted list of changes in the description
-7. Click `Publish Release` once all changes are finalized and description is updated
+1. Create a **doc-refresh** branch. Add the logs of changes of the planned release.  The logs can be reused on later draft of release under Github.
+   Rerun notebooks under **docs/tutorails** for defined readthedocs triggered job.
+2. Submit a PR for dev for the changes of any documentation. 
+3. After the approval and merge from previous PR, create a release branch from `dev`
+    - e.g. `release-v1.0.15`
+4. Update the version number in `orbit/__init__.py`. This version number will propagate to `docs/conf.py`, `setup.cfg`, and `setup.py`.
+5. Commit changes
+6. Test PyPI deployment locally by `python3 -m twine check dist`   
+7. If necessary, additional PRs may be merged to the release branch directly, but this should be reserved for bug fixes only and should not add or change any features
+8. Merge the release branch to both `dev` and `master`
+9. Draft a new release: https://github.com/uber/orbit/releases/new
+    - Select the `master` as the target branch
+    - Use version number for both the tag and title e.g. `v1.0.15`
+    - Add a bulleted list of changes in the description; this can be similar to change logs from step 1.
+10. Click `Publish Release` once all changes are finalized and description is updated
+11. All the documentation should be refreshed and can be found in https://orbit-ml.readthedocs.io/en/stable/
 
 
 ## Quick Release
