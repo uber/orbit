@@ -43,20 +43,20 @@ model estimation:
 
 Install from PyPi:
 ```shell
-pip install orbit-ml
+$ pip install orbit-ml
 ```
 
 Install from source:
 ```shell
-git clone https://github.com/uber/orbit.git
-cd orbit
-pip install -r requirements.txt
-pip install .
+$ git clone https://github.com/uber/orbit.git
+$ cd orbit
+$ pip install -r requirements.txt
+$ pip install .
 ```
 
 ### Installing from Dev Branch
 ```shell
-pip install git+https://github.com/uber/orbit.git@dev
+$ pip install git+https://github.com/uber/orbit.git@dev
 ```
 
 ## Quick Start with Damped-Local-Trend (DLT) Model
@@ -94,10 +94,12 @@ plot_predicted_data(
 ![full-pred](https://raw.githubusercontent.com/uber/orbit/dev/docs/img/dlt-mcmc-pred.png)
 
 # Contributing
+We welcome community contributors to the project. Before you start, please read our 
+[code of conduct](https://github.com/uber/orbit/blob/master/CODE_OF_CONDUCT.md) and check out 
+[contributing guidelines](https://github.com/uber/orbit/blob/master/CONTRIBUTING.md) first.
 
-We welcome community contributors to the project. Before you start, please read our
-[code of conduct](https://github.com/uber/orbit/blob/dev/CODE_OF_CONDUCT.md) and check out
-[contributing guidelines](https://github.com/uber/orbit/blob/dev/CONTRIBUTING.md) first.
+# Versioning
+We document versions and changes in our [changelog](https://github.com/uber/orbit/blob/dev/docs/changelog.rst).
 
 # References
 
