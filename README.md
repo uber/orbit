@@ -96,8 +96,8 @@ plot_predicted_data(
 # Contributing
 
 We welcome community contributors to the project. Before you start, please read our 
-[code of conduct](https://github.com/uber/orbit/blob/master/CODE_OF_CONDUCT.md) and check out 
-[contributing guidelines](https://github.com/uber/orbit/blob/master/CONTRIBUTING.md) first.
+[code of conduct](CODE_OF_CONDUCT.md) and check out 
+[contributing guidelines](CONTRIBUTING.md) first.
 
 # References
 
