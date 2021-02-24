@@ -93,6 +93,12 @@ plot_predicted_data(
 
 ![full-pred](https://raw.githubusercontent.com/uber/orbit/dev/docs/img/dlt-mcmc-pred.png)
 
+# Contributing
+
+We welcome community contributors to the project. Before you start, please read our
+[code of conduct](https://github.com/uber/orbit/blob/dev/CODE_OF_CONDUCT.md) and check out
+[contributing guidelines](https://github.com/uber/orbit/blob/dev/CONTRIBUTING.md) first.
+
 # References
 
 ##  Documentation
