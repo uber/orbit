@@ -93,6 +93,12 @@ plot_predicted_data(
 
 ![full-pred](https://raw.githubusercontent.com/uber/orbit/dev/docs/img/dlt-mcmc-pred.png)
 
+# Contributing
+
+We welcome community contributors to the project. Before you start, please read our
+[code of conduct](https://github.com/uber/orbit/blob/dev/CODE_OF_CONDUCT.md) and check out
+[contributing guidelines](https://github.com/uber/orbit/blob/dev/CONTRIBUTING.md) first.
+
 # References
 
 ##  Documentation
@@ -119,3 +125,18 @@ Bibtex:
     year={2020}, eprint={2004.08492}, archivePrefix={arXiv}, primaryClass={stat.CO}
 }
 ```
+
+##  Papers
+
+- Hyndman, R., Koehler, A. B., Ord, J. K., and Snyder, R. D. Forecasting with exponential smoothing: the state space approach. Springer Science & Business Media, 2008.
+- Bingham, E., Chen, J. P., Jankowiak, M., Obermeyer, F., Pradhan, N., Karaletsos, T., Singh, R., Szerlip, P., Horsfall, P., and Goodman, N. D. Pyro: Deep universal probabilistic programming. The Journal of Machine Learning Research, 20(1):973–978, 2019.
+- Taylor, S. J. and Letham, B. Forecasting at scale. The American Statistician, 72(1):37–45, 2018.
+- Hoffman, M.D. and Gelman, A. The No-U-Turn sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. J. Mach. Learn. Res., 15(1), pp.1593-1623, 2014.
+
+## Related projects
+
+- [Pyro](https://github.com/pyro-ppl/pyro)
+- [Stan](https://github.com/stan-dev/stan)
+- [Rlgt](https://cran.r-project.org/web/packages/Rlgt/index.html)
+
+
