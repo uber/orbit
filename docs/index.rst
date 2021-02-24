@@ -42,6 +42,7 @@ Welcome to Orbit's Documentation!
 
    tutorials/utilities_simulation
    modules
+   changelog
 
 Indices and tables
 ==================
