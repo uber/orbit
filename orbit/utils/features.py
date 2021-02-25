@@ -5,16 +5,16 @@ from orbit.exceptions import IllegalArgument
 
 
 def make_fourier_series(n, period, order=3,  shift=0):
-    """ Given dates array, cyclical period and order.  Return a set of fourier series.
+    """ Given time series length, cyclical period and order, return a set of fourier series.
     Parameters
     ----------
-    dates: 1D array-like
-        Array of datetime stamp
-    period: int
-        Unlike version1, the prophet version, let's test on unnormalized period
-    order: int
+    n : int
+        Length of time series
+    period : int
+        Length of a cyclical period. E.g., with daily data, `period = 7` means weekly seasonality.
+    order : int
         Number of components for each sin() or cos() series.
-    shift: int
+    shift : int
         shift of time step/index to generate the series
     Returns
     -------
@@ -36,22 +36,20 @@ def make_fourier_series(n, period, order=3,  shift=0):
 
 
 def make_fourier_series_df(df, period, order=3, prefix='', suffix='', shift=0):
-    """ Given a data-frame, cyclical period and order.  Return a set of fourier series in a dataframe.
+    """ Given a data-frame, cyclical period and order, return a set of fourier series in a dataframe.
     Parameters
     ----------
-    df: pd.DataFrame
+    df : pd.DataFrame
         Input dataframe to supply datetime array for generating fourier series
-    date_col: str
-        Label of the date column supply for generating fourier series
-    period: int
-        Number of days of the period.
-    order: int
+    period : int
+        Length of a cyclical period. E.g., with daily data, `period = 7` means weekly seasonality.
+    order : int
         Number of components for each sin() or cos() series.
-    prefix: str
+    prefix : str
         prefix of output columns label
-    suffix: str
+    suffix : str
         suffix of output columns label
-    shift: int
+    shift : int
         shift of time step/index to generate the series
     Returns
     -------
@@ -77,15 +75,15 @@ def make_seasonal_dummies(df, date_col, freq, sparse=True, drop_first=True):
     """
     Parameters
     ----------
-    df: pd.DataFrame
+    df : pd.DataFrame
         Input dataframe to supply datetime array for generating series of indicators
-    date_col: str
+    date_col : str
         Label of the date column supply for generating series
-    freq: str ['weekday', 'month', 'week']
+    freq : str ['weekday', 'month', 'week']
         Options to pick the right frequency for generating dummies
-    sparse: bool
+    sparse : bool
         argument passed into `pd.get_dummies`
-    drop_first: bool
+    drop_first : bool
         argument passed into `pd.get_dummies`
     Returns
     -------
