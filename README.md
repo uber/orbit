@@ -99,6 +99,10 @@ We welcome community contributors to the project. Before you start, please read 
 [code of conduct](https://github.com/uber/orbit/blob/dev/CODE_OF_CONDUCT.md) and check out
 [contributing guidelines](https://github.com/uber/orbit/blob/dev/CONTRIBUTING.md) first.
 
+# Versioning
+We document versions and changes in our [changelog](https://github.com/uber/orbit/blob/dev/docs/changelog.rst).
+
+
 # References
 
 ##  Documentation
