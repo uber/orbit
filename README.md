@@ -43,20 +43,20 @@ model estimation:
 
 Install from PyPi:
 ```shell
-$ pip install orbit-ml
+pip install orbit-ml
 ```
 
 Install from source:
 ```shell
-$ git clone https://github.com/uber/orbit.git
-$ cd orbit
-$ pip install -r requirements.txt
-$ pip install .
+git clone https://github.com/uber/orbit.git
+cd orbit
+pip install -r requirements.txt
+pip install .
 ```
 
 ### Installing from Dev Branch
 ```shell
-$ pip install git+https://github.com/uber/orbit.git@dev
+pip install git+https://github.com/uber/orbit.git@dev
 ```
 
 ## Quick Start with Damped-Local-Trend (DLT) Model
