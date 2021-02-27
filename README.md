@@ -101,6 +101,10 @@ We welcome community contributors to the project. Before you start, please read 
 # Versioning
 We document versions and changes in our [changelog](https://github.com/uber/orbit/blob/dev/docs/changelog.rst).
 
+# Versioning
+We document versions and changes in our [changelog](https://github.com/uber/orbit/blob/dev/docs/changelog.rst).
+
+
 # References
 
 ##  Documentation
