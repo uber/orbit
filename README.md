@@ -104,7 +104,6 @@ We document versions and changes in our [changelog](https://github.com/uber/orbi
 
 
 # References
-
 ##  Documentation
 
 - HTML documentation (stable): https://orbit-ml.readthedocs.io/en/stable/
