@@ -1,7 +1,9 @@
 # Orbit Release Process
 
 ## Full Release
-1. Create a **doc-refresh** branch. Add the logs of changes of the planned release.  The logs can be reused on later draft of release under Github.
+1. Create a **doc-refresh** branch. Add the logs of changes under 
+   [changelog](https://github.com/uber/orbit/blob/dev/docs/changelog.rst).  
+   The logs can be reused on later draft of release under Github.
    Rerun notebooks under **docs/tutorails** for defined readthedocs triggered job.
 2. Submit a PR for dev for the changes of any documentation. 
 3. After the approval and merge from previous PR, create a release branch from `dev`
@@ -29,7 +31,8 @@ In this case, we can avoid creating the branch and create a release directly fro
 4. Draft a new release: https://github.com/uber/orbit/releases/new
     - Select the master branch as the target branch
     - Use version number for both the tag and title
-    - Add a bulleted list of changes in the description
+    - Add a bulleted list of changes in the description as well as
+      [changelog](https://github.com/uber/orbit/blob/dev/docs/changelog.rst).
     
     
 ## Hotfix
@@ -41,5 +44,6 @@ Sometimes we may need to address a bug fix directly from master after a release,
 4. Draft a new release: https://github.com/uber/orbit/releases/new
     - Select the master branch as the target branch
     - Use version number for both the tag and title
-    - Add a bulleted list of changes in the description
+    - Add a bulleted list of changes in the description as well as
+    [changelog](https://github.com/uber/orbit/blob/dev/docs/changelog.rst).
 5. Merge changes into `dev`
