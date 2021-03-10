@@ -3,6 +3,8 @@ from matplotlib import pyplot as plt
 import pandas as pd
 from matplotlib.pyplot import cm
 import numpy as np
+from copy import deepcopy
+
 
 pd.options.mode.chained_assignment = None
 
@@ -181,3 +183,24 @@ def wrap_plot_ts(df, date_col, var_list, col_wrap=3, height=2.5, aspect=2):
                 col_wrap=col_wrap, kind='line', data=df_long, facet_kws={'sharey': False, 'sharex': False})
     g.set_xticklabels(rotation=45)
     plt.tight_layout()
+
+
+def weekly_trend_decomposition(df, var, date_col):
+    '''
+    This function presents variable weekly trend after removing weekly seasonality.
+    :param df: input time series dataframe
+    :param var: variable need to be plotted
+    :param date_col: specify the timestamp for var
+    :return: three time series plots: Trend, Residual and Weekly Seasonality
+    '''
+    df_dt = deepcopy(df)
+    df_dt.index = pd.to_datetime(df_dt[date_col])
+    res_weely = seasonal_decompose(df_dt[[var]], period=7, model='multiplicative')
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 8))
+    res_weely.trend.plot(ax=ax1)
+    res_weely.resid.plot(ax=ax2)
+    res_weely.seasonal.plot(ax=ax3)
+    ax1.set_title("Removing Weekly Seasonality")
+    ax1.set_ylabel("Trend")
+    ax2.set_ylabel("Residual")
+    ax3.set_ylabel("Weekly Seasonality")
