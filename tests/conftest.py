@@ -129,17 +129,16 @@ def stan_estimator_lgt_model_input():
     return stan_model_name, model_param_names, data_input
 
 
-@pytest.fixture
 def synthetic_data():
     n_obs = 52 * 4
     seed = 2020
-    rw = make_trend(n_obs, rw_loc=0.02, rw_scale=0.1, seed=seed)
+    rw = make_trend(n_obs, rw_loc=1, rw_scale=0.1, seed=seed)
     fs = make_seasonality(n_obs, seasonality=52, method='fourier', order=2, seed=seed)
-    coef = [0.2, 0.1, 0.3, -0.1, 0.15, -0.2]
+    coef = [0.2, 0.1, 0.3, 0.15, -0.2, -0.1]
     x, y, coef = make_regression(n_obs, coef, scale=2.0, seed=seed)
 
     df = pd.DataFrame(np.concatenate([(rw + fs + y).reshape(-1, 1), x], axis=1), columns= ['response'] + list('abcdef'))
-    df['week'] = pd.date_range(start='2016-01-04', periods=n_obs)
+    df['week'] = pd.date_range(start='2016-01-04', periods=n_obs, freq='7D')
     train_df = df[df['week'] <= '2019-01-01']
     test_df = df[df['week'] > '2019-01-01']
 
