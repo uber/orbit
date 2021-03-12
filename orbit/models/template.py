@@ -146,15 +146,11 @@ class MAPTemplate(BaseTemplate):
             aggregated_df = aggregate_predictions(predicted_dict, self._prediction_percentiles)
             aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
 
-            if self._model_name != 'ktrlite':
-                # ktrlite model has knot generation-based inference; in this case, we don't need to replace
-                # the mid-point prediction with one prediction
-
-                # compute the original prediction
-                predicted_dict = predict_func(posterior_estimates=aggregate_posteriors, df=df, include_error=False, **kwargs)
-                # replace the mid-point (i.e., 50) estimation
-                for k, v in predicted_dict.items():
-                    aggregated_df[k] = v.flatten()
+            # compute the original prediction
+            predicted_dict = predict_func(posterior_estimates=aggregate_posteriors, df=df, include_error=False, **kwargs)
+            # replace the mid-point (i.e., 50) estimation
+            for k, v in predicted_dict.items():
+                aggregated_df[k] = v.flatten()
 
             return aggregated_df
         else:
