@@ -129,6 +129,7 @@ def stan_estimator_lgt_model_input():
     return stan_model_name, model_param_names, data_input
 
 
+@pytest.fixture
 def synthetic_data():
     n_obs = 52 * 4
     seed = 2020
