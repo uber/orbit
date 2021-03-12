@@ -47,6 +47,11 @@ class BaseKTRLite(BaseTemplate):
         the distance between every two knots for level
     coefficients_knot_length : int
         the distance between every two knots for coefficients
+    date_freq : str
+        date frequency; if not supplied, pd.infer_freq will be used to imply the date frequency.
+    oos_knot_generate : bool
+        if generating out-of-sample knots for the inference
+
     kwargs
         To specify `estimator_type` or additional args for the specified `estimator_type`
 
@@ -70,7 +75,7 @@ class BaseKTRLite(BaseTemplate):
                  level_knot_length=None,
                  coefficients_knot_length=None,
                  date_freq=None,
-                 out_of_sample_knot_generate=False,
+                 oos_knot_generate=False,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
 
@@ -89,7 +94,7 @@ class BaseKTRLite(BaseTemplate):
         self.span_coefficients = span_coefficients
         # self.rho_coefficients = rho_coefficients
         self.date_freq = date_freq
-        self.out_of_sample_knot_generate = out_of_sample_knot_generate
+        self.oos_knot_generate = oos_knot_generate
 
         # set private var to arg value
         # if None set default in _set_default_base_args()
@@ -379,6 +384,7 @@ class BaseKTRLite(BaseTemplate):
         ################################################################
 
         model = deepcopy(posterior_estimates)
+        # TODO: adopt torch as in lgt or dlt?
         # for k, v in model.items():
         #     model[k] = torch.from_numpy(v)
 
@@ -429,7 +435,7 @@ class BaseKTRLite(BaseTemplate):
 
         df = self._make_seasonal_regressors(df, shift=start)
         new_tp = np.arange(start + 1, start + output_len + 1) / trained_len
-        if self.out_of_sample_knot_generate:
+        if self.oos_knot_generate:
             # in-sample knots
             lev_knot_in = model.get(constants.BaseSamplingParameters.LEVEL_KNOT.value)
             # TODO: hacky way; let's just assume last two knot distance is knots distance for all knots
@@ -439,13 +445,10 @@ class BaseKTRLite(BaseTemplate):
                 # derive knots tp
                 knots_tp_level_out = np.arange(self._knots_tp_level[-1] + lev_knot_width, new_tp[-1], lev_knot_width)
                 new_knots_tp_level = np.concatenate([self._knots_tp_level, knots_tp_level_out])
-                # sample future knots
-                lev_knot_out = np.empty((lev_knot_in.shape[0], len(knots_tp_level_out)))
-                for idx in range(len(knots_tp_level_out)):
-                    if idx == 0:
-                        lev_knot_out[:, idx] = np.random.normal(lev_knot_in[:, -1], self.level_knot_scale)
-                    else:
-                        lev_knot_out[:, idx] = np.random.normal(lev_knot_out[:, idx - 1], self.level_knot_scale)
+                lev_knot_out = np.random.laplace(0, self.level_knot_scale,
+                                                 size=(lev_knot_in.shape[0], len(knots_tp_level_out)))
+                lev_knot_out = np.cumsum(np.concatenate([lev_knot_in[:, -1].reshape(-1, 1), lev_knot_out],
+                                                            axis=1), axis=1)[:, 1:]
                 lev_knot = np.concatenate([lev_knot_in, lev_knot_out], axis=1)
             else:
                 new_knots_tp_level = self._knots_tp_level

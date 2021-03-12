@@ -84,7 +84,7 @@ class MAPTemplate(BaseTemplate):
     ----------
     n_bootstrap_draws : int
         Number of bootstrap samples to draw from the error part to generate the uncertainty.
-        If None, will use the original posterior draw (no uncertainty).
+        If set to be -1, will use the original posterior draw (no uncertainty).
     prediction_percentiles : list
         List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
         confident intervals, pass an empty list
@@ -145,11 +145,16 @@ class MAPTemplate(BaseTemplate):
             predicted_dict = predict_func(posterior_estimates=posterior_samples, df=df, include_error=True, **kwargs)
             aggregated_df = aggregate_predictions(predicted_dict, self._prediction_percentiles)
             aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
-            # compute the original prediction
-            predicted_dict = predict_func(posterior_estimates=aggregate_posteriors, df=df, include_error=False, **kwargs)
-            # replace the mid-point (i.e., 50) estimation
-            for k, v in predicted_dict.items():
-                aggregated_df[k] = v.flatten()
+
+            if self._model_name != 'ktrlite':
+                # ktrlite model has knot generation-based inference; in this case, we don't need to replace
+                # the mid-point prediction with one prediction
+
+                # compute the original prediction
+                predicted_dict = predict_func(posterior_estimates=aggregate_posteriors, df=df, include_error=False, **kwargs)
+                # replace the mid-point (i.e., 50) estimation
+                for k, v in predicted_dict.items():
+                    aggregated_df[k] = v.flatten()
 
             return aggregated_df
         else:
@@ -175,7 +180,7 @@ class FullBayesianTemplate(BaseTemplate):
     ----------
     n_bootstrap_draws : int
         Number of bootstrap samples to draw from the initial MCMC or VI posterior samples.
-        If None, use the original posterior draws.
+        If -1, use the original posterior draws.
     prediction_percentiles : list
         List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
         confident intervals, pass an empty list
@@ -252,7 +257,7 @@ class AggregatedPosteriorTemplate(BaseTemplate):
         Method used to reduce parameter posterior samples
     n_bootstrap_draws : int
         Number of bootstrap samples to draw from the error part to generate the uncertainty.
-        If None, will use the original posterior draw (no uncertainty).
+        If -1, will use the original posterior draw (no uncertainty).
     prediction_percentiles : list
         List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
         confident intervals, pass an empty list
