@@ -140,6 +140,7 @@ def synthetic_data():
 
     df = pd.DataFrame(np.concatenate([(rw + fs + y).reshape(-1, 1), x], axis=1), columns= ['response'] + list('abcdef'))
     df['week'] = pd.date_range(start='2016-01-04', periods=n_obs, freq='7D')
+    df = df[['week', 'response'] + list('abcdef')]
     train_df = df[df['week'] <= '2019-01-01']
     test_df = df[df['week'] > '2019-01-01']
 
