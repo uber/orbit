@@ -10,7 +10,8 @@ from ..exceptions import BacktestException
 from ..constants.constants import TimeSeriesSplitSchemeNames
 from ..constants.palette import QualitativePalette
 
-from sklearn.model_selection import ParameterGrid
+from itertools import product
+from collections.abc import Mapping, Iterable
 from orbit.diagnostics.metrics import smape, mape, wmape
 
 
@@ -439,7 +440,29 @@ def grid_search_orbit(param_grid, model, df, min_train_len,
 
         return params.copy()
 
-    param_list_dict = list(ParameterGrid(param_grid))
+    def _yield_param_grid(param_grid):
+        # an internal function to mimic the ParameterGrid from scikit-learn
+        if not isinstance(param_grid, (Mapping, Iterable)):
+            raise TypeError('Parameter grid is not a dict or '
+                                'a list ({!r})'.format(param_grid))
+
+        if isinstance(param_grid, Mapping):
+            # wrap dictionary in a singleton list to support either dict
+            # or list of dicts
+            param_grid = [param_grid]
+
+        for p in param_grid:
+            # Always sort the keys of a dictionary, for reproducibility
+            items = sorted(p.items())
+            if not items:
+                yield {}
+            else:
+                keys, values = zip(*items)
+                for v in product(*values):
+                    params = dict(zip(keys, v))
+                    yield params
+
+    param_list_dict = list(_yield_param_grid(param_grid))
     params = _get_params(model)
     res = pd.DataFrame(param_list_dict)
     metric_values = list()
