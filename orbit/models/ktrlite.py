@@ -70,6 +70,7 @@ class BaseKTRLite(BaseTemplate):
                  level_knot_length=None,
                  coefficients_knot_length=None,
                  date_freq=None,
+                 out_of_sample_knot_generate=False,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
 
@@ -88,6 +89,7 @@ class BaseKTRLite(BaseTemplate):
         self.span_coefficients = span_coefficients
         # self.rho_coefficients = rho_coefficients
         self.date_freq = date_freq
+        self.out_of_sample_knot_generate = out_of_sample_knot_generate
 
         # set private var to arg value
         # if None set default in _set_default_base_args()
@@ -427,8 +429,32 @@ class BaseKTRLite(BaseTemplate):
 
         df = self._make_seasonal_regressors(df, shift=start)
         new_tp = np.arange(start + 1, start + output_len + 1) / trained_len
-        kernel_level = sandwich_kernel(new_tp, self._knots_tp_level)
-        lev_knot = model.get(constants.BaseSamplingParameters.LEVEL_KNOT.value)
+        if self.out_of_sample_knot_generate:
+            # in-sample knots
+            lev_knot_in = model.get(constants.BaseSamplingParameters.LEVEL_KNOT.value)
+            # TODO: hacky way; let's just assume last two knot distance is knots distance for all knots
+            lev_knot_width = self._knots_tp_level[-1] - self._knots_tp_level[-2]
+            # check whether we need to put new knots for simulation
+            if new_tp[-1] >= self._knots_tp_level[-1] + lev_knot_width:
+                # derive knots tp
+                knots_tp_level_out = np.arange(self._knots_tp_level[-1] + lev_knot_width, new_tp[-1], lev_knot_width)
+                new_knots_tp_level = np.concatenate([self._knots_tp_level, knots_tp_level_out])
+                # sample future knots
+                lev_knot_out = np.empty((lev_knot_in.shape[0], len(knots_tp_level_out)))
+                for idx in range(len(knots_tp_level_out)):
+                    if idx == 0:
+                        lev_knot_out[:, idx] = np.random.normal(lev_knot_in[:, -1], self.level_knot_scale)
+                    else:
+                        lev_knot_out[:, idx] = np.random.normal(lev_knot_out[:, idx - 1], self.level_knot_scale)
+                lev_knot = np.concatenate([lev_knot_in, lev_knot_out], axis=1)
+            else:
+                new_knots_tp_level = self._knots_tp_level
+                lev_knot = lev_knot_in
+            kernel_level = sandwich_kernel(new_tp, new_knots_tp_level)
+        else:
+            lev_knot = model.get(constants.BaseSamplingParameters.LEVEL_KNOT.value)
+            kernel_level = sandwich_kernel(new_tp, self._knots_tp_level)
+
         obs_scale = model.get(constants.BaseSamplingParameters.OBS_SCALE.value)
         obs_scale = obs_scale.reshape(-1, 1)
 
