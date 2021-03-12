@@ -49,8 +49,6 @@ class BaseKTRLite(BaseTemplate):
         the distance between every two knots for coefficients
     date_freq : str
         date frequency; if not supplied, pd.infer_freq will be used to imply the date frequency.
-    oos_knot_generate : bool
-        if generating out-of-sample knots for the inference
 
     kwargs
         To specify `estimator_type` or additional args for the specified `estimator_type`
@@ -75,7 +73,6 @@ class BaseKTRLite(BaseTemplate):
                  level_knot_length=None,
                  coefficients_knot_length=None,
                  date_freq=None,
-                 oos_knot_generate=False,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
 
@@ -94,7 +91,6 @@ class BaseKTRLite(BaseTemplate):
         self.span_coefficients = span_coefficients
         # self.rho_coefficients = rho_coefficients
         self.date_freq = date_freq
-        self.oos_knot_generate = oos_knot_generate
 
         # set private var to arg value
         # if None set default in _set_default_base_args()
@@ -435,7 +431,7 @@ class BaseKTRLite(BaseTemplate):
 
         df = self._make_seasonal_regressors(df, shift=start)
         new_tp = np.arange(start + 1, start + output_len + 1) / trained_len
-        if self.oos_knot_generate:
+        if include_error:
             # in-sample knots
             lev_knot_in = model.get(constants.BaseSamplingParameters.LEVEL_KNOT.value)
             # TODO: hacky way; let's just assume last two knot distance is knots distance for all knots
