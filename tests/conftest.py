@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import pkg_resources
 
-from .utils.utils import make_synthetic_series
+from orbit.utils.simulation import make_trend, make_seasonality, make_regression
 
 
 @pytest.fixture
@@ -32,14 +32,14 @@ def m3_monthly_data():
     return df
 
 
-@pytest.fixture
-def synthetic_data():
-    df, coef = make_synthetic_series(seed=127)
+# @pytest.fixture
+# def synthetic_data():
+#     df, coef = make_synthetic_series(seed=127)
 
-    train_df = df[df['week'] <= '2019-01-01']
-    test_df = df[df['week'] > '2019-01-01']
+#     train_df = df[df['week'] <= '2019-01-01']
+#     test_df = df[df['week'] > '2019-01-01']
 
-    return train_df, test_df, coef
+#     return train_df, test_df, coef
 
 
 @pytest.fixture
@@ -127,3 +127,21 @@ def stan_estimator_lgt_model_input():
         'LASSO_SCALE': 0.
     }
     return stan_model_name, model_param_names, data_input
+
+
+@pytest.fixture
+def synthetic_data():
+    n_obs = 52 * 4
+    seed = 2020
+    rw = make_trend(n_obs, rw_loc=1, rw_scale=0.1, seed=seed)
+    fs = make_seasonality(n_obs, seasonality=52, method='fourier', order=2, seed=seed)
+    coef = [0.2, 0.1, 0.3, 0.15, -0.2, -0.1]
+    x, y, coef = make_regression(n_obs, coef, scale=2.0, seed=seed)
+
+    df = pd.DataFrame(np.concatenate([(rw + fs + y).reshape(-1, 1), x], axis=1), columns= ['response'] + list('abcdef'))
+    df['week'] = pd.date_range(start='2016-01-04', periods=n_obs, freq='7D')
+    df = df[['week', 'response'] + list('abcdef')]
+    train_df = df[df['week'] <= '2019-01-01']
+    test_df = df[df['week'] > '2019-01-01']
+
+    return train_df, test_df, coef

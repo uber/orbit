@@ -126,7 +126,7 @@ def test_lgt_map_fit(synthetic_data, seasonality, estimator_type):
     assert len(lgt._posterior_samples) == expected_num_parameters
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI])
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, PyroEstimatorVI])
 @pytest.mark.parametrize(
     "regressor_signs",
     [
@@ -183,7 +183,7 @@ def test_lgt_full_with_regression(synthetic_data, estimator_type, regressor_sign
     assert num_regressors == len(train_df.columns.tolist()[2:])
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI])
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, PyroEstimatorVI])
 @pytest.mark.parametrize(
     "regressor_signs",
     [
@@ -328,7 +328,7 @@ def test_prediction_percentiles(iclaims_training_data, prediction_percentiles):
     assert predicted_df.shape[0] == df.shape[0]
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC])
 @pytest.mark.parametrize(
     "regressor_signs",
     [
