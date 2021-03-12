@@ -3,7 +3,6 @@ pandas>=1.0.3
 pystan==2.19.1.1
 matplotlib==3.3.4
 scipy>=1.4.1
-scikit-learn
 torch
 tqdm
 seaborn>=0.10.0
