@@ -14,9 +14,9 @@ from orbit.utils.general import is_empty_dataframe
 from orbit.constants.palette import QualitativePalette
 
 
-if os.environ.get('DISPLAY', '') == '':
-    print('no display found. Using non-interactive Agg backend')
-    matplotlib.use('Agg')
+# if os.environ.get('DISPLAY', '') == '':
+#     print('no display found. Using non-interactive Agg backend')
+#     matplotlib.use('Agg')
 
 
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
