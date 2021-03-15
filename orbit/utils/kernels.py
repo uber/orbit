@@ -11,19 +11,29 @@ def reduce_by_max(x, n=2):
 # https://en.wikipedia.org/wiki/Kernel_smoother
 def gauss_kernel(x, x_i, rho=1.0, alpha=1.0, n_reduce=-1, point_to_flatten=1):
     """
-    x: points required to compute kernel weight
-    x_i: reference points location used to compute correspondent distance of each entry points
-    rho: smoothing parameter known as "length-scale" in gaussian process
-    alpha: marginal standard deviation parameter in gaussian process; one should use 1 in kernel regression
-    point_to_flatten: the time point starting to flatten the weights; default is 1 for normalized time points
+    Parameters
+    ----------
+    x : array-like
+        points required to compute kernel weight
+    x_i : array-like
+        reference points location used to compute correspondent distance of each entry points
+    rho : float
+        smoothing parameter known as "length-scale" in gaussian process
+    alpha : float
+        marginal standard deviation parameter in gaussian process; one should use 1 in kernel regression
+    point_to_flatten : float
+        the time point starting to flatten the weights; default is 1 for normalized time points
 
     Returns
     -------
-        2D array with N x M such that
+    np.ndarray
+        2D array with size N x M such that
         N as the number of entry points
         M as the number of reference points
         matrix entries hold the value of weight of each element
-    see also:
+
+    See Also
+    --------
       1. https://mc-stan.org/docs/2_24/stan-users-guide/gaussian-process-regression.html
       2. https://en.wikipedia.org/wiki/Local_regression
     """
@@ -49,14 +59,23 @@ def gauss_kernel(x, x_i, rho=1.0, alpha=1.0, n_reduce=-1, point_to_flatten=1):
 
 def sandwich_kernel(x, x_i):
     """
-    x: points required to compute kernel weight
-    x_i: reference points location used to compute correspondent distance of each entry points
-    return:
-        a matrix with N x M such that
+    Parameters
+    ----------
+    x : array-like
+        points required to compute kernel weight
+    x_i : array-like
+        reference points location used to compute correspondent distance of each entry points
+
+    Returns
+    -------
+    np.ndarray
+        2D array with size N x M such that
         N as the number of entry points
         M as the number of reference points
         matrix entries hold the value of weight of each element
-    see also:
+
+    See Also
+    --------
       1. https://mc-stan.org/docs/2_24/stan-users-guide/gaussian-process-regression.html
       2. https://en.wikipedia.org/wiki/Local_regression
     """
