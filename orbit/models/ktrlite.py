@@ -15,7 +15,6 @@ from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel, sandwich_kernel
 from ..utils.features import make_fourier_series_df
-from ..utils.timepoints import get_gap_between_dates, set_knots_tp
 from .template import BaseTemplate, MAPTemplate
 
 
@@ -274,6 +273,21 @@ class BaseKTRLite(BaseTemplate):
         if self._num_of_regressors > 0:
             self._regressor_matrix = df.filter(items=self._regressor_col,).values
 
+    @staticmethod
+    def get_gap_between_dates(start_date, end_date, freq):
+        diff = end_date - start_date
+        gap = np.array(diff / np.timedelta64(1, freq))
+
+        return gap
+
+    @staticmethod
+    def set_knots_tp(knots_distance, cutoff):
+        # start in the middle
+        knots_idx_start = round(knots_distance / 2)
+        knots_idx = np.arange(knots_idx_start, cutoff, knots_distance)
+
+        return knots_idx
+
     def _set_kernel_matrix(self, df):
         # Note that our tp starts by 1; to convert back to index of array, reduce it by 1
         tp = np.arange(1, self._num_of_observations + 1) / self._num_of_observations
@@ -290,7 +304,7 @@ class BaseKTRLite(BaseTemplate):
                 number_of_knots = round(1 / self.span_level)
                 knots_distance = math.ceil(self._cutoff / number_of_knots)
 
-            knots_idx_level = set_knots_tp(knots_distance, self._cutoff)
+            knots_idx_level = self.set_knots_tp(knots_distance, self._cutoff)
             self._knots_idx_level = knots_idx_level
             self._knots_tp_level = (1 + knots_idx_level) / self._num_of_observations
             self._level_knot_dates = df[self.date_col].values[knots_idx_level]
@@ -304,8 +318,8 @@ class BaseKTRLite(BaseTemplate):
                 self.date_freq = pd.infer_freq(df[self.date_col])[0]
             start_date = self._training_df_meta['training_start']
             self._knots_tp_level = np.array(
-                (get_gap_between_dates(start_date, self._level_knot_dates, self.date_freq) + 1) /
-                (get_gap_between_dates(start_date, self._training_df_meta['training_end'], self.date_freq) + 1)
+                (self.get_gap_between_dates(start_date, self._level_knot_dates, self.date_freq) + 1) /
+                (self.get_gap_between_dates(start_date, self._training_df_meta['training_end'], self.date_freq) + 1)
             )
 
         self._kernel_level = sandwich_kernel(tp, self._knots_tp_level)
@@ -323,7 +337,7 @@ class BaseKTRLite(BaseTemplate):
                 number_of_knots = round(1 / self.span_coefficients)
                 knots_distance = math.ceil(self._cutoff / number_of_knots)
 
-            knots_idx_coef = set_knots_tp(knots_distance, self._cutoff)
+            knots_idx_coef = self.set_knots_tp(knots_distance, self._cutoff)
             self._knots_idx_coef = knots_idx_coef
             self._knots_tp_coefficients = (1 + knots_idx_coef) / self._num_of_observations
             self._coef_knot_dates = df[self.date_col].values[knots_idx_coef]
