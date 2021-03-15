@@ -57,7 +57,8 @@ def test_ktrlite_dual_seas(make_daily_data, estimator_type):
     assert smape(test_df['response'].values, predict_df['prediction'].values) <= 0.5
 
 
-@pytest.mark.parametrize("level_knot_dates", [pd.date_range(start='2016-03-01', end='2019-01-01', freq='3M')])
+@pytest.mark.parametrize("level_knot_dates", [pd.date_range(start='2016-03-01', end='2019-01-01', freq='3M'),
+                                              pd.date_range(start='2016-03-01', end='2019-01-01', freq='6M')])
 def test_ktrlite_level_knot_dates(make_daily_data, level_knot_dates):
     train_df, test_df, coef = make_daily_data
 
