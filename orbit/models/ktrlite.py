@@ -309,7 +309,6 @@ class BaseKTRLite(BaseTemplate):
             self._knots_tp_level = (1 + knots_idx_level) / self._num_of_observations
             self._level_knot_dates = df[self.date_col].values[knots_idx_level]
         else:
-            # FIXME: this only works up to daily series (not working on hourly series)
             self._level_knot_dates = pd.to_datetime([
                 x for x in self._level_knot_dates if (x <= df[self.date_col].max()) \
                                                      and (x >= df[self.date_col].min())
