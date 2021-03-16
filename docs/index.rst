@@ -29,6 +29,12 @@ Welcome to Orbit's Documentation!
 
 .. toctree::
    :maxdepth: 1
+   :caption: Bayesian Time Varying Coefficient Model
+
+   tutorials/ktrlite
+
+.. toctree::
+   :maxdepth: 1
    :caption: Validation
    :name: validation
 

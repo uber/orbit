@@ -1,6 +1,7 @@
 import custom_inherit as ci
 from copy import copy
 import numpy as np
+import pandas as pd
 
 from ..constants.constants import PredictMethod
 from ..estimators.stan_estimator import StanEstimatorMCMC
@@ -77,7 +78,16 @@ class MAPTemplate(BaseTemplate):
     """ Abstract class for MAP (Maximum a Posteriori) prediction
 
     In this module, prediction is based on Maximum a Posteriori (aka Mode) of the posterior.
-    This model only supports MAP estimating `estimator_type`s
+    This template only supports MAP inference.
+
+    Parameters
+    ----------
+    n_bootstrap_draws : int
+        Number of bootstrap samples to draw from the error part to generate the uncertainty.
+        If set to be -1, will use the original posterior draw (no uncertainty).
+    prediction_percentiles : list
+        List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
+        confident intervals, pass an empty list
     """
 
     def __init__(self, n_bootstrap_draws=1e4, prediction_percentiles=None, **kwargs):
@@ -103,8 +113,8 @@ class MAPTemplate(BaseTemplate):
         self._prediction_percentiles = list(set(self._prediction_percentiles))  # unique set
         self._prediction_percentiles.sort()
         # unlike full prediction, it does not take negative number of bootstrap draw
-        if self.n_bootstrap_draws < 2:
-            raise IllegalArgument("Error: Number of bootstrap draws must be at least 2")
+        # if self.n_bootstrap_draws < 2:
+        #     raise IllegalArgument("Error: Number of bootstrap draws must be at least 2")
 
     def _set_map_posterior(self):
         """ set MAP posteriors with right dimension"""
@@ -124,26 +134,34 @@ class MAPTemplate(BaseTemplate):
             raise PredictionException("Model is not fitted yet.")
 
         aggregate_posteriors = self._aggregate_posteriors.get(PredictMethod.MAP.value)
+        if self.n_bootstrap_draws > 0:
+            # compute inference
+            posterior_samples = {}
+            for k, v in aggregate_posteriors.items():
+                # in_shape = v.shape[1:]
+                # create and np.tile on first (batch) dimension
+                posterior_samples[k] = np.repeat(v, self.n_bootstrap_draws, axis=0)
 
-        # compute inference
-        posterior_samples = {}
-        for k, v in aggregate_posteriors.items():
-            # in_shape = v.shape[1:]
-            # create and np.tile on first (batch) dimension
-            posterior_samples[k] = np.repeat(v, self.n_bootstrap_draws, axis=0)
+            predicted_dict = predict_func(posterior_estimates=posterior_samples, df=df, include_error=True, **kwargs)
+            aggregated_df = aggregate_predictions(predicted_dict, self._prediction_percentiles)
+            aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
 
-        predicted_dict = predict_func(posterior_estimates=posterior_samples, df=df, include_error=True, **kwargs)
-        aggregated_df = aggregate_predictions(predicted_dict, self._prediction_percentiles)
-        aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
+            # compute the original prediction
+            predicted_dict = predict_func(posterior_estimates=aggregate_posteriors, df=df, include_error=False, **kwargs)
+            # replace the mid-point (i.e., 50) estimation
+            for k, v in predicted_dict.items():
+                aggregated_df[k] = v.flatten()
 
-        # compute mid-point prediction
-        predicted_dict = predict_func(posterior_estimates=aggregate_posteriors, df=df, include_error=False, **kwargs)
+            return aggregated_df
+        else:
+            predicted_dict = predict_func(posterior_estimates=aggregate_posteriors, df=df, include_error=False, **kwargs)
+            for k, v in predicted_dict.items():
+                predicted_dict[k] = v.flatten()
 
-        # replacing mid-point estimation
-        for k, v in predicted_dict.items():
-            aggregated_df[k] = v.flatten()
+            predicted_df = pd.DataFrame(predicted_dict)
+            predicted_df = prepend_date_column(predicted_df, df, self.date_col)
 
-        return aggregated_df
+            return predicted_df
 
 
 class FullBayesianTemplate(BaseTemplate):
@@ -158,7 +176,7 @@ class FullBayesianTemplate(BaseTemplate):
     ----------
     n_bootstrap_draws : int
         Number of bootstrap samples to draw from the initial MCMC or VI posterior samples.
-        If None, use the original posterior draws.
+        If -1, use the original posterior draws.
     prediction_percentiles : list
         List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
         confident intervals, pass an empty list
@@ -227,12 +245,18 @@ class AggregatedPosteriorTemplate(BaseTemplate):
     """ Abstract class for full aggregated posteriors prediction
 
     In aggregated prediction, the parameter posterior samples are reduced using `aggregate_method`
-    before performing a single prediction.
+    before performing a single prediction. This template only supports aggregated posterior inference.
 
     Parameters
     ----------
     aggregate_method : { 'mean', 'median' }
         Method used to reduce parameter posterior samples
+    n_bootstrap_draws : int
+        Number of bootstrap samples to draw from the error part to generate the uncertainty.
+        If -1, will use the original posterior draw (no uncertainty).
+    prediction_percentiles : list
+        List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
+        confident intervals, pass an empty list
     """
     def __init__(self, aggregate_method='mean', n_bootstrap_draws=1e4, prediction_percentiles=None, **kwargs):
         super().__init__(**kwargs)
@@ -258,8 +282,8 @@ class AggregatedPosteriorTemplate(BaseTemplate):
         self._prediction_percentiles = list(set(self._prediction_percentiles ))  # unique set
         self._prediction_percentiles .sort()
         # unlike full prediction, it does not take negative number of bootstrap draw
-        if self.n_bootstrap_draws < 2:
-            raise IllegalArgument("Error: Number of bootstrap draws must be at least 2")
+        # if self.n_bootstrap_draws < 2:
+        #     raise IllegalArgument("Error: Number of bootstrap draws must be at least 2")
 
     def _validate_aggregate_method(self):
         if self.aggregate_method not in list(self._aggregate_posteriors.keys()):
@@ -272,23 +296,30 @@ class AggregatedPosteriorTemplate(BaseTemplate):
 
         aggregate_posteriors = self._aggregate_posteriors.get(self.aggregate_method)
 
-        # compute inference
-        posterior_samples = {}
-        for k, v in aggregate_posteriors.items():
-            # in_shape = v.shape[1:]
-            # create and np.tile on first (batch) dimension
-            posterior_samples[k] = np.repeat(v, self.n_bootstrap_draws, axis=0)
+        if self.n_bootstrap_draws > 0:
+            # compute inference
+            posterior_samples = {}
+            for k, v in aggregate_posteriors.items():
+                # in_shape = v.shape[1:]
+                # create and np.tile on first (batch) dimension
+                posterior_samples[k] = np.repeat(v, self.n_bootstrap_draws, axis=0)
 
-        predicted_dict = predict_func(posterior_estimates=posterior_samples, df=df, include_error=True, **kwargs)
-        aggregated_df = aggregate_predictions(predicted_dict, self._prediction_percentiles)
-        aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
+            predicted_dict = predict_func(posterior_estimates=posterior_samples, df=df, include_error=True, **kwargs)
+            aggregated_df = aggregate_predictions(predicted_dict, self._prediction_percentiles)
+            aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
+            # compute the original prediction
+            predicted_dict = predict_func(posterior_estimates=aggregate_posteriors, df=df, include_error=False, **kwargs)
+            # replace the mid-point (i.e., 50) estimation
+            for k, v in predicted_dict.items():
+                aggregated_df[k] = v.flatten()
 
-        # compute mid-point prediction
-        predicted_dict = predict_func(posterior_estimates=aggregate_posteriors, df=df, include_error=False, **kwargs)
+            return aggregated_df
+        else:
+            predicted_dict = predict_func(posterior_estimates=aggregate_posteriors, df=df, include_error=False, **kwargs)
+            for k, v in predicted_dict.items():
+                predicted_dict[k] = v.flatten()
 
-        # replacing mid-point estimation
-        for k, v in predicted_dict.items():
-            aggregated_df[k] = v.flatten()
+            predicted_df = pd.DataFrame(predicted_dict)
+            predicted_df = prepend_date_column(predicted_df, df, self.date_col)
 
-        return aggregated_df
-
+            return predicted_df
