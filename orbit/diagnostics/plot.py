@@ -14,46 +14,51 @@ from orbit.utils.general import is_empty_dataframe
 from orbit.constants.palette import QualitativePalette
 
 
-if os.environ.get('DISPLAY', '') == '':
-    print('no display found. Using non-interactive Agg backend')
-    matplotlib.use('Agg')
+# if os.environ.get('DISPLAY', '') == '':
+#     print('no display found. Using non-interactive Agg backend')
+#     matplotlib.use('Agg')
 
 
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                         pred_col='prediction', prediction_percentiles=None,
-                        title="", test_actual_df=None, is_visible=True, figsize=None, path=None, fontsize=None):
+                        title="", test_actual_df=None, is_visible=True,
+                        figsize=None, path=None, fontsize=None, markersize=70, lw=2):
     """
     plot training actual response together with predicted data; if actual response of predicted
     data is there, plot it too.
     Parameters
     ----------
-    training_actual_df: pd.DataFrame
+    training_actual_df : pd.DataFrame
         training actual response data frame. two columns required: actual_col and date_col
-    predicted_df: pd.DataFrame
+    predicted_df : pd.DataFrame
         predicted data response data frame. two columns required: actual_col and pred_col. If
         user provide prediction_percentiles, it needs to include them as well in such
         `prediction_{x}` where x is the correspondent percentiles
-    prediction_percentiles: list
+    prediction_percentiles : list
         list of two elements indicates the lower and upper percentiles
-    date_col: str
+    date_col : str
         the date column name
-    actual_col: str
-    pred_col: str
-    title: str
+    actual_col : str
+    pred_col : str
+    title : str
         title of the plot
-    test_actual_df: pd.DataFrame
+    test_actual_df : pd.DataFrame
        test actual response dataframe. two columns required: actual_col and date_col
-    is_visible: boolean
+    is_visible : boolean
         whether we want to show the plot. If called from unittest, is_visible might = False.
-    figsize: tuple
+    figsize : tuple
         figsize pass through to `matplotlib.pyplot.figure()`
-    path: str
+    path : str
         path to save the figure
-    fontsize: int
+    fontsize : int; optional
         fontsize of the title
+    markersize : int; optional
+        point marker size
+    lw : int; optional
+        out-of-sample prediction line width
     Returns
     -------
-        None.
+        matplotlib axes object
     """
 
     if is_empty_dataframe(training_actual_df) or is_empty_dataframe(predicted_df):
@@ -89,18 +94,18 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
 
     ax.scatter(_training_actual_df[date_col].values,
                _training_actual_df[actual_col].values,
-               marker='.', color='black', alpha=0.8, s=70.0,
+               marker='.', color='black', alpha=0.8, s=markersize,
                label='train response')
     ax.plot(_predicted_df[date_col].values,
             _predicted_df[pred_col].values,
-            marker=None, color='#12939A', lw=2, label='prediction')
+            marker=None, color='#12939A', lw=lw, label='prediction')
 
     if test_actual_df is not None:
         test_actual_df = test_actual_df.copy()
         test_actual_df[date_col] = pd.to_datetime(test_actual_df[date_col])
         ax.scatter(test_actual_df[date_col].values,
                    test_actual_df[actual_col].values,
-                   marker='.', color='#FF8C00', alpha=0.8, s=70.0,
+                   marker='.', color='#FF8C00', alpha=0.8, s=markersize,
                    label='test response')
 
     # prediction intervals
@@ -129,30 +134,30 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
     has been pre-defined as `trend`, `seasonality` and `regression`.
     Parameters
     ----------
-    predicted_df: pd.DataFrame
+    predicted_df : pd.DataFrame
         predicted data response data frame. two columns required: actual_col and pred_col. If
         user provide pred_percentiles_col, it needs to include them as well.
-    date_col: str
+    date_col : str
         the date column name
-    prediction_percentiles: list
+    prediction_percentiles : list
         a list should consist exact two elements which will be used to plot as lower and upper bound of
         confidence interval
-    plot_components: list
+    plot_components : list
         a list of strings to show the label of components to be plotted; by default, it uses values in
         `orbit.constants.constants.PredictedComponents`.
-    title: str; optional
+    title : str; optional
         title of the plot
-    figsize: tuple; optional
+    figsize : tuple; optional
         figsize pass through to `matplotlib.pyplot.figure()`
-    path: str; optional
+    path : str; optional
         path to save the figure
-    fontsize: int; optional
+    fontsize : int; optional
         fontsize of the title
-    is_visible: boolean
+    is_visible : boolean
         whether we want to show the plot. If called from unittest, is_visible might = False.
    Returns
     -------
-        None
+        matplotlib axes object
     """
 
     _predicted_df = predicted_df.copy()
@@ -204,7 +209,8 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
 
 
 def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon',
-                           metric_col='smape', bar_width=0.1, path=None, figsize=None, fontsize=None, is_visible=False):
+                           metric_col='smape', bar_width=0.1, path=None,
+                           figsize=None, fontsize=None, is_visible=False):
     if not figsize:
         figsize = [20, 6]
 
@@ -277,12 +283,12 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         if plot trend parameters; default False
     incl_smooth_params : bool
         if plot smoothing parameters; default False
-    is_visible: boolean
+    is_visible : boolean
         whether we want to show the plot. If called from unittest, is_visible might = False.
 
     Returns
     -------
-    fig : plt object
+        matplotlib axes object
     """
     if 'orbit' not in str(mod.__class__):
         raise Exception("This plotting utility works for orbit model object only.")
@@ -396,3 +402,63 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         plt.close()
 
     return axes
+
+
+def plot_ktr_lev_knots(actual_df, predicted_df,
+                       date_col, actual_col,
+                       level_knot_dates, level_knots,
+                       trend_col='trend',
+                       path=None, is_visible=True, title="",
+                       fontsize=16, markersize=150, figsize=(16, 8)):
+    """ Plot the fitted level knots along with the actual time series.
+
+    Parameters
+    ----------
+    actual_df : pd.DataFrame
+        actual data frame including the actual response
+    predicted_df : pd.DateFrame
+        prediction data frame including the predicted components, which can be obtained by running
+        orbit.diagnostics.plot.plot_predicted_components
+    date_col : str
+        the date column name
+    actual_col : str
+        actual response column name
+    level_knot_dates : list
+        list of level knot dates
+    level_knots : list
+        list of fitted level knots
+    trend_col : str
+        trend column name in predicted_df
+    path : str; optional
+        path to save the figure
+    is_visible : boolean
+        whether we want to show the plot. If called from unittest, is_visible might = False.
+    title : str; optional
+        title of the plot
+    fontsize : int; optional
+        fontsize of the title
+    markersize : int; optional
+        knot marker size
+    figsize : tuple; optional
+        figsize pass through to `matplotlib.pyplot.figure()`
+   Returns
+    -------
+        matplotlib axes object
+    """
+    actuals = actual_df[actual_col]
+    # yhat = predicted_df[pred_col]
+    trend = predicted_df[trend_col]
+    fig, ax = plt.subplots(1, 1, figsize=figsize)
+    ax.plot(actual_df[date_col], actuals, color='black', lw=1, alpha=0.5, label='actual')
+    ax.plot(actual_df[date_col], trend, color='blue', lw=1, alpha=0.5, label='level/trend')
+    ax.scatter(level_knot_dates, level_knots, color='green', lw=1, s=markersize, marker='^', label='level-knot')
+    ax.legend()
+    ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
+    ax.set_title(title, fontsize=fontsize)
+    if path:
+        fig.savefig(path)
+    if is_visible:
+        plt.show()
+    else:
+        plt.close()
+    return ax
