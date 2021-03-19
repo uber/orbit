@@ -142,7 +142,7 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
         self.response = df[self.response_col].values
         self.date_array = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
         self.num_of_observations = len(self.response)
-        self.response_sd = np.std(self.response)
+        self.response_sd = np.nanstd(self.response)
         self.training_start = df[self.date_col].iloc[0]
         self.training_end = df[self.date_col].iloc[-1]
 
@@ -192,9 +192,7 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
         self._set_init_values()
 
     def _set_aggregate_posteriors(self):
-
         posterior_samples = self._posterior_samples
-
         mean_posteriors = {}
         median_posteriors = {}
 
@@ -450,17 +448,6 @@ class AggregatedPosteriorTemplate(BaseTemplate):
         self.n_bootstrap_draws = n_bootstrap_draws
         self.prediction_percentiles = prediction_percentiles
         self._prediction_percentiles = None
-        self._set_default_args()
-
-        self.aggregate_method = aggregate_method
-        # override init aggregate posteriors
-        self._aggregate_posteriors = {aggregate_method: dict()}
-        self._validate_aggregate_method()
-
-        self._set_static_attributes()
-        self._set_model_param_names()
-
-    def _set_default_args(self):
         if self.prediction_percentiles is None:
             self._prediction_percentiles = [5, 95]
         else:
@@ -472,6 +459,15 @@ class AggregatedPosteriorTemplate(BaseTemplate):
         # unlike full prediction, it does not take negative number of bootstrap draw
         # if self.n_bootstrap_draws < 2:
         #     raise IllegalArgument("Error: Number of bootstrap draws must be at least 2")
+
+
+        self.aggregate_method = aggregate_method
+        # override init aggregate posteriors
+        self._aggregate_posteriors = {aggregate_method: dict()}
+        self._validate_aggregate_method()
+
+        self._set_static_attributes()
+        self._set_model_param_names()
 
     def _validate_aggregate_method(self):
         if self.aggregate_method not in list(self._aggregate_posteriors.keys()):

@@ -8,12 +8,12 @@ class DataInputMapper(Enum):
     # All of the following have default defined in DEFAULT_SLGT_FIT_ATTRIBUTES
     # ----------  Data Input ---------- #
     # observation related
-    _NUM_OF_OBSERVATIONS = 'N_OBS'
-    _RESPONSE = 'RESPONSE'
-    _NUM_OF_VALID_RESPONSE = 'N_VALID_RES'
-    _WHICH_VALID_RESPONSE = 'WHICH_VALID_RES'
-    _RESPONSE_SD = 'SDY'
-    _RESPONSE_MEAN = 'MEAN_Y'
+    NUM_OF_OBSERVATIONS = 'N_OBS'
+    RESPONSE = 'RESPONSE'
+    NUM_OF_VALID_RESPONSE = 'N_VALID_RES'
+    WHICH_VALID_RESPONSE = 'WHICH_VALID_RES'
+    RESPONSE_SD = 'SDY'
+    RESPONSE_OFFSET = 'MEAN_Y'
     _DEGREE_OF_FREEDOM = 'DOF'
     # ----------  Level  ---------- #
     _NUM_KNOTS_LEVEL = 'N_KNOTS_LEV'
