@@ -155,7 +155,9 @@ def synthetic_data():
     coef = [0.2, 0.1, 0.3, 0.15, -0.2, -0.1]
     x, y, coef = make_regression(n_obs, coef, scale=2.0, seed=seed)
 
-    df = pd.DataFrame(np.concatenate([(rw + fs + y).reshape(-1, 1), x], axis=1), columns= ['response'] + list('abcdef'))
+    df = pd.DataFrame(
+        np.concatenate([(rw + fs + y).reshape(-1, 1), x], axis=1), columns=['response'] + list('abcdef')
+    )
     df['week'] = pd.date_range(start='2016-01-04', periods=n_obs, freq='7D')
     df = df[['week', 'response'] + list('abcdef')]
     train_df = df[df['week'] <= '2019-01-01']

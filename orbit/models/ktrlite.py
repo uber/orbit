@@ -53,8 +53,9 @@ class BaseKTRLite(BaseTemplate):
         To specify `estimator_type` or additional args for the specified `estimator_type`
 
     """
+    # data labels for sampler
     _data_input_mapper = constants.DataInputMapper
-    # stan or pyro model name (e.g. name of `*.stan` file in package)
+    # used to match name of `*.stan` or `*.pyro` file to look for the model
     _model_name = 'ktrlite'
 
     def __init__(self,

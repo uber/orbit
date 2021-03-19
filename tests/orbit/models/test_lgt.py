@@ -6,17 +6,18 @@ from orbit.estimators.pyro_estimator import PyroEstimator, PyroEstimatorVI, Pyro
 from orbit.estimators.stan_estimator import StanEstimator, StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 from orbit.models.lgt import LGTMAP, LGTFull, LGTAggregated
 from orbit.constants.constants import PredictedComponents
+from orbit.initializer.lgt import LGTInitializer
 
 
 @pytest.mark.parametrize("model_class", [LGTMAP, LGTFull, LGTAggregated])
-def test_base_ets_init(model_class):
+def test_base_lgt_init(model_class):
     lgt = model_class()
 
     is_fitted = lgt.is_fitted()
 
-    model_data_input = lgt._get_model_data_input()
-    model_param_names = lgt._get_model_param_names()
-    init_values = lgt._get_init_values()
+    model_data_input = lgt.get_model_data_input()
+    model_param_names = lgt.get_model_param_names()
+    init_values = lgt.get_init_values()
 
     # model is not yet fitted
     assert not is_fitted
@@ -25,7 +26,7 @@ def test_base_ets_init(model_class):
     # model param names should already be set
     assert model_param_names
     # callable is not implemented yet
-    assert not init_values
+    assert init_values == 'random'
 
 
 @pytest.mark.parametrize("seasonality", [None, 52])
@@ -53,6 +54,16 @@ def test_lgt_full_fit(synthetic_data, seasonality, estimator_type):
 
     lgt = LGTFull(**args)
     lgt.fit(train_df)
+
+    if seasonality:
+        init_call = lgt.get_init_values()
+        assert isinstance(init_call, LGTInitializer)
+        assert init_call.s == 52
+        init_values = init_call()
+        assert init_values['init_sea'].shape == (51, )
+    else:
+        assert lgt.get_init_values() == 'random'
+
     predict_df = lgt.predict(test_df)
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
@@ -90,6 +101,15 @@ def test_lgt_aggregated_fit(synthetic_data, seasonality, estimator_type):
     lgt = LGTAggregated(**args)
 
     lgt.fit(train_df)
+    if seasonality:
+        init_call = lgt.get_init_values()
+        assert isinstance(init_call, LGTInitializer)
+        assert init_call.s == 52
+        init_values = init_call()
+        assert init_values['init_sea'].shape == (51, )
+    else:
+        assert lgt.get_init_values() == 'random'
+
     predict_df = lgt.predict(test_df)
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
@@ -113,6 +133,16 @@ def test_lgt_map_fit(synthetic_data, seasonality, estimator_type):
     )
 
     lgt.fit(train_df)
+
+    if seasonality:
+        init_call = lgt.get_init_values()
+        assert isinstance(init_call, LGTInitializer)
+        assert init_call.s == 52
+        init_values = init_call()
+        assert init_values['init_sea'].shape == (51, )
+    else:
+        assert lgt.get_init_values() == 'random'
+
     predict_df = lgt.predict(test_df)
 
     expected_num_parameters = 10

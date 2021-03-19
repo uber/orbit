@@ -137,7 +137,7 @@ parameters {
   // residual tuning parameters
   // use 5*CAUCHY_SD to dodge upper boundary case
   real<lower=SIGMA_EPS,upper=5*CAUCHY_SD> obs_sigma_dummy[1 - WITH_MCMC];
-  // this re-parameterization is sugggested by stan org and improves sampling
+  // this re-parameterization is suggested by stan org and improves sampling
   // efficiently (on uniform instead of heavy-tail)
   // - 0.2 is made to dodge boundary case (tanh(pi/2 - 0.2) roughly equals 5 to be
   // consistent with MAP estimation)

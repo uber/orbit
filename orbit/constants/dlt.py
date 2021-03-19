@@ -8,8 +8,8 @@ class DataInputMapper(Enum):
     # All of the following have default defined in DEFAULT_SLGT_FIT_ATTRIBUTES
     # ----------  Data Input ---------- #
     # observation related
-    _NUM_OF_OBSERVATIONS = 'NUM_OF_OBS'
-    _RESPONSE = 'RESPONSE'
+    NUM_OF_OBSERVATIONS = 'NUM_OF_OBS'
+    RESPONSE = 'RESPONSE'
     # ---------- Seasonality ---------- #
     _SEASONALITY = 'SEASONALITY'
     _SEASONALITY_SM_INPUT = 'SEA_SM_INPUT'
@@ -22,9 +22,9 @@ class DataInputMapper(Enum):
     # ---------- Damped Trend ---------- #
     DAMPED_FACTOR = 'DAMPED_FACTOR'
     # ----------  Noise Distribution  ---------- #
-    _MIN_NU = 'MIN_NU'
-    _MAX_NU = 'MAX_NU'
-    _CAUCHY_SD = 'CAUCHY_SD'
+    MIN_NU = 'MIN_NU'
+    MAX_NU = 'MAX_NU'
+    CAUCHY_SD = 'CAUCHY_SD'
     # ----------  Regressions ---------- #
     _NUM_OF_POSITIVE_REGRESSORS = 'NUM_OF_PR'
     _POSITIVE_REGRESSOR_MATRIX = 'PR_MAT'
@@ -41,7 +41,7 @@ class DataInputMapper(Enum):
     _REGRESSION_PENALTY = 'REG_PENALTY_TYPE'
     AUTO_RIDGE_SCALE = 'AUTO_RIDGE_SCALE'
     LASSO_SCALE = 'LASSO_SCALE'
-    _WITH_MCMC = 'WITH_MCMC'
+    WITH_MCMC = 'WITH_MCMC'
 
 
 class GlobalTrendOption(Enum):
