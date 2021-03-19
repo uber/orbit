@@ -16,7 +16,7 @@ from .template import BaseTemplate, MAPTemplate
 
 
 class BaseKTRLite(BaseTemplate):
-    """Base LGT model object with shared functionality for Full, Aggregated, and MAP methods
+    """Base KTRLite model object with shared functionality for MAP method
 
     Parameters
     ----------
