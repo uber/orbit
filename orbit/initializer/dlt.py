@@ -13,18 +13,15 @@ class DLTInitializer(object):
         init_values = dict()
         if self.s > 1:
             init_sea = np.clip(np.random.normal(loc=0, scale=0.05, size=self.s - 1), -1.0, 1.0)
-            # catch cases with extreme values
-            # init_sea[init_sea > 1.0] = 1.0
-            # init_sea[init_sea < -1.0] = -1.0
             init_values[constants.LatentSamplingParameters.INITIAL_SEASONALITY.value] = init_sea
         if self.n_pr > 0:
-            x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.n_pr), 0.0, 1.0)
+            x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.n_pr), 1e-5, 2.0)
             init_values[constants.LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS.value] = x
         if self.n_nr > 0:
-            x = np.clip(np.random.normal(loc=-0, scale=0.1, size=self.n_nr), -1.0, 0.0)
+            x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.n_nr), -2.0, -1e-5)
             init_values[constants.LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS.value] = x
         if self.n_rr > 0:
-            x = np.random.normal(loc=-0, scale=0.1, size=self.n_rr)
+            x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.n_rr), -2.0, 2.0)
             init_values[constants.LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS.value] = x
 
         return init_values

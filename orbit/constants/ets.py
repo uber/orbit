@@ -7,15 +7,15 @@ class DataInputMapper(Enum):
     """
     # ----------  Data Input ---------- #
     # observation related
-    _NUM_OF_OBSERVATIONS = 'NUM_OF_OBS'
-    _RESPONSE = 'RESPONSE'
-    _RESPONSE_SD = 'RESPONSE_SD'
+    NUM_OF_OBSERVATIONS = 'NUM_OF_OBS'
+    RESPONSE = 'RESPONSE'
+    RESPONSE_SD = 'RESPONSE_SD'
     # ---------- Seasonality ---------- #
     _SEASONALITY = 'SEASONALITY'
     _SEASONALITY_SM_INPUT = 'SEA_SM_INPUT'
     # ---------- Common Local Trend ---------- #
     _LEVEL_SM_INPUT = 'LEV_SM_INPUT'
-    _WITH_MCMC = 'WITH_MCMC'
+    WITH_MCMC = 'WITH_MCMC'
 
 
 class BaseSamplingParameters(Enum):

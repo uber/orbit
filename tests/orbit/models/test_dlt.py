@@ -4,6 +4,7 @@ from copy import copy
 
 from orbit.models.dlt import DLTFull, DLTAggregated, DLTMAP
 from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI
+from orbit.initializer.dlt import DLTInitializer
 
 
 @pytest.mark.parametrize("model_class", [DLTMAP, DLTFull, DLTAggregated])
@@ -12,9 +13,9 @@ def test_base_ets_init(model_class):
 
     is_fitted = dlt.is_fitted()
 
-    model_data_input = dlt._get_model_data_input()
-    model_param_names = dlt._get_model_param_names()
-    init_values = dlt._get_init_values()
+    model_data_input = dlt.get_model_data_input()
+    model_param_names = dlt.get_model_param_names()
+    init_values = dlt.get_init_values()
 
     # model is not yet fitted
     assert not is_fitted
@@ -23,7 +24,7 @@ def test_base_ets_init(model_class):
     # model param names should already be set
     assert model_param_names
     # callable is not implemented yet
-    assert not init_values
+    assert init_values == 'random'
 
 
 @pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
@@ -41,6 +42,13 @@ def test_dlt_full_univariate(synthetic_data, estimator_type):
     )
 
     dlt.fit(train_df)
+
+    init_call = dlt.get_init_values()
+    assert isinstance(init_call, DLTInitializer)
+    assert init_call.s == 52
+    init_values = init_call()
+    assert init_values['init_sea'].shape == (51, )
+
     predict_df = dlt.predict(test_df)
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
@@ -66,6 +74,13 @@ def test_dlt_aggregated_univariate(synthetic_data, estimator_type):
     )
 
     dlt.fit(train_df)
+
+    init_call = dlt.get_init_values()
+    assert isinstance(init_call, DLTInitializer)
+    assert init_call.s == 52
+    init_values = init_call()
+    assert init_values['init_sea'].shape == (51, )
+
     predict_df = dlt.predict(test_df)
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
@@ -89,6 +104,13 @@ def test_dlt_map_univariate(synthetic_data):
     )
 
     dlt.fit(train_df)
+
+    init_call = dlt.get_init_values()
+    assert isinstance(init_call, DLTInitializer)
+    assert init_call.s == 52
+    init_values = init_call()
+    assert init_values['init_sea'].shape == (51, )
+
     predict_df = dlt.predict(test_df)
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
@@ -107,7 +129,8 @@ def test_dlt_non_seasonal_fit(synthetic_data, estimator_type):
     dlt = DLTFull(
         response_col='response',
         date_col='week',
-        estimator_type=estimator_type
+        estimator_type=estimator_type,
+        num_warmup=50,
     )
 
     dlt.fit(train_df)
@@ -149,6 +172,18 @@ def test_dlt_full_with_regression(synthetic_data, estimator_type, regressor_sign
     )
 
     dlt.fit(train_df)
+    init_call = dlt.get_init_values()
+    assert isinstance(init_call, DLTInitializer)
+    init_values = init_call()
+    assert init_values['init_sea'].shape == (51, )
+
+    if regressor_signs.count('+') > 0:
+        assert init_values['pr_beta'].shape == (regressor_signs.count('+'), )
+    if regressor_signs.count('-') > 0:
+        assert init_values['nr_beta'].shape == (regressor_signs.count('-'), )
+    if regressor_signs.count('=') > 0:
+        assert init_values['rr_beta'].shape == (regressor_signs.count('='), )
+
     predict_df = dlt.predict(test_df)
 
     regression_out = dlt.get_regression_coefs()
@@ -162,6 +197,11 @@ def test_dlt_full_with_regression(synthetic_data, estimator_type, regressor_sign
     assert predict_df.columns.tolist() == expected_columns
     assert regression_out.shape == expected_regression_shape
     assert num_regressors == len(train_df.columns.tolist()[2:])
+
+    assert np.sum(regression_out['coefficient'].values >= 0) <= \
+           regressor_signs.count('+') + regressor_signs.count('=')
+    assert np.sum(regression_out['coefficient'].values <= 0) <= \
+           regressor_signs.count('-') + regressor_signs.count('=')
 
 
 @pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
