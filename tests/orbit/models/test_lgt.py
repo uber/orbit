@@ -26,7 +26,7 @@ def test_base_lgt_init(model_class):
     # model param names should already be set
     assert model_param_names
     # callable is not implemented yet
-    assert init_values == 'random'
+    assert not init_values
 
 
 @pytest.mark.parametrize("seasonality", [None, 52])
@@ -54,15 +54,15 @@ def test_lgt_full_fit(synthetic_data, seasonality, estimator_type):
 
     lgt = LGTFull(**args)
     lgt.fit(train_df)
-
+    init_call = lgt.get_init_values()
     if seasonality:
-        init_call = lgt.get_init_values()
+
         assert isinstance(init_call, LGTInitializer)
         assert init_call.s == 52
         init_values = init_call()
         assert init_values['init_sea'].shape == (51, )
     else:
-        assert lgt.get_init_values() == 'random'
+        assert not init_call
 
     predict_df = lgt.predict(test_df)
 
@@ -99,16 +99,16 @@ def test_lgt_aggregated_fit(synthetic_data, seasonality, estimator_type):
         expected_num_parameters += 2
 
     lgt = LGTAggregated(**args)
-
     lgt.fit(train_df)
+    init_call = lgt.get_init_values()
     if seasonality:
-        init_call = lgt.get_init_values()
+
         assert isinstance(init_call, LGTInitializer)
         assert init_call.s == 52
         init_values = init_call()
         assert init_values['init_sea'].shape == (51, )
     else:
-        assert lgt.get_init_values() == 'random'
+        assert not init_call
 
     predict_df = lgt.predict(test_df)
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
@@ -133,15 +133,15 @@ def test_lgt_map_fit(synthetic_data, seasonality, estimator_type):
     )
 
     lgt.fit(train_df)
-
+    init_call = lgt.get_init_values()
     if seasonality:
-        init_call = lgt.get_init_values()
+
         assert isinstance(init_call, LGTInitializer)
         assert init_call.s == 52
         init_values = init_call()
         assert init_values['init_sea'].shape == (51, )
     else:
-        assert lgt.get_init_values() == 'random'
+        assert not init_call
 
     predict_df = lgt.predict(test_df)
 

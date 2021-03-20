@@ -105,7 +105,7 @@ class StanEstimatorMCMC(StanEstimator):
         compiled_stan_file = get_compiled_stan_model(model_name)
 
         #   passing callable from the model as seen in `initfun1()`
-        #   https://pystan.readthedocs.io/en/latest/api.html
+        #   https://pystan2.readthedocs.io/en/latest/api.html
         #   if None, use default as defined in class variable
         init_values = init_values or self.stan_init
 

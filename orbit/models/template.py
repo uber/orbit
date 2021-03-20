@@ -67,7 +67,7 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
         self.with_mcmc = None
         # set by ._set_init_values
         # this is ONLY used by stan which by default used 'random'
-        self._init_values = 'random'
+        self._init_values = None
 
         self._validate_supported_estimator_type()
         self._set_with_mcmc()
