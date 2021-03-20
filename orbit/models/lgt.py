@@ -67,8 +67,8 @@ class BaseLGT(BaseETS):
                  slope_sm_input=None,
                  **kwargs):
         # introduce extra parameters
-        self._min_nu = 5.
-        self._max_nu = 40.
+        self.min_nu = 5.
+        self.max_nu = 40.
 
         self.slope_sm_input = slope_sm_input
         if regressor_col:
@@ -90,58 +90,52 @@ class BaseLGT(BaseETS):
         self._regressor_sign = self.regressor_sign
         self._regressor_beta_prior = self.regressor_beta_prior
         self._regressor_sigma_prior = self.regressor_sigma_prior
-
         self._regression_penalty = None
-        self._num_of_regressors = 0
         self._regressor_col = list()
-
+        
+        self.num_of_regressors = 0
         # positive regressors
-        self._num_of_positive_regressors = 0
-        self._positive_regressor_col = list()
-        self._positive_regressor_beta_prior = list()
-        self._positive_regressor_sigma_prior = list()
+        self.num_of_positive_regressors = 0
+        self.positive_regressor_col = list()
+        self.positive_regressor_beta_prior = list()
+        self.positive_regressor_sigma_prior = list()
         # negative regressors
-        self._num_of_negative_regressors = 0
-        self._negative_regressor_col = list()
-        self._negative_regressor_beta_prior = list()
-        self._negative_regressor_sigma_prior = list()
+        self.num_of_negative_regressors = 0
+        self.negative_regressor_col = list()
+        self.negative_regressor_beta_prior = list()
+        self.negative_regressor_sigma_prior = list()
         # regular regressors
-        self._num_of_regular_regressors = 0
-        self._regular_regressor_col = list()
-        self._regular_regressor_beta_prior = list()
-        self._regular_regressor_sigma_prior = list()
+        self.num_of_regular_regressors = 0
+        self.regular_regressor_col = list()
+        self.regular_regressor_beta_prior = list()
+        self.regular_regressor_sigma_prior = list()
 
         # init dynamic data attributes
-        # the following are set by `_set_dynamic_data_attributes()` and generally set during fit()
+        # the following are set by `_set_dynamic_attributes()` and generally set during fit()
         # from input df
         # response data
-        self._response = None
-        self._num_of_observations = None
-        self._cauchy_sd = None
+        self.cauchy_sd = None
 
         # regression data
-        self._regular_regressor_matrix = None
-        self._positive_regressor_matrix = None
-        self._negative_regressor_matrix = None
+        self.positive_regressor_matrix = None
+        self.negative_regressor_matrix = None
+        self.regular_regressor_matrix = None
 
         # order matters and super constructor called after attributes are set
-        # since we override _set_static_data_attributes()
+        # since we override _set_static_attributes()
         super().__init__(**kwargs)
 
     def _set_init_values(self):
-        """Set init as a callable (for Stan ONLY)
-        See: https://pystan.readthedocs.io/en/latest/api.htm
-        Overriding :func: `~orbit.models.BaseETS._set_init_values`
-        """
+        """Override function from Base Template"""
         # init_values_partial = partial(init_values_callable, seasonality=seasonality)
         # partialfunc does not work when passed to PyStan because PyStan uses
         # inspect.getargspec(func) which seems to raise an exception with keyword-only args
         # caused by using partialfunc
         # lambda as an alternative workaround
-        if self._seasonality > 1 or self._num_of_regressors > 0:
+        if self._seasonality > 1 or self.num_of_regressors > 0:
             init_values_callable = LGTInitializer(
-                self._seasonality, self._num_of_positive_regressors, self._num_of_negative_regressors,
-                self._num_of_regular_regressors
+                self._seasonality, self.num_of_positive_regressors, self.num_of_negative_regressors,
+                self.num_of_regular_regressors
             )
             self._init_values = init_values_callable
 
@@ -172,21 +166,21 @@ class BaseLGT(BaseETS):
                     raise IllegalArgument('Wrong dimension length in Regression Param Input')
 
         # regressor defaults
-        self._num_of_regressors = len(self.regressor_col)
+        self.num_of_regressors = len(self.regressor_col)
 
         _validate(
             [self.regressor_sign, self.regressor_beta_prior, self.regressor_sigma_prior],
-            self._num_of_regressors
+            self.num_of_regressors
         )
 
         if self.regressor_sign is None:
-            self._regressor_sign = [DEFAULT_REGRESSOR_SIGN] * self._num_of_regressors
+            self._regressor_sign = [DEFAULT_REGRESSOR_SIGN] * self.num_of_regressors
 
         if self.regressor_beta_prior is None:
-            self._regressor_beta_prior = [DEFAULT_REGRESSOR_BETA] * self._num_of_regressors
+            self._regressor_beta_prior = [DEFAULT_REGRESSOR_BETA] * self.num_of_regressors
 
         if self.regressor_sigma_prior is None:
-            self._regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * self._num_of_regressors
+            self._regressor_sigma_prior = [DEFAULT_REGRESSOR_SIGMA] * self.num_of_regressors
 
     def _set_regression_penalty(self):
         """set and validate regression penalty related attributes.
@@ -204,32 +198,32 @@ class BaseLGT(BaseETS):
         # inside *.stan files, we need to distinguish regular, positive and negative regressors
         for index, reg_sign in enumerate(self._regressor_sign):
             if reg_sign == '+':
-                self._num_of_positive_regressors += 1
-                self._positive_regressor_col.append(self.regressor_col[index])
-                self._positive_regressor_beta_prior.append(self._regressor_beta_prior[index])
-                self._positive_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
+                self.num_of_positive_regressors += 1
+                self.positive_regressor_col.append(self.regressor_col[index])
+                self.positive_regressor_beta_prior.append(self._regressor_beta_prior[index])
+                self.positive_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
             elif reg_sign == '-':
-                self._num_of_negative_regressors += 1
-                self._negative_regressor_col.append(self.regressor_col[index])
-                self._negative_regressor_beta_prior.append(self._regressor_beta_prior[index])
-                self._negative_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
+                self.num_of_negative_regressors += 1
+                self.negative_regressor_col.append(self.regressor_col[index])
+                self.negative_regressor_beta_prior.append(self._regressor_beta_prior[index])
+                self.negative_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
             else:
-                self._num_of_regular_regressors += 1
-                self._regular_regressor_col.append(self.regressor_col[index])
-                self._regular_regressor_beta_prior.append(self._regressor_beta_prior[index])
-                self._regular_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
+                self.num_of_regular_regressors += 1
+                self.regular_regressor_col.append(self.regressor_col[index])
+                self.regular_regressor_beta_prior.append(self._regressor_beta_prior[index])
+                self.regular_regressor_sigma_prior.append(self._regressor_sigma_prior[index])
 
-        self._regressor_col = self._positive_regressor_col + self._negative_regressor_col + \
-                              self._regular_regressor_col
+        self._regressor_col = self.positive_regressor_col + self.negative_regressor_col + \
+                              self.regular_regressor_col
 
-    def _set_static_data_attributes(self):
+    def _set_static_attributes(self):
         """Cast data to the proper type mostly to match Stan required static data types
         Notes
         -----
-        Overriding :func: `~orbit.models.BaseETS._set_static_data_attributes`
+        Overriding :func: `~orbit.models.BaseETS._set_static_attributes`
         It sets additional required attributes related to trend and regression
         """
-        super()._set_static_data_attributes()
+        super()._set_static_attributes()
         self._set_additional_trend_attributes()
         self._set_regression_default_attributes()
         self._set_regression_penalty()
@@ -249,7 +243,7 @@ class BaseLGT(BaseETS):
             self._model_param_names += [param.value for param in constants.SeasonalitySamplingParameters]
 
         # append positive regressors if any
-        if self._num_of_regressors > 0:
+        if self.num_of_regressors > 0:
             self._model_param_names += [
                 constants.RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value]
 
@@ -269,40 +263,40 @@ class BaseLGT(BaseETS):
         In case of absence of regression, they will be set to np.array with dim (num_of_obs, 0) to fit Stan requirement
         """
         # init of regression matrix depends on length of response vector
-        self._positive_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
-        self._negative_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
-        self._regular_regressor_matrix = np.zeros((self._num_of_observations, 0), dtype=np.double)
+        self.positive_regressor_matrix = np.zeros((self.num_of_observations, 0), dtype=np.double)
+        self.negative_regressor_matrix = np.zeros((self.num_of_observations, 0), dtype=np.double)
+        self.regular_regressor_matrix = np.zeros((self.num_of_observations, 0), dtype=np.double)
 
         # update regression matrices
-        if self._num_of_positive_regressors > 0:
-            self._positive_regressor_matrix = df.filter(
-                items=self._positive_regressor_col, ).values
+        if self.num_of_positive_regressors > 0:
+            self.positive_regressor_matrix = df.filter(
+                items=self.positive_regressor_col, ).values
 
-        if self._num_of_negative_regressors > 0:
-            self._negative_regressor_matrix = df.filter(
-                items=self._negative_regressor_col, ).values
+        if self.num_of_negative_regressors > 0:
+            self.negative_regressor_matrix = df.filter(
+                items=self.negative_regressor_col, ).values
 
-        if self._num_of_regular_regressors > 0:
-            self._regular_regressor_matrix = df.filter(
-                items=self._regular_regressor_col, ).values
+        if self.num_of_regular_regressors > 0:
+            self.regular_regressor_matrix = df.filter(
+                items=self.regular_regressor_col, ).values
 
-    def _set_dynamic_data_attributes(self, df):
+    def _set_dynamic_attributes(self, df):
         """Set required input based on input DataFrame, rather than at object instantiation.  It also set
         additional required attributes for LGT"""
         super()._validate_training_df(df)
         super()._set_training_df_meta(df)
 
-        # set the rest of attributes related to training df
-        self._response = df[self.response_col].values
-        self._num_of_observations = len(self._response)
         # scalar value is suggested by the author of Rlgt
-        self._cauchy_sd = max(self._response) / 30.0
+        self.cauchy_sd = max(self.response) / 30.0
 
         # extra settings for regression
         self._validate_training_df_with_regression(df)
-        self._set_regressor_matrix(df)  # depends on _num_of_observations
+        self._set_regressor_matrix(df)  # depends on num_of_observations
 
-    def _predict(self, posterior_estimates, df, include_error=False, decompose=False):
+        super()._set_model_data_input()
+        self._set_init_values()
+
+    def _predict(self, posterior_estimates, df, include_error=False, decompose=False,  **kwargs):
         """Vectorized version of prediction math"""
 
         ################################################################
@@ -351,8 +345,6 @@ class BaseLGT(BaseETS):
         # Prediction Attributes
         ################################################################
 
-        # get training df meta
-        training_df_meta = self._training_df_meta
         # remove reference from original input
         df = df.copy()
 
@@ -369,15 +361,15 @@ class BaseLGT(BaseETS):
 
         # TODO: validate that all regressor columns are present, if any
 
-        if prediction_df_meta['prediction_start'] < training_df_meta['training_start']:
+        if prediction_df_meta['prediction_start'] < self.training_start:
             raise PredictionException('Prediction start must be after training start.')
 
-        trained_len = training_df_meta['df_length']
+        trained_len = self.num_of_observations
         output_len = prediction_df_meta['df_length']
 
         # If we cannot find a match of prediction range, assume prediction starts right after train
         # end
-        if prediction_df_meta['prediction_start'] > training_df_meta['training_end']:
+        if prediction_df_meta['prediction_start'] > self.training_end:
             forecast_dates = set(prediction_df_meta['date_array'])
             n_forecast_steps = len(forecast_dates)
             # time index for prediction start
@@ -385,14 +377,14 @@ class BaseLGT(BaseETS):
         else:
             # compute how many steps to forecast
             forecast_dates = \
-                set(prediction_df_meta['date_array']) - set(training_df_meta['date_array'])
+                set(prediction_df_meta['date_array']) - set(self.date_array)
             # check if prediction df is a subset of training df
             # e.g. "negative" forecast steps
             n_forecast_steps = len(forecast_dates) or \
-                               -(len(set(training_df_meta['date_array']) - set(prediction_df_meta['date_array'])))
+                               - (len(set(self.date_array) - set(prediction_df_meta['date_array'])))
             # time index for prediction start
             start = pd.Index(
-                training_df_meta['date_array']).get_loc(prediction_df_meta['prediction_start'])
+                self.date_array).get_loc(prediction_df_meta['prediction_start'])
 
         full_len = trained_len + n_forecast_steps
 
@@ -558,7 +550,7 @@ class BaseLGT(BaseETS):
         coef_df = pd.DataFrame()
 
         # end if no regressors
-        if self._num_of_regressors == 0:
+        if self.num_of_regressors == 0:
             return coef_df
 
         coef = self._aggregate_posteriors \
@@ -566,18 +558,18 @@ class BaseLGT(BaseETS):
             .get(constants.RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
 
         # get column names
-        pr_cols = self._positive_regressor_col
-        nr_cols = self._negative_regressor_col
-        rr_cols = self._regular_regressor_col
+        pr_cols = self.positive_regressor_col
+        nr_cols = self.negative_regressor_col
+        rr_cols = self.regular_regressor_col
 
         # note ordering here is not the same as `self.regressor_cols` because positive
         # and negative do not have to be grouped on input
         regressor_cols = pr_cols + nr_cols + rr_cols
 
         # same note
-        regressor_signs = ["Positive"] * self._num_of_positive_regressors + \
-                          ["Negative"] * self._num_of_negative_regressors + \
-                          ["Regular"] * self._num_of_regular_regressors
+        regressor_signs = ["Positive"] * self.num_of_positive_regressors + \
+                          ["Negative"] * self.num_of_negative_regressors + \
+                          ["Regular"] * self.num_of_regular_regressors
 
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR_SIGN] = regressor_signs
@@ -586,7 +578,7 @@ class BaseLGT(BaseETS):
         return coef_df
 
 
-class LGTMAP(BaseLGT, ETSMAP):
+class LGTMAP(ETSMAP, BaseLGT):
     """Concrete LGT model for MAP (Maximum a Posteriori) prediction
 
     Similar to :class: `~orbit.models.LGTAggregated` but prediction is based on Maximum a Posteriori (aka Mode)
@@ -601,7 +593,7 @@ class LGTMAP(BaseLGT, ETSMAP):
         return super()._get_regression_coefs(aggregate_method=PredictMethod.MAP.value)
 
 
-class LGTFull(BaseLGT, ETSFull):
+class LGTFull(ETSFull, BaseLGT):
     """Concrete LGT model for full Bayesian prediction"""
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
 
@@ -613,7 +605,7 @@ class LGTFull(BaseLGT, ETSFull):
         return super()._get_regression_coefs(aggregate_method=aggregate_method)
 
 
-class LGTAggregated(BaseLGT, ETSAggregated):
+class LGTAggregated(ETSAggregated, BaseLGT):
     """Concrete LGT model for aggregated posterior prediction"""
     _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI, PyroEstimatorVI]
 

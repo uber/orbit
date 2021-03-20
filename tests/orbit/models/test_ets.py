@@ -5,6 +5,7 @@ from copy import copy
 from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 from orbit.models.ets import ETSMAP, ETSFull, ETSAggregated
 from orbit.constants.constants import PredictedComponents
+from orbit.initializer.ets import ETSInitializer
 
 
 @pytest.mark.parametrize("model_class", [ETSMAP, ETSFull, ETSAggregated])
@@ -13,9 +14,9 @@ def test_base_ets_init(model_class):
 
     is_fitted = ets.is_fitted()
 
-    model_data_input = ets._get_model_data_input()
-    model_param_names = ets._get_model_param_names()
-    init_values = ets._get_init_values()
+    model_data_input = ets.get_model_data_input()
+    model_param_names = ets.get_model_param_names()
+    init_values = ets.get_init_values()
 
     # model is not yet fitted
     assert not is_fitted
@@ -24,7 +25,7 @@ def test_base_ets_init(model_class):
     # model param names should already be set
     assert model_param_names
     # callable is not implemented yet
-    assert not init_values
+    assert init_values == 'random'
 
 
 @pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
@@ -42,6 +43,13 @@ def test_ets_full_seasonal_fit(synthetic_data, estimator_type):
     )
 
     ets.fit(train_df)
+
+    init_call = ets.get_init_values()
+    assert isinstance(init_call, ETSInitializer)
+    assert init_call.s == 52
+    init_values = init_call()
+    assert init_values['init_sea'].shape == (51, )
+
     predict_df = ets.predict(test_df)
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
@@ -67,6 +75,13 @@ def test_ets_aggregated_seasonal_fit(synthetic_data, estimator_type):
     )
 
     ets.fit(train_df)
+
+    init_call = ets.get_init_values()
+    assert isinstance(init_call, ETSInitializer)
+    assert init_call.s == 52
+    init_values = init_call()
+    assert init_values['init_sea'].shape == (51, )
+
     predict_df = ets.predict(test_df)
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
@@ -91,6 +106,12 @@ def test_ets_map_seasonal_fit(synthetic_data, estimator_type):
     )
 
     ets.fit(train_df)
+    init_call = ets.get_init_values()
+    assert isinstance(init_call, ETSInitializer)
+    assert init_call.s == 52
+    init_values = init_call()
+    assert init_values['init_sea'].shape == (51, )
+
     predict_df = ets.predict(test_df)
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
@@ -133,6 +154,7 @@ def test_full_prediction_percentiles(iclaims_training_data, prediction_percentil
         response_col='claims',
         date_col='week',
         seasonality=52,
+        num_warmup=50,
         seed=8888,
         prediction_percentiles=prediction_percentiles,
     )
@@ -162,7 +184,6 @@ def test_full_prediction_percentiles(iclaims_training_data, prediction_percentil
     assert predicted_df.shape[0] == df.shape[0]
 
 
-# TODO: consider testing non-symmetric input percentiles
 @pytest.mark.parametrize("prediction_percentiles", [None, [5, 10, 95]])
 def test_map_prediction_percentiles(iclaims_training_data, prediction_percentiles):
     df = iclaims_training_data
