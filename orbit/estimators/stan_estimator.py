@@ -68,7 +68,7 @@ class StanEstimator(BaseEstimator):
             logging.info(msg)
 
     @abstractmethod
-    def fit(self, model_name, model_param_names, data_input, init_values=None):
+    def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         raise NotImplementedError('Concrete fit() method must be implemented')
 
 
@@ -101,7 +101,7 @@ class StanEstimatorMCMC(StanEstimator):
     def _set_computed_stan_mcmc_configs(self):
         self._stan_mcmc_args = update_dict({}, self._stan_mcmc_args)
 
-    def fit(self, model_name, model_param_names, data_input, init_values=None):
+    def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         compiled_stan_file = get_compiled_stan_model(model_name)
 
         #   passing callable from the model as seen in `initfun1()`
@@ -229,7 +229,7 @@ class StanEstimatorVI(StanEstimator):
 
         return params
 
-    def fit(self, model_name, model_param_names, data_input, init_values=None):
+    def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         compiled_stan_file = get_compiled_stan_model(model_name)
 
         #   passing callable from the model as seen in `initfun1()`
@@ -276,7 +276,7 @@ class StanEstimatorMAP(StanEstimator):
         default_stan_map_args = {}
         self._stan_map_args = update_dict(default_stan_map_args, self._stan_map_args)
 
-    def fit(self, model_name, model_param_names, data_input, init_values=None):
+    def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         compiled_stan_file = get_compiled_stan_model(model_name)
 
         # passing callable from the model as seen in `initfun1()`
