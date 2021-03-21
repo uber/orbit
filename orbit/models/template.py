@@ -41,6 +41,8 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
     _data_input_mapper = None
     # used to match name of `*.stan` or `*.pyro` file to look for the model
     _model_name = None
+    # EXPERIMENTAL: _fitter is used for quick supply of pyro / stan object instead of supplying a file
+    _fitter = None
     # supported estimators in ..estimators
     # concrete classes should overwrite this
     _supported_estimator_types = None  # set for each model
@@ -227,6 +229,7 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
             model_name=model_name,
             model_param_names=model_param_names,
             data_input=data_input,
+            fitter=self._fitter,
             init_values=init_values
         )
 
@@ -457,7 +460,6 @@ class AggregatedPosteriorTemplate(BaseTemplate):
         # unlike full prediction, it does not take negative number of bootstrap draw
         # if self.n_bootstrap_draws < 2:
         #     raise IllegalArgument("Error: Number of bootstrap draws must be at least 2")
-
 
         self.aggregate_method = aggregate_method
         # override init aggregate posteriors

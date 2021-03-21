@@ -42,7 +42,7 @@ class PyroEstimator(BaseEstimator):
         self.message = message
 
     @abstractmethod
-    def fit(self, model_name, model_param_names, data_input, init_values=None):
+    def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         raise NotImplementedError('Concrete fit() method must be implemented')
 
 
@@ -65,7 +65,7 @@ class PyroEstimatorVI(PyroEstimator):
         self.num_sample = num_sample
         self.num_particles = num_particles
 
-    def fit(self, model_name, model_param_names, data_input, init_values=None):
+    def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         # verbose is passed through from orbit.models.base_estimator
         verbose = self.verbose
         message = self.message
@@ -76,8 +76,9 @@ class PyroEstimatorVI(PyroEstimator):
         num_steps = self.num_steps
 
         pyro.set_rng_seed(seed)
-        Model = get_pyro_model(model_name)  # abstract
-        model = Model(data_input)  # concrete
+        if fitter is None:
+            fitter = get_pyro_model(model_name)  # abstract
+        model = fitter(data_input)  # concrete
 
         # Perform stochastic variational inference using an auto guide.
         pyro.clear_param_store()
@@ -125,7 +126,7 @@ class PyroEstimatorMAP(PyroEstimator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def fit(self, model_name, model_param_names, data_input, init_values=None):
+    def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         verbose = self.verbose
         message = self.message
         learning_rate = self.learning_rate
@@ -134,8 +135,9 @@ class PyroEstimatorMAP(PyroEstimator):
         learning_rate_total_decay = self.learning_rate_total_decay
 
         pyro.set_rng_seed(seed)
-        Model = get_pyro_model(model_name)  # abstract
-        model = Model(data_input)  # concrete
+        if fitter is None:
+            fitter = get_pyro_model(model_name)  # abstract
+        model = fitter(data_input)  # concrete
 
         # Perform MAP inference using an AutoDelta guide.
         pyro.clear_param_store()
