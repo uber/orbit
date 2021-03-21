@@ -104,7 +104,7 @@ def make_seasonality(series_len, seasonality, method='discrete', order=3, durati
     return seas
 
 
-def make_regression(series_len, coefs, loc=0.0, scale=0.5, cov=None, noise_scale=1.0,
+def make_regression(series_len, coefs, loc=0.0, scale=0.5, cov=None, noise_scale=1.0, bias=None,
                     relevance=1.0, sparsity=0.2, seed=1):
     """ Module to generate multiplicative time-series with trend, seasonality and regression components
     Parameters
@@ -121,6 +121,8 @@ def make_regression(series_len, coefs, loc=0.0, scale=0.5, cov=None, noise_scale
         Covariance of regressors; need to be positive definite
     noise_scale:
         Scale parameter in the white noise generation process
+    bias: float
+        bias or intercept of the regression component; if None, bias is set to zero.
     relevance: float
         0 to 1; smaller value indicates less number of total useful regressors
     sparsity: float
@@ -135,8 +137,8 @@ def make_regression(series_len, coefs, loc=0.0, scale=0.5, cov=None, noise_scale
     y: 1-D array like
         Regression derived by product of X and coefficients plus noise
     coefs: float
-        Coefficients modified in the process due to sparsity; if sparsity=0, it should be
-        identical to coefs inputted by user
+        Coefficients modified in the process due to sparsity; if sparsity=0, it should be identical to coefs inputted
+        by user
     """
 
     num_of_regressors = len(coefs)
@@ -169,7 +171,11 @@ def make_regression(series_len, coefs, loc=0.0, scale=0.5, cov=None, noise_scale
 
     noise = np.random.default_rng(seed).normal(0, noise_scale, series_len)
     # make observed response
-    y = np.matmul(x, coefs) + noise
+    if bias:
+        y = bias + np.matmul(x, coefs) + noise
+    else:
+        y = np.matmul(x, coefs) + noise
+
     return x, y, coefs
 
 

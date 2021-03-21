@@ -25,7 +25,7 @@ class BaseEstimator(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_
         np.random.seed(self.seed)
 
     @abstractmethod
-    def fit(self, model_name, model_param_names, data_input, init_values=None):
+    def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         """
 
         Parameters
@@ -36,6 +36,9 @@ class BaseEstimator(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_
             list of strings of model parameters names to extract
         data_input : dict
             key-value pairs of data input as required by definition in samplers (stan/pyro/...)
+        fitter :
+            model object used for fitting; this will be used instead of model_name if supplied to search for
+            model object
         init_values : float or np.array
             initial sampler value. If None, 'random' is used
 
