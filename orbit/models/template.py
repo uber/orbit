@@ -33,11 +33,9 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
 
     Notes
     -----
-    For attributes that will be further processed internally, we maintain a separate field with a prefix "_".
-    e.g. if x appear in the arg which can be None as an input, later we want to default None to be 0, then
-    we will have self._x = 0 if self.x is None instead of directly changing self.x.  Internal or external fields
-    which do not subject to further manipulation  will be assigned without the "_" prefix.
-
+    For attributes which are input by users and needed to mutate further downstream, we will introduce a
+    new internal attribute with identical name except a prefix "_".
+    e.g. If x appear in the arg default as `None` and we need to impute by 0. we will have self._x = 0 downstream.
     """
     # data labels for sampler
     _data_input_mapper = None
@@ -67,7 +65,7 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
         self.with_mcmc = None
         # set by ._set_init_values
         # this is ONLY used by stan which by default used 'random'
-        self._init_values = 'random'
+        self._init_values = None
 
         self._validate_supported_estimator_type()
         self._set_with_mcmc()
