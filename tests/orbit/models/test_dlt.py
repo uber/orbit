@@ -24,7 +24,7 @@ def test_base_ets_init(model_class):
     # model param names should already be set
     assert model_param_names
     # callable is not implemented yet
-    assert init_values == 'random'
+    assert not init_values
 
 
 @pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])

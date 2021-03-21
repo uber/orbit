@@ -101,13 +101,13 @@ class BaseKTRLite(BaseTemplate):
         # self.rho_coefficients = rho_coefficients
         self.date_freq = date_freq
 
-        # regression attributes -- now is only used for fourier series as seasonality
+        # regression attributes -- now is ONLY used for fourier series as seasonality
         self.num_of_regressors = 0
-        self._regressor_col = list()
-        self._regressor_col_gp = list()
-        self._coefficients_knot_pooling_loc = list()
-        self._coefficients_knot_pooling_scale = list()
-        self._coefficients_knot_scale = list()
+        self.regressor_col = list()
+        self.regressor_col_gp = list()
+        self.coefficients_knot_pooling_loc = list()
+        self.coefficients_knot_pooling_scale = list()
+        self.coefficients_knot_scale = list()
 
         # set static data attributes
         # self._set_static_attributes()
@@ -168,28 +168,28 @@ class BaseKTRLite(BaseTemplate):
 
     def _set_seasonality_attributes(self):
         """given list of seasonalities and their order, create list of seasonal_regressors_columns"""
-        self._regressor_col_gp = []
-        self._regressor_col = []
-        self._coefficients_knot_pooling_loc = []
-        self._coefficients_knot_pooling_scale = []
-        self._coefficients_knot_scale = []
+        self.regressor_col_gp = list()
+        self.regressor_col = list()
+        self.coefficients_knot_pooling_loc = list()
+        self.coefficients_knot_pooling_scale = list()
+        self.coefficients_knot_scale = list()
 
         if len(self._seasonality) > 0:
             for idx, s in enumerate(self._seasonality):
                 fs_cols = []
                 order = self._seasonality_fs_order[idx]
-                self._coefficients_knot_pooling_loc += [0.0] * order * 2
-                self._coefficients_knot_pooling_scale += [self._seasonal_knot_pooling_scale[idx]] * order * 2
-                self._coefficients_knot_scale += [self._seasonal_knot_scale[idx]] * order * 2
+                self.coefficients_knot_pooling_loc += [0.0] * order * 2
+                self.coefficients_knot_pooling_scale += [self._seasonal_knot_pooling_scale[idx]] * order * 2
+                self.coefficients_knot_scale += [self._seasonal_knot_scale[idx]] * order * 2
                 for i in range(1, order + 1):
                     fs_cols.append('seas{}_fs_cos{}'.format(s, i))
                     fs_cols.append('seas{}_fs_sin{}'.format(s, i))
                 # flatten version of regressor columns
-                self._regressor_col += fs_cols
+                self.regressor_col += fs_cols
                 # list of group of regressor columns bundled with seasonality
-                self._regressor_col_gp.append(fs_cols)
+                self.regressor_col_gp.append(fs_cols)
 
-        self.num_of_regressors = len(self._regressor_col)
+        self.num_of_regressors = len(self.regressor_col)
 
     def _set_static_attributes(self):
         """Over-ride function from Base Template"""
@@ -237,7 +237,7 @@ class BaseKTRLite(BaseTemplate):
         # init of regression matrix depends on length of response vector
         self.regressor_matrix = np.zeros((self.num_of_observations, 0), dtype=np.double)
         if self.num_of_regressors > 0:
-            self.regressor_matrix = df.filter(items=self._regressor_col,).values
+            self.regressor_matrix = df.filter(items=self.regressor_col, ).values
 
     @staticmethod
     def get_gap_between_dates(start_date, end_date, freq):
@@ -247,7 +247,7 @@ class BaseKTRLite(BaseTemplate):
         return gap
 
     @staticmethod
-    def set_knots_tp(knots_distance, cutoff):
+    def _set_knots_tp(knots_distance, cutoff):
         # start in the middle
         knots_idx_start = round(knots_distance / 2)
         knots_idx = np.arange(knots_idx_start, cutoff, knots_distance)
@@ -270,14 +270,14 @@ class BaseKTRLite(BaseTemplate):
                 number_of_knots = round(1 / self.span_level)
                 knots_distance = math.ceil(self._cutoff / number_of_knots)
 
-            knots_idx_level = self.set_knots_tp(knots_distance, self._cutoff)
+            knots_idx_level = self._set_knots_tp(knots_distance, self._cutoff)
             self._knots_idx_level = knots_idx_level
             self.knots_tp_level = (1 + knots_idx_level) / self.num_of_observations
             self._level_knot_dates = df[self.date_col].values[knots_idx_level]
         else:
             self._level_knot_dates = pd.to_datetime([
-                x for x in self._level_knot_dates if (x <= df[self.date_col].max()) \
-                                                     and (x >= df[self.date_col].min())
+                x for x in self._level_knot_dates if 
+                (x <= df[self.date_col].max()) and (x >= df[self.date_col].min())
             ])
             if self.date_freq is None:
                 self.date_freq = pd.infer_freq(df[self.date_col])[0]
@@ -302,7 +302,7 @@ class BaseKTRLite(BaseTemplate):
                 number_of_knots = round(1 / self.span_coefficients)
                 knots_distance = math.ceil(self._cutoff / number_of_knots)
 
-            knots_idx_coef = self.set_knots_tp(knots_distance, self._cutoff)
+            knots_idx_coef = self._set_knots_tp(knots_distance, self._cutoff)
             self._knots_idx_coef = knots_idx_coef
             self.knots_tp_coefficients = (1 + knots_idx_coef) / self.num_of_observations
             self._coef_knot_dates = df[self.date_col].values[knots_idx_coef]
@@ -331,28 +331,6 @@ class BaseKTRLite(BaseTemplate):
         self._model_param_names += [param.value for param in constants.BaseSamplingParameters]
         if len(self._seasonality) > 0 or self.num_of_regressors > 0:
             self._model_param_names += [param.value for param in constants.RegressionSamplingParameters]
-
-    def _get_model_param_names(self):
-        return self._model_param_names
-
-    def _set_model_data_input(self):
-        """Collects data attributes into a dict for sampling"""
-        data_inputs = dict()
-
-        for key in self._data_input_mapper:
-            # mapper keys in upper case; inputs in lower case
-            key_lower = key.name.lower()
-            input_value = getattr(self, key_lower, None)
-            if input_value is None:
-                raise ModelException('{} is missing from data input'.format(key_lower))
-            if isinstance(input_value, bool):
-                input_value = int(input_value)
-            data_inputs[key.value] = input_value
-
-        self._model_data_input = data_inputs
-
-    def _get_model_data_input(self):
-        return self._model_data_input
 
     def _predict(self, posterior_estimates, df, include_error=False, decompose=False, **kwargs):
         """Vectorized version of prediction math"""
@@ -393,7 +371,7 @@ class BaseKTRLite(BaseTemplate):
         if prediction_df_meta['prediction_start'] < self.training_start:
             raise PredictionException('Prediction start must be after training start.')
 
-        trained_len = self.num_of_observations # i.e., self.num_of_observations
+        trained_len = self.num_of_observations  # i.e., self.num_of_observations
         output_len = prediction_df_meta['df_length']
         prediction_start = prediction_df_meta['prediction_start']
 
@@ -423,7 +401,7 @@ class BaseKTRLite(BaseTemplate):
                 lev_knot_out = np.random.laplace(0, self.level_knot_scale,
                                                  size=(lev_knot_in.shape[0], len(knots_tp_level_out)))
                 lev_knot_out = np.cumsum(np.concatenate([lev_knot_in[:, -1].reshape(-1, 1), lev_knot_out],
-                                                            axis=1), axis=1)[:, 1:]
+                                                        axis=1), axis=1)[:, 1:]
                 lev_knot = np.concatenate([lev_knot_in, lev_knot_out], axis=1)
             else:
                 new_knots_tp_level = self.knots_tp_level
@@ -441,13 +419,13 @@ class BaseKTRLite(BaseTemplate):
         total_seas_regression = np.zeros(trend.shape, dtype=np.double)
         seas_decomp = {}
         # update seasonal regression matrices
-        if self._seasonality and self._regressor_col:
+        if self._seasonality and self.regressor_col:
             coef_knot = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
             # kernel_coefficients = gauss_kernel(new_tp, self.knots_tp_coefficients, rho=self.rho_coefficients)
             kernel_coefficients = sandwich_kernel(new_tp, self.knots_tp_coefficients)
             coef = np.matmul(coef_knot, kernel_coefficients.transpose(1, 0))
             pos = 0
-            for idx, cols in enumerate(self._regressor_col_gp):
+            for idx, cols in enumerate(self.regressor_col_gp):
                 seasonal_regressor_matrix = df[cols].values
                 seas_coef = coef[..., pos:(pos + len(cols)), :]
                 seas_regression = np.sum(seas_coef * seasonal_regressor_matrix.transpose(1, 0), axis=-2)
