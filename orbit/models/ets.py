@@ -49,7 +49,7 @@ class BaseETS(BaseTemplate):
         self._level_sm_input = self.level_sm_input
 
     def _set_static_attributes(self):
-        """Over-ride function from Base Template"""
+        """Override function from Base Template"""
         # setting defaults and proper data type
         if self.seasonality_sm_input is None:
             self._seasonality_sm_input = -1

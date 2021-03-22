@@ -311,20 +311,14 @@ class BaseKTRLite(BaseTemplate):
             self.num_knots_coefficients = len(self.knots_tp_coefficients)
 
     def _set_dynamic_attributes(self, df):
-        """data input based on input DataFrame, rather than at object instantiation"""
-        df = df.copy()
-        self._validate_training_df(df)
-        self._set_training_df_meta(df)
-        # do more set and validation on top of base template
+        """Overriding: func: `~orbit.models.BaseETS._set_dynamic_attributes"""
+        # extra settings and validation for KTRLite
         self._set_validate_ktr_params(df)
-
+        # attach fourier series as regressors
         df = self._make_seasonal_regressors(df, shift=0)
-
+        # set regressors as input matrix and derive kernels
         self._set_regressor_matrix(df)
         self._set_kernel_matrix(df)
-
-        self._set_model_data_input()
-        self._set_init_values()
 
     def _set_model_param_names(self):
         """Model parameters to extract"""
