@@ -37,6 +37,8 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
     new internal attribute with identical name except a prefix "_".
     e.g. If x appear in the arg default as `None` and we need to impute by 0. we will have self._x = 0 downstream.
     """
+    # TODO: for now we assume has to be ENUM, maybe we can allow list as well? such that left and right are always
+    # using same name
     # data labels for sampler
     _data_input_mapper = None
     # used to match name of `*.stan` or `*.pyro` file to look for the model
