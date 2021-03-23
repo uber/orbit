@@ -318,18 +318,11 @@ class BaseDLT(BaseETS):
 
     def _set_dynamic_attributes(self, df):
         """Overriding: func: `~orbit.models.BaseETS._set_dynamic_attributes"""
-        super()._validate_training_df(df)
-        super()._set_training_df_meta(df)
-
         # scalar value is suggested by the author of Rlgt
         self.cauchy_sd = max(self.response) / 30.0
-
-        # extra settings for regression
+        # extra validation and settings for regression
         self._validate_training_df_with_regression(df)
         self._set_regressor_matrix(df)  # depends on num_of_observations
-
-        super()._set_model_data_input()
-        self._set_init_values()
 
     def _predict(self, posterior_estimates, df=None, include_error=False, decompose=False, **kwargs):
         """Vectorized version of prediction math"""

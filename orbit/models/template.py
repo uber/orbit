@@ -37,10 +37,15 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
     new internal attribute with identical name except a prefix "_".
     e.g. If x appear in the arg default as `None` and we need to impute by 0. we will have self._x = 0 downstream.
     """
+    # TODO: for now we assume has to be ENUM, maybe we can allow list as well? such that left and right are always
+    # using same name
     # data labels for sampler
     _data_input_mapper = None
     # used to match name of `*.stan` or `*.pyro` file to look for the model
     _model_name = None
+    # TODO: right now we assume _fitter is only for one specific estimator type
+    # TODO: in the future, we should make it for example like a dict {PyroEstimator: pyro_model} etc. in case we want
+    # TODO: to support multiple estimators and use for validation
     # EXPERIMENTAL: _fitter is used for quick supply of pyro / stan object instead of supplying a file
     _fitter = None
     # supported estimators in ..estimators
@@ -78,10 +83,7 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
         # set by `fit()`
         self._posterior_samples = dict()
         # init aggregate posteriors
-        self._aggregate_posteriors = {
-            PredictMethod.MEAN.value: dict(),
-            PredictMethod.MEDIAN.value: dict(),
-        }
+        self._aggregate_posteriors = {}
 
     # initialization related modules
     def _validate_supported_estimator_type(self):
@@ -151,6 +153,9 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
         # refresh a clean dict
         data_inputs = dict()
 
+        if not self._data_input_mapper:
+            raise ModelException('Empty or invalid data_input_mapper')
+
         for key in self._data_input_mapper:
             # mapper keys in upper case; inputs in lower case
             key_lower = key.name.lower()
@@ -182,41 +187,26 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
 
     def _set_dynamic_attributes(self, df):
         """Set required input based on input DataFrame, rather than at object instantiation"""
-        df = df.copy()
-        # TODO: there could be some cleaner way to organize these steps
-        self._validate_training_df(df)
-        self._set_training_df_meta(df)
-        # _set_model_data_input() behavior depends on _set_training_df_meta()
-        self._set_model_data_input()
-        # set initial values for randomization; right now only used by pystan; default as 'random'
-        self._set_init_values()
-
-    def _set_aggregate_posteriors(self):
-        posterior_samples = self._posterior_samples
-        mean_posteriors = {}
-        median_posteriors = {}
-
-        # for each model param, aggregate using `method`
-        for param_name in self._model_param_names:
-            param_ndarray = posterior_samples[param_name]
-
-            mean_posteriors.update(
-                {param_name: np.mean(param_ndarray, axis=0, keepdims=True)},
-            )
-
-            median_posteriors.update(
-                {param_name: np.median(param_ndarray, axis=0, keepdims=True)},
-            )
-
-        self._aggregate_posteriors[PredictMethod.MEAN.value] = mean_posteriors
-        self._aggregate_posteriors[PredictMethod.MEDIAN.value] = median_posteriors
+        pass
 
     def fit(self, df):
         """Fit model to data and set extracted posterior samples"""
         estimator = self.estimator
         model_name = self._model_name
+        df = df.copy()
 
+        # default set and validation of input data frame
+        self._validate_training_df(df)
+        self._set_training_df_meta(df)
+
+        # customize module
         self._set_dynamic_attributes(df)
+
+        # default process post attributes setting
+        # _set_model_data_input() behavior depends on _set_training_df_meta()
+        self._set_model_data_input()
+        # set initial values for randomization; right now only used by pystan; default as 'random'
+        self._set_init_values()
 
         # estimator inputs
         data_input = self.get_model_data_input()
@@ -383,6 +373,12 @@ class FullBayesianTemplate(BaseTemplate):
         if not self.n_bootstrap_draws:
             self._n_bootstrap_draws = -1
 
+        # init aggregate posteriors
+        self._aggregate_posteriors = {
+            PredictMethod.MEAN.value: dict(),
+            PredictMethod.MEDIAN.value: dict(),
+        }
+
         self._set_static_attributes()
         self._set_model_param_names()
 
@@ -405,6 +401,26 @@ class FullBayesianTemplate(BaseTemplate):
             bootstrap_samples_dict[k] = v[sample_idx]
 
         return bootstrap_samples_dict
+
+    def _set_aggregate_posteriors(self):
+        posterior_samples = self._posterior_samples
+        mean_posteriors = {}
+        median_posteriors = {}
+
+        # for each model param, aggregate using `method`
+        for param_name in self._model_param_names:
+            param_ndarray = posterior_samples[param_name]
+
+            mean_posteriors.update(
+                {param_name: np.mean(param_ndarray, axis=0, keepdims=True)},
+            )
+
+            median_posteriors.update(
+                {param_name: np.median(param_ndarray, axis=0, keepdims=True)},
+            )
+
+        self._aggregate_posteriors[PredictMethod.MEAN.value] = mean_posteriors
+        self._aggregate_posteriors[PredictMethod.MEDIAN.value] = median_posteriors
 
     def predict(self, df, decompose=False, **kwargs):
         # raise if model is not fitted
@@ -466,12 +482,38 @@ class AggregatedPosteriorTemplate(BaseTemplate):
         self._aggregate_posteriors = {aggregate_method: dict()}
         self._validate_aggregate_method()
 
+        # init aggregate posteriors
+        self._aggregate_posteriors = {
+            PredictMethod.MEAN.value: dict(),
+            PredictMethod.MEDIAN.value: dict(),
+        }
+
         self._set_static_attributes()
         self._set_model_param_names()
 
     def _validate_aggregate_method(self):
         if self.aggregate_method not in list(self._aggregate_posteriors.keys()):
             raise PredictionException("No aggregate method defined for: `{}`".format(self.aggregate_method))
+
+    def _set_aggregate_posteriors(self):
+        posterior_samples = self._posterior_samples
+        mean_posteriors = {}
+        median_posteriors = {}
+
+        # for each model param, aggregate using `method`
+        for param_name in self._model_param_names:
+            param_ndarray = posterior_samples[param_name]
+
+            mean_posteriors.update(
+                {param_name: np.mean(param_ndarray, axis=0, keepdims=True)},
+            )
+
+            median_posteriors.update(
+                {param_name: np.median(param_ndarray, axis=0, keepdims=True)},
+            )
+
+        self._aggregate_posteriors[PredictMethod.MEAN.value] = mean_posteriors
+        self._aggregate_posteriors[PredictMethod.MEDIAN.value] = median_posteriors
 
     def fit(self, df):
         super().fit(df)
