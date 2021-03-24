@@ -59,11 +59,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         point marker size
     lw : int; optional
         out-of-sample prediction line width
-<<<<<<< HEAD
     linestyle_marker: str
-=======
-    test_linestyle: str
->>>>>>> e71d00d (add linestyle and train/test split)
         linestyle of prediction plot on test period
     Returns
     -------
