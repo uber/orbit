@@ -23,7 +23,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                         pred_col='prediction', prediction_percentiles=None,
                         title="", test_actual_df=None, is_visible=True,
                         figsize=None, path=None, fontsize=None,
-                        insample_line=False, markersize=70, lw=2):
+                        insample_line=False, markersize=70, lw=2, linestyle_marker = '-'):
     """
     plot training actual response together with predicted data; if actual response of predicted
     data is there, plot it too.
@@ -59,6 +59,12 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         point marker size
     lw : int; optional
         out-of-sample prediction line width
+<<<<<<< HEAD
+    linestyle_marker: str
+=======
+    test_linestyle: str
+>>>>>>> e71d00d (add linestyle and train/test split)
+        linestyle of prediction plot on test period
     Returns
     -------
         matplotlib axes object
@@ -107,7 +113,11 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                 label='train response')
     ax.plot(_predicted_df[date_col].values,
             _predicted_df[pred_col].values,
-            marker=None, color='#12939A', lw=lw, label='prediction')
+            marker=None, color='#12939A', lw=lw, label='prediction', linestyle=linestyle_marker)
+
+    #vertical line seperate training and prediction
+    ax.axvline(x = _training_actual_df[date_col].values[-1], color = '#1f77b4'
+               , linestyle = '--')
 
     if test_actual_df is not None:
         test_actual_df = test_actual_df.copy()
