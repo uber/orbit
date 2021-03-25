@@ -23,7 +23,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                         pred_col='prediction', prediction_percentiles=None,
                         title="", test_actual_df=None, is_visible=True,
                         figsize=None, path=None, fontsize=None,
-                        insample_line=False, markersize=70, lw=2, linestyle_marker = '-'):
+                        insample_line=False, markersize=70, lw=2, linestyle='-'):
     """
     plot training actual response together with predicted data; if actual response of predicted
     data is there, plot it too.
@@ -59,8 +59,8 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         point marker size
     lw : int; optional
         out-of-sample prediction line width
-    linestyle_marker: str
-        linestyle of prediction plot on test period
+    linestyle : str
+        linestyle of prediction plot
     Returns
     -------
         matplotlib axes object
@@ -105,15 +105,13 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
     else:
         ax.plot(_training_actual_df[date_col].values,
                 _training_actual_df[actual_col].values,
-                marker=None, color='black', lw=lw,
-                label='train response')
+                marker=None, color='black', lw=lw, label='train response', linestyle=linestyle)
     ax.plot(_predicted_df[date_col].values,
             _predicted_df[pred_col].values,
-            marker=None, color='#12939A', lw=lw, label='prediction', linestyle=linestyle_marker)
+            marker=None, color='#12939A', lw=lw, label='prediction', linestyle=linestyle)
 
     #vertical line seperate training and prediction
-    ax.axvline(x = _training_actual_df[date_col].values[-1], color = '#1f77b4'
-               , linestyle = '--')
+    ax.axvline(x=_training_actual_df[date_col].values[-1], color='#1f77b4', linestyle='--')
 
     if test_actual_df is not None:
         test_actual_df = test_actual_df.copy()
