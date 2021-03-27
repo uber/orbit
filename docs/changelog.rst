@@ -49,7 +49,7 @@ Changelog
 - plot utility enhancement (#287) 
 - Setup TravisCI deployment for PyPI (#292)
 
-1.0.6 (2020-11-13)
+1.0.6 (2020-11-13) (Initial Release)
 -------------------
 - #251 
 - #257
@@ -63,11 +63,3 @@ Changelog
 - #277
 - #281
 - #282
-
-1.0.1 (2020-09-10)
--------------------
-- Minor plot enhancements (#209) 
-
-1.0.0 (2020-09-09)
--------------------
-- 1.0.0 is a redesign of the Orbit package class design and the first version intended for public release
