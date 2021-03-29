@@ -6,7 +6,7 @@ import pandas as pd
 from ..constants.constants import PredictMethod
 from ..estimators.stan_estimator import StanEstimatorMCMC
 from ..utils.docstring_style import merge_numpy_docs_dedup
-from ..utils.predictions import prepend_date_column, aggregate_predictions
+from ..utils.predictions import prepend_date_column, compute_percentiles
 from ..exceptions import IllegalArgument, ModelException, PredictionException, AbstractMethodException
 from ..utils.general import is_ordered_datetime
 
@@ -310,7 +310,7 @@ class MAPTemplate(BaseTemplate):
             predicted_dict = self._predict(
                 posterior_estimates=posterior_samples, df=df, decompose=decompose, include_error=True, **kwargs
             )
-            aggregated_df = aggregate_predictions(predicted_dict, self._prediction_percentiles)
+            aggregated_df = compute_percentiles(predicted_dict, self._prediction_percentiles)
             aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
 
             # compute the original prediction
@@ -436,7 +436,7 @@ class FullBayesianTemplate(BaseTemplate):
         predicted_dict = self._predict(
             posterior_estimates=posterior_samples, df=df, decompose=decompose, include_error=True, **kwargs
         )
-        aggregated_df = aggregate_predictions(predicted_dict, self._prediction_percentiles)
+        aggregated_df = compute_percentiles(predicted_dict, self._prediction_percentiles)
         aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
         return aggregated_df
 
@@ -538,7 +538,7 @@ class AggregatedPosteriorTemplate(BaseTemplate):
             predicted_dict = self._predict(
                 posterior_estimates=posterior_samples, df=df, decompose=decompose, include_error=True, **kwargs
             )
-            aggregated_df = aggregate_predictions(predicted_dict, self._prediction_percentiles)
+            aggregated_df = compute_percentiles(predicted_dict, self._prediction_percentiles)
             aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
             # compute the original prediction
             predicted_dict = self._predict(
