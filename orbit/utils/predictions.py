@@ -26,33 +26,35 @@ def prepend_date_column(predicted_df, input_df, date_col):
     return predicted_df
 
 
-def compute_percentiles(predictions_dict, percentiles):
+def compute_percentiles(arrays_dict, percentiles):
     """Compute percentiles of dictionary of arrays.  Return results as dataframe.
     Parameters
     ----------
-    predictions_dict : dict
-        a dictionary where keys will be the output columns of a dataframe and
-        values are a 2d numpy array of shape (`num_samples`, prediction df length)
+    arrays_dict : dict
+        a dictionary where each key will be the output column label of a dataframe and
+        value are a 2d array-like of shape (number of samples, prediction length) required to compute
+        percentile(s)
     percentiles : list
-        A sorted list of one or three percentile(s) which will be used to aggregate lower, mid and upper values
+        A sorted list of percentile(s) which will be used to specify percentiles needed to compute across various
+        arrays
     Returns
     -------
     pd.DataFrame
-        The aggregated across mcmc samples with columns for `50` aka median
-        and all other percentiles specified in `percentiles`.
+        The percentiles across samples with columns for `50` aka median and all other percentiles
+        specified in `percentiles`.
     """
 
     computed_dict = {}
     run_check = False
     prev_shape = None
-    for k, v in predictions_dict.items():
+    for k, v in arrays_dict.items():
         curr_shape = v.shape
-        if curr_shape != 2:
-            raise ValueError("Input predictions_dict requires 2 dimensions: (number of samples, prediction length)."
+        if len(curr_shape) != 2:
+            raise ValueError("Input arrays_dict requires 2 dimensions: (number of samples, prediction length)."
                              "Please revise input.")
         if run_check:
             if curr_shape[1] != prev_shape[1]:
-                raise ValueError("Input components length of are inconsistent. Please revise input.")
+                raise ValueError("Input arrays has different lengths in second dimension. Please revise input.")
         # run prediction consistency after first iteration
         run_check = True
         prev_shape = curr_shape
