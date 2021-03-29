@@ -14,6 +14,7 @@ def prepend_date_column(predicted_df, input_df, date_col):
     pd.DataFrame
     """
 
+    assert predicted_df.shape[1] == input_df.shape[1]
     other_cols = list(predicted_df.columns)
 
     # add date column
