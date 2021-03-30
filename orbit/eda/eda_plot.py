@@ -4,7 +4,7 @@ import pandas as pd
 from matplotlib.pyplot import cm
 import numpy as np
 from copy import deepcopy
-
+from statsmodels.tsa.seasonal import seasonal_decompose
 
 pd.options.mode.chained_assignment = None
 
