@@ -20,7 +20,7 @@ This project
 # Orbit: A Python Package for Bayesian Forecasting
 
 Orbit is a Python package for Bayesian time series forecasting and inference. It provides a
-familiar and intuitive initialize-fit-predict interface for time series tasks, while utilizing probabilistic programing languages under the hood.
+familiar and intuitive initialize-fit-predict interface for time series tasks, while utilizing probabilistic programming languages under the hood.
 
 Currently, it supports concrete implementations for the following
 models:
