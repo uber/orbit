@@ -11,7 +11,7 @@ Changelog
 
 1.0.11 (2021-02-18) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.11>`_)
 -------------------
-:Core changes:
+- Core changes:
   - a simple ETS class is created (#280,  #296)
   - DLT is replacing LGT as the model used in the quick start and general demos (#305)
   - DLT and LGT are refactored to inherit from ETS  (#280)
@@ -20,11 +20,11 @@ Changelog
   - dependency update; remove enum34 and update other dependencies versions (#301)
   - fixed pickle error  (#342)
 
-:Documentation:
+- Documentation:
   - updated tutorials (#309, #329, #332)
   - docstring cleanup with inherited classes (#350)
 
-:Utilities:
+- Utilities:
   - include the provide hyper-parameters tuning (#288)
   - include dataloader with a few standard datasets  (#352, #337, #277, #248)
   - plotting functions now returns the plot object (#327, #325, #287, #279)
@@ -44,18 +44,18 @@ Changelog
 
 1.0.7 (2020-11-14)
 -------------------
-- #279
+- #279 
 - reorder fourier series calculation to match the df (#286)
-- plot utility enhancement (#287)
+- plot utility enhancement (#287) 
 - Setup TravisCI deployment for PyPI (#292)
 
 1.0.6 (2020-11-13)
 -------------------
-- #251
+- #251 
 - #257
 - #259
 - #263
-- #248
+- #248 
 - #264
 - #265
 - #270
