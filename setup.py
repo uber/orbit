@@ -62,7 +62,7 @@ setup(
     long_description_content_type='text/markdown',
     name='orbit-ml',
     packages=find_packages(),
-    url='https://orbit-ml.readthedocs.io/en/stable/',
+    url='https://uber.github.io/orbit/',
     # version=VERSION, # being maintained by source module
     zip_safe=False,
     classifiers=[
