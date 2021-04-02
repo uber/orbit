@@ -18,7 +18,6 @@ import matplotlib
 import orbit
 
 # -- Project information -----------------------------------------------------
-master_doc = 'index'
 
 project = 'orbit'
 copyright = '2020, Uber Technologies, Inc'
@@ -43,8 +42,6 @@ extensions = [
     'sphinx.ext.githubpages',
     # 'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
-    'IPython.sphinxext.ipython_console_highlighting',
-    'IPython.sphinxext.ipython_directive',
     'nbsphinx',
 ]
 
@@ -54,7 +51,6 @@ extensions = [
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-source_suffix = ['.rst', '.ipynb']
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
