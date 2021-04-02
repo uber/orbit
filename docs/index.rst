@@ -51,10 +51,9 @@ Welcome to Orbit's Documentation!
 
 .. toctree::
    :maxdepth: 1
-   :caption: For Developers
-   :name: for-developers
+   :caption: For Developer
+   :name: for-developer
 
-   tutorials/build_your_own_model
    modules
    changelog
 
