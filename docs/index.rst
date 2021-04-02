@@ -18,6 +18,7 @@ Welcome to Orbit's Documentation!
    tutorials/model_estimations
    tutorials/pyro_basic
 
+
 .. toctree::
    :maxdepth: 1
    :caption: Exponential Smoothing Models
@@ -30,7 +31,6 @@ Welcome to Orbit's Documentation!
 .. toctree::
    :maxdepth: 1
    :caption: Validation
-   :name: validation
 
    tutorials/decompose_prediction
    tutorials/model_diagnostics
@@ -39,17 +39,9 @@ Welcome to Orbit's Documentation!
 .. toctree::
    :maxdepth: 1
    :caption: Other Utilities
-   :name: other-utilities
 
    tutorials/utilities_simulation
-
-.. toctree::
-   :maxdepth: 1
-   :caption: For Developer
-   :name: for-developer
-
    modules
-   changelog
 
 Indices and tables
 ==================
