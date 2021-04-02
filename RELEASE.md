@@ -1,18 +1,16 @@
 # Orbit Release Process
 
 ## Full Release
-1. Create a **doc-refresh** branch. Add the logs of changes under
-   [changelog](https://github.com/uber/orbit/blob/dev/docs/changelog.rst).
+1. Create a **doc-refresh** branch. Add the logs of changes under 
+   [changelog](https://github.com/uber/orbit/blob/dev/docs/changelog.rst).  
    The logs can be reused on later draft of release under Github.
    Rerun notebooks under **docs/tutorails** for defined readthedocs triggered job.
-2. Submit a PR for dev for the changes of any documentation.
+2. Submit a PR for dev for the changes of any documentation. 
 3. After the approval and merge from previous PR, create a release branch from `dev`
     - e.g. `release-v1.0.15`
 4. Update the version number in `orbit/__init__.py`. This version number will propagate to `docs/conf.py`, `setup.cfg`, and `setup.py`.
 5. Commit changes
-6. Test PyPI deployment locally by running
-    - `python3 setup.py sdist bdist_wheel`
-    - `python3 -m twine check dist/*`
+6. Test PyPI deployment locally by `python3 -m twine check dist`   
 7. If necessary, additional PRs may be merged to the release branch directly, but this should be reserved for bug fixes only and should not add or change any features
 8. Merge the release branch to both `dev` and `master`
 9. Draft a new release: https://github.com/uber/orbit/releases/new
@@ -35,8 +33,8 @@ In this case, we can avoid creating the branch and create a release directly fro
     - Use version number for both the tag and title
     - Add a bulleted list of changes in the description as well as
       [changelog](https://github.com/uber/orbit/blob/dev/docs/changelog.rst).
-
-
+    
+    
 ## Hotfix
 Sometimes we may need to address a bug fix directly from master after a release, but `dev` may have moved on with new commits.
 
