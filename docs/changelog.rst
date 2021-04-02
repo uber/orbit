@@ -2,14 +2,14 @@
 
 Changelog
 =========
-1.0.12 (2021-02-19) `release notes <https://github.com/uber/orbit/releases/tag/v1.0.12>`_
+1.0.12 (2021-02-19)
 -------------------
 - Documentation update (#354, #362)
 - Providing prediction intervals for point posteriors such as AggregatedPosterior and MAP (#357, #359)
 - Abstract classes created to refactor posteriors estimation as templates (#360)
 - Automating documentation and tutorials; migrating docs to readthedocs (#291)
 
-1.0.11 (2021-02-18) `release notes <https://github.com/uber/orbit/releases/tag/v1.0.11>`_
+1.0.11 (2021-02-18)
 -------------------
 - Core changes:
   - a simple ETS class is created (#280,  #296)
@@ -29,7 +29,7 @@ Changelog
   - include dataloader with a few standard datasets  (#352, #337, #277, #248)
   - plotting functions now returns the plot object (#327, #325, #287, #279)
 
-1.0.10 (2020-11-15) (Initial Release)
+1.0.10 (2020-11-15)
 -------------------
 - dpl v2 for travis config (#295)
 
@@ -49,7 +49,7 @@ Changelog
 - plot utility enhancement (#287) 
 - Setup TravisCI deployment for PyPI (#292)
 
-1.0.6 (2020-11-13)
+1.0.6 (2020-11-13) (Initial Release)
 -------------------
 - #251 
 - #257
