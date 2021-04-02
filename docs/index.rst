@@ -29,7 +29,7 @@ Welcome to Orbit's Documentation!
 
 .. toctree::
    :maxdepth: 1
-   :caption: Multiple Seasonality Model
+   :caption: Time Varying Coefficient Models
 
    tutorials/ktrlite
 
