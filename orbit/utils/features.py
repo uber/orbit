@@ -1,21 +1,19 @@
 import numpy as np
 import pandas as pd
+from datetime import datetime
 from orbit.exceptions import IllegalArgument
 
 
-def make_fourier_series(n, period, order=3,  shift=0):
-    """ Given time series length, cyclical period and order, return a set of fourier series.
-
+def make_fourier_series(dates, period, order=3):
+    """ Given dates array, cyclical period and order.  Return a set of fourier series.
     Parameters
     ----------
-    n : int
-        Length of time series
-    period : int
-        Length of a cyclical period. E.g., with daily data, `period = 7` means weekly seasonality.
-    order : int
+    dates: 1D array-like
+        Array of datetime stamp
+    period: int
+        Number of days of the period.
+    order: int
         Number of components for each sin() or cos() series.
-    shift : int
-        shift of time step/index to generate the series
     Returns
     -------
     2D array-like
@@ -25,7 +23,11 @@ def make_fourier_series(n, period, order=3,  shift=0):
         1. See https://otexts.com/fpp2/complexseasonality.html
         2. Original idea from https://github.com/facebook/prophet under
     """
-    t = np.arange(1, n + 1) + shift
+    t = np.array(
+        (dates - datetime(1950, 1, 1))
+            .dt.total_seconds()
+            .astype(np.float)
+    ) / (3600 * 24.)
     out = list()
     for i in range(1, order + 1):
         x = 2.0 * i * np.pi * t / period
@@ -35,34 +37,33 @@ def make_fourier_series(n, period, order=3,  shift=0):
     return out
 
 
-def make_fourier_series_df(df, period, order=3, prefix='', suffix='', shift=0):
-    """ Given a data-frame, cyclical period and order, return a set of fourier series in a dataframe.
-
+def make_fourier_series_df(df, date_col, period, order=3, prefix='', suffix=''):
+    """ Given a data-frame, cyclical period and order.  Return a set of fourier series in a dataframe.
     Parameters
     ----------
-    df : pd.DataFrame
+    df: pd.DataFrame
         Input dataframe to supply datetime array for generating fourier series
-    period : int
-        Length of a cyclical period. E.g., with daily data, `period = 7` means weekly seasonality.
-    order : int
+    date_col: str
+        Label of the date column supply for generating fourier series
+    period: int
+        Number of days of the period.
+    order: int
         Number of components for each sin() or cos() series.
-    prefix : str
+    prefix: str
         prefix of output columns label
-    suffix : str
+    suffix: str
         suffix of output columns label
-    shift : int
-        shift of time step/index to generate the series
     Returns
     -------
-    out : pd.DataFrame
+    out: pd.DataFrame
         data with computed fourier series attached
-    fs_cols : list
+    fs_cols: list
         list of labels derived from fourier series
     Notes
     -----
         This is calling :func:`make_fourier_series`
     """
-    fs = make_fourier_series(df.shape[0], period, order=order, shift=shift)
+    fs = make_fourier_series(df[date_col], period, order=order)
     fs_cols = []
     for i in range(1, order + 1):
         fs_cols.append('{}fs_cos{}{}'.format(prefix, i, suffix))
@@ -73,26 +74,24 @@ def make_fourier_series_df(df, period, order=3, prefix='', suffix='', shift=0):
 
 
 def make_seasonal_dummies(df, date_col, freq, sparse=True, drop_first=True):
-    """ Based on the frequency input (in pandas.DataFrame style), provide dummies indicator for regression type of
-    purpose.
-
+    """
     Parameters
     ----------
-    df : pd.DataFrame
+    df: pd.DataFrame
         Input dataframe to supply datetime array for generating series of indicators
-    date_col : str
+    date_col: str
         Label of the date column supply for generating series
-    freq : str ['weekday', 'month', 'week']
+    freq: str ['weekday', 'month', 'week']
         Options to pick the right frequency for generating dummies
-    sparse : bool
+    sparse: bool
         argument passed into `pd.get_dummies`
-    drop_first : bool
+    drop_first: bool
         argument passed into `pd.get_dummies`
     Returns
     -------
-    out : pd.DataFrame
+    out: pd.DataFrame
         data with computed fourier series attached
-    fs_cols : list
+    fs_cols: list
         list of labels derived from fourier series
     Notes
     -----
@@ -110,3 +109,5 @@ def make_seasonal_dummies(df, date_col, freq, sparse=True, drop_first=True):
     cols = dummies.columns.tolist()
     out = pd.concat([df, dummies], axis=1)
     return out, cols
+
+
