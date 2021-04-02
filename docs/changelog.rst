@@ -2,24 +2,6 @@
 
 Changelog
 =========
-1.0.13 (2021-04-02) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.13>`_)
--------------------
-:Core changes:
-  - Implement a new model KTRLite (#380)
-  - Refactoring of BaseTemplate (#382, #384)
-  - Add MAPTemplate, FullBayesianTemplate, and AggregatedPosteriorTemplate (#394)
-  - Remove dependency of scikit-learn (#379, #381)
-
-:Documentation:
-  - Add changelogs, release process, and contribution guidance (#363, #369, #370, #372)
-  - Setup documentation deployment via TravisCI (#291)
-  - New tutorial of making your own model (#389)
-  - Tutorial enhancement (#383, #388)
-
-:Utilities:
-  - New EDA plot utilities (#403, #407, #408)
-  - More options for exisiting plot utilities (#396)
-
 1.0.12 (2021-02-19) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.12>`_)
 -------------------
 - Documentation update (#354, #362)
