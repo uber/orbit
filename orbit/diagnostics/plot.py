@@ -22,8 +22,7 @@ from orbit.constants.palette import QualitativePalette
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                         pred_col='prediction', prediction_percentiles=None,
                         title="", test_actual_df=None, is_visible=True,
-                        figsize=None, path=None, fontsize=None,
-                        insample_line=False, markersize=70, lw=2):
+                        figsize=None, path=None, fontsize=None, markersize=70, lw=2):
     """
     plot training actual response together with predicted data; if actual response of predicted
     data is there, plot it too.
@@ -53,8 +52,6 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         path to save the figure
     fontsize : int; optional
         fontsize of the title
-    insample_line : bool; default False
-        if True, make line plot for in-sample; otherwise, make scatter plot for in-sample
     markersize : int; optional
         point marker size
     lw : int; optional
@@ -95,16 +92,10 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
 
     fig, ax = plt.subplots(facecolor='w', figsize=figsize)
 
-    if not insample_line:
-        ax.scatter(_training_actual_df[date_col].values,
-                _training_actual_df[actual_col].values,
-                marker='.', color='black', alpha=0.8, s=markersize,
-                label='train response')
-    else:
-        ax.plot(_training_actual_df[date_col].values,
-                _training_actual_df[actual_col].values,
-                marker=None, color='black', lw=lw,
-                label='train response')
+    ax.scatter(_training_actual_df[date_col].values,
+               _training_actual_df[actual_col].values,
+               marker='.', color='black', alpha=0.8, s=markersize,
+               label='train response')
     ax.plot(_predicted_df[date_col].values,
             _predicted_df[pred_col].values,
             marker=None, color='#12939A', lw=lw, label='prediction')
