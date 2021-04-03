@@ -14,13 +14,20 @@
     - `python3 setup.py sdist bdist_wheel`
     - `python3 -m twine check dist/*`
 7. If necessary, additional PRs may be merged to the release branch directly, but this should be reserved for bug fixes only and should not add or change any features
-8. Merge the release branch to both `dev` and `master`
-9. Draft a new release: https://github.com/uber/orbit/releases/new
+8. Rebase and merge the release branch to `master` by running
+    - `git checkout master`
+    - `git rebase --no-ff release-v1.0.15`
+    - `git tag -a v1.0.15`
+9. Rebase and merge the release branch to `dev` by running
+    - `git checkout dev`
+    - `git rebase --no-ff release-v1.0.15`
+    here option `--no-ff` is important to have same commit ids between `master` and `dev`
+10. Draft a new release: https://github.com/uber/orbit/releases/new
     - Select the `master` as the target branch
     - Use version number for both the tag and title e.g. `v1.0.15`
     - Add a bulleted list of changes in the description; this can be similar to change logs from step 1.
-10. Click `Publish Release` once all changes are finalized and description is updated
-11. All the documentation should be refreshed and can be found in https://orbit-ml.readthedocs.io/en/stable/
+11. Click `Publish Release` once all changes are finalized and description is updated
+12. All the documentation should be refreshed and can be found in https://orbit-ml.readthedocs.io/en/stable/
 
 
 ## Quick Release
