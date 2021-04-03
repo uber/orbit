@@ -18,10 +18,13 @@
     - `git checkout master`
     - `git rebase --no-ff release-v1.0.15`
     - `git tag -a v1.0.15`
+    - `git push origin master`
 9. Rebase and merge the release branch to `dev` by running
     - `git checkout dev`
     - `git rebase --no-ff release-v1.0.15`
-    here option `--no-ff` is important to have same commit ids between `master` and `dev`
+    - `git push origin dev`
+
+    here option `--no-ff` is important to have same commit ids between `master` and `dev`; `git rebase` instead of `git merge` is to avoid the additional merge commit.
 10. Draft a new release: https://github.com/uber/orbit/releases/new
     - Select the `master` as the target branch
     - Use version number for both the tag and title e.g. `v1.0.15`
