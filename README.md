@@ -142,10 +142,15 @@ Bibtex:
 
 ##  Papers
 
-- Hyndman, R., Koehler, A. B., Ord, J. K., and Snyder, R. D. Forecasting with exponential smoothing: the state space approach. Springer Science & Business Media, 2008.
-- Bingham, E., Chen, J. P., Jankowiak, M., Obermeyer, F., Pradhan, N., Karaletsos, T., Singh, R., Szerlip, P., Horsfall, P., and Goodman, N. D. Pyro: Deep universal probabilistic programming. The Journal of Machine Learning Research, 20(1):973–978, 2019.
-- Hoffman, M.D. and Gelman, A. The No-U-Turn sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. J. Mach. Learn. Res., 15(1), pp.1593-1623, 2014.
-- Smyl, S. Zhang, Q. Fitting and Extending Exponential Smoothing Models with Stan. International Symposium on Forecasting
+- Bingham, E., Chen, J. P., Jankowiak, M., Obermeyer, F., Pradhan, N., Karaletsos, T., Singh, R., Szerlip, 
+  P., Horsfall, P., and Goodman, N. D. Pyro: Deep universal probabilistic programming. The Journal of Machine Learning 
+  Research, 20(1):973–978, 2019.
+- Hyndman, R., Koehler, A. B., Ord, J. K., and Snyder, R. D. Forecasting with exponential smoothing: 
+  the state space approach. Springer Science & Business Media, 2008.
+- Hoffman, M.D. and Gelman, A. The No-U-Turn sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. 
+  J. Mach. Learn. Res., 15(1), pp.1593-1623, 2014.
+- Smyl, S. Zhang, Q. Fitting and Extending Exponential Smoothing Models with Stan. 
+  International Symposium on Forecasting, 2015.
 
 ## Related projects
 
