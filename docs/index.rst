@@ -47,7 +47,7 @@ Welcome to Orbit's Documentation!
    :caption: Other Utilities
    :name: other-utilities
 
-   tutorials/eda_function_demo
+   tutorials/exploratory_data_analysis
    tutorials/utilities_simulation
 
 .. toctree::
