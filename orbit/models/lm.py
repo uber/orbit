@@ -1,10 +1,12 @@
 import pandas as pd
 import numpy as np
+from scipy.stats import norm
 
 from ..constants import lm as constants
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
 from .template import BaseTemplate, FullBayesianTemplate, MAPTemplate
 from ..exceptions import ModelException
+from ..utils.predictions import prepend_date_column
 
 
 class LinearModel(BaseTemplate):
@@ -98,3 +100,29 @@ class LinearModelMAP(MAPTemplate, LinearModel):
 
     def __init__(self, estimator_type=StanEstimatorMAP, **kwargs):
         super().__init__(estimator_type=estimator_type, **kwargs)
+
+    def predict(self, df, decompose=False, **kwargs):
+        posterior_estimates = self._posterior_samples
+        intercept = posterior_estimates[
+            constants.StanSampleOutput["INTERCEPT"].value
+        ]
+        coefficients = posterior_estimates[
+            constants.StanSampleOutput["COEFFICIENTS"].value
+        ]
+        obs_error_scale = posterior_estimates[
+            constants.StanSampleOutput["OBS_ERROR_SCALE"].value
+        ]
+
+        prediction_regressor_matrix = df.filter(
+            items=self.regressor_col,
+        ).values
+        expected_value = intercept + prediction_regressor_matrix @ coefficients
+
+        prediction_dict = {'prediction' + "_" + str(p)
+                           if p != 50 else 'prediction':
+                           expected_value +
+                           norm.ppf(0.01 * p) * obs_error_scale
+                           for p in self._prediction_percentiles}
+        prediction_df = pd.DataFrame(prediction_dict)
+        prediction_df = prepend_date_column(prediction_df, df, self.date_col)
+        return prediction_df
