@@ -63,7 +63,6 @@ class BaseKTRX(BaseTemplate):
          a dictionary for seasonality inputs with the following keys:
             '_seas_coef_knot_dates' : knot dates for seasonal regressors
             '_sea_coef_knot' : knot locations for sesonal regressors
-            '_sea_rho' : rho value for seasonal regressors
             '_seasonality' : seasonality order
             '_seasonality_fs_order' : fourier series order for seasonality
     coefficients_knot_length : int
@@ -399,6 +398,7 @@ class BaseKTRX(BaseTemplate):
             self._kernel_coefficients = kernel_coefficients
 
     def _generate_tp(self, prediction_date_array):
+        """Used in _generate_coefs"""
         prediction_start = prediction_date_array[0]
         output_len = len(prediction_date_array)
         if prediction_start > self.training_end:
@@ -410,11 +410,13 @@ class BaseKTRX(BaseTemplate):
         return new_tp
 
     def _generate_insample_tp(self, date_array):
+        """Used in _generate_coefs"""
         idx = np.nonzero(np.in1d(self.date_array, date_array))[0]
         tp = (idx + 1) / self.num_of_observations
         return tp
 
     def _generate_coefs(self, prediction_date_array, coef_knot_dates, coef_knot):
+        """Used in _generate_seas"""
         new_tp = self._generate_tp(prediction_date_array)
         knots_tp_coef = self._generate_insample_tp(coef_knot_dates)
         kernel_coef = sandwich_kernel(new_tp, knots_tp_coef)
@@ -425,6 +427,7 @@ class BaseKTRX(BaseTemplate):
 
     def _generate_seas(self, df, coef_knot_dates, coef_knot, seasonality, seasonality_fs_order):
         """To calculate the seasonality term based on the _seasonal_knots_input.
+
         :param df: input df
         :param coef_knot_dates: dates for coef knots
         :param coef_knot: knot values for coef
