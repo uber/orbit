@@ -71,9 +71,9 @@ from orbit.diagnostics.plot import plot_predicted_data
 # log-transformed data
 df = load_iclaims()
 # train-test split
-test_size=52
-train_df=df[:-test_size]
-test_df=df[-test_size:]
+test_size = 52
+train_df = df[:-test_size]
+test_df = df[-test_size:]
 
 dlt = DLTFull(
     response_col='claims', date_col='week',
@@ -95,7 +95,7 @@ plot_predicted_data(
 ![full-pred](https://raw.githubusercontent.com/uber/orbit/dev/docs/img/dlt-mcmc-pred.png)
 
 ## Demo
-More examples can be found under [tutorials](https://github.com/uber/orbit/tree/dev/docs/tutorials) 
+More examples can be found under [tutorials](https://github.com/uber/orbit/tree/dev/docs/tutorials)
 and [examples](https://github.com/uber/orbit/tree/dev/examples).
 
 A backtest demo:
@@ -142,14 +142,14 @@ Bibtex:
 
 ##  Papers
 
-- Bingham, E., Chen, J. P., Jankowiak, M., Obermeyer, F., Pradhan, N., Karaletsos, T., Singh, R., Szerlip, 
-  P., Horsfall, P., and Goodman, N. D. Pyro: Deep universal probabilistic programming. The Journal of Machine Learning 
+- Bingham, E., Chen, J. P., Jankowiak, M., Obermeyer, F., Pradhan, N., Karaletsos, T., Singh, R., Szerlip,
+  P., Horsfall, P., and Goodman, N. D. Pyro: Deep universal probabilistic programming. The Journal of Machine Learning
   Research, 20(1):973–978, 2019.
-- Hoffman, M.D. and Gelman, A. The No-U-Turn sampler: adaptively setting path lengths in Hamiltonian Monte Carlo. 
+- Hoffman, M.D. and Gelman, A. The No-U-Turn sampler: adaptively setting path lengths in Hamiltonian Monte Carlo.
   J. Mach. Learn. Res., 15(1), pp.1593-1623, 2014.  
-- Hyndman, R., Koehler, A. B., Ord, J. K., and Snyder, R. D. Forecasting with exponential smoothing: 
+- Hyndman, R., Koehler, A. B., Ord, J. K., and Snyder, R. D. Forecasting with exponential smoothing:
   the state space approach. Springer Science & Business Media, 2008.
-- Smyl, S. Zhang, Q. Fitting and Extending Exponential Smoothing Models with Stan. 
+- Smyl, S. Zhang, Q. Fitting and Extending Exponential Smoothing Models with Stan.
   International Symposium on Forecasting, 2015.
 
 ## Related projects
@@ -159,6 +159,3 @@ Bibtex:
 - [Rlgt](https://cran.r-project.org/web/packages/Rlgt/index.html)
 - [forecast](https://github.com/robjhyndman/forecast)
 - [prophet](https://facebook.github.io/prophet/)
-
-
-
