@@ -20,16 +20,20 @@ class LinearModel(BaseTemplate):
     kwargs
         To specify `estimator_type` or additional args for the specified `estimator_type`
     """
-
+    # data labels for sampler
     _data_input_mapper = constants.StanDataInput
+    # used to match name of `*.stan` or `*.pyro` file to look for the model
     _model_name = "lm"
 
     def __init__(self, regressor_col, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(**kwargs)  # create estimator in base class
         self.regressor_col = regressor_col
         self.num_of_regressors = len(regressor_col)
 
+        # Design matrix, depending on training data
         self.regressor_matrix = None
+
+        # Model parameters to be sampling
         self.intercept = None
         self.coefficients = None
         self.obs_error_scale = None
@@ -39,9 +43,11 @@ class LinearModel(BaseTemplate):
         self._model_param_names += [param.value for param in constants.StanSampleOutput]
 
     def _set_dynamic_attributes(self, df):
+        """Set design matrix"""
         self._set_regressor_matrix(df)
 
     def _set_regressor_matrix(self, df):
+        """Create design matrix given training data"""
         self._validate_df(df)
         self.regressor_matrix = np.zeros((self.num_of_observations, 0), dtype=np.double)
         if self.num_of_regressors > 0:
@@ -50,6 +56,7 @@ class LinearModel(BaseTemplate):
             ).values
 
     def _validate_df(self, df):
+        """Check if training dataframe containing the regressor columns"""
         df_columns = df.columns
         if self.regressor_col is not None and not set(self.regressor_col).issubset(
             df_columns
@@ -61,6 +68,7 @@ class LinearModel(BaseTemplate):
     def _predict(
         self, posterior_estimates, df, include_error=False, decompose=False, **kwargs
     ):
+        """Create predictions for new covariates/regressors"""
         prediction_length = df.shape[0]
 
         intercept = posterior_estimates[
@@ -102,6 +110,7 @@ class LinearModelMAP(MAPTemplate, LinearModel):
         super().__init__(estimator_type=estimator_type, **kwargs)
 
     def predict(self, df, decompose=False, **kwargs):
+        """Prediction intervals of Normal errors"""
         posterior_estimates = self._posterior_samples
         intercept = posterior_estimates[
             constants.StanSampleOutput["INTERCEPT"].value
