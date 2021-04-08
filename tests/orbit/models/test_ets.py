@@ -38,6 +38,7 @@ def test_ets_full_seasonal_fit(synthetic_data, estimator_type):
         prediction_percentiles=[5, 95],
         seasonality=52,
         num_warmup=50,
+        num_sample=50,
         verbose=False,
         estimator_type=estimator_type
     )
@@ -70,6 +71,7 @@ def test_ets_aggregated_seasonal_fit(synthetic_data, estimator_type):
         date_col='week',
         seasonality=52,
         num_warmup=50,
+        num_sample=50,
         verbose=False,
         estimator_type=estimator_type
     )
@@ -132,6 +134,7 @@ def test_ets_non_seasonal_fit(synthetic_data, estimator_type):
         date_col='week',
         estimator_type=estimator_type,
         num_warmup=50,
+        num_sample=50,
     )
 
     ets.fit(train_df)
@@ -155,6 +158,7 @@ def test_full_prediction_percentiles(iclaims_training_data, prediction_percentil
         date_col='week',
         seasonality=52,
         num_warmup=50,
+        num_sample=50,
         seed=8888,
         prediction_percentiles=prediction_percentiles,
     )
@@ -233,6 +237,7 @@ def test_ets_full_reproducibility(synthetic_data, estimator_type, seasonality):
         prediction_percentiles=[5, 95],
         seasonality=seasonality,
         num_warmup=50,
+        num_sample=50,
         verbose=False,
         estimator_type=estimator_type
     )
@@ -251,6 +256,7 @@ def test_ets_full_reproducibility(synthetic_data, estimator_type, seasonality):
         prediction_percentiles=[5, 95],
         seasonality=seasonality,
         num_warmup=50,
+        num_sample=50,
         verbose=False,
         estimator_type=estimator_type
     )

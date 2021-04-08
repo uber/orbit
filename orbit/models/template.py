@@ -10,6 +10,7 @@ from ..utils.predictions import prepend_date_column, compute_percentiles
 from ..exceptions import IllegalArgument, ModelException, PredictionException, AbstractMethodException
 from ..utils.general import is_ordered_datetime
 
+
 ci.store["numpy_with_merge_dedup"] = merge_numpy_docs_dedup
 ci.add_style("numpy_with_merge_dedup", merge_numpy_docs_dedup)
 
@@ -84,6 +85,9 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
         self._posterior_samples = dict()
         # init aggregate posteriors
         self._aggregate_posteriors = {}
+
+        # for full Bayesian, user can store full prediction array if requested
+        self.pred_array = None
 
     # initialization related modules
     def _validate_supported_estimator_type(self):
@@ -225,10 +229,32 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
 
         self._posterior_samples = model_extract
 
+    def get_prediction_df_meta(self, df):
+        # get prediction df meta
+        prediction_df_meta = {
+            'date_array': pd.to_datetime(df[self.date_col]).reset_index(drop=True),
+            'df_length': len(df.index),
+            'prediction_start': df[self.date_col].iloc[0],
+            'prediction_end': df[self.date_col].iloc[-1]
+        }
+
+        if not is_ordered_datetime(prediction_df_meta['date_array']):
+            raise IllegalArgument('Datetime index must be ordered and not repeat')
+
+        # TODO: validate that all regressor columns are present, if any
+
+        if prediction_df_meta['prediction_start'] < self.training_start:
+            raise PredictionException('Prediction start must be after training start.')
+
+        return prediction_df_meta
+
     def predict(self, df, decompose=False, **kwargs):
+        """Predict interface for users"""
         raise AbstractMethodException("Abstract method.  Model should implement concrete .predict().")
 
-    def _predict(self, posterior_estimates, df, include_error=False, decompose=False, **kwargs):
+    def _predict(self, posterior_estimates, df, include_error=False, decompose=False, store_prediction_array=False,
+                 **kwargs):
+        """Inner predict being called internal for different prediction purpose such as bootstrapping"""
         raise AbstractMethodException("Abstract method.  Model should implement concrete ._predict().")
 
 
@@ -315,7 +341,11 @@ class MAPTemplate(BaseTemplate):
 
             # compute the original prediction
             predicted_dict = self._predict(
-                posterior_estimates=aggregate_posteriors, df=df, include_error=False, **kwargs
+                posterior_estimates=aggregate_posteriors,
+                df=df,
+                include_error=False,
+                store_prediction_array=False,
+                **kwargs
             )
             # replace the mid-point (i.e., 50) estimation
             for k, v in predicted_dict.items():
@@ -324,7 +354,12 @@ class MAPTemplate(BaseTemplate):
             return aggregated_df
         else:
             predicted_dict = self._predict(
-                posterior_estimates=aggregate_posteriors, df=df, decompose=decompose, include_error=False, **kwargs
+                posterior_estimates=aggregate_posteriors,
+                df=df,
+                decompose=decompose,
+                include_error=False,
+                store_prediction_array=False,
+                **kwargs
             )
             for k, v in predicted_dict.items():
                 predicted_dict[k] = v.flatten()
@@ -422,7 +457,7 @@ class FullBayesianTemplate(BaseTemplate):
         self._aggregate_posteriors[PredictMethod.MEAN.value] = mean_posteriors
         self._aggregate_posteriors[PredictMethod.MEDIAN.value] = median_posteriors
 
-    def predict(self, df, decompose=False, **kwargs):
+    def predict(self, df, decompose=False, store_prediction_array=False, **kwargs):
         # raise if model is not fitted
         if not self.is_fitted():
             raise PredictionException("Model is not fitted yet.")
@@ -434,7 +469,12 @@ class FullBayesianTemplate(BaseTemplate):
         ) if self._n_bootstrap_draws > 1 else self._posterior_samples
 
         predicted_dict = self._predict(
-            posterior_estimates=posterior_samples, df=df, decompose=decompose, include_error=True, **kwargs
+            posterior_estimates=posterior_samples,
+            df=df,
+            decompose=decompose,
+            include_error=True,
+            store_prediction_array=store_prediction_array,
+            **kwargs
         )
         aggregated_df = compute_percentiles(predicted_dict, self._prediction_percentiles)
         aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
@@ -536,13 +576,20 @@ class AggregatedPosteriorTemplate(BaseTemplate):
 
             # to derive confidence interval
             predicted_dict = self._predict(
-                posterior_estimates=posterior_samples, df=df, decompose=decompose, include_error=True, **kwargs
+                posterior_estimates=posterior_samples,
+                df=df,
+                decompose=decompose,
+                include_error=True, **kwargs
             )
             aggregated_df = compute_percentiles(predicted_dict, self._prediction_percentiles)
             aggregated_df = prepend_date_column(aggregated_df, df, self.date_col)
             # compute the original prediction
             predicted_dict = self._predict(
-                posterior_estimates=aggregate_posteriors, df=df, include_error=False, **kwargs)
+                posterior_estimates=aggregate_posteriors,
+                df=df,
+                include_error=False,
+                store_prediction_array=False,
+                **kwargs)
             # replace the mid-point (i.e., 50) estimation
             for k, v in predicted_dict.items():
                 aggregated_df[k] = v.flatten()
@@ -550,7 +597,12 @@ class AggregatedPosteriorTemplate(BaseTemplate):
             return aggregated_df
         else:
             predicted_dict = self._predict(
-                posterior_estimates=aggregate_posteriors, df=df, decompose=decompose, include_error=False, **kwargs
+                posterior_estimates=aggregate_posteriors,
+                df=df,
+                decompose=decompose,
+                include_error=False,
+                store_prediction_array=False,
+                **kwargs
             )
             for k, v in predicted_dict.items():
                 predicted_dict[k] = v.flatten()
