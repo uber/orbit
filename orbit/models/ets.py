@@ -1,14 +1,13 @@
 import pandas as pd
 import numpy as np
-import torch
 from copy import deepcopy
+import torch
 
 from ..constants import ets as constants
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP, StanEstimatorVI
-from ..exceptions import IllegalArgument, PredictionException
+from ..exceptions import IllegalArgument
 from ..initializer.ets import ETSInitializer
 from .template import BaseTemplate, FullBayesianTemplate, AggregatedPosteriorTemplate, MAPTemplate
-from ..utils.general import is_ordered_datetime
 
 
 class BaseETS(BaseTemplate):
@@ -84,16 +83,21 @@ class BaseETS(BaseTemplate):
         if self._seasonality > 1:
             self._model_param_names += [param.value for param in constants.SeasonalitySamplingParameters]
 
-    def _predict(self, posterior_estimates, df, include_error=False, decompose=False, **kwargs):
+    def _predict(self, posterior_estimates, df, include_error=False, decompose=False,
+                 store_prediction_array=False, **kwargs):
         """Vectorized version of prediction math"""
 
-        ################################################################
-        # Model Attributes
-        ################################################################
+        # remove reference from original input
+        df = df.copy()
+        prediction_df_meta = self.get_prediction_df_meta(df)
 
         model = deepcopy(posterior_estimates)
         for k, v in model.items():
             model[k] = torch.from_numpy(v)
+
+        ################################################################
+        # Model Attributes
+        ################################################################
 
         # We can pull any arbitrary value from teh dictionary because we hold the
         # safe assumption: the length of the first dimension is always the number of samples
@@ -118,28 +122,6 @@ class BaseETS(BaseTemplate):
         ################################################################
         # Prediction Attributes
         ################################################################
-
-        # get training df meta
-        # training_df_meta = self._training_df_meta
-        # remove reference from original input
-        df = df.copy()
-
-        # get prediction df meta
-        prediction_df_meta = {
-            'date_array': pd.to_datetime(df[self.date_col]).reset_index(drop=True),
-            'df_length': len(df.index),
-            'prediction_start': df[self.date_col].iloc[0],
-            'prediction_end': df[self.date_col].iloc[-1]
-        }
-
-        if not is_ordered_datetime(prediction_df_meta['date_array']):
-            raise IllegalArgument('Datetime index must be ordered and not repeat')
-
-        # TODO: validate that all regressor columns are present, if any
-
-        if prediction_df_meta['prediction_start'] < self.training_start:
-            raise PredictionException('Prediction start must be after training start.')
-
         trained_len = self.num_of_observations
 
         # If we cannot find a match of prediction range, assume prediction starts right after train
@@ -264,6 +246,11 @@ class BaseETS(BaseTemplate):
             }
 
             return decomp_dict
+
+        if store_prediction_array:
+            self.pred_array = pred_array
+        else:
+            self.pred_array = None
 
         return {'prediction': pred_array}
 
