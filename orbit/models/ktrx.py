@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 
 from ..constants import ktrx as constants
 from ..constants.constants import (
-    PredictMethod,
     CoefPriorDictKeys,
 )
 from ..constants.ktrx import (
@@ -562,8 +561,14 @@ class BaseKTRX(BaseTemplate):
 
         return regressor_beta
 
-    def _predict(self, posterior_estimates, df, include_error=False, decompose=False, **kwargs):
+    def _predict(self, posterior_estimates, df, include_error=False, decompose=False, store_prediction_array=False,
+                 **kwargs):
         """Vectorized version of prediction math"""
+
+        # remove reference from original input
+        df = df.copy()
+        prediction_df_meta = self.get_prediction_df_meta(df)
+
         ################################################################
         # Model Attributes
         ################################################################
@@ -575,27 +580,7 @@ class BaseKTRX(BaseTemplate):
         ################################################################
         # Prediction Attributes
         ################################################################
-        # remove reference from original input
-        df = df.copy()
-
-        # get prediction df meta
-        prediction_df_meta = {
-            'date_array': pd.to_datetime(df[self.date_col]).reset_index(drop=True),
-            'df_length': len(df.index),
-            'prediction_start': df[self.date_col].iloc[0],
-            'prediction_end': df[self.date_col].iloc[-1]
-        }
-
-        if not is_ordered_datetime(prediction_df_meta['date_array']):
-            raise IllegalArgument('Datetime index must be ordered and not repeat')
-
-        # TODO: validate that all regressor columns are present, if any
-
-        if prediction_df_meta['prediction_start'] < self.training_start:
-            raise PredictionException('Prediction start must be after training start.')
-
         output_len = prediction_df_meta['df_length']
-        date_array = prediction_df_meta['date_array']
         prediction_start = prediction_df_meta['prediction_start']
 
         # Here assume dates are ordered and consecutive
@@ -688,6 +673,11 @@ class BaseKTRX(BaseTemplate):
             }
         else:
             decomp_dict = {'prediction': pred_array}
+
+        if store_prediction_array:
+            self.pred_array = pred_array
+        else:
+            self.pred_array = None
 
         return decomp_dict
 
@@ -857,6 +847,7 @@ class KTRXFull(FullBayesianTemplate, BaseKTRX):
                                              coef_df_lower=coef_df_lower,
                                              coef_df_upper=coef_df_upper,
                                              **kwargs)
+
 
 class KTRXAggregated(AggregatedPosteriorTemplate, BaseKTRX):
     """Concrete KTRX model for aggregated Bayesian prediction"""

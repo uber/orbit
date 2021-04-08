@@ -326,8 +326,14 @@ class BaseKTRLite(BaseTemplate):
         if len(self._seasonality) > 0 or self.num_of_regressors > 0:
             self._model_param_names += [param.value for param in constants.RegressionSamplingParameters]
 
-    def _predict(self, posterior_estimates, df, include_error=False, decompose=False, **kwargs):
+    def _predict(self, posterior_estimates, df, include_error=False, decompose=False, store_prediction_array=False,
+                 **kwargs):
         """Vectorized version of prediction math"""
+
+        # remove reference from original input
+        df = df.copy()
+        prediction_df_meta = self.get_prediction_df_meta(df)
+
         ################################################################
         # Model Attributes
         ################################################################
@@ -347,24 +353,6 @@ class BaseKTRLite(BaseTemplate):
         ################################################################
         # Prediction Attributes
         ################################################################
-
-        # remove reference from original input
-        df = df.copy()
-
-        # get prediction df meta
-        prediction_df_meta = {
-            'date_array': pd.to_datetime(df[self.date_col]).reset_index(drop=True),
-            'df_length': len(df.index),
-            'prediction_start': df[self.date_col].iloc[0],
-            'prediction_end': df[self.date_col].iloc[-1]
-        }
-
-        if not is_ordered_datetime(prediction_df_meta['date_array']):
-            raise IllegalArgument('Datetime index must be ordered and not repeat')
-
-        if prediction_df_meta['prediction_start'] < self.training_start:
-            raise PredictionException('Prediction start must be after training start.')
-
         trained_len = self.num_of_observations  # i.e., self.num_of_observations
         output_len = prediction_df_meta['df_length']
         prediction_start = prediction_df_meta['prediction_start']
@@ -442,6 +430,11 @@ class BaseKTRLite(BaseTemplate):
             decomp_dict.update(seas_decomp)
         else:
             decomp_dict = {'prediction': pred_array}
+
+        if store_prediction_array:
+            self.pred_array = pred_array
+        else:
+            self.pred_array = None
 
         return decomp_dict
 
