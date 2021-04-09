@@ -131,7 +131,7 @@ class BaseKTRX(BaseTemplate):
 
         self.degree_of_freedom = degree_of_freedom
 
-        # multi var norm flag 
+        # multi var norm flag
         self.mvn = mvn
 
         # set private var to arg value
@@ -175,9 +175,6 @@ class BaseKTRX(BaseTemplate):
         self._knots_tp_coefficients = None
         self._positive_regressor_matrix = None
         self._regular_regressor_matrix = None
-        
-        # multi var norm flag 
-        self._mvn = 0
 
     def _set_model_param_names(self):
         """Overriding base template functions. Model parameters to extract"""
@@ -206,8 +203,7 @@ class BaseKTRX(BaseTemplate):
             self._regressor_knot_pooling_loc = list()
             self._regressor_knot_pooling_scale = list()
             self._regressor_knot_scale = list()
-            # multi var norm flag 
-            self._mvn = 0
+
             return
 
         def _validate_params_len(params, valid_length):
