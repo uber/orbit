@@ -98,6 +98,7 @@ class BaseKTRX(BaseTemplate):
                  coefficients_knot_length=None,
                  coefficients_knot_dates=None,
                  date_freq=None,
+                 mvn=0,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
 
@@ -130,6 +131,10 @@ class BaseKTRX(BaseTemplate):
 
         self.degree_of_freedom = degree_of_freedom
 
+        # multi var norm flag 
+        self.mvn = mvn
+        
+        
         # set private var to arg value
         # if None set default in _set_default_args()
         self._regressor_sign = self.regressor_sign
@@ -144,6 +149,8 @@ class BaseKTRX(BaseTemplate):
         self._num_of_regressors = 0
         self._num_knots_coefficients = 0
 
+
+        
         # positive regressors
         self._num_of_positive_regressors = 0
         self._positive_regressor_col = list()
@@ -158,6 +165,8 @@ class BaseKTRX(BaseTemplate):
         self._regular_regressor_knot_scale = list()
         self._regressor_col = list()
 
+        
+        
         # init dynamic data attributes
         # the following are set by `_set_dynamic_attributes()` and generally set during fit()
         # from input df
@@ -171,6 +180,9 @@ class BaseKTRX(BaseTemplate):
         self._knots_tp_coefficients = None
         self._positive_regressor_matrix = None
         self._regular_regressor_matrix = None
+        
+        # multi var norm flag 
+        self._mvn = 0
 
     def _set_model_param_names(self):
         """Overriding base template functions. Model parameters to extract"""
@@ -199,6 +211,8 @@ class BaseKTRX(BaseTemplate):
             self._regressor_knot_pooling_loc = list()
             self._regressor_knot_pooling_scale = list()
             self._regressor_knot_scale = list()
+            # multi var norm flag 
+            self._mvn = 0
             return
 
         def _validate_params_len(params, valid_length):
