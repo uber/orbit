@@ -4,15 +4,13 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 import inspect
 import tqdm
+from itertools import product
 
 from .metrics import smape, wmape, mape, mse, mae, rmsse
 from ..exceptions import BacktestException
 from ..constants.constants import TimeSeriesSplitSchemeNames
 from ..constants.palette import QualitativePalette
-
-from itertools import product
 from collections.abc import Mapping, Iterable
-from orbit.diagnostics.metrics import smape, mape, wmape
 
 
 class TimeSeriesSplitter(object):
