@@ -133,13 +133,12 @@ class BaseKTRX(BaseTemplate):
 
         # multi var norm flag 
         self.mvn = mvn
-        
-        
+
         # set private var to arg value
         # if None set default in _set_default_args()
         self._regressor_sign = self.regressor_sign
         self._regressor_knot_pooling_loc = self.regressor_knot_pooling_loc
-        self._regressor_knot_pooling_scale= self.regressor_knot_pooling_scale
+        self._regressor_knot_pooling_scale = self.regressor_knot_pooling_scale
         self._regressor_knot_scale = self.regressor_knot_scale
 
         self.coef_prior_list = coef_prior_list
@@ -149,8 +148,6 @@ class BaseKTRX(BaseTemplate):
         self._num_of_regressors = 0
         self._num_knots_coefficients = 0
 
-
-        
         # positive regressors
         self._num_of_positive_regressors = 0
         self._positive_regressor_col = list()
@@ -165,8 +162,6 @@ class BaseKTRX(BaseTemplate):
         self._regular_regressor_knot_scale = list()
         self._regressor_col = list()
 
-        
-        
         # init dynamic data attributes
         # the following are set by `_set_dynamic_attributes()` and generally set during fit()
         # from input df
@@ -871,6 +866,7 @@ class KTRXFull(FullBayesianTemplate, BaseKTRX):
                                              coef_df_lower=coef_df_lower,
                                              coef_df_upper=coef_df_upper,
                                              **kwargs)
+
 
 class KTRXAggregated(AggregatedPosteriorTemplate, BaseKTRX):
     """Concrete KTRX model for aggregated Bayesian prediction"""

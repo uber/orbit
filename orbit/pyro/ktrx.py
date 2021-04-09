@@ -41,7 +41,7 @@ class Model:
         3. reduce ambigious by replacing all greeks by labels more intuitive
         use _coef, _weight etc. instead of _beta, use _scale instead of _sigma
         """
-        
+
         response = self.response
         which_valid = self.which_valid_res
 
@@ -98,7 +98,6 @@ class Model:
         )
         lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
 
-     
         # multi var norm vs seq normals
         if mvn != 1:
             # regular regressor sampling
@@ -116,7 +115,7 @@ class Model:
                         rr_knot_scale).to_event(2)
                 )
                 rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
-    
+
             # positive regressor sampling
             if n_pr > 0:
                 # pooling latent variables
@@ -127,14 +126,7 @@ class Model:
                                     pr_knot_pool_scale)
                     ).to_event(1)
                 )
-                # # TODO: Why not this?
-                # pr_knot = pyro.sample(
-                #     "pr_knot",
-                #     dist.FoldedDistribution(
-                #         dist.Normal(
-                #             pr_knot_loc, pr_knot_scale)
-                #     ).expand([n_knots_coef, n_pr]).to_event(2)
-                # )
+
                 pr_knot = pyro.sample(
                     "pr_knot",
                     dist.FoldedDistribution(
@@ -147,25 +139,20 @@ class Model:
         if mvn == 1:
             # regular regressor sampling
             if n_rr > 0:
-                # this part is junk just so that the rr_knot_loc has a prior; but it does not connect to anything else    
-                rr_knot_loc = pyro.sample(
-                    "rr_knot_loc", dist.Normal(
-                        rr_knot_pool_loc,
-                        rr_knot_pool_scale).to_event(1)
-                )    
-                
-                #updated mod
-                loc_temp = rr_knot_pool_loc.unsqueeze(-1) * torch.ones(  n_rr, n_knots_coef)
-                scale_temp = torch.diag_embed(rr_knot_pool_scale.unsqueeze(-1) * torch.ones(  n_rr, n_knots_coef)) 
-                
+                rr_knot_loc = pyro.deterministic("rr_knot_loc", torch.zeros(rr_knot_pool_loc.shape))
+
+                # updated mod
+                loc_temp = rr_knot_pool_loc.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef)
+                scale_temp = torch.diag_embed(rr_knot_pool_scale.unsqueeze(-1) * torch.ones(  n_rr, n_knots_coef))
+
                 # the sampling 
                 rr_knot = pyro.sample(
-                    "rr_knot", 
-                    dist.MultivariateNormal(                        
-                    loc  =  loc_temp, 
-                    covariance_matrix =  scale_temp   
+                    "rr_knot",
+                    dist.MultivariateNormal(
+                        loc=loc_temp,
+                        covariance_matrix=scale_temp
                     ).to_event(1)
-                ) 
+                )
                 rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
 
             # positive regressor sampling
@@ -180,21 +167,19 @@ class Model:
                     ).to_event(1)
                 )
                 #updated mod
-                loc_temp = pr_knot_pool_loc.unsqueeze(-1) * torch.ones(  n_pr, n_knots_coef)
-                scale_temp = torch.diag_embed(pr_knot_pool_scale.unsqueeze(-1) * torch.ones(  n_pr, n_knots_coef)) 
-                
-               
+                loc_temp = pr_knot_pool_loc.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef)
+                scale_temp = torch.diag_embed(pr_knot_pool_scale.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef))
+
                 pr_knot = pyro.sample(
                     "pr_knot",
-                    dist.MultivariateNormal(  
-                        loc = loc_temp,
-                        covariance_matrix =  scale_temp  
-                ).to_event(1)
+                    dist.MultivariateNormal(
+                        loc=loc_temp,
+                        covariance_matrix=scale_temp
+                    ).to_event(1)
                 )
                 pr_knot = torch.exp(pr_knot)
                 pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
-    
-            
+
         # concatenating all latent variables
         coef_knot = torch.zeros(n_knots_coef)
         coef_knot_loc = torch.zeros(pr_knot_pool_loc.shape)
