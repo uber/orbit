@@ -36,6 +36,8 @@ class DataInputMapper(Enum):
     _COEF_PRIOR_LIST = 'COEF_PRIOR_LIST'
     _LEVEL_KNOTS = 'LEV_KNOT_LOC'
     _SEAS_TERM = 'SEAS_TERM'
+    #--------------- mvn 
+    MVN = 'MVN'
 
 
 class BaseSamplingParameters(Enum):
