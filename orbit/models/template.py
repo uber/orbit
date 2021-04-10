@@ -377,7 +377,7 @@ class MAPTemplate(BaseTemplate):
             percentiles_dict.update(point_predicted_dict)
 
             if PredictionKeys.PREDICTION.value not in percentiles_dict.keys():
-                raise PredictionException('cannot find the key {} from return of _predict()'.format(
+                raise PredictionException("cannot find the key:'{}' from return of _predict()".format(
                     PredictionKeys.PREDICTION.value))
 
             # reduce to prediction only if decompose is not requested
@@ -499,7 +499,7 @@ class FullBayesianTemplate(BaseTemplate):
         )
 
         if PredictionKeys.PREDICTION.value not in predicted_dict.keys():
-            raise PredictionException('cannot find the key {} from return of _predict()'.format(
+            raise PredictionException("cannot find the key:'{}' from return of _predict()".format(
                 PredictionKeys.PREDICTION.value))
 
         # reduce to prediction only if decompose is not requested
@@ -621,7 +621,7 @@ class AggregatedPosteriorTemplate(BaseTemplate):
             percentiles_dict.update(point_predicted_dict)
 
             if PredictionKeys.PREDICTION.value not in percentiles_dict.keys():
-                raise PredictionException('cannot find the key {} from return of _predict()'.format(
+                raise PredictionException("cannot find the key:'{}' from return of _predict()".format(
                     PredictionKeys.PREDICTION.value))
 
             # reduce to prediction only if decompose is not requested
