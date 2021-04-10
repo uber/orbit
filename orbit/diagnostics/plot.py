@@ -10,9 +10,8 @@ import numpy as np
 from copy import deepcopy
 
 from orbit.constants.constants import PredictedComponents
-from orbit.utils.general import is_empty_dataframe
+from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
 from orbit.constants.palette import QualitativePalette
-
 
 # if os.environ.get('DISPLAY', '') == '':
 #     print('no display found. Using non-interactive Agg backend')
@@ -69,6 +68,9 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
     if is_empty_dataframe(training_actual_df) or is_empty_dataframe(predicted_df):
         raise ValueError("No prediction data or training response to plot.")
 
+    if not is_ordered_datetime(predicted_df[date_col]):
+        raise ValueError("Prediction df dates is not ordered.")
+
     plot_confid = False
     if prediction_percentiles is None:
         _pred_percentiles = [5, 95]
@@ -111,6 +113,10 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
             _predicted_df[pred_col].values,
             marker=None, color='#12939A', lw=lw, label='prediction', linestyle=linestyle)
 
+    # vertical line separate training and prediction
+    if _training_actual_df[date_col].values[-1] < _predicted_df[date_col].values[-1]:
+        ax.axvline(x=_training_actual_df[date_col].values[-1], color='#1f77b4', linestyle='--')
+
     if test_actual_df is not None:
         test_actual_df = test_actual_df.copy()
         test_actual_df[date_col] = pd.to_datetime(test_actual_df[date_col])
@@ -124,8 +130,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                        marker='.', color='#FF8C00', alpha=0.8, s=markersize,
                        label='test response')
 
-        # vertical line separate training and prediction
-        ax.axvline(x=_training_actual_df[date_col].values[-1], color='#1f77b4', linestyle='--')
+
 
     # prediction intervals
     if plot_confid:
