@@ -5,7 +5,7 @@ import numpy as np
 from orbit.estimators.pyro_estimator import PyroEstimator, PyroEstimatorVI, PyroEstimatorMAP
 from orbit.estimators.stan_estimator import StanEstimator, StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 from orbit.models.lgt import LGTMAP, LGTFull, LGTAggregated
-from orbit.constants.constants import PredictedComponents
+from orbit.constants.constants import PredictionKeys
 from orbit.initializer.lgt import LGTInitializer
 
 
@@ -179,6 +179,7 @@ def test_lgt_full_with_regression(synthetic_data, estimator_type, regressor_sign
             prediction_percentiles=[5, 95],
             seasonality=52,
             num_warmup=50,
+            num_sample=50,
             verbose=False,
             estimator_type=estimator_type
         )
@@ -235,6 +236,7 @@ def test_lgt_aggregated_with_regression(synthetic_data, estimator_type, regresso
             regressor_sign=regressor_signs,
             seasonality=52,
             num_warmup=50,
+            num_sample=50,
             verbose=False,
             estimator_type=estimator_type
         )
@@ -328,6 +330,8 @@ def test_prediction_percentiles(iclaims_training_data, prediction_percentiles):
         response_col='claims',
         date_col='week',
         seasonality=52,
+        num_warmup=50,
+        num_sample=50,
         seed=8888,
         prediction_percentiles=prediction_percentiles,
     )
@@ -346,9 +350,9 @@ def test_prediction_percentiles(iclaims_training_data, prediction_percentiles):
     predicted_df = lgt.predict(df, decompose=True)
     predicted_components = [
         'prediction',
-        PredictedComponents.TREND.value,
-        PredictedComponents.SEASONALITY.value,
-        PredictedComponents.REGRESSION.value]
+        PredictionKeys.TREND.value,
+        PredictionKeys.SEASONALITY.value,
+        PredictionKeys.REGRESSION.value]
 
     expected_columns = ['week']
     for pc in predicted_components:
@@ -380,6 +384,7 @@ def test_lgt_full_reproducibility(synthetic_data, estimator_type, regressor_sign
         prediction_percentiles=[5, 95],
         seasonality=seasonality,
         num_warmup=50,
+        num_sample=50,
         verbose=False,
         estimator_type=estimator_type
     )
@@ -401,6 +406,7 @@ def test_lgt_full_reproducibility(synthetic_data, estimator_type, regressor_sign
         prediction_percentiles=[5, 95],
         seasonality=seasonality,
         num_warmup=50,
+        num_sample=50,
         verbose=False,
         estimator_type=estimator_type
     )

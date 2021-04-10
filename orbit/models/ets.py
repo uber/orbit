@@ -1,9 +1,9 @@
-import pandas as pd
 import numpy as np
 from copy import deepcopy
 import torch
 
 from ..constants import ets as constants
+from ..constants.constants import PredictionKeys
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP, StanEstimatorVI
 from ..exceptions import IllegalArgument
 from ..initializer.ets import ETSInitializer
@@ -83,21 +83,22 @@ class BaseETS(BaseTemplate):
         if self._seasonality > 1:
             self._model_param_names += [param.value for param in constants.SeasonalitySamplingParameters]
 
-    def _predict(self, posterior_estimates, df, include_error=False, decompose=False,
-                 store_prediction_array=False, **kwargs):
+    def _predict(self, posterior_estimates, df, include_error=False, **kwargs):
         """Vectorized version of prediction math"""
-
-        # remove reference from original input
-        df = df.copy()
-        prediction_df_meta = self.get_prediction_df_meta(df)
-
-        model = deepcopy(posterior_estimates)
-        for k, v in model.items():
-            model[k] = torch.from_numpy(v)
+        ################################################################
+        # Prediction Attributes
+        ################################################################
+        n_forecast_steps = self.prediction_input_meta['n_forecast_steps']
+        start = self.prediction_input_meta['start']
+        trained_len = self.num_of_observations
+        full_len = trained_len + n_forecast_steps
 
         ################################################################
         # Model Attributes
         ################################################################
+        model = deepcopy(posterior_estimates)
+        for k, v in model.items():
+            model[k] = torch.from_numpy(v)
 
         # We can pull any arbitrary value from teh dictionary because we hold the
         # safe assumption: the length of the first dimension is always the number of samples
@@ -113,37 +114,11 @@ class BaseETS(BaseTemplate):
             constants.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
         )
 
-        # trend componentsð
+        # trend components
         level_smoothing_factor = model.get(
             constants.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
         local_trend_levels = model.get(constants.BaseSamplingParameters.LOCAL_TREND_LEVELS.value)
         residual_sigma = model.get(constants.BaseSamplingParameters.RESIDUAL_SIGMA.value)
-
-        ################################################################
-        # Prediction Attributes
-        ################################################################
-        trained_len = self.num_of_observations
-
-        # If we cannot find a match of prediction range, assume prediction starts right after train
-        # end
-        if prediction_df_meta['prediction_start'] > self.training_end:
-            forecast_dates = set(prediction_df_meta['date_array'])
-            n_forecast_steps = len(forecast_dates)
-            # time index for prediction start
-            start = trained_len
-        else:
-            # compute how many steps to forecast
-            forecast_dates = \
-                set(prediction_df_meta['date_array']) - set(self.date_array)
-            # check if prediction df is a subset of training df
-            # e.g. "negative" forecast steps
-            n_forecast_steps = len(forecast_dates) or \
-                -(len(set(self.date_array) - set(prediction_df_meta['date_array'])))
-            # time index for prediction start
-            start = pd.Index(
-                self.date_array).get_loc(prediction_df_meta['prediction_start'])
-
-        full_len = trained_len + n_forecast_steps
 
         ################################################################
         # Seasonality Component
@@ -237,22 +212,13 @@ class BaseETS(BaseTemplate):
         trend_component = trend_component.numpy()
         seasonal_component = seasonal_component.numpy()
 
-        # if decompose output dictionary of components
-        if decompose:
-            decomp_dict = {
-                'prediction': pred_array,
-                'trend': trend_component,
-                'seasonality': seasonal_component
-            }
+        out = {
+            PredictionKeys.PREDICTION.value: pred_array,
+            PredictionKeys.TREND.value: trend_component,
+            PredictionKeys.SEASONALITY.value: seasonal_component
+        }
 
-            return decomp_dict
-
-        if store_prediction_array:
-            self.pred_array = pred_array
-        else:
-            self.pred_array = None
-
-        return {'prediction': pred_array}
+        return out
 
 
 class ETSMAP(MAPTemplate, BaseETS):
@@ -284,5 +250,3 @@ class ETSAggregated(AggregatedPosteriorTemplate, BaseETS):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-

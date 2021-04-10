@@ -38,25 +38,14 @@ class EstimatorOptionsMapper(Enum):
     }
 
 
-# TODO: consider combining this with PredictedComponents
-class PredictionColumnNames(Enum):
-    """
-    In the output of SLGTModel.transform() and SLGT.predict(), the column names if
-    'return_decomposed_components' = True.
-    """
-    PREDICTED_RESPONSE = 'predicted'
-    LEVEL = 'level'
-    SEASONALITY = 'seasonality'
-    REGRESSOR = 'regressor'
-    ACTUAL_RESPONSE = 'actual'
-
-
-class PredictedComponents(Enum):
+class PredictionKeys(Enum):
     """ column names for the data frame of predicted result with decomposed components
     """
     TREND = 'trend'
     SEASONALITY = 'seasonality'
     REGRESSION = 'regression'
+    REGRESSOR = 'regressor'
+    PREDICTION = 'prediction'
 
 
 class PlotLabels(Enum):

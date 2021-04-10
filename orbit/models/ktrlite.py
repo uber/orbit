@@ -13,6 +13,7 @@ from ..utils.general import is_ordered_datetime
 from ..utils.kernels import sandwich_kernel
 from ..utils.features import make_fourier_series_df
 from .template import BaseTemplate, MAPTemplate
+from ..constants.constants import PredictionKeys
 from ..initializer.ktrlite import KTRLiteInitializer
 
 
@@ -362,7 +363,7 @@ class BaseKTRLite(BaseTemplate):
         num_sample = arbitrary_posterior_value.shape[0]
 
         ################################################################
-        # Prediction Attributes
+        # Trend Component
         ################################################################
         trained_len = self.num_of_observations  # i.e., self.num_of_observations
         output_len = prediction_df_meta['df_length']
@@ -408,11 +409,16 @@ class BaseKTRLite(BaseTemplate):
         obs_scale = obs_scale.reshape(-1, 1)
 
         trend = np.matmul(lev_knot, kernel_level.transpose(1, 0))
+
+        ################################################################
+        # Seasonality Component
+        ################################################################
         # init of regression matrix depends on length of response vector
         total_seas_regression = np.zeros(trend.shape, dtype=np.double)
         seas_decomp = {}
         # update seasonal regression matrices
         if self._seasonality and self.regressor_col:
+            df = self._make_seasonal_regressors(df, shift=start)
             coef_knot = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
             # kernel_coefficients = gauss_kernel(new_tp, self.knots_tp_coefficients, rho=self.rho_coefficients)
             kernel_coefficients = sandwich_kernel(new_tp, self.knots_tp_coefficients)
