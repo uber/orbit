@@ -11,15 +11,15 @@ from ..constants.constants import (
     DEFAULT_REGRESSOR_BETA,
     DEFAULT_REGRESSOR_SIGMA,
     COEFFICIENT_DF_COLS,
-    PredictMethod
+    PredictMethod,
+    PredictionKeys
 )
 
 from ..models.ets import BaseETS
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
 from ..estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
-from ..exceptions import IllegalArgument, ModelException, PredictionException
+from ..exceptions import IllegalArgument, ModelException
 from ..initializer.lgt import LGTInitializer
-from ..utils.general import is_ordered_datetime
 from ..models.ets import ETSMAP, ETSFull, ETSAggregated
 
 warnings.simplefilter('always', PendingDeprecationWarning)
@@ -290,18 +290,20 @@ class BaseLGT(BaseETS):
         self._validate_training_df_with_regression(df)
         self._set_regressor_matrix(df)  # depends on num_of_observations
 
-    def _predict(self, posterior_estimates, df=None, include_error=False, decompose=False,
-                 store_prediction_array=False, **kwargs):
+    def _predict(self, posterior_estimates, df=None, include_error=False, **kwargs):
         """Vectorized version of prediction math"""
-
-        # remove reference from original input
-        df = df.copy()
-        prediction_df_meta = self.get_prediction_df_meta(df)
+        ################################################################
+        # Prediction Attributes
+        ################################################################
+        n_forecast_steps = self.prediction_input_meta['n_forecast_steps']
+        start = self.prediction_input_meta['start']
+        trained_len = self.num_of_observations
+        output_len = self.prediction_input_meta['df_length']
+        full_len = trained_len + n_forecast_steps
 
         ################################################################
         # Model Attributes
         ################################################################
-
         model = deepcopy(posterior_estimates)
         for k, v in model.items():
             model[k] = torch.from_numpy(v)
@@ -339,33 +341,6 @@ class BaseLGT(BaseETS):
 
         # regression components
         regressor_beta = model.get(constants.RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
-
-        ################################################################
-        # Prediction Attributes
-        ################################################################
-        trained_len = self.num_of_observations
-        output_len = prediction_df_meta['df_length']
-
-        # If we cannot find a match of prediction range, assume prediction starts right after train
-        # end
-        if prediction_df_meta['prediction_start'] > self.training_end:
-            forecast_dates = set(prediction_df_meta['date_array'])
-            n_forecast_steps = len(forecast_dates)
-            # time index for prediction start
-            start = trained_len
-        else:
-            # compute how many steps to forecast
-            forecast_dates = \
-                set(prediction_df_meta['date_array']) - set(self.date_array)
-            # check if prediction df is a subset of training df
-            # e.g. "negative" forecast steps
-            n_forecast_steps = len(forecast_dates) or \
-                               - (len(set(self.date_array) - set(prediction_df_meta['date_array'])))
-            # time index for prediction start
-            start = pd.Index(
-                self.date_array).get_loc(prediction_df_meta['prediction_start'])
-
-        full_len = trained_len + n_forecast_steps
 
         ################################################################
         # Regression Component
@@ -507,23 +482,14 @@ class BaseLGT(BaseETS):
         seasonal_component = seasonal_component.numpy()
         regression = regression.numpy()
 
-        # if decompose output dictionary of components
-        if decompose:
-            decomp_dict = {
-                'prediction': pred_array,
-                'trend': trend_component,
-                'seasonality': seasonal_component,
-                'regression': regression
-            }
+        out = {
+            PredictionKeys.PREDICTION.value: pred_array,
+            PredictionKeys.TREND.value: trend_component,
+            PredictionKeys.SEASONALITY.value: seasonal_component,
+            PredictionKeys.REGRESSION.value: regression
+        }
 
-            return decomp_dict
-
-        if store_prediction_array:
-            self.pred_array = pred_array
-        else:
-            self.pred_array = None
-
-        return {'prediction': pred_array}
+        return out
 
     def _get_regression_coefs(self, aggregate_method):
         """Return DataFrame regression coefficients
