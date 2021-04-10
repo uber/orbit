@@ -52,7 +52,7 @@ def compute_percentiles(arrays_dict, percentiles):
         curr_shape = v.shape
         if len(curr_shape) != 2:
             raise ValueError("Input arrays_dict requires 2 dimensions: (number of samples, prediction length)."
-                             "Please revise input.")
+                             " Please revise input. Your input:{}".format(curr_shape))
         if run_check:
             if curr_shape[1] != prev_shape[1]:
                 raise ValueError("Input arrays has different lengths in second dimension. Please revise input.")
