@@ -10,9 +10,8 @@ import numpy as np
 from copy import deepcopy
 
 from orbit.constants.constants import PredictedComponents
-from orbit.utils.general import is_empty_dataframe
+from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
 from orbit.constants.palette import QualitativePalette
-
 
 # if os.environ.get('DISPLAY', '') == '':
 #     print('no display found. Using non-interactive Agg backend')
@@ -23,7 +22,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                         pred_col='prediction', prediction_percentiles=None,
                         title="", test_actual_df=None, is_visible=True,
                         figsize=None, path=None, fontsize=None,
-                        insample_line=False, markersize=70, lw=2, linestyle='-'):
+                        line_plot=False, markersize=70, lw=2, linestyle='-'):
     """
     plot training actual response together with predicted data; if actual response of predicted
     data is there, plot it too.
@@ -53,8 +52,8 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         path to save the figure
     fontsize : int; optional
         fontsize of the title
-    insample_line : bool; default False
-        if True, make line plot for in-sample; otherwise, make scatter plot for in-sample
+    line_plot : bool; default False
+        if True, make line plot for observations; otherwise, make scatter plot for observations
     markersize : int; optional
         point marker size
     lw : int; optional
@@ -68,6 +67,9 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
 
     if is_empty_dataframe(training_actual_df) or is_empty_dataframe(predicted_df):
         raise ValueError("No prediction data or training response to plot.")
+
+    if not is_ordered_datetime(predicted_df[date_col]):
+        raise ValueError("Prediction df dates is not ordered.")
 
     plot_confid = False
     if prediction_percentiles is None:
@@ -97,29 +99,36 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
 
     fig, ax = plt.subplots(facecolor='w', figsize=figsize)
 
-    if not insample_line:
+    if line_plot:
+        ax.plot(_training_actual_df[date_col].values,
+                _training_actual_df[actual_col].values,
+                marker=None, color='black', lw=lw, label='train response', linestyle=linestyle)
+    else:
         ax.scatter(_training_actual_df[date_col].values,
                 _training_actual_df[actual_col].values,
                 marker='.', color='black', alpha=0.8, s=markersize,
                 label='train response')
-    else:
-        ax.plot(_training_actual_df[date_col].values,
-                _training_actual_df[actual_col].values,
-                marker=None, color='black', lw=lw, label='train response', linestyle=linestyle)
+
     ax.plot(_predicted_df[date_col].values,
             _predicted_df[pred_col].values,
             marker=None, color='#12939A', lw=lw, label='prediction', linestyle=linestyle)
 
-    #vertical line seperate training and prediction
-    ax.axvline(x=_training_actual_df[date_col].values[-1], color='#1f77b4', linestyle='--')
+    # vertical line separate training and prediction
+    if _training_actual_df[date_col].values[-1] < _predicted_df[date_col].values[-1]:
+        ax.axvline(x=_training_actual_df[date_col].values[-1], color='#1f77b4', linestyle='--')
 
     if test_actual_df is not None:
         test_actual_df = test_actual_df.copy()
         test_actual_df[date_col] = pd.to_datetime(test_actual_df[date_col])
-        ax.scatter(test_actual_df[date_col].values,
-                   test_actual_df[actual_col].values,
-                   marker='.', color='#FF8C00', alpha=0.8, s=markersize,
-                   label='test response')
+        if line_plot:
+            ax.plot(test_actual_df[date_col].values,
+                    test_actual_df[actual_col].values,
+                    marker=None, color='#FF8C00', lw=lw, label='train response', linestyle=linestyle)
+        else:
+            ax.scatter(test_actual_df[date_col].values,
+                       test_actual_df[actual_col].values,
+                       marker='.', color='#FF8C00', alpha=0.8, s=markersize,
+                       label='test response')
 
     # prediction intervals
     if plot_confid:
