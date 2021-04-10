@@ -130,8 +130,6 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                        marker='.', color='#FF8C00', alpha=0.8, s=markersize,
                        label='test response')
 
-
-
     # prediction intervals
     if plot_confid:
         ax.fill_between(_predicted_df[date_col].values,
