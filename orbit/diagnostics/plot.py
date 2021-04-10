@@ -1,16 +1,15 @@
 # the following lines are added to fix unit test error
 # or else the following line will give the following error
 # TclError: no display name and no $DISPLAY environment variable
-import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
-import os
 import pandas as pd
 import numpy as np
 from copy import deepcopy
 
 from orbit.constants.constants import PredictionKeys
-from orbit.utils.general import is_empty_dataframe
+from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
+from orbit.constants.constants import PredictionKeys
 from orbit.constants.palette import QualitativePalette
 
 # the following lines are added to fix unit test error
@@ -108,9 +107,9 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                 marker=None, color='black', lw=lw, label='train response', linestyle=linestyle)
     else:
         ax.scatter(_training_actual_df[date_col].values,
-                _training_actual_df[actual_col].values,
-                marker='.', color='black', alpha=0.8, s=markersize,
-                label='train response')
+                   _training_actual_df[actual_col].values,
+                   marker='.', color='black', alpha=0.8, s=markersize,
+                   label='train response')
 
     ax.plot(_predicted_df[date_col].values,
             _predicted_df[pred_col].values,
@@ -352,7 +351,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
             mean = np.mean(samples)
             median = np.median(samples)
             cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level)/2), \
-                np.percentile(samples, 100 * (1 + ci_level)/2)
+                                 np.percentile(samples, 100 * (1 + ci_level)/2)
 
             sns.distplot(samples, bins=n_bins, kde_kws={'shade': True}, ax=axes[i], norm_hist=False)
             # sns.kdeplot(samples, shade=True, ax=axes[i])
