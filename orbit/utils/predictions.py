@@ -40,7 +40,7 @@ def compute_percentiles(arrays_dict, percentiles):
         arrays
     Returns
     -------
-    pd.DataFrame
+    dict
         The percentiles across samples with columns for `50` aka median and all other percentiles
         specified in `percentiles`.
     """
@@ -52,17 +52,17 @@ def compute_percentiles(arrays_dict, percentiles):
         curr_shape = v.shape
         if len(curr_shape) != 2:
             raise ValueError("Input arrays_dict requires 2 dimensions: (number of samples, prediction length)."
-                             "Please revise input.")
+                             " Please revise input. Your input:{}".format(curr_shape))
         if run_check:
             if curr_shape[1] != prev_shape[1]:
                 raise ValueError("Input arrays has different lengths in second dimension. Please revise input.")
         # run prediction consistency after first iteration
         run_check = True
         prev_shape = curr_shape
+        # row = nth percentile, col = prediction length
         computed_array = np.percentile(v, percentiles, axis=0)
         columns = [k + "_" + str(p) if p != 50 else k for p in percentiles]
-        computed_dict[k] = pd.DataFrame(computed_array.T, columns=columns)
+        for idx in range(computed_array.shape[0]):
+            computed_dict[columns[idx]] = computed_array[idx]
 
-    output_df = pd.concat(computed_dict, axis=1)
-    output_df.columns = output_df.columns.droplevel()
-    return output_df
+    return computed_dict

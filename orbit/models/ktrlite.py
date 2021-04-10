@@ -13,6 +13,7 @@ from ..utils.general import is_ordered_datetime
 from ..utils.kernels import sandwich_kernel
 from ..utils.features import make_fourier_series_df
 from .template import BaseTemplate, MAPTemplate
+from ..constants.constants import PredictionKeys
 
 
 class BaseKTRLite(BaseTemplate):
@@ -326,12 +327,18 @@ class BaseKTRLite(BaseTemplate):
         if len(self._seasonality) > 0 or self.num_of_regressors > 0:
             self._model_param_names += [param.value for param in constants.RegressionSamplingParameters]
 
-    def _predict(self, posterior_estimates, df, include_error=False, decompose=False, **kwargs):
+    def _predict(self, posterior_estimates, df, include_error=False, **kwargs):
         """Vectorized version of prediction math"""
+        ################################################################
+        # Prediction Attributes
+        ################################################################
+        start = self.prediction_input_meta['start']
+        trained_len = self.num_of_observations
+        output_len = self.prediction_input_meta['df_length']
+
         ################################################################
         # Model Attributes
         ################################################################
-
         model = deepcopy(posterior_estimates)
         # TODO: adopt torch as in lgt or dlt?
         # for k, v in model.items():
@@ -345,42 +352,8 @@ class BaseKTRLite(BaseTemplate):
         num_sample = arbitrary_posterior_value.shape[0]
 
         ################################################################
-        # Prediction Attributes
+        # Trend Component
         ################################################################
-
-        # remove reference from original input
-        df = df.copy()
-
-        # get prediction df meta
-        prediction_df_meta = {
-            'date_array': pd.to_datetime(df[self.date_col]).reset_index(drop=True),
-            'df_length': len(df.index),
-            'prediction_start': df[self.date_col].iloc[0],
-            'prediction_end': df[self.date_col].iloc[-1]
-        }
-
-        if not is_ordered_datetime(prediction_df_meta['date_array']):
-            raise IllegalArgument('Datetime index must be ordered and not repeat')
-
-        if prediction_df_meta['prediction_start'] < self.training_start:
-            raise PredictionException('Prediction start must be after training start.')
-
-        trained_len = self.num_of_observations  # i.e., self.num_of_observations
-        output_len = prediction_df_meta['df_length']
-        prediction_start = prediction_df_meta['prediction_start']
-
-        # Here assume dates are ordered and consecutive
-        # if prediction_df_meta['prediction_start'] > training_df_meta['training_end'],
-        # assume prediction starts right after train end
-
-        # If we cannot find a match of prediction range, assume prediction starts right after train end
-        if prediction_start > self.training_end:
-            # time index for prediction start
-            start = trained_len
-        else:
-            start = pd.Index(self.date_array).get_loc(prediction_start)
-
-        df = self._make_seasonal_regressors(df, shift=start)
         new_tp = np.arange(start + 1, start + output_len + 1) / trained_len
         if include_error:
             # in-sample knots
@@ -409,11 +382,16 @@ class BaseKTRLite(BaseTemplate):
         obs_scale = obs_scale.reshape(-1, 1)
 
         trend = np.matmul(lev_knot, kernel_level.transpose(1, 0))
+
+        ################################################################
+        # Seasonality Component
+        ################################################################
         # init of regression matrix depends on length of response vector
         total_seas_regression = np.zeros(trend.shape, dtype=np.double)
         seas_decomp = {}
         # update seasonal regression matrices
         if self._seasonality and self.regressor_col:
+            df = self._make_seasonal_regressors(df, shift=start)
             coef_knot = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
             # kernel_coefficients = gauss_kernel(new_tp, self.knots_tp_coefficients, rho=self.rho_coefficients)
             kernel_coefficients = sandwich_kernel(new_tp, self.knots_tp_coefficients)
@@ -433,17 +411,13 @@ class BaseKTRLite(BaseTemplate):
         else:
             pred_array = trend + total_seas_regression
 
-        # if decompose output dictionary of components
-        if decompose:
-            decomp_dict = {
-                'prediction': pred_array,
-                'trend': trend,
-            }
-            decomp_dict.update(seas_decomp)
-        else:
-            decomp_dict = {'prediction': pred_array}
+        out = {
+            PredictionKeys.PREDICTION.value: pred_array,
+            PredictionKeys.TREND.value: trend,
+        }
+        out.update(seas_decomp)
 
-        return decomp_dict
+        return out
 
 
 class KTRLiteMAP(MAPTemplate, BaseKTRLite):

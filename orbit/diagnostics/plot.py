@@ -1,25 +1,26 @@
 # the following lines are added to fix unit test error
 # or else the following line will give the following error
 # TclError: no display name and no $DISPLAY environment variable
-import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
-import os
 import pandas as pd
 import numpy as np
 from copy import deepcopy
 
-from orbit.constants.constants import PredictedComponents
+from orbit.constants.constants import PredictionKeys
 from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
 from orbit.constants.palette import QualitativePalette
 
+# the following lines are added to fix unit test error
+# or else the following line will give the following error
+# TclError: no display name and no $DISPLAY environment variable
 # if os.environ.get('DISPLAY', '') == '':
 #     print('no display found. Using non-interactive Agg backend')
 #     matplotlib.use('Agg')
 
 
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
-                        pred_col='prediction', prediction_percentiles=None,
+                        pred_col=PredictionKeys.PREDICTION.value, prediction_percentiles=None,
                         title="", test_actual_df=None, is_visible=True,
                         figsize=None, path=None, fontsize=None,
                         line_plot=False, markersize=70, lw=2, linestyle='-'):
@@ -105,13 +106,13 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                 marker=None, color='black', lw=lw, label='train response', linestyle=linestyle)
     else:
         ax.scatter(_training_actual_df[date_col].values,
-                _training_actual_df[actual_col].values,
-                marker='.', color='black', alpha=0.8, s=markersize,
-                label='train response')
+                   _training_actual_df[actual_col].values,
+                   marker='.', color='black', alpha=0.8, s=markersize,
+                   label='train response')
 
     ax.plot(_predicted_df[date_col].values,
             _predicted_df[pred_col].values,
-            marker=None, color='#12939A', lw=lw, label='prediction', linestyle=linestyle)
+            marker=None, color='#12939A', lw=lw, label=PredictionKeys.PREDICTION.value, linestyle=linestyle)
 
     # vertical line separate training and prediction
     if _training_actual_df[date_col].values[-1] < _predicted_df[date_col].values[-1]:
@@ -185,9 +186,9 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
     _predicted_df = predicted_df.copy()
     _predicted_df[date_col] = pd.to_datetime(_predicted_df[date_col])
     if plot_components is None:
-        plot_components = [PredictedComponents.TREND.value,
-                           PredictedComponents.SEASONALITY.value,
-                           PredictedComponents.REGRESSION.value]
+        plot_components = [PredictionKeys.TREND.value,
+                           PredictionKeys.SEASONALITY.value,
+                           PredictionKeys.REGRESSION.value]
 
     plot_components = [p for p in plot_components if p in _predicted_df.columns.tolist()]
     n_panels = len(plot_components)
@@ -349,7 +350,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
             mean = np.mean(samples)
             median = np.median(samples)
             cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level)/2), \
-                np.percentile(samples, 100 * (1 + ci_level)/2)
+                                 np.percentile(samples, 100 * (1 + ci_level)/2)
 
             sns.distplot(samples, bins=n_bins, kde_kws={'shade': True}, ax=axes[i], norm_hist=False)
             # sns.kdeplot(samples, shade=True, ax=axes[i])
