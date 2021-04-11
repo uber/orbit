@@ -9,14 +9,7 @@ from copy import deepcopy
 
 from orbit.constants.constants import PredictionKeys
 from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
-from orbit.constants.palette import QualitativePalette
-
-# the following lines are added to fix unit test error
-# or else the following line will give the following error
-# TclError: no display name and no $DISPLAY environment variable
-# if os.environ.get('DISPLAY', '') == '':
-#     print('no display found. Using non-interactive Agg backend')
-#     matplotlib.use('Agg')
+from orbit.constants.palette import QualitativePalette, KTRPalette
 
 
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
@@ -437,19 +430,14 @@ def plot_ktr_lev_knots(actual_df, lev_knots_df, date_col, actual_col,
     ----------
     actual_df : pd.DataFrame
         actual data frame including the actual response
-    predicted_df : pd.DateFrame
-        prediction data frame including the predicted components, which can be obtained by running
-        orbit.diagnostics.plot.plot_predicted_components
+    lev_knots_df : pd.DataFrame
+        level knots data from KTRLite model
     date_col : str
         the date column name
     actual_col : str
         actual response column name
-    level_knot_dates : list
-        list of level knot dates
-    level_knots : list
-        list of fitted level knots
-    trend_col : str
-        trend column name in predicted_df
+    knots_delta_threshold : float
+        standardized threshold of level knots difference to detect change point of levels
     path : str; optional
         path to save the figure
     is_visible : boolean
@@ -467,17 +455,18 @@ def plot_ktr_lev_knots(actual_df, lev_knots_df, date_col, actual_col,
         matplotlib axes object
     """
     actuals = actual_df[actual_col]
-    ymin = min(actual_df[actual_col])
-    ymax = max(actual_df[actual_col])
+    ymin = min(actual_df[actual_col]) * 0.98
+    ymax = max(actual_df[actual_col]) * 1.02
     fig, ax = plt.subplots(1, 1, figsize=figsize)
+    ax.set_ylim(ymin, ymax)
     ax.plot(actual_df[date_col], actuals, color='black', lw=1, alpha=0.5, label='actual')
 
     # plot all the segments divided by knots
     dt = lev_knots_df[date_col].values
-    ax.vlines(x=dt, ymin=ymin, ymax=ymax, linestyles='dashed', alpha=0.8, linewidth=1, facecolor='#6495ED',
-              label='knots')
+    ax.vlines(x=dt, ymin=ymin, ymax=ymax, linestyles='dashed', alpha=0.8, linewidth=1,
+              facecolor=KTRPalette.KNOTS_SEGMENT.value, label='knots')
 
-    # derive the knots absolute delta of knot hitting > 0.5
+    # standardized threshold of level knots difference to detect change point of levels
     lk = lev_knots_df['lev_knot'].values
     lk = (lk - np.mean(lk)) / np.std(lk)
     lkd = np.diff(lk)
@@ -486,7 +475,8 @@ def plot_ktr_lev_knots(actual_df, lev_knots_df, date_col, actual_col,
         # due to diff function creates a lag of 1
         dt = lev_knots_df[date_col].values
         for idx in np.where(flag)[0]:
-            ax.axvspan(dt[idx], dt[idx+1], facecolor='#6495ED', alpha=0.3)
+            ax.axvspan(dt[idx], dt[idx+1], facecolor=KTRPalette.KNOTS_REGION.value, alpha=0.5)
+            
     ax.legend()
     ax.set_title(title, fontsize=fontsize)
     if path:
