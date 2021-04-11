@@ -427,10 +427,8 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     return axes
 
 
-def plot_ktr_lev_knots(actual_df, predicted_df,
-                       date_col, actual_col,
-                       level_knot_dates, level_knots,
-                       trend_col='trend',
+def plot_ktr_lev_knots(actual_df, lev_knots_df, date_col, actual_col,
+                       knots_delta_threshold=0.5,
                        path=None, is_visible=True, title="",
                        fontsize=16, markersize=150, figsize=(16, 8)):
     """ Plot the fitted level knots along with the actual time series.
@@ -469,14 +467,27 @@ def plot_ktr_lev_knots(actual_df, predicted_df,
         matplotlib axes object
     """
     actuals = actual_df[actual_col]
-    # yhat = predicted_df[pred_col]
-    trend = predicted_df[trend_col]
+    ymin = min(actual_df[actual_col])
+    ymax = max(actual_df[actual_col])
     fig, ax = plt.subplots(1, 1, figsize=figsize)
     ax.plot(actual_df[date_col], actuals, color='black', lw=1, alpha=0.5, label='actual')
-    ax.plot(actual_df[date_col], trend, color='blue', lw=1, alpha=0.5, label='level/trend')
-    ax.scatter(level_knot_dates, level_knots, color='green', lw=1, s=markersize, marker='^', label='level-knot')
+
+    # plot all the segments divided by knots
+    dt = lev_knots_df[date_col].values
+    ax.vlines(x=dt, ymin=ymin, ymax=ymax, linestyles='dashed', alpha=0.8, linewidth=1, facecolor='#6495ED',
+              label='knots')
+
+    # derive the knots absolute delta of knot hitting > 0.5
+    lk = lev_knots_df['lev_knot'].values
+    lk = (lk - np.mean(lk)) / np.std(lk)
+    lkd = np.diff(lk)
+    flag = np.fabs(lkd) > knots_delta_threshold
+    if flag.any():
+        # due to diff function creates a lag of 1
+        dt = lev_knots_df[date_col].values
+        for idx in np.where(flag)[0]:
+            ax.axvspan(dt[idx], dt[idx+1], facecolor='#6495ED', alpha=0.3)
     ax.legend()
-    ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
     ax.set_title(title, fontsize=fontsize)
     if path:
         fig.savefig(path)
