@@ -66,7 +66,7 @@ class LinearModel(BaseTemplate):
             )
 
     def _predict(
-        self, posterior_estimates, df, include_error=False, decompose=False, **kwargs
+        self, posterior_estimates, df, include_error=False, **kwargs
     ):
         """Create predictions for new covariates/regressors"""
         prediction_length = df.shape[0]
@@ -109,18 +109,18 @@ class LinearModelMAP(MAPTemplate, LinearModel):
     def __init__(self, estimator_type=StanEstimatorMAP, **kwargs):
         super().__init__(estimator_type=estimator_type, **kwargs)
 
-    def predict(self, df, decompose=False, **kwargs):
+    def predict(self, df, **kwargs):
         """Prediction intervals of Normal errors"""
-        posterior_estimates = self._posterior_samples
-        intercept = posterior_estimates[
-            constants.StanSampleOutput["INTERCEPT"].value
-        ]
-        coefficients = posterior_estimates[
-            constants.StanSampleOutput["COEFFICIENTS"].value
-        ]
-        obs_error_scale = posterior_estimates[
-            constants.StanSampleOutput["OBS_ERROR_SCALE"].value
-        ]
+        aggregate_posteriors = self._aggregate_posteriors['map']
+        intercept = np.squeeze(aggregate_posteriors[
+            constants.StanSampleOutput.INTERCEPT.value
+        ], axis=0)
+        coefficients = np.squeeze(aggregate_posteriors[
+            constants.StanSampleOutput.COEFFICIENTS.value
+        ], axis=0)
+        obs_error_scale = np.squeeze(aggregate_posteriors[
+            constants.StanSampleOutput.OBS_ERROR_SCALE.value
+        ], axis=0)
 
         prediction_regressor_matrix = df.filter(
             items=self.regressor_col,
