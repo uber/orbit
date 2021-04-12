@@ -16,3 +16,8 @@ class QualitativePalette(Enum):
             "#829AE3", "#E79FD5", "#1E96BE", "#89DAC1", "#B3AD9E"]
     # bar plot
     Bar5 = ["#ef476fff", "#ffd166ff", "#06d6a0ff", "#118ab2ff", "#073b4cff"]
+
+
+class KTRPalette(Enum):
+    KNOTS_SEGMENT = '#276ef1'
+    KNOTS_REGION = '#5b91f5ff'

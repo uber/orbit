@@ -2,19 +2,15 @@ import pandas as pd
 import numpy as np
 import math
 from scipy.stats import nct
-import torch
 from copy import deepcopy
 
-from ..constants import ktrlite as constants
-
 from ..estimators.stan_estimator import StanEstimatorMAP
-from ..exceptions import IllegalArgument, ModelException, PredictionException
-from ..utils.general import is_ordered_datetime
+from ..exceptions import IllegalArgument, ModelException
 from ..utils.kernels import sandwich_kernel
 from ..utils.features import make_fourier_series_df
 from .template import BaseTemplate, MAPTemplate
-from ..constants.constants import PredictionKeys
-
+from ..constants.constants import PredictionKeys, PredictMethod
+from ..constants import ktrlite as constants
 
 class BaseKTRLite(BaseTemplate):
     """Base KTRLite model object with shared functionality for MAP method
@@ -64,7 +60,6 @@ class BaseKTRLite(BaseTemplate):
                  seasonal_knot_scale=0.1,
                  span_level=0.1,
                  span_coefficients=0.3,
-                 # rho_coefficients=0.15,
                  degree_of_freedom=30,
                  # knot customization
                  level_knot_dates=None,
@@ -297,7 +292,6 @@ class BaseKTRLite(BaseTemplate):
         # kernel of coefficients calculations
         if self.num_of_regressors > 0:
             if self.coefficients_knot_length is not None:
-                # TODO: approximation; can consider coefficients_knot_length directly as step size
                 knots_distance = self.coefficients_knot_length
             else:
                 number_of_knots = round(1 / self.span_coefficients)
@@ -307,7 +301,6 @@ class BaseKTRLite(BaseTemplate):
             self._knots_idx_coef = knots_idx_coef
             self.knots_tp_coefficients = (1 + knots_idx_coef) / self.num_of_observations
             self._coef_knot_dates = df[self.date_col].values[knots_idx_coef]
-            # self.kernel_coefficients = gauss_kernel(tp, self.knots_tp_coefficients, rho=self.rho_coefficients)
             self.kernel_coefficients = sandwich_kernel(tp, self.knots_tp_coefficients)
             self.num_knots_coefficients = len(self.knots_tp_coefficients)
 
@@ -340,7 +333,7 @@ class BaseKTRLite(BaseTemplate):
         # Model Attributes
         ################################################################
         model = deepcopy(posterior_estimates)
-        # TODO: adopt torch as in lgt or dlt?
+        # TODO: adopt torch ?
         # for k, v in model.items():
         #     model[k] = torch.from_numpy(v)
 
@@ -393,7 +386,6 @@ class BaseKTRLite(BaseTemplate):
         if self._seasonality and self.regressor_col:
             df = self._make_seasonal_regressors(df, shift=start)
             coef_knot = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
-            # kernel_coefficients = gauss_kernel(new_tp, self.knots_tp_coefficients, rho=self.rho_coefficients)
             kernel_coefficients = sandwich_kernel(new_tp, self.knots_tp_coefficients)
             coef = np.matmul(coef_knot, kernel_coefficients.transpose(1, 0))
             pos = 0
@@ -429,3 +421,15 @@ class KTRLiteMAP(MAPTemplate, BaseKTRLite):
 
     def __init__(self, estimator_type=StanEstimatorMAP, **kwargs):
         super().__init__(estimator_type=estimator_type, **kwargs)
+
+    # FIXME: need a unit test of this function
+    def get_level_knots(self):
+        out = {
+            self.date_col:
+                self._level_knot_dates,
+            constants.BaseSamplingParameters.LEVEL_KNOT.value:
+            # TODO: this is hacky, investigate why we have an extra dimension here?
+                np.squeeze(self._aggregate_posteriors[PredictMethod.MAP.value][
+                    constants.BaseSamplingParameters.LEVEL_KNOT.value], 0),
+        }
+        return pd.DataFrame(out)
