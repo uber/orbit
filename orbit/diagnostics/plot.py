@@ -532,19 +532,19 @@ def get_arviz_plot_dict(mod,
 
 
 def plot_param_diagnostics(mod, incl_noise_params=False, incl_trend_params=False, incl_smooth_params=False,
-                     kind='trace', **kwargs):
+                     which='trace', **kwargs):
     """
     Parameters
     -----------
     mod : orbit model object
-    kind : str, {'density', 'trace', 'pair', 'autocorr', 'posterior', 'forest'}
+    which : str, {'density', 'trace', 'pair', 'autocorr', 'posterior', 'forest'}
     incl_noise_params : bool
         if plot noise parameters; default False
     incl_trend_params : bool
         if plot trend parameters; default False
     incl_smooth_params : bool
         if plot smoothing parameters; default False
-    **kwargs:
+    **kwargs :
         other parameters passed to arviz functions
 
     Returns
@@ -556,18 +556,18 @@ def plot_param_diagnostics(mod, incl_noise_params=False, incl_trend_params=False
                                             incl_trend_params=incl_trend_params,
                                             incl_smooth_params=incl_smooth_params)
 
-    if kind == "trace":
-        axes = az.plot_trace(posterior_samples)
-    elif kind == "density":
-        axes = az.plot_density(posterior_samples)
-    elif kind == "posterior":
-        axes = az.plot_posterior(posterior_samples)
-    elif kind == "pair":
-        axes = az.plot_pair(posterior_samples)
-    elif kind == "autocorr":
-        axes = az.plot_autocorr(posterior_samples)
-    elif kind == "forest":
-        axes = az.plot_forest(posterior_samples)
+    if which == "trace":
+        axes = az.plot_trace(posterior_samples, **kwargs)
+    elif which == "density":
+        axes = az.plot_density(posterior_samples, **kwargs)
+    elif which == "posterior":
+        axes = az.plot_posterior(posterior_samples, **kwargs)
+    elif which == "pair":
+        axes = az.plot_pair(posterior_samples, **kwargs)
+    elif which == "autocorr":
+        axes = az.plot_autocorr(posterior_samples, **kwargs)
+    elif which == "forest":
+        axes = az.plot_forest(posterior_samples, **kwargs)
     else:
         raise Exception("please use one of 'trace', 'density', 'posterior', 'pair', 'autocorr', 'forest' for kind.")
 
