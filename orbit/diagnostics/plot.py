@@ -6,10 +6,13 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 from copy import deepcopy
+import arviz as az
 
 from orbit.constants.constants import PredictionKeys
 from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
 from orbit.constants.palette import QualitativePalette, KTRPalette
+
+az.style.use("arviz-darkgrid")
 
 
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
@@ -281,8 +284,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     ------
     mod : orbit model object
     kind : str, {'density', 'trace', 'pair'}
-        which kind of plot to be made. Currently, trace plot may not represent the actual sample process for
-        different chainse since this information is not stored in orbit model objects.
+        which kind of plot to be made.
     n_bins : int; default 20
         number of bin, used in the histogram plotting
     ci_level : float, between 0 and 1
@@ -476,7 +478,7 @@ def plot_ktr_lev_knots(actual_df, lev_knots_df, date_col, actual_col,
         dt = lev_knots_df[date_col].values
         for idx in np.where(flag)[0]:
             ax.axvspan(dt[idx], dt[idx+1], facecolor=KTRPalette.KNOTS_REGION.value, alpha=0.5)
-            
+
     ax.legend()
     ax.set_title(title, fontsize=fontsize)
     if path:
@@ -486,3 +488,87 @@ def plot_ktr_lev_knots(actual_df, lev_knots_df, date_col, actual_col,
     else:
         plt.close()
     return ax
+
+
+def get_arviz_plot_dict(mod,
+                        incl_noise_params=False,
+                        incl_trend_params=False,
+                        incl_smooth_params=False):
+    """ This is a utility to prepare the plotting dictionary data for package arviz.
+    arviz will interpret each key as the name of a different random variable.
+    Each array should have shape (chains, draws, *shape).
+
+    See Also
+    --------
+    https://arviz-devs.github.io/arviz/index.html
+    """
+    if not ('MCMC' in str(mod.estimator) or 'VI' in str(mod.estimator)):
+        raise Exception("This utility works for model object with MCMC or VI inference only.")
+
+    posterior_samples = mod.get_posterior_samples()
+    if len(mod._regressor_col) > 0:
+        for i, regressor in enumerate(mod._regressor_col):
+            posterior_samples[regressor] = posterior_samples['beta'][:,i]
+    params_ = mod._regressor_col
+
+    if incl_noise_params:
+        params_ += ['obs_sigma']
+    if incl_trend_params:
+        params_ += ['gt_pow', 'lt_coef', 'gt_coef', 'gb', 'gl']
+    if incl_smooth_params:
+        params_ += ['lev_sm', 'slp_sm', 'sea_sm']
+
+    params_ = [x for x in params_ if x in posterior_samples.keys()]
+
+    for key in posterior_samples.copy().keys():
+        if key not in params_: del posterior_samples[key]
+
+    for key, val in posterior_samples.items():
+        posterior_samples[key] = val.reshape((mod.estimator.chains,
+                                              mod.estimator._num_sample_per_chain,
+                                              *val.shape[1:]))
+
+    return posterior_samples
+
+
+def plot_param_diagnostics(mod, incl_noise_params=False, incl_trend_params=False, incl_smooth_params=False,
+                     which='trace', **kwargs):
+    """
+    Parameters
+    -----------
+    mod : orbit model object
+    which : str, {'density', 'trace', 'pair', 'autocorr', 'posterior', 'forest'}
+    incl_noise_params : bool
+        if plot noise parameters; default False
+    incl_trend_params : bool
+        if plot trend parameters; default False
+    incl_smooth_params : bool
+        if plot smoothing parameters; default False
+    **kwargs :
+        other parameters passed to arviz functions
+
+    Returns
+    -------
+        matplotlib axes object
+    """
+    posterior_samples = get_arviz_plot_dict(mod,
+                                            incl_noise_params=incl_noise_params,
+                                            incl_trend_params=incl_trend_params,
+                                            incl_smooth_params=incl_smooth_params)
+
+    if which == "trace":
+        axes = az.plot_trace(posterior_samples, **kwargs)
+    elif which == "density":
+        axes = az.plot_density(posterior_samples, **kwargs)
+    elif which == "posterior":
+        axes = az.plot_posterior(posterior_samples, **kwargs)
+    elif which == "pair":
+        axes = az.plot_pair(posterior_samples, **kwargs)
+    elif which == "autocorr":
+        axes = az.plot_autocorr(posterior_samples, **kwargs)
+    elif which == "forest":
+        axes = az.plot_forest(posterior_samples, **kwargs)
+    else:
+        raise Exception("please use one of 'trace', 'density', 'posterior', 'pair', 'autocorr', 'forest' for kind.")
+
+    return axes
