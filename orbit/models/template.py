@@ -230,6 +230,9 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
 
         self._posterior_samples = model_extract
 
+    def get_posterior_samples(self):
+        return self._posterior_samples.copy()
+
     def get_prediction_input_meta(self, df):
         # remove reference from original input
         df = df.copy()
@@ -506,7 +509,7 @@ class FullBayesianTemplate(BaseTemplate):
         if not decompose:
             predicted_dict = {k: v for k, v in predicted_dict.items() if k == PredictionKeys.PREDICTION.value}
 
-        if store_prediction_array: 
+        if store_prediction_array:
             self.prediction_array = predicted_dict[PredictionKeys.PREDICTION.value]
         percentiles_dict = compute_percentiles(predicted_dict, self._prediction_percentiles)
         predicted_df = pd.DataFrame(percentiles_dict)
