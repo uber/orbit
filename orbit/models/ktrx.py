@@ -12,15 +12,15 @@ from ..constants.constants import (
 )
 from ..constants.ktrx import (
     DEFAULT_REGRESSOR_SIGN,
-    DEFAULT_COEFFICIENTS_KNOT_POOL_SCALE,
-    DEFAULT_COEFFICIENTS_KNOT_POOL_LOC,
+    DEFAULT_COEFFICIENTS_KNOT_INIT_SCALE,
+    DEFAULT_COEFFICIENTS_KNOT_INIT_LOC,
     DEFAULT_COEFFICIENTS_KNOT_SCALE,
 )
 
 from ..estimators.pyro_estimator import PyroEstimatorVI
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..utils.general import is_ordered_datetime
-from ..utils.kernels import gauss_kernel, sandwich_kernel
+from ..utils.kernels import gauss_kernel, sandwich_kernel, parabolic_kernel
 from ..utils.features import make_fourier_series_df
 from .template import BaseTemplate, FullBayesianTemplate, AggregatedPosteriorTemplate
 
@@ -36,9 +36,9 @@ class BaseKTRX(BaseTemplate):
         regressor columns
     regressor_sign : list
         list of signs with '=' for regular regressor and '+' for positive regressor
-    regressor_knot_pooling_loc : list
+    regressor_knot_init_loc : list
         list of regressor knot pooling mean priors, default to be 0's
-    regressor_knot_pooling_scale : list
+    regressor_knot_init_scale : list
         list of regressor knot pooling sigma's to control the pooling strength towards the grand mean of regressors;
         default to be 1.
     regressor_knot_scale : list
@@ -82,8 +82,8 @@ class BaseKTRX(BaseTemplate):
                  level_knot_scale=0.1,
                  regressor_col=None,
                  regressor_sign=None,
-                 regressor_knot_pooling_loc=None,
-                 regressor_knot_pooling_scale=None,
+                 regressor_knot_init_loc=None,
+                 regressor_knot_init_scale=None,
                  regressor_knot_scale=None,
                  span_coefficients=0.3,
                  rho_coefficients=0.15,
@@ -119,8 +119,8 @@ class BaseKTRX(BaseTemplate):
 
         self.regressor_col = regressor_col
         self.regressor_sign = regressor_sign
-        self.regressor_knot_pooling_loc = regressor_knot_pooling_loc
-        self.regressor_knot_pooling_scale = regressor_knot_pooling_scale
+        self.regressor_knot_init_loc = regressor_knot_init_loc
+        self.regressor_knot_init_scale = regressor_knot_init_scale
         self.regressor_knot_scale = regressor_knot_scale
 
         self.coefficients_knot_length = coefficients_knot_length
@@ -136,8 +136,8 @@ class BaseKTRX(BaseTemplate):
         # set private var to arg value
         # if None set default in _set_default_args()
         self._regressor_sign = self.regressor_sign
-        self._regressor_knot_pooling_loc = self.regressor_knot_pooling_loc
-        self._regressor_knot_pooling_scale = self.regressor_knot_pooling_scale
+        self._regressor_knot_init_loc = self.regressor_knot_init_loc
+        self._regressor_knot_init_scale = self.regressor_knot_init_scale
         self._regressor_knot_scale = self.regressor_knot_scale
 
         self.coef_prior_list = coef_prior_list
@@ -150,14 +150,14 @@ class BaseKTRX(BaseTemplate):
         # positive regressors
         self._num_of_positive_regressors = 0
         self._positive_regressor_col = list()
-        self._positive_regressor_knot_pooling_loc = list()
-        self._positive_regressor_knot_pooling_scale = list()
+        self._positive_regressor_knot_init_loc = list()
+        self._positive_regressor_knot_init_scale = list()
         self._positive_regressor_knot_scale = list()
         # regular regressors
         self._num_of_regular_regressors = 0
         self._regular_regressor_col = list()
-        self._regular_regressor_knot_pooling_loc = list()
-        self._regular_regressor_knot_pooling_scale = list()
+        self._regular_regressor_knot_init_loc = list()
+        self._regular_regressor_knot_init_scale = list()
         self._regular_regressor_knot_scale = list()
         self._regressor_col = list()
 
@@ -178,7 +178,7 @@ class BaseKTRX(BaseTemplate):
     def _set_model_param_names(self):
         """Overriding base template functions. Model parameters to extract"""
         self._model_param_names += [param.value for param in constants.BaseSamplingParameters]
-        if self._num_of_regressors > 0 :
+        if self._num_of_regressors > 0:
             self._model_param_names += [param.value for param in constants.RegressionSamplingParameters]
 
     def _set_default_args(self):
@@ -199,8 +199,8 @@ class BaseKTRX(BaseTemplate):
             # regardless of what args are set for these, if regressor_col is None
             # these should all be empty lists
             self._regressor_sign = list()
-            self._regressor_knot_pooling_loc = list()
-            self._regressor_knot_pooling_scale = list()
+            self._regressor_knot_init_loc = list()
+            self._regressor_knot_init_scale = list()
             self._regressor_knot_scale = list()
 
             return
@@ -214,19 +214,19 @@ class BaseKTRX(BaseTemplate):
         num_of_regressors = len(self.regressor_col)
 
         _validate_params_len([
-            self.regressor_sign, self.regressor_knot_pooling_loc,
-            self.regressor_knot_pooling_scale, self.regressor_knot_scale],
+            self.regressor_sign, self.regressor_knot_init_loc,
+            self.regressor_knot_init_scale, self.regressor_knot_scale],
             num_of_regressors
         )
 
         if self.regressor_sign is None:
             self._regressor_sign = [DEFAULT_REGRESSOR_SIGN] * num_of_regressors
 
-        if self.regressor_knot_pooling_loc is None:
-            self._regressor_knot_pooling_loc = [DEFAULT_COEFFICIENTS_KNOT_POOL_LOC] * num_of_regressors
+        if self.regressor_knot_init_loc is None:
+            self._regressor_knot_init_loc = [DEFAULT_COEFFICIENTS_KNOT_INIT_LOC] * num_of_regressors
 
-        if self.regressor_knot_pooling_scale is None:
-            self._regressor_knot_pooling_scale = [DEFAULT_COEFFICIENTS_KNOT_POOL_SCALE] * num_of_regressors
+        if self.regressor_knot_init_scale is None:
+            self._regressor_knot_init_scale = [DEFAULT_COEFFICIENTS_KNOT_INIT_SCALE] * num_of_regressors
 
         if self.regressor_knot_scale is None:
             self._regressor_knot_scale = [DEFAULT_COEFFICIENTS_KNOT_SCALE] * num_of_regressors
@@ -243,20 +243,27 @@ class BaseKTRX(BaseTemplate):
                 self._num_of_positive_regressors += 1
                 self._positive_regressor_col.append(self.regressor_col[index])
                 # used for 'pr_knot_loc' sampling in pyro
-                self._positive_regressor_knot_pooling_loc.append(self._regressor_knot_pooling_loc[index])
-                self._positive_regressor_knot_pooling_scale.append(self._regressor_knot_pooling_scale[index])
+                self._positive_regressor_knot_init_loc.append(self._regressor_knot_init_loc[index])
+                self._positive_regressor_knot_init_scale.append(self._regressor_knot_init_scale[index])
                 # used for 'pr_knot' sampling in pyro
                 self._positive_regressor_knot_scale.append(self._regressor_knot_scale[index])
             else:
                 self._num_of_regular_regressors += 1
                 self._regular_regressor_col.append(self.regressor_col[index])
                 # used for 'rr_knot_loc' sampling in pyro
-                self._regular_regressor_knot_pooling_loc.append(self._regressor_knot_pooling_loc[index])
-                self._regular_regressor_knot_pooling_scale.append(self._regressor_knot_pooling_scale[index])
+                self._regular_regressor_knot_init_loc.append(self._regressor_knot_init_loc[index])
+                self._regular_regressor_knot_init_scale.append(self._regressor_knot_init_scale[index])
                 # used for 'rr_knot' sampling in pyro
                 self._regular_regressor_knot_scale.append(self._regressor_knot_scale[index])
         # regular first, then positive
         self._regressor_col = self._regular_regressor_col + self._positive_regressor_col
+        # numpy conversion
+        self._positive_regressor_knot_init_loc = np.array(self._positive_regressor_knot_init_loc)
+        self._positive_regressor_knot_init_scale = np.array(self._positive_regressor_knot_init_scale)
+        self._positive_regressor_knot_scale = np.array(self._positive_regressor_knot_scale)
+        self._regular_regressor_knot_init_loc = np.array(self._regular_regressor_knot_init_loc)
+        self._regular_regressor_knot_init_scale = np.array(self._regular_regressor_knot_init_scale)
+        self._regular_regressor_knot_scale = np.array(self._regular_regressor_knot_scale)
 
     @staticmethod
     def _validate_coef_prior(coef_prior_list):
@@ -362,24 +369,26 @@ class BaseKTRX(BaseTemplate):
                 items=self._regular_regressor_col,).values
 
     def _set_coefficients_kernel_matrix(self, df):
+        """Derive knots position and kernel matrix and other related meta data"""
         # Note that our tp starts by 1; to convert back to index of array, reduce it by 1
         tp = np.arange(1, self.num_of_observations + 1) / self.num_of_observations
         # this approach put knots in full range
+        # TODO: consider deprecate _cutoff for now?
         self._cutoff = self.num_of_observations
         self._kernel_coefficients = np.zeros((self.num_of_observations, 0), dtype=np.double)
         self._num_knots_coefficients = 0
 
         # kernel of coefficients calculations
-        # if self._knots_tp_coefficients is None:
         if self._num_of_regressors > 0:
+            # if users didn't provide knot positions, evenly distribute it based on span_coefficients
+            # or knot length provided by users
             if self._coefficients_knot_dates is None:
                 if self.coefficients_knot_length is not None:
-                    # TODO: approximation; can consider directly coefficients_knot_length it as step size
                     knots_distance = self.coefficients_knot_length
                 else:
                     number_of_knots = round(1 / self.span_coefficients)
                     knots_distance = math.ceil(self._cutoff / number_of_knots)
-
+                # derive actual date arrays based on the time-point (tp) index
                 knots_idx_coef = self._set_knots_tp(knots_distance, self._cutoff)
                 self._knots_tp_coefficients = (1 + knots_idx_coef) / self.num_of_observations
                 self._coefficients_knot_dates = df[self.date_col].values[knots_idx_coef]
@@ -398,8 +407,61 @@ class BaseKTRX(BaseTemplate):
                 )
 
             kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+
             self._num_knots_coefficients = len(self._knots_tp_coefficients)
             self._kernel_coefficients = kernel_coefficients
+
+    def _set_knots_scale_matrix(self):
+        # # calculate date time delta between knots
+        # local_val = np.ones((self._num_of_positive_regressors, self._num_knots_coefficients))
+        # # add 0.0 and 1.0 the edge of first and last segment
+        # tp_segement_bound = (
+        #     [0.0] +
+        #     list((self._knots_tp_coefficients[:-1] + self._knots_tp_coefficients[1:]) * 0.5) +
+        #     [1.0]
+        # )
+        #
+        # for idx in range(len(tp_segement_bound) - 1):
+        #     str_idx = round(tp_segement_bound[idx] * self.num_of_observations)
+        #     end_idx = round(tp_segement_bound[idx + 1] * self.num_of_observations)
+        #     local_val[:, idx] = np.mean(np.fabs(self._positive_regressor_matrix[str_idx:end_idx]), axis=0)
+        #
+        # # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
+        # # scale parameters
+        # multiplier = (local_val - np.amin(local_val, axis=0))\
+        #              / (np.amax(local_val, axis=0) - np.amin(local_val, axis=0)) * 0.9 + 0.1
+        # # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
+        # self._positive_regressor_knot_scale = multiplier * 0.1
+        # # self._positive_regressor_knot_scale = np.expand_dims(self._positive_regressor_knot_scale, -1) * multiplier
+
+        # calculate average local absolute volume for each segment
+        local_val = np.ones((self._num_of_positive_regressors, self._num_knots_coefficients))
+
+        # store local value for the range on the left side since last knot
+        for idx in range(len(self._knots_tp_coefficients)):
+            if idx == 0:
+                str_idx = 0
+                end_idx = round(self._knots_tp_coefficients[idx]) + 1
+            elif idx < len(self._knots_tp_coefficients) - 1:
+                str_idx = round(self._knots_tp_coefficients[idx - 1] * self.num_of_observations) + 1
+                end_idx = round(self._knots_tp_coefficients[idx] * self.num_of_observations) + 1
+            else:
+                str_idx = round(self._knots_tp_coefficients[idx - 1] * self.num_of_observations) + 1
+                end_idx = self.num_of_observations
+            local_val[:, idx] = np.mean(np.fabs(self._positive_regressor_matrix[str_idx:end_idx]), axis=0)
+
+        # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
+        # scale parameters
+        local_min = np.amin(local_val, axis=-1, keepdims=True)
+        local_max = np.amax(local_val, axis=-1, keepdims=True)
+        multiplier = (local_val - local_min) / (local_max - local_min) * 0.99 + 0.01
+
+        # also note that after the following step,
+        # _positive_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
+        # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
+        self._positive_regressor_knot_scale = (
+                multiplier * np.expand_dims(self._positive_regressor_knot_scale, -1)
+        )
 
     def _generate_tp(self, prediction_date_array):
         """Used in _generate_coefs"""
@@ -424,8 +486,6 @@ class BaseKTRX(BaseTemplate):
         new_tp = self._generate_tp(prediction_date_array)
         knots_tp_coef = self._generate_insample_tp(coef_knot_dates)
         kernel_coef = sandwich_kernel(new_tp, knots_tp_coef)
-        # kernel_coef = gauss_kernel(new_tp, knots_tp_coef, rho)
-        # kernel_coef = kernel_coef / np.sum(kernel_coef, axis=1, keepdims=True)
         coefs = np.squeeze(np.matmul(coef_knot, kernel_coef.transpose(1, 0)), axis=0).transpose(1, 0)
         return coefs
 
@@ -531,6 +591,7 @@ class BaseKTRX(BaseTemplate):
         self._set_valid_response_attributes()
         self._set_regressor_matrix(df)
         self._set_coefficients_kernel_matrix(df)
+        self._set_knots_scale_matrix()
         self._set_levs_and_seas(df)
         self._filter_coef_prior(df)
 
@@ -656,6 +717,7 @@ class BaseKTRX(BaseTemplate):
             pred_regressor_matrix = np.concatenate([pred_regular_regressor_matrix,
                                                     pred_positive_regressor_matrix], axis=-1)
             kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            # kernel_coefficients = parabolic_kernel(new_tp, self._knots_tp_coefficients)
             regression = np.sum(
                 np.matmul(coef_knot, kernel_coefficients.transpose(1, 0)) *
                 pred_regressor_matrix.transpose(1, 0), axis=-2
@@ -730,6 +792,7 @@ class BaseKTRX(BaseTemplate):
             new_tp = np.arange(start + 1, start + output_len + 1) / self.num_of_observations
 
             kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            # kernel_coefficients = parabolic_kernel(new_tp, self._knots_tp_coefficients)
             coef_knots = self._aggregate_posteriors \
                 .get(aggregate_method) \
                 .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)

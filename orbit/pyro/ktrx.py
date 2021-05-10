@@ -6,8 +6,20 @@ import pyro.distributions as dist
 
 # FIXME: this is sort of dangerous; consider better implementation later
 torch.set_default_tensor_type('torch.DoubleTensor')
-
 pyro.enable_validation(True)
+
+
+# class TruncatedNormal(dist.Rejector):
+#     def __init__(self, loc, scale, min_x0=None):
+#         propose = dist.Normal(loc, scale)
+#         if min_x0 is None:
+#             min_x0 = torch.zeros(1)
+#
+#         def log_prob_accept(x):
+#             return (x > min_x0).type_as(x).log()
+#
+#         log_scale = torch.log(1 - dist.Normal(loc, scale).cdf(min_x0))
+#         super(TruncatedNormal, self).__init__(propose, log_prob_accept, log_scale)
 
 
 class Model:
@@ -75,7 +87,7 @@ class Model:
         # this does not need to expand dim since it is used as latent grand mean
         pr_knot_pool_loc = self.pr_knot_pool_loc
         pr_knot_pool_scale = self.pr_knot_pool_scale
-        pr_knot_scale = self.pr_knot_scale.unsqueeze(-1)
+        pr_knot_scale = self.pr_knot_scale
 
         # transformation of data
         regressors = torch.zeros(n_obs)
@@ -98,7 +110,7 @@ class Model:
         )
         lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
 
-        # multi var norm vs seq normals
+        # using hierarchical priors vs. multivariate priors
         if mvn == 0:
             # regular regressor sampling
             if n_rr > 0:
@@ -118,30 +130,19 @@ class Model:
 
             # positive regressor sampling
             if n_pr > 0:
-                # pooling latent variables
-                pr_knot_loc = pyro.sample(
-                    "pr_knot_loc",
+                pr_knot_init = pyro.sample(
+                    "pr_knot_init",
                     dist.FoldedDistribution(
-                        dist.Normal(pr_knot_pool_loc,
-                                    pr_knot_pool_scale)
+                        dist.Normal(torch.zeros(n_pr), pr_knot_pool_scale)
                     ).to_event(1)
+                ).log()
+                pr_knot_loc = pr_knot_init
+                pr_knot_step = pyro.sample(
+                    "pr_knot_step",
+                    # dist.Normal(0, 0.03).expand([n_pr, n_knots_coef - 1]).to_event(2)
+                    dist.Normal(torch.zeros(n_pr, n_knots_coef - 1), pr_knot_scale[..., 1:]).to_event(2)
                 )
-                # # TODO: Why not this?
-                # pr_knot = pyro.sample(
-                #     "pr_knot",
-                #     dist.FoldedDistribution(
-                #         dist.Normal(
-                #             pr_knot_loc, pr_knot_scale)
-                #     ).expand([n_knots_coef, n_pr]).to_event(2)
-                # )
-                pr_knot = pyro.sample(
-                    "pr_knot",
-                    dist.FoldedDistribution(
-                        dist.Normal(
-                            pr_knot_loc.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef),
-                            pr_knot_scale)
-                    ).to_event(2)
-                )
+                pr_knot = torch.cat((pr_knot_init.unsqueeze(-1), pr_knot_step), -1).cumsum(-1).exp()
                 pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
         else:
             # regular regressor sampling
@@ -173,7 +174,7 @@ class Model:
                                     pr_knot_pool_scale)
                     ).to_event(1)
                 )
-                #updated mod
+                # updated mod
                 loc_temp = pr_knot_pool_loc.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef)
                 scale_temp = torch.diag_embed(pr_knot_pool_scale.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef))
 
@@ -224,8 +225,7 @@ class Model:
                 )
 
         # observation likelihood
-        # einsum might be faster but it doesn't work when no regressors
-        yhat = lev + (regressors * coef).sum(-1) #lev + torch.einsum("ab,...ab->...a", regressors, coef)
+        yhat = lev + (regressors * coef).sum(-1)
         obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy)).unsqueeze(-1)
         # with pyro.plate("response_plate", n_valid):
         #     pyro.sample("response",
