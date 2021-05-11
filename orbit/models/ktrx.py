@@ -3,7 +3,7 @@ import numpy as np
 import math
 from scipy.stats import nct
 import torch
-from copy import copy, deepcopy
+from copy import deepcopy
 import matplotlib.pyplot as plt
 
 from ..constants import ktrx as constants
@@ -15,12 +15,14 @@ from ..constants.ktrx import (
     DEFAULT_COEFFICIENTS_KNOT_INIT_SCALE,
     DEFAULT_COEFFICIENTS_KNOT_INIT_LOC,
     DEFAULT_COEFFICIENTS_KNOT_SCALE,
+    DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER,
+    DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER,
 )
 
 from ..estimators.pyro_estimator import PyroEstimatorVI
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..utils.general import is_ordered_datetime
-from ..utils.kernels import gauss_kernel, sandwich_kernel, parabolic_kernel
+from ..utils.kernels import gauss_kernel, sandwich_kernel
 from ..utils.features import make_fourier_series_df
 from .template import BaseTemplate, FullBayesianTemplate, AggregatedPosteriorTemplate
 
@@ -412,56 +414,75 @@ class BaseKTRX(BaseTemplate):
             self._kernel_coefficients = kernel_coefficients
 
     def _set_knots_scale_matrix(self):
-        # # calculate date time delta between knots
-        # local_val = np.ones((self._num_of_positive_regressors, self._num_knots_coefficients))
-        # # add 0.0 and 1.0 the edge of first and last segment
-        # tp_segement_bound = (
-        #     [0.0] +
-        #     list((self._knots_tp_coefficients[:-1] + self._knots_tp_coefficients[1:]) * 0.5) +
-        #     [1.0]
-        # )
-        #
-        # for idx in range(len(tp_segement_bound) - 1):
-        #     str_idx = round(tp_segement_bound[idx] * self.num_of_observations)
-        #     end_idx = round(tp_segement_bound[idx + 1] * self.num_of_observations)
-        #     local_val[:, idx] = np.mean(np.fabs(self._positive_regressor_matrix[str_idx:end_idx]), axis=0)
-        #
-        # # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
-        # # scale parameters
-        # multiplier = (local_val - np.amin(local_val, axis=0))\
-        #              / (np.amax(local_val, axis=0) - np.amin(local_val, axis=0)) * 0.9 + 0.1
-        # # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
-        # self._positive_regressor_knot_scale = multiplier * 0.1
-        # # self._positive_regressor_knot_scale = np.expand_dims(self._positive_regressor_knot_scale, -1) * multiplier
-
         # calculate average local absolute volume for each segment
         local_val = np.ones((self._num_of_positive_regressors, self._num_knots_coefficients))
 
-        # store local value for the range on the left side since last knot
-        for idx in range(len(self._knots_tp_coefficients)):
-            if idx == 0:
-                str_idx = 0
-                end_idx = round(self._knots_tp_coefficients[idx]) + 1
-            elif idx < len(self._knots_tp_coefficients) - 1:
-                str_idx = round(self._knots_tp_coefficients[idx - 1] * self.num_of_observations) + 1
-                end_idx = round(self._knots_tp_coefficients[idx] * self.num_of_observations) + 1
-            else:
-                str_idx = round(self._knots_tp_coefficients[idx - 1] * self.num_of_observations) + 1
-                end_idx = self.num_of_observations
-            local_val[:, idx] = np.mean(np.fabs(self._positive_regressor_matrix[str_idx:end_idx]), axis=0)
+        if self._num_of_positive_regressors > 0:
+            # store local value for the range on the left side since last knot
+            for idx in range(len(self._knots_tp_coefficients)):
+                if idx == 0:
+                    str_idx = 0
+                    end_idx = round(self._knots_tp_coefficients[idx]) + 1
+                elif idx < len(self._knots_tp_coefficients) - 1:
+                    str_idx = round(self._knots_tp_coefficients[idx - 1] * self.num_of_observations) + 1
+                    end_idx = round(self._knots_tp_coefficients[idx] * self.num_of_observations) + 1
+                else:
+                    str_idx = round(self._knots_tp_coefficients[idx - 1] * self.num_of_observations) + 1
+                    end_idx = self.num_of_observations
+                local_val[:, idx] = np.mean(np.fabs(self._positive_regressor_matrix[str_idx:end_idx]), axis=0)
 
-        # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
-        # scale parameters
-        local_min = np.amin(local_val, axis=-1, keepdims=True)
-        local_max = np.amax(local_val, axis=-1, keepdims=True)
-        multiplier = (local_val - local_min) / (local_max - local_min) * 0.99 + 0.01
+            # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
+            # scale parameters
+            local_min = np.amin(local_val, axis=-1, keepdims=True)
+            local_max = np.amax(local_val, axis=-1, keepdims=True)
+            multiplier = (
+                    (local_val - local_min) / (local_max - local_min) *
+                    (DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER - DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER) +
+                    DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
+            )
 
-        # also note that after the following step,
-        # _positive_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
-        # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
-        self._positive_regressor_knot_scale = (
-                multiplier * np.expand_dims(self._positive_regressor_knot_scale, -1)
-        )
+            # also note that after the following step,
+            # _positive_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
+            # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
+            self._positive_regressor_knot_scale = (
+                    multiplier * np.expand_dims(self._positive_regressor_knot_scale, -1)
+            )
+
+        if self._num_of_regular_regressors > 0:
+            # do the same for regular regressor
+            # calculate average local absolute volume for each segment
+            local_val = np.ones((self._num_of_regular_regressors, self._num_knots_coefficients))
+
+            # store local value for the range on the left side since last knot
+            for idx in range(len(self._knots_tp_coefficients)):
+                if idx == 0:
+                    str_idx = 0
+                    end_idx = round(self._knots_tp_coefficients[idx]) + 1
+                elif idx < len(self._knots_tp_coefficients) - 1:
+                    str_idx = round(self._knots_tp_coefficients[idx - 1] * self.num_of_observations) + 1
+                    end_idx = round(self._knots_tp_coefficients[idx] * self.num_of_observations) + 1
+                else:
+                    str_idx = round(self._knots_tp_coefficients[idx - 1] * self.num_of_observations) + 1
+                    end_idx = self.num_of_observations
+                local_val[:, idx] = np.mean(np.fabs(self._regular_regressor_matrix[str_idx:end_idx]), axis=0)
+
+            # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
+            # scale parameters
+            local_min = np.amin(local_val, axis=-1, keepdims=True)
+            local_max = np.amax(local_val, axis=-1, keepdims=True)
+            multiplier = (
+                    (local_val - local_min) / (local_max - local_min) *
+                    (DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER - DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER) +
+                    DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
+            )
+            # FIXME: should not hit this; figure out better solution later
+            multiplier[np.isnan(multiplier)] = 1.0
+            # also note that after the following step,
+            # _positive_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
+            # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
+            self._regular_regressor_knot_scale = (
+                    multiplier * np.expand_dims(self._regular_regressor_knot_scale, -1)
+            )
 
     def _generate_tp(self, prediction_date_array):
         """Used in _generate_coefs"""
@@ -604,15 +625,15 @@ class BaseKTRX(BaseTemplate):
 
         Args
         ----
-        pr_beta : torch.tensor
+        pr_beta : array like
             postive-value constrainted regression betas
-        rr_beta : torch.tensor
+        rr_beta : array like
             regular regression betas
 
         Returns
         -------
-        torch.tensor
-            concatenated 2d tensor of shape (1, len(rr_beta) + len(pr_beta))
+        array like
+            concatenated 2d array of shape (1, len(rr_beta) + len(pr_beta))
 
         """
         regressor_beta = None
@@ -628,8 +649,17 @@ class BaseKTRX(BaseTemplate):
         return regressor_beta
 
     def _predict(self, posterior_estimates, df, include_error=False, decompose=False, store_prediction_array=False,
+                 coefficient_method='beta',
                  **kwargs):
-        """Vectorized version of prediction math"""
+        """Vectorized version of prediction math
+
+        Args
+        ----
+        coefficient_method: str
+            either "beta" or "knot"; when "beta" is used; curve are sampled/aggregated directly from beta posteriors
+            whereas when "knot" is used we first extract sampled/aggregated posteriors of knot and extract beta
+            this mainly impact the aggregated estimation method; full bayesian should not be impacted
+        """
 
         # remove reference from original input
         df = df.copy()
@@ -700,28 +730,9 @@ class BaseKTRX(BaseTemplate):
         trend = np.matmul(lev_knot, kernel_level.transpose(1, 0))
         regression = np.zeros(trend.shape)
         if self._num_of_regressors > 0:
-            coef_knot = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
-
-            # init of regression matrix depends on length of response vector
-            pred_regular_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
-            pred_positive_regressor_matrix = np.zeros((output_len, 0), dtype=np.double)
-
-            # update regression matrices
-            if self._num_of_regular_regressors > 0:
-                pred_regular_regressor_matrix = df.filter(
-                    items=self._regular_regressor_col,).values
-            if self._num_of_positive_regressors > 0:
-                pred_positive_regressor_matrix = df.filter(
-                    items=self._positive_regressor_col,).values
-            # regular first, then positive
-            pred_regressor_matrix = np.concatenate([pred_regular_regressor_matrix,
-                                                    pred_positive_regressor_matrix], axis=-1)
-            kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
-            # kernel_coefficients = parabolic_kernel(new_tp, self._knots_tp_coefficients)
-            regression = np.sum(
-                np.matmul(coef_knot, kernel_coefficients.transpose(1, 0)) *
-                pred_regressor_matrix.transpose(1, 0), axis=-2
-            )
+            regressor_matrix = df.filter(items=self._regressor_col,).values
+            regressor_betas = self._get_regression_coefs(model, coefficient_method, prediction_df_meta['date_array'])
+            regression = np.sum(regressor_betas * regressor_matrix, axis=-1)
 
         if include_error:
             epsilon = nct.rvs(self.degree_of_freedom, nc=0, loc=0,
@@ -748,38 +759,43 @@ class BaseKTRX(BaseTemplate):
 
         return decomp_dict
 
-    def get_regression_coefs(self, aggregate_method, include_ci=False, date_array=None,
-                             lower=0.05, upper=0.95):
-        """Return DataFrame regression coefficients
+    def _get_regression_coefs(self, model, coefficient_method='beta', date_array=None):
+        """internal function to provide coefficient matrix given a date array
 
-        If PredictMethod is `full` return `mean` of coefficients instead
+        Args
+        ----
+        model: dict
+            posterior samples
+        date_array: array like
+            array of date stamp
+        coefficient_method: str
+            either "beta" or "knot"; when "beta" is used; curve are sampled/aggregated directly from beta posteriors
+            whereas when "knot" is used we first extract sampled/aggregated posteriors of knot and extract beta
+            this mainly impact the aggregated estimation method; full bayesian should not be impacted
         """
-        # init dataframe
-        reg_df = pd.DataFrame()
-        # end if no regressors
         if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
-            return reg_df
+            return None
 
         if date_array is None:
-            # if date_array not specified, dynamic coefficients in the training perior will be retrieved
-            reg_df[self.date_col] = self.date_array
-            coef_knots = self._aggregate_posteriors \
-                .get(aggregate_method) \
-                .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
-            regressor_betas = np.squeeze(np.matmul(coef_knots, self._kernel_coefficients.transpose(1, 0)), axis=0)
-            regressor_betas = regressor_betas.transpose(1, 0)
+            if coefficient_method == 'knot':
+                # if date_array not specified, dynamic coefficients in the training perior will be retrieved
+                coef_knots = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+                regressor_betas = np.matmul(coef_knots, self._kernel_coefficients.transpose((1, 0)))
+                # back to time step x regressor columns shape
+                regressor_betas = regressor_betas.transpose((0, 2, 1))
+            elif coefficient_method == 'beta':
+                regressor_betas = model.get(constants.RegressionSamplingParameters.COEFFICIENTS.value)
+            else:
+                raise IllegalArgument('Wrong coefficient_method:{}'.format(coefficient_method))
         else:
-            date_array = pd.to_datetime(date_array).values
+            # some validation of date array
             if not is_ordered_datetime(date_array):
                 raise IllegalArgument('Datetime index must be ordered and not repeat')
-            reg_df[self.date_col] = date_array
-
-            # TODO: validate that all regressor columns are present, if any
+            date_array = pd.to_datetime(date_array).values
             prediction_start = date_array[0]
+
             if prediction_start < self.training_start:
                 raise PredictionException('Prediction start must be after training start.')
-
-            output_len = len(date_array)
 
             # If we cannot find a match of prediction range, assume prediction starts right after train end
             if prediction_start > self.training_end:
@@ -788,35 +804,41 @@ class BaseKTRX(BaseTemplate):
             else:
                 # time index for prediction start
                 start = pd.Index(self.date_array).get_loc(prediction_start)
-
+            output_len = len(date_array)
             new_tp = np.arange(start + 1, start + output_len + 1) / self.num_of_observations
 
-            kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
-            # kernel_coefficients = parabolic_kernel(new_tp, self._knots_tp_coefficients)
-            coef_knots = self._aggregate_posteriors \
-                .get(aggregate_method) \
-                .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
-            regressor_betas = np.squeeze(np.matmul(coef_knots, kernel_coefficients.transpose(1, 0)), axis=0)
-            regressor_betas = regressor_betas.transpose(1, 0)
+            if coefficient_method == 'knot':
+                kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+                # kernel_coefficients = parabolic_kernel(new_tp, self._knots_tp_coefficients)
+                coef_knots = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+                regressor_betas = np.matmul(coef_knots, kernel_coefficients.transpose((1, 0)))
+                regressor_betas = regressor_betas.transpose((0, 2, 1))
+            elif coefficient_method == 'beta':
+                regressor_betas = model.get(constants.RegressionSamplingParameters.COEFFICIENTS.value)
+            else:
+                raise IllegalArgument('Wrong coefficient_method:{}'.format(coefficient_method))
 
-        # get column names
-        rr_cols = self._regular_regressor_col
-        pr_cols = self._positive_regressor_col
-        regressor_col = rr_cols + pr_cols
-        for idx, col in enumerate(regressor_col):
-            reg_df[col] = regressor_betas[:, idx]
+        return regressor_betas
 
+    def get_regression_coefs(self, aggregate_method, coefficient_method='beta', include_ci=False,
+                             lower=0.05, upper=0.95):
+        """Return DataFrame regression coefficients
+        """
+        posteriors = self._aggregate_posteriors.get(aggregate_method)
+        regressor_betas = np.squeeze(self._get_regression_coefs(posteriors, coefficient_method=coefficient_method))
+        reg_df = pd.DataFrame(data=regressor_betas, columns=self._regressor_col)
+        reg_df[self.date_col] = self.date_array
+        # re-arrange columns
+        reg_df = reg_df[[self.date_col] + self._regressor_col]
         if include_ci:
-            posterior_samples = self._posterior_samples
-            param_ndarray = posterior_samples.get(constants.RegressionSamplingParameters.COEFFICIENTS.value)
-            coefficients_lower = np.quantile(param_ndarray, [lower], axis=0)
-            coefficients_upper = np.quantile(param_ndarray, [upper], axis=0)
+            coefficients_lower = np.quantile(regressor_betas, [lower], axis=0)
+            coefficients_upper = np.quantile(regressor_betas, [upper], axis=0)
             coefficients_lower = np.squeeze(coefficients_lower, axis=0)
             coefficients_upper = np.squeeze(coefficients_upper, axis=0)
 
             reg_df_lower = reg_df.copy()
             reg_df_upper = reg_df.copy()
-            for idx, col in enumerate(regressor_col):
+            for idx, col in enumerate(self._regressor_col):
                 reg_df_lower[col] = coefficients_lower[:, idx]
                 reg_df_upper[col] = coefficients_upper[:, idx]
             return reg_df, reg_df_lower, reg_df_upper
@@ -825,8 +847,6 @@ class BaseKTRX(BaseTemplate):
 
     def get_regression_coef_knots(self, aggregate_method):
         """Return DataFrame regression coefficient knots
-
-        If PredictMethod is `full` return `mean` of coefficient knots instead
         """
         # init dataframe
         knots_df = pd.DataFrame()
@@ -890,7 +910,6 @@ class KTRXFull(FullBayesianTemplate, BaseKTRX):
         self._set_aggregate_posteriors()
         return super().get_regression_coefs(aggregate_method=aggregate_method,
                                             include_ci=include_ci,
-                                            date_array=date_array,
                                             lower=lower,
                                             upper=upper)
 
@@ -921,18 +940,17 @@ class KTRXAggregated(AggregatedPosteriorTemplate, BaseKTRX):
     """Concrete KTRX model for aggregated Bayesian prediction"""
     _supported_estimator_types = [PyroEstimatorVI]
 
-    def __init__(self, aggregate_method='mean', **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def get_regression_coefs(self, date_array=None):
+    def get_regression_coefs(self, coefficient_method='beta'):
         return super().get_regression_coefs(aggregate_method=self.aggregate_method,
-                                            include_ci=False,
-                                            date_array=date_array)
+                                            coefficient_method=coefficient_method,
+                                            include_ci=False)
 
     def get_regression_coef_knots(self):
         return super().get_regression_coef_knots(aggregate_method=self.aggregate_method)
 
-    def plot_regression_coefs(self, date_array=None, **kwargs):
-        coef_df = self.get_regression_coefs(date_array=date_array)
-        return super().plot_regression_coefs(coef_df=coef_df,
-                                             **kwargs)
+    def plot_regression_coefs(self, coefficient_method='beta', **kwargs):
+        coef_df = self.get_regression_coefs(coefficient_method=coefficient_method)
+        return super().plot_regression_coefs(coef_df=coef_df, **kwargs)

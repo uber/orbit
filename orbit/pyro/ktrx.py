@@ -80,13 +80,13 @@ class Model:
         mvn = self.mvn
 
         # expand dim to n_rr x n_knots_coef
-        rr_knot_pool_loc = self.rr_knot_pool_loc
-        rr_knot_pool_scale = self.rr_knot_pool_scale
-        rr_knot_scale = self.rr_knot_scale.unsqueeze(-1)
+        rr_knot_init_loc = self.rr_knot_init_loc
+        rr_knot_init_scale = self.rr_knot_init_scale
+        rr_knot_scale = self.rr_knot_scale
 
         # this does not need to expand dim since it is used as latent grand mean
-        pr_knot_pool_loc = self.pr_knot_pool_loc
-        pr_knot_pool_scale = self.pr_knot_pool_scale
+        pr_knot_init_loc = self.pr_knot_init_loc
+        pr_knot_init_scale = self.pr_knot_init_scale
         pr_knot_scale = self.pr_knot_scale
 
         # transformation of data
@@ -117,8 +117,8 @@ class Model:
                 # pooling latent variables
                 rr_knot_loc = pyro.sample(
                     "rr_knot_loc", dist.Normal(
-                        rr_knot_pool_loc,
-                        rr_knot_pool_scale).to_event(1)
+                        rr_knot_init_loc,
+                        rr_knot_init_scale).to_event(1)
                 )
                 rr_knot = pyro.sample(
                     "rr_knot",
@@ -133,13 +133,14 @@ class Model:
                 pr_knot_init = pyro.sample(
                     "pr_knot_init",
                     dist.FoldedDistribution(
-                        dist.Normal(torch.zeros(n_pr), pr_knot_pool_scale)
+                        dist.Normal(torch.zeros(n_pr), pr_knot_init_scale)
                     ).to_event(1)
                 ).log()
                 pr_knot_loc = pr_knot_init
                 pr_knot_step = pyro.sample(
                     "pr_knot_step",
-                    # dist.Normal(0, 0.03).expand([n_pr, n_knots_coef - 1]).to_event(2)
+                    # note that unlike rr_knot, the first one is ignored as we use the initial scale
+                    # to sample the first knot
                     dist.Normal(torch.zeros(n_pr, n_knots_coef - 1), pr_knot_scale[..., 1:]).to_event(2)
                 )
                 pr_knot = torch.cat((pr_knot_init.unsqueeze(-1), pr_knot_step), -1).cumsum(-1).exp()
@@ -147,11 +148,11 @@ class Model:
         else:
             # regular regressor sampling
             if n_rr > 0:
-                rr_knot_loc = pyro.deterministic("rr_knot_loc", torch.zeros(rr_knot_pool_loc.shape))
+                rr_knot_loc = pyro.deterministic("rr_knot_loc", torch.zeros(rr_knot_init_loc.shape))
 
                 # updated mod
-                loc_temp = rr_knot_pool_loc.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef)
-                scale_temp = torch.diag_embed(rr_knot_pool_scale.unsqueeze(-1) * torch.ones(  n_rr, n_knots_coef))
+                loc_temp = rr_knot_init_loc.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef)
+                scale_temp = torch.diag_embed(rr_knot_init_scale.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef))
 
                 # the sampling
                 rr_knot = pyro.sample(
@@ -170,13 +171,13 @@ class Model:
                 pr_knot_loc = pyro.sample(
                     "pr_knot_loc",
                     dist.FoldedDistribution(
-                        dist.Normal(pr_knot_pool_loc,
-                                    pr_knot_pool_scale)
+                        dist.Normal(pr_knot_init_loc,
+                                    pr_knot_init_scale)
                     ).to_event(1)
                 )
                 # updated mod
-                loc_temp = pr_knot_pool_loc.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef)
-                scale_temp = torch.diag_embed(pr_knot_pool_scale.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef))
+                loc_temp = pr_knot_init_loc.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef)
+                scale_temp = torch.diag_embed(pr_knot_init_scale.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef))
 
                 pr_knot = pyro.sample(
                     "pr_knot",
@@ -190,7 +191,7 @@ class Model:
 
         # concatenating all latent variables
         coef_knot = torch.zeros(n_knots_coef)
-        coef_knot_loc = torch.zeros(pr_knot_pool_loc.shape)
+        coef_knot_loc = torch.zeros(pr_knot_init_loc.shape)
         coef = torch.zeros(n_obs)
         if n_pr > 0 and n_rr > 0:
             coef_knot = torch.cat([rr_knot, pr_knot], dim=-2)
