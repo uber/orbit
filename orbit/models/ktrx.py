@@ -375,7 +375,7 @@ class BaseKTRX(BaseTemplate):
         # Note that our tp starts by 1; to convert back to index of array, reduce it by 1
         tp = np.arange(1, self.num_of_observations + 1) / self.num_of_observations
         # this approach put knots in full range
-        # TODO: consider deprecate _cutoff for now?
+        # TODO: consider deprecate _cutoff for now since we assume _cutoff always the same as num of obs?
         self._cutoff = self.num_of_observations
         self._kernel_coefficients = np.zeros((self.num_of_observations, 0), dtype=np.double)
         self._num_knots_coefficients = 0
@@ -385,15 +385,30 @@ class BaseKTRX(BaseTemplate):
             # if users didn't provide knot positions, evenly distribute it based on span_coefficients
             # or knot length provided by users
             if self._coefficients_knot_dates is None:
-                if self.coefficients_knot_length is not None:
-                    knots_distance = self.coefficients_knot_length
-                else:
-                    number_of_knots = round(1 / self.span_coefficients)
-                    knots_distance = math.ceil(self._cutoff / number_of_knots)
+                # original code
+                # if self.coefficients_knot_length is not None:
+                #     knots_distance = self.coefficients_knot_length
+                # else:
+                #     number_of_knots = round(1 / self.span_coefficients)
+                #     knots_distance = math.ceil(self._cutoff / number_of_knots)
+                # # derive actual date arrays based on the time-point (tp) index
+                # knots_idx_coef = self._set_knots_tp(knots_distance, self._cutoff)
+                # self._knots_tp_coefficients = (1 + knots_idx_coef) / self.num_of_observations
+                # self._coefficients_knot_dates = df[self.date_col].values[knots_idx_coef]
+
+                # ignore this case for now
+                # if self.coefficients_knot_length is not None:
+                #     knots_distance = self.coefficients_knot_length
+                # else:
+                number_of_knots = round(1 / self.span_coefficients)
+                # to work with index; has to be discrete
+                knots_distance = math.ceil(self._cutoff / number_of_knots)
+                # always has a knot at the starting point
                 # derive actual date arrays based on the time-point (tp) index
-                knots_idx_coef = self._set_knots_tp(knots_distance, self._cutoff)
+                knots_idx_coef = np.arange(0, self._cutoff, knots_distance)
                 self._knots_tp_coefficients = (1 + knots_idx_coef) / self.num_of_observations
                 self._coefficients_knot_dates = df[self.date_col].values[knots_idx_coef]
+                self._knots_idx_coef = knots_idx_coef
             else:
                 # FIXME: this only works up to daily series (not working on hourly series)
                 self._coefficients_knot_dates = pd.to_datetime([
@@ -418,17 +433,15 @@ class BaseKTRX(BaseTemplate):
         local_val = np.ones((self._num_of_positive_regressors, self._num_knots_coefficients))
 
         if self._num_of_positive_regressors > 0:
-            # store local value for the range on the left side since last knot
-            for idx in range(len(self._knots_tp_coefficients)):
-                if idx == 0:
-                    str_idx = 0
-                    end_idx = round(self._knots_tp_coefficients[idx]) + 1
-                elif idx < len(self._knots_tp_coefficients) - 1:
-                    str_idx = round(self._knots_tp_coefficients[idx - 1] * self.num_of_observations) + 1
-                    end_idx = round(self._knots_tp_coefficients[idx] * self.num_of_observations) + 1
+            # store local value for the range on the right side since last knot
+            for idx in range(len(self._knots_idx_coef)):
+                if idx < len(self._knots_idx_coef) - 1:
+                    str_idx = self._knots_idx_coef[idx]
+                    end_idx = self._knots_idx_coef[idx + 1]
                 else:
-                    str_idx = round(self._knots_tp_coefficients[idx - 1] * self.num_of_observations) + 1
+                    str_idx = self._knots_idx_coef[idx]
                     end_idx = self.num_of_observations
+
                 local_val[:, idx] = np.mean(np.fabs(self._positive_regressor_matrix[str_idx:end_idx]), axis=0)
 
             # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
@@ -440,7 +453,7 @@ class BaseKTRX(BaseTemplate):
                     (DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER - DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER) +
                     DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
             )
-
+            multiplier = np.ones(multiplier.shape)
             # also note that after the following step,
             # _positive_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
             # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
@@ -453,19 +466,16 @@ class BaseKTRX(BaseTemplate):
             # do the same for regular regressor
             # calculate average local absolute volume for each segment
             local_val = np.ones((self._num_of_regular_regressors, self._num_knots_coefficients))
-
-            # store local value for the range on the left side since last knot
-            for idx in range(len(self._knots_tp_coefficients)):
-                if idx == 0:
-                    str_idx = 0
-                    end_idx = round(self._knots_tp_coefficients[idx]) + 1
-                elif idx < len(self._knots_tp_coefficients) - 1:
-                    str_idx = round(self._knots_tp_coefficients[idx - 1] * self.num_of_observations) + 1
-                    end_idx = round(self._knots_tp_coefficients[idx] * self.num_of_observations) + 1
+            # store local value for the range on the right side since last knot
+            for idx in range(len(self._knots_idx_coef)):
+                if idx < len(self._knots_idx_coef) - 1:
+                    str_idx = self._knots_idx_coef[idx]
+                    end_idx = self._knots_idx_coef[idx + 1]
                 else:
-                    str_idx = round(self._knots_tp_coefficients[idx - 1] * self.num_of_observations) + 1
+                    str_idx = self._knots_idx_coef[idx]
                     end_idx = self.num_of_observations
-                local_val[:, idx] = np.mean(np.fabs(self._regular_regressor_matrix[str_idx:end_idx]), axis=0)
+
+                local_val[:, idx] = np.mean(np.fabs(self._positive_regressor_matrix[str_idx:end_idx]), axis=0)
 
             # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
             # scale parameters
@@ -482,6 +492,8 @@ class BaseKTRX(BaseTemplate):
             # _positive_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
             # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
             # self._regular_regressor_knot_scale has shape num_of_pr x num_of_knot
+            # debug
+            multiplier = np.ones(multiplier.shape)
             self._regular_regressor_knot_scale = (
                     multiplier * np.expand_dims(self._regular_regressor_knot_scale, -1)
             )
