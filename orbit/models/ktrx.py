@@ -100,6 +100,8 @@ class BaseKTRX(BaseTemplate):
                  coefficients_knot_dates=None,
                  date_freq=None,
                  mvn=0,
+                 flat_multiplier=True,
+                 geometric_walk=True,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
 
@@ -134,6 +136,9 @@ class BaseKTRX(BaseTemplate):
 
         # multi var norm flag
         self.mvn = mvn
+        # flat_multiplier flag
+        self.flat_multiplier = flat_multiplier
+        self.geometric_walk = geometric_walk
 
         # set private var to arg value
         # if None set default in _set_default_args()
@@ -453,7 +458,8 @@ class BaseKTRX(BaseTemplate):
                     (DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER - DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER) +
                     DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
             )
-            multiplier = np.ones(multiplier.shape)
+            if self.flat_multiplier:
+                multiplier = np.ones(multiplier.shape)
             # also note that after the following step,
             # _positive_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
             # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
@@ -486,14 +492,13 @@ class BaseKTRX(BaseTemplate):
                     (DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER - DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER) +
                     DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
             )
-            # FIXME: should not hit this; figure out better solution later
-            multiplier[np.isnan(multiplier)] = 1.0
+
             # also note that after the following step,
             # _positive_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
             # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
             # self._regular_regressor_knot_scale has shape num_of_pr x num_of_knot
-            # debug
-            multiplier = np.ones(multiplier.shape)
+            if self.flat_multiplier:
+                multiplier = np.ones(multiplier.shape)
             self._regular_regressor_knot_scale = (
                     multiplier * np.expand_dims(self._regular_regressor_knot_scale, -1)
             )
