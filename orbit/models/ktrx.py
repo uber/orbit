@@ -12,8 +12,8 @@ from ..constants.constants import (
 )
 from ..constants.ktrx import (
     DEFAULT_REGRESSOR_SIGN,
-    DEFAULT_COEFFICIENTS_KNOT_INIT_SCALE,
-    DEFAULT_COEFFICIENTS_KNOT_INIT_LOC,
+    DEFAULT_COEFFICIENTS_INIT_KNOT_SCALE,
+    DEFAULT_COEFFICIENTS_INIT_KNOT_LOC,
     DEFAULT_COEFFICIENTS_KNOT_SCALE,
     DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER,
     DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER,
@@ -38,9 +38,9 @@ class BaseKTRX(BaseTemplate):
         regressor columns
     regressor_sign : list
         list of signs with '=' for regular regressor and '+' for positive regressor
-    regressor_knot_init_loc : list
+    regressor_init_knot_loc : list
         list of regressor knot pooling mean priors, default to be 0's
-    regressor_knot_init_scale : list
+    regressor_init_knot_scale : list
         list of regressor knot pooling sigma's to control the pooling strength towards the grand mean of regressors;
         default to be 1.
     regressor_knot_scale : list
@@ -84,8 +84,8 @@ class BaseKTRX(BaseTemplate):
                  level_knot_scale=0.1,
                  regressor_col=None,
                  regressor_sign=None,
-                 regressor_knot_init_loc=None,
-                 regressor_knot_init_scale=None,
+                 regressor_init_knot_loc=None,
+                 regressor_init_knot_scale=None,
                  regressor_knot_scale=None,
                  span_coefficients=0.3,
                  rho_coefficients=0.15,
@@ -121,8 +121,8 @@ class BaseKTRX(BaseTemplate):
 
         self.regressor_col = regressor_col
         self.regressor_sign = regressor_sign
-        self.regressor_knot_init_loc = regressor_knot_init_loc
-        self.regressor_knot_init_scale = regressor_knot_init_scale
+        self.regressor_init_knot_loc = regressor_init_knot_loc
+        self.regressor_init_knot_scale = regressor_init_knot_scale
         self.regressor_knot_scale = regressor_knot_scale
 
         self.coefficients_knot_length = coefficients_knot_length
@@ -138,8 +138,8 @@ class BaseKTRX(BaseTemplate):
         # set private var to arg value
         # if None set default in _set_default_args()
         self._regressor_sign = self.regressor_sign
-        self._regressor_knot_init_loc = self.regressor_knot_init_loc
-        self._regressor_knot_init_scale = self.regressor_knot_init_scale
+        self._regressor_init_knot_loc = self.regressor_init_knot_loc
+        self._regressor_init_knot_scale = self.regressor_init_knot_scale
         self._regressor_knot_scale = self.regressor_knot_scale
 
         self.coef_prior_list = coef_prior_list
@@ -152,14 +152,14 @@ class BaseKTRX(BaseTemplate):
         # positive regressors
         self._num_of_positive_regressors = 0
         self._positive_regressor_col = list()
-        self._positive_regressor_knot_init_loc = list()
-        self._positive_regressor_knot_init_scale = list()
+        self._positive_regressor_init_knot_loc = list()
+        self._positive_regressor_init_knot_scale = list()
         self._positive_regressor_knot_scale = list()
         # regular regressors
         self._num_of_regular_regressors = 0
         self._regular_regressor_col = list()
-        self._regular_regressor_knot_init_loc = list()
-        self._regular_regressor_knot_init_scale = list()
+        self._regular_regressor_init_knot_loc = list()
+        self._regular_regressor_init_knot_scale = list()
         self._regular_regressor_knot_scale = list()
         self._regressor_col = list()
 
@@ -201,8 +201,8 @@ class BaseKTRX(BaseTemplate):
             # regardless of what args are set for these, if regressor_col is None
             # these should all be empty lists
             self._regressor_sign = list()
-            self._regressor_knot_init_loc = list()
-            self._regressor_knot_init_scale = list()
+            self._regressor_init_knot_loc = list()
+            self._regressor_init_knot_scale = list()
             self._regressor_knot_scale = list()
 
             return
@@ -216,19 +216,19 @@ class BaseKTRX(BaseTemplate):
         num_of_regressors = len(self.regressor_col)
 
         _validate_params_len([
-            self.regressor_sign, self.regressor_knot_init_loc,
-            self.regressor_knot_init_scale, self.regressor_knot_scale],
+            self.regressor_sign, self.regressor_init_knot_loc,
+            self.regressor_init_knot_scale, self.regressor_knot_scale],
             num_of_regressors
         )
 
         if self.regressor_sign is None:
             self._regressor_sign = [DEFAULT_REGRESSOR_SIGN] * num_of_regressors
 
-        if self.regressor_knot_init_loc is None:
-            self._regressor_knot_init_loc = [DEFAULT_COEFFICIENTS_KNOT_INIT_LOC] * num_of_regressors
+        if self.regressor_init_knot_loc is None:
+            self._regressor_init_knot_loc = [DEFAULT_COEFFICIENTS_INIT_KNOT_LOC] * num_of_regressors
 
-        if self.regressor_knot_init_scale is None:
-            self._regressor_knot_init_scale = [DEFAULT_COEFFICIENTS_KNOT_INIT_SCALE] * num_of_regressors
+        if self.regressor_init_knot_scale is None:
+            self._regressor_init_knot_scale = [DEFAULT_COEFFICIENTS_INIT_KNOT_SCALE] * num_of_regressors
 
         if self.regressor_knot_scale is None:
             self._regressor_knot_scale = [DEFAULT_COEFFICIENTS_KNOT_SCALE] * num_of_regressors
@@ -245,26 +245,26 @@ class BaseKTRX(BaseTemplate):
                 self._num_of_positive_regressors += 1
                 self._positive_regressor_col.append(self.regressor_col[index])
                 # used for 'pr_knot_loc' sampling in pyro
-                self._positive_regressor_knot_init_loc.append(self._regressor_knot_init_loc[index])
-                self._positive_regressor_knot_init_scale.append(self._regressor_knot_init_scale[index])
+                self._positive_regressor_init_knot_loc.append(self._regressor_init_knot_loc[index])
+                self._positive_regressor_init_knot_scale.append(self._regressor_init_knot_scale[index])
                 # used for 'pr_knot' sampling in pyro
                 self._positive_regressor_knot_scale.append(self._regressor_knot_scale[index])
             else:
                 self._num_of_regular_regressors += 1
                 self._regular_regressor_col.append(self.regressor_col[index])
                 # used for 'rr_knot_loc' sampling in pyro
-                self._regular_regressor_knot_init_loc.append(self._regressor_knot_init_loc[index])
-                self._regular_regressor_knot_init_scale.append(self._regressor_knot_init_scale[index])
+                self._regular_regressor_init_knot_loc.append(self._regressor_init_knot_loc[index])
+                self._regular_regressor_init_knot_scale.append(self._regressor_init_knot_scale[index])
                 # used for 'rr_knot' sampling in pyro
                 self._regular_regressor_knot_scale.append(self._regressor_knot_scale[index])
         # regular first, then positive
         self._regressor_col = self._regular_regressor_col + self._positive_regressor_col
         # numpy conversion
-        self._positive_regressor_knot_init_loc = np.array(self._positive_regressor_knot_init_loc)
-        self._positive_regressor_knot_init_scale = np.array(self._positive_regressor_knot_init_scale)
+        self._positive_regressor_init_knot_loc = np.array(self._positive_regressor_init_knot_loc)
+        self._positive_regressor_init_knot_scale = np.array(self._positive_regressor_init_knot_scale)
         self._positive_regressor_knot_scale = np.array(self._positive_regressor_knot_scale)
-        self._regular_regressor_knot_init_loc = np.array(self._regular_regressor_knot_init_loc)
-        self._regular_regressor_knot_init_scale = np.array(self._regular_regressor_knot_init_scale)
+        self._regular_regressor_init_knot_loc = np.array(self._regular_regressor_init_knot_loc)
+        self._regular_regressor_init_knot_scale = np.array(self._regular_regressor_init_knot_scale)
         self._regular_regressor_knot_scale = np.array(self._regular_regressor_knot_scale)
 
     @staticmethod
@@ -444,6 +444,7 @@ class BaseKTRX(BaseTemplate):
             # also note that after the following step,
             # _positive_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
             # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
+            # self._positive_regressor_knot_scale has shape num_of_pr x num_of_knot
             self._positive_regressor_knot_scale = (
                     multiplier * np.expand_dims(self._positive_regressor_knot_scale, -1)
             )
@@ -480,6 +481,7 @@ class BaseKTRX(BaseTemplate):
             # also note that after the following step,
             # _positive_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
             # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
+            # self._regular_regressor_knot_scale has shape num_of_pr x num_of_knot
             self._regular_regressor_knot_scale = (
                     multiplier * np.expand_dims(self._regular_regressor_knot_scale, -1)
             )
@@ -727,7 +729,7 @@ class BaseKTRX(BaseTemplate):
             # follow component shapes
             seas = np.zeros((1, output_len))
 
-        trend = np.matmul(lev_knot, kernel_level.transpose(1, 0))
+        trend = np.matmul(lev_knot, kernel_level.transpose((1, 0)))
         regression = np.zeros(trend.shape)
         if self._num_of_regressors > 0:
             regressor_matrix = df.filter(items=self._regressor_col,).values
@@ -781,7 +783,7 @@ class BaseKTRX(BaseTemplate):
                 # if date_array not specified, dynamic coefficients in the training perior will be retrieved
                 coef_knots = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
                 regressor_betas = np.matmul(coef_knots, self._kernel_coefficients.transpose((1, 0)))
-                # back to time step x regressor columns shape
+                # back to batch x time step x regressor columns shape
                 regressor_betas = regressor_betas.transpose((0, 2, 1))
             elif coefficient_method == 'beta':
                 regressor_betas = model.get(constants.RegressionSamplingParameters.COEFFICIENTS.value)
@@ -814,7 +816,8 @@ class BaseKTRX(BaseTemplate):
                 regressor_betas = np.matmul(coef_knots, kernel_coefficients.transpose((1, 0)))
                 regressor_betas = regressor_betas.transpose((0, 2, 1))
             elif coefficient_method == 'beta':
-                regressor_betas = model.get(constants.RegressionSamplingParameters.COEFFICIENTS.value)
+                regressor_betas = model.get(
+                    constants.RegressionSamplingParameters.COEFFICIENTS.value)[:, start:start + output_len, :]
             else:
                 raise IllegalArgument('Wrong coefficient_method:{}'.format(coefficient_method))
 
