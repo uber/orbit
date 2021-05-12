@@ -848,21 +848,26 @@ class BaseKTRX(BaseTemplate):
         """
         posteriors = self._aggregate_posteriors.get(aggregate_method)
         regressor_betas = np.squeeze(self._get_regression_coefs(posteriors, coefficient_method=coefficient_method))
+        print(regressor_betas.shape)
         reg_df = pd.DataFrame(data=regressor_betas, columns=self._regressor_col)
         reg_df[self.date_col] = self.date_array
+        print(reg_df.shape)
         # re-arrange columns
         reg_df = reg_df[[self.date_col] + self._regressor_col]
         if include_ci:
             coefficients_lower = np.quantile(regressor_betas, [lower], axis=0)
             coefficients_upper = np.quantile(regressor_betas, [upper], axis=0)
+
             coefficients_lower = np.squeeze(coefficients_lower, axis=0)
             coefficients_upper = np.squeeze(coefficients_upper, axis=0)
+            print(regressor_betas.shape)
+            print(coefficients_lower)
 
             reg_df_lower = reg_df.copy()
             reg_df_upper = reg_df.copy()
             for idx, col in enumerate(self._regressor_col):
-                reg_df_lower[col] = coefficients_lower[:, idx]
-                reg_df_upper[col] = coefficients_upper[:, idx]
+                reg_df_lower[col] = coefficients_lower[ idx] # :,
+                reg_df_upper[col] = coefficients_upper[ idx] # :,
             return reg_df, reg_df_lower, reg_df_upper
 
         return reg_df
