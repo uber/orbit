@@ -100,7 +100,7 @@ class BaseKTRX(BaseTemplate):
                  coefficients_knot_dates=None,
                  date_freq=None,
                  mvn=0,
-                 flat_multiplier=True,
+                 flat_multiplier=False,
                  geometric_walk=True,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class

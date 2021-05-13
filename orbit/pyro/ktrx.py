@@ -250,7 +250,11 @@ class Model:
 
         # observation likelihood
         yhat = lev + (regressors * coef).sum(-1)
-        obs_scale = pyro.sample("obs_scale", dist.HalfCauchy(sdy)).unsqueeze(-1)
+        # obs_scale = pyro.sample("obs_scale", dist.Uniform(0.5 * sdy, 0.8 * sdy)).unsqueeze(-1)
+        obs_scale_base = pyro.sample("obs_scale_base", dist.Beta(2, 2)).unsqueeze(-1)
+        # from 0.5 * sdy to sdy
+        obs_scale = ((obs_scale_base * 0.5) + 0.5) * sdy
+
         # with pyro.plate("response_plate", n_valid):
         #     pyro.sample("response",
         #                 dist.StudentT(dof, yhat[..., which_valid], obs_scale),
@@ -269,5 +273,6 @@ class Model:
             'coef': coef,
             'coef_knot': coef_knot,
             'coef_init_knot': coef_init_knot,
+            'obs_scale': obs_scale,
         })
         return extra_out
