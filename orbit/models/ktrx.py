@@ -483,7 +483,7 @@ class BaseKTRX(BaseTemplate):
                     str_idx = self._knots_idx_coef[idx]
                     end_idx = self.num_of_observations
 
-                local_val[:, idx] = np.mean(np.fabs(self._positive_regressor_matrix[str_idx:end_idx]), axis=0)
+                local_val[:, idx] = np.mean(np.fabs(self._regular_regressor_matrix[str_idx:end_idx]), axis=0)
 
             # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
             # scale parameters
