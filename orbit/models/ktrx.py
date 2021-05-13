@@ -391,31 +391,33 @@ class BaseKTRX(BaseTemplate):
             # or knot length provided by users
             if self._coefficients_knot_dates is None:
                 # original code
-                # if self.coefficients_knot_length is not None:
-                #     knots_distance = self.coefficients_knot_length
-                # else:
-                #     number_of_knots = round(1 / self.span_coefficients)
-                #     knots_distance = math.ceil(self._cutoff / number_of_knots)
-                # # derive actual date arrays based on the time-point (tp) index
-                # knots_idx_coef = self._set_knots_tp(knots_distance, self._cutoff)
-                # self._knots_tp_coefficients = (1 + knots_idx_coef) / self.num_of_observations
-                # self._coefficients_knot_dates = df[self.date_col].values[knots_idx_coef]
-
-                # ignore this case for now
-                # if self.coefficients_knot_length is not None:
-                #     knots_distance = self.coefficients_knot_length
-                # else:
-                number_of_knots = round(1 / self.span_coefficients)
-                # to work with index; has to be discrete
-                knots_distance = math.ceil(self._cutoff / number_of_knots)
-                # always has a knot at the starting point
+                if self.coefficients_knot_length is not None:
+                    knots_distance = self.coefficients_knot_length
+                else:
+                    number_of_knots = round(1 / self.span_coefficients)
+                    knots_distance = math.ceil(self._cutoff / number_of_knots)
                 # derive actual date arrays based on the time-point (tp) index
-                knots_idx_coef = np.arange(0, self._cutoff, knots_distance)
+                knots_idx_coef = self._set_knots_tp(knots_distance, self._cutoff)
                 self._knots_tp_coefficients = (1 + knots_idx_coef) / self.num_of_observations
                 self._coefficients_knot_dates = df[self.date_col].values[knots_idx_coef]
                 self._knots_idx_coef = knots_idx_coef
+                # TODO: new idea
+                # # ignore this case for now
+                # # if self.coefficients_knot_length is not None:
+                # #     knots_distance = self.coefficients_knot_length
+                # # else:
+                # number_of_knots = round(1 / self.span_coefficients)
+                # # to work with index; has to be discrete
+                # knots_distance = math.ceil(self._cutoff / number_of_knots)
+                # # always has a knot at the starting point
+                # # derive actual date arrays based on the time-point (tp) index
+                # knots_idx_coef = np.arange(0, self._cutoff, knots_distance)
+                # self._knots_tp_coefficients = (1 + knots_idx_coef) / self.num_of_observations
+                # self._coefficients_knot_dates = df[self.date_col].values[knots_idx_coef]
+                # self._knots_idx_coef = knots_idx_coef
             else:
                 # FIXME: this only works up to daily series (not working on hourly series)
+                # FIXME: didn't provide  self.knots_idx_coef in this case
                 self._coefficients_knot_dates = pd.to_datetime([
                     x for x in self._coefficients_knot_dates if (x <= df[self.date_col].max()) \
                                                                 and (x >= df[self.date_col].min())
