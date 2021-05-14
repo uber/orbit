@@ -79,7 +79,11 @@ class Model:
         # mult var norm stuff
         mvn = self.mvn
         geometric_walk = self.geometric_walk
-
+        min_residuals_sd = self.min_residuals_sd
+        if min_residuals_sd > 1.0:
+            min_residuals_sd = torch.tensor(1.0)
+        if min_residuals_sd < 0:
+            min_residuals_sd = torch.tensor(0.0)
         # expand dim to n_rr x n_knots_coef
         rr_init_knot_loc = self.rr_init_knot_loc
         rr_init_knot_scale = self.rr_init_knot_scale
@@ -250,10 +254,9 @@ class Model:
 
         # observation likelihood
         yhat = lev + (regressors * coef).sum(-1)
-        # obs_scale = pyro.sample("obs_scale", dist.Uniform(0.5 * sdy, 0.8 * sdy)).unsqueeze(-1)
         obs_scale_base = pyro.sample("obs_scale_base", dist.Beta(2, 2)).unsqueeze(-1)
         # from 0.5 * sdy to sdy
-        obs_scale = ((obs_scale_base * 0.5) + 0.5) * sdy
+        obs_scale = ((obs_scale_base * (1.0 - min_residuals_sd)) + min_residuals_sd) * sdy
 
         # with pyro.plate("response_plate", n_valid):
         #     pyro.sample("response",

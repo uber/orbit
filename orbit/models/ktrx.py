@@ -102,6 +102,7 @@ class BaseKTRX(BaseTemplate):
                  mvn=0,
                  flat_multiplier=False,
                  geometric_walk=True,
+                 min_residuals_sd=0.5,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
 
@@ -139,6 +140,7 @@ class BaseKTRX(BaseTemplate):
         # flat_multiplier flag
         self.flat_multiplier = flat_multiplier
         self.geometric_walk = geometric_walk
+        self.min_residuals_sd = min_residuals_sd
 
         # set private var to arg value
         # if None set default in _set_default_args()
@@ -150,6 +152,7 @@ class BaseKTRX(BaseTemplate):
         self.coef_prior_list = coef_prior_list
         self._coef_prior_list = []
         self._coefficients_knot_dates = coefficients_knot_dates
+        self._knots_idx_coef = None
 
         self._num_of_regressors = 0
         self._num_knots_coefficients = 0
@@ -425,10 +428,14 @@ class BaseKTRX(BaseTemplate):
                 if self.date_freq is None:
                     self.date_freq = pd.infer_freq(df[self.date_col])[0]
                 start_date = self.training_start
+                self._knots_idx_coef = (
+                        self._get_gap_between_dates(start_date, self._coefficients_knot_dates, self.date_freq)
+                )
                 self._knots_tp_coefficients = np.array(
-                    (self._get_gap_between_dates(start_date, self._coefficients_knot_dates, self.date_freq) + 1) /
+                    (self._knots_idx_coef + 1) /
                     (self._get_gap_between_dates(start_date, self.training_end, self.date_freq) + 1)
                 )
+                self._knots_idx_coef = list(self._knots_idx_coef.astype(np.int32))
 
             kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
 
@@ -440,7 +447,7 @@ class BaseKTRX(BaseTemplate):
         local_val = np.ones((self._num_of_positive_regressors, self._num_knots_coefficients))
 
         if self._num_of_positive_regressors > 0:
-            # store local value for the range on the right side since last knot
+            # store local value for the range on the left side since last knot
             for idx in range(len(self._knots_idx_coef)):
                 if idx < len(self._knots_idx_coef) - 1:
                     str_idx = self._knots_idx_coef[idx]
@@ -474,7 +481,7 @@ class BaseKTRX(BaseTemplate):
             # do the same for regular regressor
             # calculate average local absolute volume for each segment
             local_val = np.ones((self._num_of_regular_regressors, self._num_knots_coefficients))
-            # store local value for the range on the right side since last knot
+            # store local value for the range on the left side since last knot
             for idx in range(len(self._knots_idx_coef)):
                 if idx < len(self._knots_idx_coef) - 1:
                     str_idx = self._knots_idx_coef[idx]
