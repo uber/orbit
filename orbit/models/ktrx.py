@@ -431,6 +431,7 @@ class BaseKTRX(BaseTemplate):
                 self._knots_idx_coef = (
                         self._get_gap_between_dates(start_date, self._coefficients_knot_dates, self.date_freq)
                 )
+
                 self._knots_tp_coefficients = np.array(
                     (self._knots_idx_coef + 1) /
                     (self._get_gap_between_dates(start_date, self.training_end, self.date_freq) + 1)
