@@ -678,7 +678,7 @@ class BaseKTRX(BaseTemplate):
         return regressor_beta
 
     def _predict(self, posterior_estimates, df, include_error=False, decompose=False, store_prediction_array=False,
-                 coefficient_method='beta',
+                 coefficient_method='empirical',
                  **kwargs):
         """Vectorized version of prediction math
 
@@ -788,7 +788,7 @@ class BaseKTRX(BaseTemplate):
 
         return decomp_dict
 
-    def _get_regression_coefs(self, model, coefficient_method='beta', date_array=None):
+    def _get_regression_coefs(self, model, coefficient_method='smooth', date_array=None):
         """internal function to provide coefficient matrix given a date array
 
         Args
@@ -806,13 +806,13 @@ class BaseKTRX(BaseTemplate):
             return None
 
         if date_array is None:
-            if coefficient_method == 'knot':
+            if coefficient_method == 'smooth':
                 # if date_array not specified, dynamic coefficients in the training perior will be retrieved
                 coef_knots = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
                 regressor_betas = np.matmul(coef_knots, self._kernel_coefficients.transpose((1, 0)))
                 # back to batch x time step x regressor columns shape
                 regressor_betas = regressor_betas.transpose((0, 2, 1))
-            elif coefficient_method == 'beta':
+            elif coefficient_method == 'empirical':
                 regressor_betas = model.get(constants.RegressionSamplingParameters.COEFFICIENTS.value)
             else:
                 raise IllegalArgument('Wrong coefficient_method:{}'.format(coefficient_method))
@@ -836,13 +836,13 @@ class BaseKTRX(BaseTemplate):
             output_len = len(date_array)
             new_tp = np.arange(start + 1, start + output_len + 1) / self.num_of_observations
 
-            if coefficient_method == 'knot':
+            if coefficient_method == 'smooth':
                 kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
                 # kernel_coefficients = parabolic_kernel(new_tp, self._knots_tp_coefficients)
                 coef_knots = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
                 regressor_betas = np.matmul(coef_knots, kernel_coefficients.transpose((1, 0)))
                 regressor_betas = regressor_betas.transpose((0, 2, 1))
-            elif coefficient_method == 'beta':
+            elif coefficient_method == 'empirical':
                 regressor_betas = model.get(
                     constants.RegressionSamplingParameters.COEFFICIENTS.value)[:, start:start + output_len, :]
             else:
@@ -850,7 +850,7 @@ class BaseKTRX(BaseTemplate):
 
         return regressor_betas
 
-    def get_regression_coefs(self, aggregate_method, coefficient_method='beta', include_ci=False,
+    def get_regression_coefs(self, aggregate_method, coefficient_method='smooth', include_ci=False,
                              lower=0.05, upper=0.95):
         """Return DataFrame regression coefficients
         """
@@ -978,7 +978,7 @@ class KTRXAggregated(AggregatedPosteriorTemplate, BaseKTRX):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def get_regression_coefs(self, coefficient_method='beta'):
+    def get_regression_coefs(self, coefficient_method='smooth'):
         return super().get_regression_coefs(aggregate_method=self.aggregate_method,
                                             coefficient_method=coefficient_method,
                                             include_ci=False)
@@ -986,6 +986,6 @@ class KTRXAggregated(AggregatedPosteriorTemplate, BaseKTRX):
     def get_regression_coef_knots(self):
         return super().get_regression_coef_knots(aggregate_method=self.aggregate_method)
 
-    def plot_regression_coefs(self, coefficient_method='beta', **kwargs):
+    def plot_regression_coefs(self, coefficient_method='smooth', **kwargs):
         coef_df = self.get_regression_coefs(coefficient_method=coefficient_method)
         return super().plot_regression_coefs(coef_df=coef_df, **kwargs)
