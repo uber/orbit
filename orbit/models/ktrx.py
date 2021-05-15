@@ -429,7 +429,7 @@ class BaseKTRX(BaseTemplate):
                     self.date_freq = pd.infer_freq(df[self.date_col])[0]
                 start_date = self.training_start
                 self._knots_idx_coef = (
-                        self._get_gap_between_dates(start_date, self._coefficients_knot_dates, self.date_freq)
+                    self._get_gap_between_dates(start_date, self._coefficients_knot_dates, self.date_freq)
                 )
 
                 self._knots_tp_coefficients = np.array(
@@ -760,7 +760,9 @@ class BaseKTRX(BaseTemplate):
         regression = np.zeros(trend.shape)
         if self._num_of_regressors > 0:
             regressor_matrix = df.filter(items=self._regressor_col,).values
-            regressor_betas = self._get_regression_coefs(model, coefficient_method, prediction_df_meta['date_array'])
+            regressor_betas = self._get_regression_coefs_matrix(
+                model, coefficient_method, prediction_df_meta['date_array']
+            )
             regression = np.sum(regressor_betas * regressor_matrix, axis=-1)
 
         if include_error:
@@ -788,7 +790,7 @@ class BaseKTRX(BaseTemplate):
 
         return decomp_dict
 
-    def _get_regression_coefs(self, model, coefficient_method='smooth', date_array=None):
+    def _get_regression_coefs_matrix(self, model, coefficient_method='smooth', date_array=None):
         """internal function to provide coefficient matrix given a date array
 
         Args
@@ -850,32 +852,30 @@ class BaseKTRX(BaseTemplate):
 
         return regressor_betas
 
-    def get_regression_coefs(self, aggregate_method, coefficient_method='smooth', include_ci=False,
-                             lower=0.05, upper=0.95):
+    def _get_regression_coefs(self, aggregate_method, coefficient_method='smooth', include_ci=False,
+                              lower=0.05, upper=0.95):
         """Return DataFrame regression coefficients
         """
         posteriors = self._aggregate_posteriors.get(aggregate_method)
-        regressor_betas = np.squeeze(self._get_regression_coefs(posteriors, coefficient_method=coefficient_method))
+        coefs = np.squeeze(self._get_regression_coefs_matrix(posteriors, coefficient_method=coefficient_method))
 
-        reg_df = pd.DataFrame(data=regressor_betas, columns=self._regressor_col)
+        reg_df = pd.DataFrame(data=coefs, columns=self._regressor_col)
         reg_df[self.date_col] = self.date_array
 
         # re-arrange columns
         reg_df = reg_df[[self.date_col] + self._regressor_col]
         if include_ci:
-            coefficients_lower = np.quantile(regressor_betas, [lower], axis=0)
-            coefficients_upper = np.quantile(regressor_betas, [upper], axis=0)
+            posteriors = self._posterior_samples
+            coefs = self._get_regression_coefs_matrix(posteriors, coefficient_method=coefficient_method)
 
-            coefficients_lower = np.squeeze(coefficients_lower, axis=0)
-            coefficients_upper = np.squeeze(coefficients_upper, axis=0)
-            print(regressor_betas.shape)
-            print(coefficients_lower)
+            coefficients_lower = np.quantile(coefs, lower, axis=0)
+            coefficients_upper = np.quantile(coefs, upper, axis=0)
 
             reg_df_lower = reg_df.copy()
             reg_df_upper = reg_df.copy()
             for idx, col in enumerate(self._regressor_col):
-                reg_df_lower[col] = coefficients_lower[ idx] # :,
-                reg_df_upper[col] = coefficients_upper[ idx] # :,
+                reg_df_lower[col] = coefficients_lower[:, idx]
+                reg_df_upper[col] = coefficients_upper[:, idx]
             return reg_df, reg_df_lower, reg_df_upper
 
         return reg_df
@@ -899,13 +899,13 @@ class BaseKTRX(BaseTemplate):
 
         return knots_df
 
-    def plot_regression_coefs(self,
-                              coef_df,
-                              coef_df_lower=None,
-                              coef_df_upper=None,
-                              ncol=2,
-                              figsize=None,
-                              ylim=None):
+    def _plot_regression_coefs(self,
+                               coef_df,
+                               coef_df_lower=None,
+                               coef_df_upper=None,
+                               ncol=2,
+                               figsize=None,
+                               ylim=None):
         """Plot regression coefficients
         """
         nrow = math.ceil((coef_df.shape[1] - 1) / ncol)
@@ -937,18 +937,19 @@ class KTRXFull(FullBayesianTemplate, BaseKTRX):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def get_regression_coefs(self, aggregate_method='mean', include_ci=False, date_array=None, lower=0.05, upper=0.95):
+    def get_regression_coefs(self, aggregate_method='mean', include_ci=False, lower=0.05, upper=0.95):
         self._set_aggregate_posteriors()
-        return super().get_regression_coefs(aggregate_method=aggregate_method,
-                                            include_ci=include_ci,
-                                            lower=lower,
-                                            upper=upper)
+        return self._get_regression_coefs(
+            aggregate_method=aggregate_method,
+            include_ci=include_ci,
+            lower=lower,
+            upper=upper)
 
     def get_regression_coef_knots(self, aggregate_method='mean'):
         self._set_aggregate_posteriors()
         return super().get_regression_coef_knots(aggregate_method=aggregate_method)
 
-    def plot_regression_coefs(self, aggregate_method='mean', include_ci=False, date_array=None, **kwargs):
+    def plot_regression_coefs(self, aggregate_method='mean', include_ci=False, **kwargs):
         if include_ci:
             coef_df, coef_df_lower, coef_df_upper = self.get_regression_coefs(
                 aggregate_method=aggregate_method,
@@ -956,15 +957,14 @@ class KTRXFull(FullBayesianTemplate, BaseKTRX):
             )
         else:
             coef_df = self.get_regression_coefs(aggregate_method=aggregate_method,
-                                                include_ci=False,
-                                                date_array=date_array)
+                                                include_ci=False)
             coef_df_lower = None
             coef_df_upper = None
 
-        return super().plot_regression_coefs(coef_df=coef_df,
-                                             coef_df_lower=coef_df_lower,
-                                             coef_df_upper=coef_df_upper,
-                                             **kwargs)
+        return self._plot_regression_coefs(coef_df=coef_df,
+                                           coef_df_lower=coef_df_lower,
+                                           coef_df_upper=coef_df_upper,
+                                           **kwargs)
 
 
 class KTRXAggregated(AggregatedPosteriorTemplate, BaseKTRX):
@@ -975,13 +975,13 @@ class KTRXAggregated(AggregatedPosteriorTemplate, BaseKTRX):
         super().__init__(**kwargs)
 
     def get_regression_coefs(self, coefficient_method='smooth'):
-        return super().get_regression_coefs(aggregate_method=self.aggregate_method,
-                                            coefficient_method=coefficient_method,
-                                            include_ci=False)
+        return self._get_regression_coefs(aggregate_method=self.aggregate_method,
+                                          coefficient_method=coefficient_method,
+                                          include_ci=False)
 
     def get_regression_coef_knots(self):
-        return super().get_regression_coef_knots(aggregate_method=self.aggregate_method)
+        return self.get_regression_coef_knots(aggregate_method=self.aggregate_method)
 
     def plot_regression_coefs(self, coefficient_method='smooth', **kwargs):
         coef_df = self.get_regression_coefs(coefficient_method=coefficient_method)
-        return super().plot_regression_coefs(coef_df=coef_df, **kwargs)
+        return self._plot_regression_coefs(coef_df=coef_df, **kwargs)
