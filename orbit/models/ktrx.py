@@ -856,10 +856,10 @@ class BaseKTRX(BaseTemplate):
         """
         posteriors = self._aggregate_posteriors.get(aggregate_method)
         regressor_betas = np.squeeze(self._get_regression_coefs(posteriors, coefficient_method=coefficient_method))
-        print(regressor_betas.shape)
+
         reg_df = pd.DataFrame(data=regressor_betas, columns=self._regressor_col)
         reg_df[self.date_col] = self.date_array
-        print(reg_df.shape)
+
         # re-arrange columns
         reg_df = reg_df[[self.date_col] + self._regressor_col]
         if include_ci:
@@ -894,11 +894,7 @@ class BaseKTRX(BaseTemplate):
             .get(aggregate_method) \
             .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
 
-        # get column names
-        rr_cols = self._regular_regressor_col
-        pr_cols = self._positive_regressor_col
-        regressor_col = rr_cols + pr_cols
-        for idx, col in enumerate(regressor_col):
+        for idx, col in enumerate(self._regressor_col):
             knots_df[col] = np.transpose(coef_knots[:, idx])
 
         return knots_df
