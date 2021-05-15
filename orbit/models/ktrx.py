@@ -880,7 +880,7 @@ class BaseKTRX(BaseTemplate):
 
         return reg_df
 
-    def get_regression_coef_knots(self, aggregate_method):
+    def _get_regression_coef_knots(self, aggregate_method):
         """Return DataFrame regression coefficient knots
         """
         # init dataframe
@@ -890,6 +890,8 @@ class BaseKTRX(BaseTemplate):
             return knots_df
 
         knots_df[self.date_col] = self._coefficients_knot_dates
+        # TODO: make the label as a constant
+        knots_df['step'] = self._knots_idx_coef
         coef_knots = self._aggregate_posteriors \
             .get(aggregate_method) \
             .get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
@@ -899,34 +901,35 @@ class BaseKTRX(BaseTemplate):
 
         return knots_df
 
-    def _plot_regression_coefs(self,
-                               coef_df,
-                               coef_df_lower=None,
-                               coef_df_upper=None,
-                               ncol=2,
-                               figsize=None,
-                               ylim=None):
+    @staticmethod
+    def _plot_regression_coefs(coef_df, knot_df=None, coef_df_lower=None, coef_df_upper=None, ncol=2, figsize=None,
+                               ylim=None, markersize=200):
         """Plot regression coefficients
         """
-        nrow = math.ceil((coef_df.shape[1] - 1) / ncol)
-        fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False)
+        # assume your first column is the date; this way can use a static method
         regressor_col = coef_df.columns.tolist()[1:]
+        nrow = math.ceil(len(regressor_col) / ncol)
+        fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False)
 
         for idx, col in enumerate(regressor_col):
             row_idx = idx // ncol
             col_idx = idx % ncol
             coef = coef_df[col]
-            axes[row_idx, col_idx].plot(coef, alpha=.8)  # label?
+            axes[row_idx, col_idx].plot(coef, alpha=.8, label='coefficients')
             if coef_df_lower is not None and coef_df_upper is not None:
                 coef_lower = coef_df_lower[col]
                 coef_upper = coef_df_upper[col]
                 axes[row_idx, col_idx].fill_between(np.arange(0, coef_df.shape[0]), coef_lower, coef_upper, alpha=.3)
-            if ylim is not None: axes[row_idx, col_idx].set_ylim(ylim)
-            # regressor_col_names = ['intercept'] + self.regressor_col if self.intercept else self.regressor_col
+            if knot_df is not None:
+                step = knot_df['step']
+                knots = knot_df[col].values
+                axes[row_idx, col_idx].scatter(x=step, y=knots, marker='^', s=markersize, color='green', alpha=0.5)
+            if ylim is not None:
+                axes[row_idx, col_idx].set_ylim(ylim)
             axes[row_idx, col_idx].set_title('{}'.format(col))
             axes[row_idx, col_idx].ticklabel_format(useOffset=False)
-        plt.tight_layout()
 
+        plt.tight_layout()
         return axes
 
 
@@ -937,19 +940,20 @@ class KTRXFull(FullBayesianTemplate, BaseKTRX):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def get_regression_coefs(self, aggregate_method='mean', include_ci=False, lower=0.05, upper=0.95):
+    def get_regression_coefs(self, aggregate_method='median', include_ci=False, lower=0.05, upper=0.95):
         self._set_aggregate_posteriors()
-        return self._get_regression_coefs(
-            aggregate_method=aggregate_method,
-            include_ci=include_ci,
-            lower=lower,
-            upper=upper)
+        return self._get_regression_coefs(aggregate_method=aggregate_method,include_ci=include_ci,
+                                          lower=lower, upper=upper)
 
-    def get_regression_coef_knots(self, aggregate_method='mean'):
+    def get_regression_coef_knots(self, aggregate_method='median'):
         self._set_aggregate_posteriors()
-        return super().get_regression_coef_knots(aggregate_method=aggregate_method)
+        return self._get_regression_coef_knots(aggregate_method=aggregate_method)
 
-    def plot_regression_coefs(self, aggregate_method='mean', include_ci=False, **kwargs):
+    def plot_regression_coefs(self, with_knot=False, aggregate_method='median', include_ci=False, **kwargs):
+        if with_knot:
+            knot_df = self.get_regression_coef_knots(aggregate_method=aggregate_method)
+        else:
+            knot_df = None
         if include_ci:
             coef_df, coef_df_lower, coef_df_upper = self.get_regression_coefs(
                 aggregate_method=aggregate_method,
@@ -960,8 +964,8 @@ class KTRXFull(FullBayesianTemplate, BaseKTRX):
                                                 include_ci=False)
             coef_df_lower = None
             coef_df_upper = None
-
         return self._plot_regression_coefs(coef_df=coef_df,
+                                           knot_df=knot_df,
                                            coef_df_lower=coef_df_lower,
                                            coef_df_upper=coef_df_upper,
                                            **kwargs)
@@ -980,8 +984,12 @@ class KTRXAggregated(AggregatedPosteriorTemplate, BaseKTRX):
                                           include_ci=False)
 
     def get_regression_coef_knots(self):
-        return self.get_regression_coef_knots(aggregate_method=self.aggregate_method)
+        return self._get_regression_coef_knots(aggregate_method=self.aggregate_method)
 
-    def plot_regression_coefs(self, coefficient_method='smooth', **kwargs):
-        coef_df = self.get_regression_coefs(coefficient_method=coefficient_method)
-        return self._plot_regression_coefs(coef_df=coef_df, **kwargs)
+    def plot_regression_coefs(self, with_knot=False, coefficient_method='smooth', **kwargs):
+        coef_df = self._get_regression_coefs(coefficient_method=coefficient_method, include_ci=False)
+        if with_knot:
+            knot_df = self.get_regression_coef_knots()
+        else:
+            knot_df = None
+        return self._plot_regression_coefs(coef_df=coef_df, knot_df=knot_df, **kwargs)
