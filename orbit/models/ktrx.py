@@ -1,3 +1,4 @@
+from datetime import date
 import pandas as pd
 import numpy as np
 import math
@@ -678,16 +679,17 @@ class BaseKTRX(BaseTemplate):
         return regressor_beta
 
     def _predict(self, posterior_estimates, df, include_error=False, decompose=False, store_prediction_array=False,
-                 coefficient_method='empirical',
+                 coefficient_method="smooth",
                  **kwargs):
         """Vectorized version of prediction math
 
         Args
         ----
         coefficient_method: str
-            either "beta" or "knot"; when "beta" is used; curve are sampled/aggregated directly from beta posteriors
-            whereas when "knot" is used we first extract sampled/aggregated posteriors of knot and extract beta
-            this mainly impact the aggregated estimation method; full bayesian should not be impacted
+            either "smooth" or "empirical". when "empirical" is used, curves are sampled/aggregated directly
+            from beta posteriors; when "smooth" is used, first extract sampled/aggregated posteriors of knots
+            then beta.
+            this mainly impacts the aggregated estimation method; full bayesian should not be impacted
         """
 
         # remove reference from original input
@@ -819,10 +821,12 @@ class BaseKTRX(BaseTemplate):
             else:
                 raise IllegalArgument('Wrong coefficient_method:{}'.format(coefficient_method))
         else:
+            date_array = pd.to_datetime(date_array).values
+            output_len = len(date_array)
+            train_len = self.num_of_observations
             # some validation of date array
             if not is_ordered_datetime(date_array):
                 raise IllegalArgument('Datetime index must be ordered and not repeat')
-            date_array = pd.to_datetime(date_array).values
             prediction_start = date_array[0]
 
             if prediction_start < self.training_start:
@@ -831,11 +835,15 @@ class BaseKTRX(BaseTemplate):
             # If we cannot find a match of prediction range, assume prediction starts right after train end
             if prediction_start > self.training_end:
                 # time index for prediction start
-                start = self.num_of_observations
+                start = train_len
+                coef_repeats = [0] * (start - 1) + [output_len]
             else:
                 # time index for prediction start
                 start = pd.Index(self.date_array).get_loc(prediction_start)
-            output_len = len(date_array)
+                if output_len <= train_len - start:
+                    coef_repeats = [0] * start + [1] * output_len + [0] * (train_len - start - output_len)
+                else:
+                    coef_repeats = [0] * start + [1] * (train_len - start - 1) + [output_len - train_len + start + 1]
             new_tp = np.arange(start + 1, start + output_len + 1) / self.num_of_observations
 
             if coefficient_method == 'smooth':
@@ -845,22 +853,27 @@ class BaseKTRX(BaseTemplate):
                 regressor_betas = np.matmul(coef_knots, kernel_coefficients.transpose((1, 0)))
                 regressor_betas = regressor_betas.transpose((0, 2, 1))
             elif coefficient_method == 'empirical':
-                regressor_betas = model.get(
-                    constants.RegressionSamplingParameters.COEFFICIENTS.value)[:, start:start + output_len, :]
+                regressor_betas = model.get(constants.RegressionSamplingParameters.COEFFICIENTS.value)
+                regressor_betas = np.repeat(regressor_betas, repeats=coef_repeats, axis=1)
             else:
                 raise IllegalArgument('Wrong coefficient_method:{}'.format(coefficient_method))
 
         return regressor_betas
 
-    def _get_regression_coefs(self, aggregate_method, coefficient_method='smooth', include_ci=False,
-                              lower=0.05, upper=0.95):
+    def _get_regression_coefs(self, aggregate_method, coefficient_method='smooth', date_array=None,
+                              include_ci=False, lower=0.05, upper=0.95):
         """Return DataFrame regression coefficients
         """
         posteriors = self._aggregate_posteriors.get(aggregate_method)
-        coefs = np.squeeze(self._get_regression_coefs_matrix(posteriors, coefficient_method=coefficient_method))
+        coefs = np.squeeze(self._get_regression_coefs_matrix(posteriors,
+                                                             coefficient_method=coefficient_method,
+                                                             date_array=date_array))
 
         reg_df = pd.DataFrame(data=coefs, columns=self._regressor_col)
-        reg_df[self.date_col] = self.date_array
+        if date_array is not None:
+            reg_df[self.date_col] = date_array
+        else:
+            reg_df[self.date_col] = self.date_array
 
         # re-arrange columns
         reg_df = reg_df[[self.date_col] + self._regressor_col]
@@ -902,7 +915,8 @@ class BaseKTRX(BaseTemplate):
         return knots_df
 
     @staticmethod
-    def _plot_regression_coefs(coef_df, knot_df=None, coef_df_lower=None, coef_df_upper=None, ncol=2, figsize=None,
+    def _plot_regression_coefs(coef_df, knot_df=None, coef_df_lower=None, coef_df_upper=None,
+                               ncol=2, figsize=None,
                                ylim=None, markersize=200):
         """Plot regression coefficients
         """
@@ -940,9 +954,15 @@ class KTRXFull(FullBayesianTemplate, BaseKTRX):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def get_regression_coefs(self, aggregate_method='median', include_ci=False, lower=0.05, upper=0.95):
+    def get_regression_coefs(self, aggregate_method='median',
+                             coefficient_method='smooth',
+                             date_array=None,
+                             include_ci=False, lower=0.05, upper=0.95):
         self._set_aggregate_posteriors()
-        return self._get_regression_coefs(aggregate_method=aggregate_method,include_ci=include_ci,
+        return self._get_regression_coefs(aggregate_method=aggregate_method,
+                                          coefficient_method=coefficient_method,
+                                          date_array=date_array,
+                                          include_ci=include_ci,
                                           lower=lower, upper=upper)
 
     def get_regression_coef_knots(self, aggregate_method='median'):
@@ -978,16 +998,19 @@ class KTRXAggregated(AggregatedPosteriorTemplate, BaseKTRX):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def get_regression_coefs(self, coefficient_method='smooth'):
+    def get_regression_coefs(self, coefficient_method='smooth', date_array=None):
         return self._get_regression_coefs(aggregate_method=self.aggregate_method,
                                           coefficient_method=coefficient_method,
+                                          date_array=date_array,
                                           include_ci=False)
 
     def get_regression_coef_knots(self):
         return self._get_regression_coef_knots(aggregate_method=self.aggregate_method)
 
     def plot_regression_coefs(self, with_knot=False, coefficient_method='smooth', **kwargs):
-        coef_df = self._get_regression_coefs(coefficient_method=coefficient_method, include_ci=False)
+        coef_df = self._get_regression_coefs(aggregate_method=self.aggregate_method,
+                                             coefficient_method=coefficient_method,
+                                             include_ci=False)
         if with_knot:
             knot_df = self.get_regression_coef_knots()
         else:
