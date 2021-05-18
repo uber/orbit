@@ -312,6 +312,7 @@ class BaseKTRX(BaseTemplate):
 
     @staticmethod
     def _set_knots_tp(knots_distance, cutoff):
+        """provide a array like outcome of index based on the knots distance and cutoff point"""
         # start in the middle
         knots_idx_start = round(knots_distance / 2)
         knots_idx = np.arange(knots_idx_start, cutoff, knots_distance)
