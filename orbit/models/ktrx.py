@@ -103,6 +103,7 @@ class BaseKTRX(BaseTemplate):
                  flat_multiplier=False,
                  geometric_walk=True,
                  min_residuals_sd=0.5,
+                 kernel_asym=[1.0,1.0],
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
 
@@ -141,6 +142,8 @@ class BaseKTRX(BaseTemplate):
         self.flat_multiplier = flat_multiplier
         self.geometric_walk = geometric_walk
         self.min_residuals_sd = min_residuals_sd
+        # the kernel asymmetry 
+        self.kernel_asym = kernel_asym
 
         # set private var to arg value
         # if None set default in _set_default_args()
@@ -439,7 +442,7 @@ class BaseKTRX(BaseTemplate):
                 )
                 self._knots_idx_coef = list(self._knots_idx_coef.astype(np.int32))
 
-            kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients, norm = self.kernel_asym)
 
             self._num_knots_coefficients = len(self._knots_tp_coefficients)
             self._kernel_coefficients = kernel_coefficients
@@ -847,7 +850,7 @@ class BaseKTRX(BaseTemplate):
             new_tp = np.arange(start + 1, start + output_len + 1) / self.num_of_observations
 
             if coefficient_method == 'smooth':
-                kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+                kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients, norm = self.kernel_asym)
                 # kernel_coefficients = parabolic_kernel(new_tp, self._knots_tp_coefficients)
                 coef_knots = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
                 regressor_betas = np.matmul(coef_knots, kernel_coefficients.transpose((1, 0)))

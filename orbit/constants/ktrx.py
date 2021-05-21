@@ -40,6 +40,7 @@ class DataInputMapper(Enum):
     # --------------- mvn
     MVN = 'MVN'
     GEOMETRIC_WALK = 'GEOMETRIC_WALK'
+    KERNEL_ASYM = 'KERNEL_ASYM'
 
 
 class BaseSamplingParameters(Enum):
