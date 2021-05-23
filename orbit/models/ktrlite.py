@@ -3,6 +3,7 @@ import numpy as np
 import math
 from scipy.stats import nct
 from copy import deepcopy
+import matplotlib.pyplot as plt
 
 from ..estimators.stan_estimator import StanEstimatorMAP
 from ..exceptions import IllegalArgument, ModelException
@@ -11,6 +12,8 @@ from ..utils.features import make_fourier_series_df
 from .template import BaseTemplate, MAPTemplate
 from ..constants.constants import PredictionKeys, PredictMethod
 from ..constants import ktrlite as constants
+from orbit.constants.palette import OrbitPalette
+
 
 class BaseKTRLite(BaseTemplate):
     """Base KTRLite model object with shared functionality for MAP method
@@ -272,7 +275,7 @@ class BaseKTRLite(BaseTemplate):
             self._level_knot_dates = df[self.date_col].values[knots_idx_level]
         else:
             self._level_knot_dates = pd.to_datetime([
-                x for x in self._level_knot_dates if 
+                x for x in self._level_knot_dates if
                 (x <= df[self.date_col].max()) and (x >= df[self.date_col].min())
             ])
             if self.date_freq is None:
@@ -412,6 +415,8 @@ class BaseKTRLite(BaseTemplate):
         return out
 
 
+
+
 class KTRLiteMAP(MAPTemplate, BaseKTRLite):
     """Concrete KTRLite model for MAP (Maximum a Posteriori) prediction
 
@@ -430,6 +435,60 @@ class KTRLiteMAP(MAPTemplate, BaseKTRLite):
             constants.BaseSamplingParameters.LEVEL_KNOT.value:
             # TODO: this is hacky, investigate why we have an extra dimension here?
                 np.squeeze(self._aggregate_posteriors[PredictMethod.MAP.value][
-                    constants.BaseSamplingParameters.LEVEL_KNOT.value], 0),
+                               constants.BaseSamplingParameters.LEVEL_KNOT.value], 0),
         }
         return pd.DataFrame(out)
+
+    def get_levels(self):
+        out = {
+            self.date_col:
+                self.date_array,
+            constants.BaseSamplingParameters.LEVEL.value:
+            # TODO: this is hacky, investigate why we have an extra dimension here?
+                np.squeeze(self._aggregate_posteriors[PredictMethod.MAP.value][
+                               constants.BaseSamplingParameters.LEVEL.value], 0),
+        }
+        return pd.DataFrame(out)
+
+    def plot_lev_knots(self, path=None, is_visible=True, title="",
+                       fontsize=16, markersize=250, figsize=(16, 8)):
+        """ Plot the fitted level knots along with the actual time series.
+        Parameters
+        ----------
+        path : str; optional
+            path to save the figure
+        is_visible : boolean
+            whether we want to show the plot. If called from unittest, is_visible might = False.
+        title : str; optional
+            title of the plot
+        fontsize : int; optional
+            fontsize of the title
+        markersize : int; optional
+            knot marker size
+        figsize : tuple; optional
+            figsize pass through to `matplotlib.pyplot.figure()`
+       Returns
+        -------
+            matplotlib axes object
+        """
+        levels_df = self.get_levels()
+        knots_df = self.get_level_knots()
+
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        ax.plot(self.date_array, self.response, color=OrbitPalette.DarkGrey.value, lw=1, alpha=0.7, label='actual')
+        ax.plot(levels_df[self.date_col], levels_df[constants.BaseSamplingParameters.LEVEL.value],
+                color=OrbitPalette.SafetyBlue.value, lw=1, alpha=0.8,
+                label=constants.BaseSamplingParameters.LEVEL.value)
+        ax.scatter(knots_df[self.date_col], knots_df[constants.BaseSamplingParameters.LEVEL_KNOT.value],
+                   color=OrbitPalette.Green.value, lw=1, s=markersize, marker='^',  alpha=0.8,
+                   label=constants.BaseSamplingParameters.LEVEL_KNOT.value)
+        ax.legend()
+        ax.grid(True, which='major', c='grey', ls='-', lw=1, alpha=0.5)
+        ax.set_title(title, fontsize=fontsize)
+        if path:
+            fig.savefig(path)
+        if is_visible:
+            plt.show()
+        else:
+            plt.close()
+        return ax
