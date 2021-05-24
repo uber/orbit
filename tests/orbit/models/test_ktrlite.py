@@ -121,7 +121,7 @@ def test_ktrlite_level_knot_dates(make_daily_data, level_knot_dates):
     assert len(ktrlite._posterior_samples) == expected_num_parameters
     assert smape(test_df['response'].values, predict_df['prediction'].values) <= SMAPE_TOLERANCE
     assert np.all(np.isin(ktrlite.level_knot_dates, level_knot_dates))
-    assert len(ktrlite.level_knot_dates) == level_knot_dates
+    assert len(ktrlite.level_knot_dates) == len(level_knot_dates)
 
 
 @pytest.mark.parametrize("level_knot_length", [90, 120])
