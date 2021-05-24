@@ -532,7 +532,7 @@ def get_arviz_plot_dict(mod,
 
 
 def plot_param_diagnostics(mod, incl_noise_params=False, incl_trend_params=False, incl_smooth_params=False,
-                     which='trace', **kwargs):
+                           which='trace', **kwargs):
     """
     Parameters
     -----------

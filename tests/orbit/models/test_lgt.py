@@ -39,15 +39,15 @@ def test_lgt_full_fit(synthetic_data, seasonality, estimator_type):
         'prediction_percentiles': [5, 95],
         'seasonality': seasonality,
         'verbose': False,
-        'estimator_type': estimator_type
+        'estimator_type': estimator_type,
     }
+
     if issubclass(estimator_type, StanEstimator):
-        expected_num_parameters = 11
-        args.update({'num_warmup': 50})
-    else:
-        # no `lp__` in pyro
-        expected_num_parameters = 10
+        args.update({'num_warmup': 50, 'num_sample': 50})
+    elif issubclass(estimator_type, PyroEstimator):
         args.update({'num_steps': 10})
+
+    expected_num_parameters = 10
 
     if seasonality == 52:
         expected_num_parameters += 2
@@ -56,7 +56,6 @@ def test_lgt_full_fit(synthetic_data, seasonality, estimator_type):
     lgt.fit(train_df)
     init_call = lgt.get_init_values()
     if seasonality:
-
         assert isinstance(init_call, LGTInitializer)
         assert init_call.s == 52
         init_values = init_call()
@@ -84,16 +83,14 @@ def test_lgt_aggregated_fit(synthetic_data, seasonality, estimator_type):
         'prediction_percentiles': [5, 95],
         'seasonality': seasonality,
         'verbose': False,
-        'estimator_type': estimator_type
+        'estimator_type': estimator_type,
     }
-
     if issubclass(estimator_type, StanEstimator):
-        expected_num_parameters = 11
-        args.update({'num_warmup': 50})
-    else:
-        # no `lp__` in pyro
-        expected_num_parameters = 10
-        args.update({'num_steps': 10})
+        args.update({'num_warmup': 50, 'num_sample': 50})
+    elif issubclass(estimator_type, PyroEstimator):
+        args.update({'num_steps': 10, 'num_sample': 50})
+
+    expected_num_parameters = 10
 
     if seasonality == 52:
         expected_num_parameters += 2
@@ -102,7 +99,6 @@ def test_lgt_aggregated_fit(synthetic_data, seasonality, estimator_type):
     lgt.fit(train_df)
     init_call = lgt.get_init_values()
     if seasonality:
-
         assert isinstance(init_call, LGTInitializer)
         assert init_call.s == 52
         init_values = init_call()
@@ -135,7 +131,6 @@ def test_lgt_map_fit(synthetic_data, seasonality, estimator_type):
     lgt.fit(train_df)
     init_call = lgt.get_init_values()
     if seasonality:
-
         assert isinstance(init_call, LGTInitializer)
         assert init_call.s == 52
         init_values = init_call()
@@ -283,7 +278,7 @@ def test_lgt_mixed_signs_and_order(iclaims_training_data, regressor_signs):
     raw_regressor_col = ['trend.unemploy', 'trend.filling', 'trend.job']
     new_regressor_col = [raw_regressor_col[idx] for idx in [2, 1, 0]]
     new_regressor_signs = [regressor_signs[idx] for idx in [2, 1, 0]]
-    # mixiing ordering of cols in df of prediction
+    # mixing ordering of cols in df of prediction
     new_df = df[['claims', 'week'] + new_regressor_col]
 
     lgt = LGTMAP(
