@@ -151,7 +151,7 @@ def test_ktrlite_level_knot_distance(make_daily_data, level_knot_length):
 
 
 @pytest.mark.parametrize("coefficients_knot_length", [90, 120])
-def test_ktrlite_level_knot_distance(make_daily_data, coefficients_knot_length):
+def test_ktrlite_coef_knot_distance(make_daily_data, coefficients_knot_length):
     train_df, test_df, coef = make_daily_data
 
     ktrlite = KTRLiteMAP(
