@@ -11,6 +11,7 @@ from ..utils.kernels import sandwich_kernel
 from ..utils.features import make_fourier_series_df
 from .template import BaseTemplate, MAPTemplate
 from ..constants.constants import PredictionKeys, PredictMethod
+from ..initializer.ktrlite import KTRLiteInitializer
 from ..constants import ktrlite as constants
 from orbit.constants.palette import OrbitPalette
 
@@ -26,10 +27,10 @@ class BaseKTRLite(BaseTemplate):
         fourier series order for seasonality
     level_knot_scale : float
         sigma for level; default to be .5
-    seasonal_knot_pooling_scale : float
-        pooling sigma for seasonal fourier series regressors; default to be 1
+    seasonal_initial_knot_scale : float
+        scale parameter for seasonal regressors initial coefficient knots; default to be 1
     seasonal_knot_scale : float
-        sigma for seasonal fourier series regressors; default to be 0.1.
+        scale parameter for seasonal regressors drift of coefficient knots; default to be 0.1.
     span_level : float between (0, 1)
         window width to decide the number of windows for the level (trend) term.
         e.g., span 0.1 will produce 10 windows.
@@ -59,7 +60,7 @@ class BaseKTRLite(BaseTemplate):
                  seasonality=None,
                  seasonality_fs_order=None,
                  level_knot_scale=0.5,
-                 seasonal_knot_pooling_scale=1.0,
+                 seasonal_initial_knot_scale=1.0,
                  seasonal_knot_scale=0.1,
                  span_level=0.1,
                  span_coefficients=0.3,
@@ -81,7 +82,7 @@ class BaseKTRLite(BaseTemplate):
 
         self.seasonality = seasonality
         self.seasonality_fs_order = seasonality_fs_order
-        self.seasonal_knot_pooling_scale = seasonal_knot_pooling_scale
+        self.seasonal_initial_knot_scale = seasonal_initial_knot_scale
         self.seasonal_knot_scale = seasonal_knot_scale
 
         # set private var to arg value
@@ -90,22 +91,20 @@ class BaseKTRLite(BaseTemplate):
         self._seasonality = self.seasonality
         self._seasonality_fs_order = self.seasonality_fs_order
         self._seasonal_knot_scale = self.seasonal_knot_scale
-        self._seasonal_knot_pooling_scale = None
+        self._seasonal_initial_knot_scale = None
         self._seasonal_knot_scale = None
 
         self._level_knot_dates = self.level_knot_dates
         self._degree_of_freedom = degree_of_freedom
 
         self.span_coefficients = span_coefficients
-        # self.rho_coefficients = rho_coefficients
         self.date_freq = date_freq
 
         # regression attributes -- now is ONLY used for fourier series as seasonality
         self.num_of_regressors = 0
         self.regressor_col = list()
         self.regressor_col_gp = list()
-        self.coefficients_knot_pooling_loc = list()
-        self.coefficients_knot_pooling_scale = list()
+        self.coefficients_initial_knot_scale = list()
         self.coefficients_knot_scale = list()
 
         # set static data attributes
@@ -130,9 +129,19 @@ class BaseKTRLite(BaseTemplate):
         self.num_knots_coefficients = None
         self.knots_tp_coefficients = None
         self.regressor_matrix = None
-        # self.coefficients_knot_dates = None
 
-    # initialization related modules
+    def _set_init_values(self):
+        """Override function from Base Template"""
+        # init_values_partial = partial(init_values_callable, seasonality=seasonality)
+        # partialfunc does not work when passed to PyStan because PyStan uses
+        # inspect.getargspec(func) which seems to raise an exception with keyword-only args
+        # caused by using partialfunc
+        # lambda as an alternative workaround
+        if len(self._seasonality) > 1 and self.num_of_regressors > 0:
+            init_values_callable = KTRLiteInitializer(self.num_of_regressors, self.num_knots_coefficients)
+            self._init_values = init_values_callable
+
+    # set defaults
     def _set_default_args(self):
         """Set default attributes for None
         """
@@ -154,11 +163,11 @@ class BaseKTRLite(BaseTemplate):
             if 2 * order > self._seasonality[k] - 1:
                 raise IllegalArgument('reduce seasonality_fs_order to avoid over-fitting')
 
-        if not isinstance(self.seasonal_knot_pooling_scale, list) and \
-                isinstance(self.seasonal_knot_pooling_scale * 1.0, float):
-            self._seasonal_knot_pooling_scale = [self.seasonal_knot_pooling_scale] * len(self._seasonality)
+        if not isinstance(self.seasonal_initial_knot_scale, list) and \
+                isinstance(self.seasonal_initial_knot_scale * 1.0, float):
+            self._seasonal_initial_knot_scale = [self.seasonal_initial_knot_scale] * len(self._seasonality)
         else:
-            self._seasonal_knot_pooling_scale = self.seasonal_knot_pooling_scale
+            self._seasonal_initial_knot_scale = self.seasonal_initial_knot_scale
 
         if not isinstance(self.seasonal_knot_scale, list) and isinstance(self.seasonal_knot_scale * 1.0, float):
             self._seasonal_knot_scale = [self.seasonal_knot_scale] * len(self._seasonality)
@@ -169,16 +178,14 @@ class BaseKTRLite(BaseTemplate):
         """given list of seasonalities and their order, create list of seasonal_regressors_columns"""
         self.regressor_col_gp = list()
         self.regressor_col = list()
-        self.coefficients_knot_pooling_loc = list()
-        self.coefficients_knot_pooling_scale = list()
+        self.coefficients_initial_knot_scale = list()
         self.coefficients_knot_scale = list()
 
         if len(self._seasonality) > 0:
             for idx, s in enumerate(self._seasonality):
                 fs_cols = []
                 order = self._seasonality_fs_order[idx]
-                self.coefficients_knot_pooling_loc += [0.0] * order * 2
-                self.coefficients_knot_pooling_scale += [self._seasonal_knot_pooling_scale[idx]] * order * 2
+                self.coefficients_initial_knot_scale += [self._seasonal_initial_knot_scale[idx]] * order * 2
                 self.coefficients_knot_scale += [self._seasonal_knot_scale[idx]] * order * 2
                 for i in range(1, order + 1):
                     fs_cols.append('seas{}_fs_cos{}'.format(s, i))
@@ -238,6 +245,7 @@ class BaseKTRLite(BaseTemplate):
         if self.num_of_regressors > 0:
             self.regressor_matrix = df.filter(items=self.regressor_col, ).values
 
+    # TODO: docstring and make this a utils since it is quite generic?
     @staticmethod
     def get_gap_between_dates(start_date, end_date, freq):
         diff = end_date - start_date
@@ -274,10 +282,13 @@ class BaseKTRLite(BaseTemplate):
             self.knots_tp_level = (1 + knots_idx_level) / self.num_of_observations
             self._level_knot_dates = df[self.date_col].values[knots_idx_level]
         else:
+            # to exclude dates which are not within training period
             self._level_knot_dates = pd.to_datetime([
                 x for x in self._level_knot_dates if
-                (x <= df[self.date_col].max()) and (x >= df[self.date_col].min())
+                (x <= df[self.date_col].values[-1]) and (x >= df[self.date_col].values[0])
             ])
+            # since we allow _level_knot_dates to be continuous, we calculate distance between knots
+            # in continuous value as well (instead of index)
             if self.date_freq is None:
                 self.date_freq = pd.infer_freq(df[self.date_col])[0]
             start_date = self.training_start
