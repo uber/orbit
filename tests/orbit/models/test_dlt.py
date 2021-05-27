@@ -510,7 +510,7 @@ def test_dlt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input
                                                 'slope_sm_input': [0.3, 0.5, 0.8],
                                             }
                                        ])
-def test_dlt_grid_tuning(synthetic_data, seasonality, estimator_type):
+def test_dlt_grid_tuning(synthetic_data, param_grid):
     train_df, test_df, coef = synthetic_data
     args = {
         'response_col': 'response',
