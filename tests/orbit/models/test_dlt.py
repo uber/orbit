@@ -506,8 +506,8 @@ def test_dlt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input
                                                 'seasonality_sm_input': [0.3, 0.5, 0.8],
                                             },
                                             {
-                                                'regressor_beta_prior': [[0] * 3, [0.05] * 3, [0.1] * 3],
-                                                'regressor_sigma_prior': [[0.3] * 3, [0.5] * 3, [1] * 3],
+                                                'damped_factor': [0.3, 0.5, 0.8],
+                                                'slope_sm_input': [0.3, 0.5, 0.8],
                                             }
                                        ])
 def test_dlt_grid_tuning(synthetic_data, seasonality, estimator_type):
@@ -515,7 +515,6 @@ def test_dlt_grid_tuning(synthetic_data, seasonality, estimator_type):
     args = {
         'response_col': 'response',
         'date_col': 'week',
-        'regressor_col': list('abc'),
         'seasonality': 52
     }
 
