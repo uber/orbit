@@ -20,6 +20,7 @@ from ..constants.ktrx import (
 )
 
 from ..estimators.pyro_estimator import PyroEstimatorVI
+from ..estimators.numpyro_estimator import NumPyroEstimator
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel, sandwich_kernel
@@ -949,7 +950,7 @@ class BaseKTRX(BaseTemplate):
 
 class KTRXFull(FullBayesianTemplate, BaseKTRX):
     """Concrete KTRX model for full Bayesian prediction"""
-    _supported_estimator_types = [PyroEstimatorVI]
+    _supported_estimator_types = [PyroEstimatorVI, NumPyroEstimator]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -993,7 +994,7 @@ class KTRXFull(FullBayesianTemplate, BaseKTRX):
 
 class KTRXAggregated(AggregatedPosteriorTemplate, BaseKTRX):
     """Concrete KTRX model for aggregated Bayesian prediction"""
-    _supported_estimator_types = [PyroEstimatorVI]
+    _supported_estimator_types = [PyroEstimatorVI, NumPyroEstimator]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
