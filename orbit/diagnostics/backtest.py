@@ -16,7 +16,7 @@ from collections.abc import Mapping, Iterable
 class TimeSeriesSplitter(object):
     """Cross validation splitter for time series data"""
 
-    def __init__(self, df, min_train_len, incremental_len, forecast_len, n_splits=None,
+    def __init__(self, df, min_train_len=None, incremental_len=None, forecast_len=None, n_splits=None,
                  window_type='expanding', date_col=None):
         """Initializes object with DataFrame and splits data
 
@@ -52,8 +52,6 @@ class TimeSeriesSplitter(object):
         self.window_type = window_type
         self.date_col = date_col
 
-        # defaults
-        # todo: clean up defaults so you can't set contradicting args
         self._set_defaults()
 
         # validate
@@ -69,10 +67,20 @@ class TimeSeriesSplitter(object):
         self._df_length = self.df.shape[0]
         # if n_splits is specified, set min_train_len internally
         if self.n_splits:
+            if self.n_splits == 1:
+                # set incremental_len internally if it's None
+                # this is just to dodge error and it's not used actually
+                if not self.incremental_len:  self.incremental_len = 1
             self.min_train_len = \
                 self._df_length - self.forecast_len - (self.n_splits - 1) * self.incremental_len
 
     def _validate_params(self):
+        if self.min_train_len is None and self.n_splits is None:
+            raise BacktestException('min_train_len and n_splits cannot both be None...')
+
+        if self.forecast_len is None:
+            raise BacktestException('forecast_len cannot be None...')
+
         if self.window_type not in ['expanding', 'rolling']:
             raise BacktestException('unknown window type...')
 
@@ -358,6 +366,8 @@ class BackTester(object):
         """
         if metrics is None:
             metrics = self._default_metrics
+        elif not isinstance(metrics, list):
+            metrics = [metrics]
 
         self._validate_metric_callables(metrics)
 
@@ -392,8 +402,8 @@ class BackTester(object):
         return self._score_df
 
 
-def grid_search_orbit(param_grid, model, df, min_train_len,
-                      incremental_len, forecast_len, n_splits=None,
+def grid_search_orbit(param_grid, model, df, min_train_len=None,
+                      incremental_len=None, forecast_len=None, n_splits=None,
                       metrics=None, criteria=None, verbose=True, **kwargs):
     """A gird search unitlity to tune the hyperparameters for orbit models using the orbit.diagnostics.backtest modules.
     Parameters
