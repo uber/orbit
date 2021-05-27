@@ -469,6 +469,7 @@ class BaseKTRX(BaseTemplate):
                     (DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER - DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER) +
                     DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
             )
+            multiplier[np.isnan(multiplier)] = DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER
             if self.flat_multiplier:
                 multiplier = np.ones(multiplier.shape)
             # also note that after the following step,
