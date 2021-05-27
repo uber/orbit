@@ -103,13 +103,13 @@ class Model:
             rr_init_knot = numpyro.sample(
                 "rr_init_knot", dist.Normal(
                     rr_init_knot_loc,
-                    rr_init_knot_scale).to_event(1)
+                    rr_init_knot_scale)
             )
             rr_knot = numpyro.sample(
                 "rr_knot",
                 dist.Normal(
                     jnp.expand_dims(rr_init_knot, -1) * jnp.ones((n_rr, n_knots_coef)),
-                    rr_knot_scale).to_event(2)
+                    rr_knot_scale)
             )
             rr_coef = (rr_knot @ k_coef.transpose()).transpose()
 

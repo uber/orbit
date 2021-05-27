@@ -1,5 +1,6 @@
 from abc import abstractmethod
 
+import numpyro
 from numpyro.infer import MCMC, NUTS, Predictive
 from jax import random
 
@@ -35,7 +36,8 @@ class NumPyroEstimator(BaseEstimator):
         # concrete
         model = fitter(data_input)
         nuts_kernel = NUTS(model)
-        mcmc = MCMC(nuts_kernel, num_samples=self.num_sample, num_warmup=self.num_warmup)
+        numpyro.set_host_device_count(4)
+        mcmc = MCMC(nuts_kernel, num_samples=self.num_sample, num_warmup=self.num_warmup, num_chains=4)
         rng_key = random.PRNGKey(self.seed)
         mcmc.run(rng_key)
         posteriors = mcmc.get_samples()
