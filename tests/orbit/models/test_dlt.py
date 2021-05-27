@@ -5,6 +5,7 @@ from copy import copy
 from orbit.models.dlt import DLTFull, DLTAggregated, DLTMAP
 from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI
 from orbit.initializer.dlt import DLTInitializer
+from orbit.diagnostics.backtest import grid_search_orbit
 
 
 @pytest.mark.parametrize("model_class", [DLTMAP, DLTFull, DLTAggregated])
@@ -498,3 +499,36 @@ def test_dlt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input
     assert predict_df.columns.tolist() == expected_columns
     assert regression_out.shape == expected_regression_shape
     assert num_regressors == len(train_df.columns.tolist()[2:])
+
+@pytest.mark.parametrize("param_grid", [
+                                            {
+                                                'level_sm_input': [0.3, 0.5, 0.8],
+                                                'seasonality_sm_input': [0.3, 0.5, 0.8],
+                                            },
+                                            {
+                                                'regressor_beta_prior': [[0] * 3, [0.05] * 3, [0.1] * 3],
+                                                'regressor_sigma_prior': [[0.3] * 3, [0.5] * 3, [1] * 3],
+                                            }
+                                       ])
+def test_dlt_grid_tuning(synthetic_data, seasonality, estimator_type):
+    train_df, test_df, coef = synthetic_data
+    args = {
+        'response_col': 'response',
+        'date_col': 'week',
+        'regressor_col': list('abc'),
+        'seasonality': 52
+    }
+
+    dlt = DLTMAP(**args)
+
+    best_params, tuned_df = grid_search_orbit(param_grid,
+                                        model=dlt,
+                                        df=train_df,
+                                        min_train_len=80, incremental_len=20, forecast_len=20,
+                                        metrics=None, criteria=None, verbose=True)
+
+
+
+    assert best_params[0].keys() == param_grid.keys()
+    assert set(tuned_df.columns.to_list()) == set(list(param_grid.keys()) + ['metrics'])
+    assert tuned_df.shape == (9, 3)
