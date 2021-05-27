@@ -7,6 +7,7 @@ from orbit.estimators.stan_estimator import StanEstimator, StanEstimatorMCMC, St
 from orbit.models.lgt import LGTMAP, LGTFull, LGTAggregated
 from orbit.constants.constants import PredictionKeys
 from orbit.initializer.lgt import LGTInitializer
+from orbit.diagnostics.backtest import grid_search_orbit
 
 
 @pytest.mark.parametrize("model_class", [LGTMAP, LGTFull, LGTAggregated])
@@ -500,3 +501,34 @@ def test_lgt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input
     assert regression_out.shape == expected_regression_shape
     assert num_regressors == len(train_df.columns.tolist()[2:])
 
+@pytest.mark.parametrize("param_grid", [
+                                            {
+                                                'level_sm_input': [0.3, 0.5, 0.8],
+                                                'seasonality_sm_input': [0.3, 0.5, 0.8],
+                                            },
+                                            {
+                                                'level_sm_input': [0.3, 0.5, 0.8],
+                                                'slope_sm_input': [0.3, 0.5, 0.8],
+                                            }
+                                       ])
+def test_lgt_grid_tuning(synthetic_data, param_grid):
+    train_df, test_df, coef = synthetic_data
+    args = {
+        'response_col': 'response',
+        'date_col': 'week',
+        'seasonality': 52
+    }
+
+    lgt = LGTMAP(**args)
+
+    best_params, tuned_df = grid_search_orbit(param_grid,
+                                        model=lgt,
+                                        df=train_df,
+                                        min_train_len=80, incremental_len=20, forecast_len=20,
+                                        metrics=None, criteria=None, verbose=True)
+
+
+
+    assert best_params[0].keys() == param_grid.keys()
+    assert set(tuned_df.columns.to_list()) == set(list(param_grid.keys()) + ['metrics'])
+    assert tuned_df.shape == (9, 3)

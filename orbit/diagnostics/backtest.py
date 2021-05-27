@@ -425,18 +425,38 @@ def grid_search_orbit(param_grid, model, df, min_train_len,
         data frame of tuning results
 
     """
+    # def _get_params(model):
+    #     # get all the model params for orbit typed models
+    #     params = {}
+    #     for key, val in model.__dict__.items():
+    #         if not key.startswith('_') and key != 'estimator':
+    #             params[key] = val
+
+    #     for key, val in model.__dict__['estimator'].__dict__.items():
+    #         if not key.startswith('_') and key != 'stan_init':
+    #             params[key] = val
+
+    #     return params.copy()
+
     def _get_params(model):
-        # get all the model params for orbit typed models
-        params = {}
-        for key, val in model.__dict__.items():
-            if not key.startswith('_') and key != 'estimator':
-                params[key] = val
+        init_args = dict()
 
-        for key, val in model.__dict__['estimator'].__dict__.items():
-            if not key.startswith('_') and key != 'stan_init':
-                params[key] = val
+        # get all the parent classes and their signatures
+        for cls in inspect.getmro(model.__class__):
+            sig = inspect.signature(cls)
+            for key in sig.parameters.keys():
+                if key != 'kwargs':
+                    if hasattr(model, key):
+                        init_args[key] = getattr(model, key)
+        # deal with the estimator separately
+        for cls in inspect.getmro(model.estimator_type):
+            sig = inspect.signature(cls)
+            for key in sig.parameters.keys():
+                if key != 'kwargs':
+                    if hasattr(model.estimator, key):
+                        init_args[key] = getattr(model.estimator, key)
 
-        return params.copy()
+        return init_args.copy()
 
     def _yield_param_grid(param_grid):
         # an internal function to mimic the ParameterGrid from scikit-learn
