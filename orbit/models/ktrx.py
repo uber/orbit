@@ -869,7 +869,8 @@ class BaseKTRX(BaseTemplate):
         coefs = np.squeeze(self._get_regression_coefs_matrix(posteriors,
                                                              coefficient_method=coefficient_method,
                                                              date_array=date_array))
-
+        if len(coefs.shape) == 1:
+            coefs = coefs.reshape((1, -1))
         reg_df = pd.DataFrame(data=coefs, columns=self._regressor_col)
         if date_array is not None:
             reg_df[self.date_col] = date_array
