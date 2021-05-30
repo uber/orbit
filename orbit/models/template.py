@@ -90,6 +90,9 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
         self.prediction_array = None
         self.prediction_input_meta = dict()
 
+        # storing metrics in training result meta
+        self._training_metrics = dict()
+
     # initialization related modules
     def _validate_supported_estimator_type(self):
         if self.estimator_type not in self._supported_estimator_types:
@@ -220,7 +223,7 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
 
         # note that estimator will search for the .stan, .pyro model file based on the
         # estimator type and model_name provided
-        model_extract = estimator.fit(
+        model_extract, training_metrics = estimator.fit(
             model_name=model_name,
             model_param_names=model_param_names,
             data_input=data_input,
@@ -229,9 +232,13 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
         )
 
         self._posterior_samples = model_extract
+        self._training_metrics = training_metrics
 
     def get_posterior_samples(self):
         return self._posterior_samples.copy()
+
+    def get_training_metrics(self):
+        return self._training_metrics.copy()
 
     def get_prediction_input_meta(self, df):
         # remove reference from original input
