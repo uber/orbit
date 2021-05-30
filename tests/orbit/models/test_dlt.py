@@ -54,7 +54,7 @@ def test_dlt_full_univariate(synthetic_data, estimator_type):
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 13
+    expected_num_parameters = 12
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -86,7 +86,7 @@ def test_dlt_aggregated_univariate(synthetic_data, estimator_type):
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 13
+    expected_num_parameters = 12
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -116,7 +116,7 @@ def test_dlt_map_univariate(synthetic_data):
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 12  # no `lp__` parameter in optimizing()
+    expected_num_parameters = 12
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -139,7 +139,7 @@ def test_dlt_non_seasonal_fit(synthetic_data, estimator_type):
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 11
+    expected_num_parameters = 10
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns

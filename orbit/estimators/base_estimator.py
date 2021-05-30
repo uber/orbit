@@ -14,10 +14,10 @@ class BaseEstimator(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_
     seed : int
         seed number for initial random values
     verbose : bool
-        If True, output all diagnostics messages from estimators
+        If True (default), output all diagnostics messages from estimators
 
     """
-    def __init__(self, seed=8888, verbose=False):
+    def __init__(self, seed=8888, verbose=True):
         self.seed = seed
         self.verbose = verbose
 
@@ -44,9 +44,9 @@ class BaseEstimator(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_
 
         Returns
         -------
-        OrderedDict
-            key: value pairs in which key is the model parameter name
-            and value is `num_sample` x posterior values
-
+        posteriors : dict
+            key value pairs where key is the model parameter name and value is `num_sample` x posterior values
+        training_metrics : dict
+            metrics and meta data related to the training process
         """
         raise NotImplementedError('Concrete fit() method must be implemented')
