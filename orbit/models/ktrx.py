@@ -110,7 +110,7 @@ class BaseKTRX(BaseTemplate):
                  mvn=0,
                  flat_multiplier=False,
                  geometric_walk=True,
-                 min_residuals_sd=0.5,
+                 min_residuals_sd=1.0,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
 
