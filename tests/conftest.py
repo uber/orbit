@@ -32,16 +32,6 @@ def m3_monthly_data():
     return df
 
 
-# @pytest.fixture
-# def synthetic_data():
-#     df, coef = make_synthetic_series(seed=127)
-
-#     train_df = df[df['week'] <= '2019-01-01']
-#     test_df = df[df['week'] > '2019-01-01']
-
-#     return train_df, test_df, coef
-
-
 @pytest.fixture
 def make_daily_data():
     n_obs = 365 * 3

@@ -132,8 +132,8 @@ class StanEstimatorMCMC(StanEstimator):
             permuted=False
         )
 
-        # to maintain ordering from chain in order to be used by arviz
-        # flatten all dimensions besides the first one
+        # todo: move dimension cleaning function to the model directly
+        # flatten the first two dims by preserving the chain order
         for key, val in posteriors.items():
             if len(val.shape) == 2:
                 # here `order` is important to make samples flattened by chain
