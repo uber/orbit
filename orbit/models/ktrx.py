@@ -72,6 +72,14 @@ class BaseKTRX(BaseTemplate):
         a list of pre-specified knot dates for coefficients
     date_freq : str
         date frequency; if not supplied, pd.infer_freq will be used to imply the date frequency.
+    min_residuals_sd : float
+        a numeric value from 0 to 1 to indicate the upper bound of residual scale paramterer; e.g.
+        0.5 means residual scale will be sampled from [0, 0.5] in a scaled Beta(2, 2) dist.
+    flat_multiplier : bool
+        False (default) to adjust knot scale with a multiplier based on regional regressor volume;
+        otherwise set all multiplier as 1
+    geometric_walk : bool
+        True (default) whether sample positive regressor knot as geometric random walk
     kwargs
         To specify `estimator_type` or additional args for the specified `estimator_type`
 
