@@ -12,12 +12,17 @@ class QualitativePalette(Enum):
     PostQ = ['#1fc600', '#ff4500']
     # large amount of stacking series
     Stack = ["#12939A", "#F15C17", "#DDB27C", "#88572C", "#FF991F", "#DA70BF", "#125C77",
-            "#4DC19C", "#776E57", "#17B8BE", "#F6D18A", "#B7885E", "#FFCB99", "#F89570",
-            "#829AE3", "#E79FD5", "#1E96BE", "#89DAC1", "#B3AD9E"]
+             "#4DC19C", "#776E57", "#17B8BE", "#F6D18A", "#B7885E", "#FFCB99", "#F89570",
+             "#829AE3", "#E79FD5", "#1E96BE", "#89DAC1", "#B3AD9E"]
     # bar plot
     Bar5 = ["#ef476fff", "#ffd166ff", "#06d6a0ff", "#118ab2ff", "#073b4cff"]
 
 
-class KTRPalette(Enum):
-    KNOTS_SEGMENT = '#276ef1'
-    KNOTS_REGION = '#5b91f5ff'
+class OrbitPalette(Enum):
+    Black = '#000000'
+    DarkGrey = '#333131'
+    SafetyBlue = '#276EF1'
+    LightBlue = '#5B91F5'
+    Green = '#05A357'
+    Orange = '#05A357'
+    Yellow = '#FFC043'
