@@ -133,6 +133,7 @@ class StanEstimatorMCMC(StanEstimator):
         )
 
         # todo: move dimension cleaning function to the model directly
+        # flatten the first two dims by preserving the chain order
         for key, val in stan_extract.items():
             if len(val.shape) == 2:
                 # here `order` is important to make samples flattened by chain

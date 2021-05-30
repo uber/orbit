@@ -10,7 +10,7 @@ import arviz as az
 
 from orbit.constants.constants import PredictionKeys
 from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
-from orbit.constants.palette import QualitativePalette, KTRPalette
+from orbit.constants.palette import QualitativePalette
 
 az.style.use("arviz-darkgrid")
 
@@ -422,72 +422,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     return axes
 
 
-def plot_ktr_lev_knots(actual_df, lev_knots_df, date_col, actual_col,
-                       knots_delta_threshold=0.5,
-                       path=None, is_visible=True, title="",
-                       fontsize=16, markersize=150, figsize=(16, 8)):
-    """ Plot the fitted level knots along with the actual time series.
 
-    Parameters
-    ----------
-    actual_df : pd.DataFrame
-        actual data frame including the actual response
-    lev_knots_df : pd.DataFrame
-        level knots data from KTRLite model
-    date_col : str
-        the date column name
-    actual_col : str
-        actual response column name
-    knots_delta_threshold : float
-        standardized threshold of level knots difference to detect change point of levels
-    path : str; optional
-        path to save the figure
-    is_visible : boolean
-        whether we want to show the plot. If called from unittest, is_visible might = False.
-    title : str; optional
-        title of the plot
-    fontsize : int; optional
-        fontsize of the title
-    markersize : int; optional
-        knot marker size
-    figsize : tuple; optional
-        figsize pass through to `matplotlib.pyplot.figure()`
-   Returns
-    -------
-        matplotlib axes object
-    """
-    actuals = actual_df[actual_col]
-    ymin = min(actual_df[actual_col]) * 0.98
-    ymax = max(actual_df[actual_col]) * 1.02
-    fig, ax = plt.subplots(1, 1, figsize=figsize)
-    ax.set_ylim(ymin, ymax)
-    ax.plot(actual_df[date_col], actuals, color='black', lw=1, alpha=0.5, label='actual')
-
-    # plot all the segments divided by knots
-    dt = lev_knots_df[date_col].values
-    ax.vlines(x=dt, ymin=ymin, ymax=ymax, linestyles='dashed', alpha=0.8, linewidth=1,
-              facecolor=KTRPalette.KNOTS_SEGMENT.value, label='knots')
-
-    # standardized threshold of level knots difference to detect change point of levels
-    lk = lev_knots_df['lev_knot'].values
-    lk = (lk - np.mean(lk)) / np.std(lk)
-    lkd = np.diff(lk)
-    flag = np.fabs(lkd) > knots_delta_threshold
-    if flag.any():
-        # due to diff function creates a lag of 1
-        dt = lev_knots_df[date_col].values
-        for idx in np.where(flag)[0]:
-            ax.axvspan(dt[idx], dt[idx+1], facecolor=KTRPalette.KNOTS_REGION.value, alpha=0.5)
-
-    ax.legend()
-    ax.set_title(title, fontsize=fontsize)
-    if path:
-        fig.savefig(path)
-    if is_visible:
-        plt.show()
-    else:
-        plt.close()
-    return ax
 
 
 def get_arviz_plot_dict(mod,
@@ -532,7 +467,7 @@ def get_arviz_plot_dict(mod,
 
 
 def plot_param_diagnostics(mod, incl_noise_params=False, incl_trend_params=False, incl_smooth_params=False,
-                     which='trace', **kwargs):
+                           which='trace', **kwargs):
     """
     Parameters
     -----------

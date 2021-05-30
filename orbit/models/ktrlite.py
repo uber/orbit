@@ -4,6 +4,7 @@ import math
 from scipy.stats import nct
 import torch
 from copy import deepcopy
+import matplotlib.pyplot as plt
 
 from ..constants import ktrlite as constants
 
@@ -15,6 +16,11 @@ from ..utils.features import make_fourier_series_df
 from .template import BaseTemplate, MAPTemplate
 from ..constants.constants import PredictionKeys
 from ..initializer.ktrlite import KTRLiteInitializer
+
+from ..constants.constants import PredictionKeys, PredictMethod
+from ..initializer.ktrlite import KTRLiteInitializer
+from ..constants import ktrlite as constants
+from orbit.constants.palette import OrbitPalette
 
 
 class BaseKTRLite(BaseTemplate):
@@ -28,10 +34,10 @@ class BaseKTRLite(BaseTemplate):
         fourier series order for seasonality
     level_knot_scale : float
         sigma for level; default to be .5
-    seasonal_knot_pooling_scale : float
-        pooling sigma for seasonal fourier series regressors; default to be 1
+    seasonal_initial_knot_scale : float
+        scale parameter for seasonal regressors initial coefficient knots; default to be 1
     seasonal_knot_scale : float
-        sigma for seasonal fourier series regressors; default to be 0.1.
+        scale parameter for seasonal regressors drift of coefficient knots; default to be 0.1.
     span_level : float between (0, 1)
         window width to decide the number of windows for the level (trend) term.
         e.g., span 0.1 will produce 10 windows.
@@ -61,11 +67,10 @@ class BaseKTRLite(BaseTemplate):
                  seasonality=None,
                  seasonality_fs_order=None,
                  level_knot_scale=0.5,
-                 seasonal_knot_pooling_scale=1.0,
+                 seasonal_initial_knot_scale=1.0,
                  seasonal_knot_scale=0.1,
                  span_level=0.1,
                  span_coefficients=0.3,
-                 # rho_coefficients=0.15,
                  degree_of_freedom=30,
                  # knot customization
                  level_knot_dates=None,
@@ -84,7 +89,7 @@ class BaseKTRLite(BaseTemplate):
 
         self.seasonality = seasonality
         self.seasonality_fs_order = seasonality_fs_order
-        self.seasonal_knot_pooling_scale = seasonal_knot_pooling_scale
+        self.seasonal_initial_knot_scale = seasonal_initial_knot_scale
         self.seasonal_knot_scale = seasonal_knot_scale
 
         # set private var to arg value
@@ -93,22 +98,20 @@ class BaseKTRLite(BaseTemplate):
         self._seasonality = self.seasonality
         self._seasonality_fs_order = self.seasonality_fs_order
         self._seasonal_knot_scale = self.seasonal_knot_scale
-        self._seasonal_knot_pooling_scale = None
+        self._seasonal_initial_knot_scale = None
         self._seasonal_knot_scale = None
 
         self._level_knot_dates = self.level_knot_dates
         self._degree_of_freedom = degree_of_freedom
 
         self.span_coefficients = span_coefficients
-        # self.rho_coefficients = rho_coefficients
         self.date_freq = date_freq
 
         # regression attributes -- now is ONLY used for fourier series as seasonality
         self.num_of_regressors = 0
         self.regressor_col = list()
         self.regressor_col_gp = list()
-        self.coefficients_knot_pooling_loc = list()
-        self.coefficients_knot_pooling_scale = list()
+        self.coefficients_initial_knot_scale = list()
         self.coefficients_knot_scale = list()
 
         # set static data attributes
@@ -145,7 +148,7 @@ class BaseKTRLite(BaseTemplate):
             init_values_callable = KTRLiteInitializer(self.num_of_regressors, self.num_knots_coefficients)
             self._init_values = init_values_callable
 
-    # initialization related modules
+    # set defaults
     def _set_default_args(self):
         """Set default attributes for None
         """
@@ -167,11 +170,11 @@ class BaseKTRLite(BaseTemplate):
             if 2 * order > self._seasonality[k] - 1:
                 raise IllegalArgument('reduce seasonality_fs_order to avoid over-fitting')
 
-        if not isinstance(self.seasonal_knot_pooling_scale, list) and \
-                isinstance(self.seasonal_knot_pooling_scale * 1.0, float):
-            self._seasonal_knot_pooling_scale = [self.seasonal_knot_pooling_scale] * len(self._seasonality)
+        if not isinstance(self.seasonal_initial_knot_scale, list) and \
+                isinstance(self.seasonal_initial_knot_scale * 1.0, float):
+            self._seasonal_initial_knot_scale = [self.seasonal_initial_knot_scale] * len(self._seasonality)
         else:
-            self._seasonal_knot_pooling_scale = self.seasonal_knot_pooling_scale
+            self._seasonal_initial_knot_scale = self.seasonal_initial_knot_scale
 
         if not isinstance(self.seasonal_knot_scale, list) and isinstance(self.seasonal_knot_scale * 1.0, float):
             self._seasonal_knot_scale = [self.seasonal_knot_scale] * len(self._seasonality)
@@ -190,8 +193,7 @@ class BaseKTRLite(BaseTemplate):
             for idx, s in enumerate(self._seasonality):
                 fs_cols = []
                 order = self._seasonality_fs_order[idx]
-                self.coefficients_knot_pooling_loc += [0.0] * order * 2
-                self.coefficients_knot_pooling_scale += [self._seasonal_knot_pooling_scale[idx]] * order * 2
+                self.coefficients_initial_knot_scale += [self._seasonal_initial_knot_scale[idx]] * order * 2
                 self.coefficients_knot_scale += [self._seasonal_knot_scale[idx]] * order * 2
                 for i in range(1, order + 1):
                     fs_cols.append('seas{}_fs_cos{}'.format(s, i))
@@ -308,7 +310,6 @@ class BaseKTRLite(BaseTemplate):
         # kernel of coefficients calculations
         if self.num_of_regressors > 0:
             if self.coefficients_knot_length is not None:
-                # TODO: approximation; can consider coefficients_knot_length directly as step size
                 knots_distance = self.coefficients_knot_length
             else:
                 number_of_knots = round(1 / self.span_coefficients)
@@ -318,7 +319,6 @@ class BaseKTRLite(BaseTemplate):
             self._knots_idx_coef = knots_idx_coef
             self.knots_tp_coefficients = (1 + knots_idx_coef) / self.num_of_observations
             self._coef_knot_dates = df[self.date_col].values[knots_idx_coef]
-            # self.kernel_coefficients = gauss_kernel(tp, self.knots_tp_coefficients, rho=self.rho_coefficients)
             self.kernel_coefficients = sandwich_kernel(tp, self.knots_tp_coefficients)
             self.num_knots_coefficients = len(self.knots_tp_coefficients)
 
@@ -420,7 +420,6 @@ class BaseKTRLite(BaseTemplate):
         if self._seasonality and self.regressor_col:
             df = self._make_seasonal_regressors(df, shift=start)
             coef_knot = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
-            # kernel_coefficients = gauss_kernel(new_tp, self.knots_tp_coefficients, rho=self.rho_coefficients)
             kernel_coefficients = sandwich_kernel(new_tp, self.knots_tp_coefficients)
             coef = np.matmul(coef_knot, kernel_coefficients.transpose(1, 0))
             pos = 0
@@ -456,6 +455,8 @@ class BaseKTRLite(BaseTemplate):
         return decomp_dict
 
 
+
+
 class KTRLiteMAP(MAPTemplate, BaseKTRLite):
     """Concrete KTRLite model for MAP (Maximum a Posteriori) prediction
 
@@ -465,3 +466,69 @@ class KTRLiteMAP(MAPTemplate, BaseKTRLite):
 
     def __init__(self, estimator_type=StanEstimatorMAP, **kwargs):
         super().__init__(estimator_type=estimator_type, **kwargs)
+
+    # FIXME: need a unit test of this function
+    def get_level_knots(self):
+        out = {
+            self.date_col:
+                self._level_knot_dates,
+            constants.BaseSamplingParameters.LEVEL_KNOT.value:
+            # TODO: this is hacky, investigate why we have an extra dimension here?
+                np.squeeze(self._aggregate_posteriors[PredictMethod.MAP.value][
+                               constants.BaseSamplingParameters.LEVEL_KNOT.value], 0),
+        }
+        return pd.DataFrame(out)
+
+    def get_levels(self):
+        out = {
+            self.date_col:
+                self.date_array,
+            constants.BaseSamplingParameters.LEVEL.value:
+            # TODO: this is hacky, investigate why we have an extra dimension here?
+                np.squeeze(self._aggregate_posteriors[PredictMethod.MAP.value][
+                               constants.BaseSamplingParameters.LEVEL.value], 0),
+        }
+        return pd.DataFrame(out)
+
+    def plot_lev_knots(self, path=None, is_visible=True, title="",
+                       fontsize=16, markersize=250, figsize=(16, 8)):
+        """ Plot the fitted level knots along with the actual time series.
+        Parameters
+        ----------
+        path : str; optional
+            path to save the figure
+        is_visible : boolean
+            whether we want to show the plot. If called from unittest, is_visible might = False.
+        title : str; optional
+            title of the plot
+        fontsize : int; optional
+            fontsize of the title
+        markersize : int; optional
+            knot marker size
+        figsize : tuple; optional
+            figsize pass through to `matplotlib.pyplot.figure()`
+       Returns
+        -------
+            matplotlib axes object
+        """
+        levels_df = self.get_levels()
+        knots_df = self.get_level_knots()
+
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        ax.plot(self.date_array, self.response, color=OrbitPalette.DarkGrey.value, lw=1, alpha=0.7, label='actual')
+        ax.plot(levels_df[self.date_col], levels_df[constants.BaseSamplingParameters.LEVEL.value],
+                color=OrbitPalette.SafetyBlue.value, lw=1, alpha=0.8,
+                label=constants.BaseSamplingParameters.LEVEL.value)
+        ax.scatter(knots_df[self.date_col], knots_df[constants.BaseSamplingParameters.LEVEL_KNOT.value],
+                   color=OrbitPalette.Green.value, lw=1, s=markersize, marker='^',  alpha=0.8,
+                   label=constants.BaseSamplingParameters.LEVEL_KNOT.value)
+        ax.legend()
+        ax.grid(True, which='major', c='grey', ls='-', lw=1, alpha=0.5)
+        ax.set_title(title, fontsize=fontsize)
+        if path:
+            fig.savefig(path)
+        if is_visible:
+            plt.show()
+        else:
+            plt.close()
+        return ax
