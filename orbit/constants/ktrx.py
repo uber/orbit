@@ -41,7 +41,10 @@ class DataInputMapper(Enum):
     MVN = 'MVN'
     GEOMETRIC_WALK = 'GEOMETRIC_WALK'
     KERNEL_ASYM = 'KERNEL_ASYM'
-
+    EST_RHO = 'EST_RHO'
+    #---------------- sample rho stuff 
+    RHO_COEFFICIENTS = 'RHO_COEFFICIENTS'
+    _KNOTS_TP_COEFFICIENTS = '_KNOTS_TP_COEFFICIENTS'
 
 class BaseSamplingParameters(Enum):
     """
@@ -51,6 +54,8 @@ class BaseSamplingParameters(Enum):
     LEVEL = 'lev'
     YHAT = 'yhat'
     OBS_SCALE = 'obs_scale'
+    LOGLIKELIHOOD = 'loglikelihood'
+
 
 
 class RegressionSamplingParameters(Enum):
@@ -60,6 +65,7 @@ class RegressionSamplingParameters(Enum):
     COEFFICIENTS_KNOT = 'coef_knot'
     COEFFICIENTS_INIT_KNOT= 'coef_init_knot'
     COEFFICIENTS = 'coef'
+    RHO_COEF = 'rho_coef'
 
 
 # Defaults Values

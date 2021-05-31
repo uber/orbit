@@ -104,9 +104,9 @@ class BaseKTRX(BaseTemplate):
                  geometric_walk=True,
                  min_residuals_sd=0.5,
                  kernel_asym=[1.0,1.0],
+                 est_rho = False,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
-
         # normal distribution of known knot
         self.level_knot_scale = level_knot_scale
 
@@ -144,6 +144,9 @@ class BaseKTRX(BaseTemplate):
         self.min_residuals_sd = min_residuals_sd
         # the kernel asymmetry 
         self.kernel_asym = kernel_asym
+        # estimate rho 
+        self.est_rho = est_rho
+        
 
         # set private var to arg value
         # if None set default in _set_default_args()
@@ -187,6 +190,8 @@ class BaseKTRX(BaseTemplate):
         self._knots_tp_coefficients = None
         self._positive_regressor_matrix = None
         self._regular_regressor_matrix = None
+        
+        print("test if updating")
 
     def _set_model_param_names(self):
         """Overriding base template functions. Model parameters to extract"""
@@ -441,8 +446,11 @@ class BaseKTRX(BaseTemplate):
                     (self._get_gap_between_dates(start_date, self.training_end, self.date_freq) + 1)
                 )
                 self._knots_idx_coef = list(self._knots_idx_coef.astype(np.int32))
-
-            kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients, norm = self.kernel_asym)
+                
+            kernel_coefficients = gauss_kernel(tp, 
+                                               self._knots_tp_coefficients, 
+                                               rho=self.rho_coefficients, 
+                                               norm = self.kernel_asym)
 
             self._num_knots_coefficients = len(self._knots_tp_coefficients)
             self._kernel_coefficients = kernel_coefficients
@@ -849,8 +857,20 @@ class BaseKTRX(BaseTemplate):
                     coef_repeats = [0] * start + [1] * (train_len - start - 1) + [output_len - train_len + start + 1]
             new_tp = np.arange(start + 1, start + output_len + 1) / self.num_of_observations
 
+                    
             if coefficient_method == 'smooth':
-                kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients, norm = self.kernel_asym)
+                if not self.est_rho:
+                    kernel_coefficients = gauss_kernel(new_tp, 
+                                                       self._knots_tp_coefficients, 
+                                                       rho=self.rho_coefficients, 
+                                                       norm = self.kernel_asym)
+                if self.est_rho:
+                    kernel_coefficients = gauss_kernel(new_tp, 
+                                                       self._knots_tp_coefficients, 
+                                                       rho=self.rho_coef, 
+                                                       norm = [1.0,1.0])    
+                    
+                    
                 # kernel_coefficients = parabolic_kernel(new_tp, self._knots_tp_coefficients)
                 coef_knots = model.get(constants.RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
                 regressor_betas = np.matmul(coef_knots, kernel_coefficients.transpose((1, 0)))
@@ -962,6 +982,7 @@ class KTRXFull(FullBayesianTemplate, BaseKTRX):
                              date_array=None,
                              include_ci=False, lower=0.05, upper=0.95):
         self._set_aggregate_posteriors()
+        print("here in get_regression_coefs")
         return self._get_regression_coefs(aggregate_method=aggregate_method,
                                           coefficient_method=coefficient_method,
                                           date_array=date_array,

@@ -8,7 +8,8 @@ import pyro.distributions as dist
 torch.set_default_tensor_type('torch.DoubleTensor')
 pyro.enable_validation(True)
 
-
+torch.set_printoptions(precision=16, threshold = 100000, linewidth  = 1000)
+                       
 # class TruncatedNormal(dist.Rejector):
 #     def __init__(self, loc, scale, min_x0=None):
 #         propose = dist.Normal(loc, scale)
@@ -74,6 +75,11 @@ class Model:
         k_coef = self.k_coef
         n_knots_lev = self.n_knots_lev
         n_knots_coef = self.n_knots_coef
+        
+        # add in the rho_coef 
+        rho_coef = self.rho_coefficients
+        est_rho = self.est_rho
+        knots_tp =  self._knots_tp_coefficients
 
         lev_knot_scale = self.lev_knot_scale
         # mult var norm stuff
@@ -115,6 +121,57 @@ class Model:
         )
         lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
 
+        # sample coef rho
+        
+        
+        # hack for saving results 
+        if not est_rho:
+            rho_coef = pyro.sample('rho_coef',
+                                   dist.Uniform(low = 0.00, high = 1.00))
+        
+        if est_rho:
+            k_coef2 = self.k_coef 
+            rho_coef = pyro.sample('rho_coef',
+                                   dist.Uniform(low = 0.00, high = 1.00))
+            
+            rho_sq_t2 = 2*(rho_coef**2)
+
+            tp = np.arange(1, n_obs + 1) / n_obs
+            # make a x = nxm where each column is tp 
+            x = torch.tensor(tp).unsqueeze(1)
+            x = x.repeat(1, len(knots_tp))
+            # max x_i = nxm where each row is x_i 
+            x_i = torch.tensor(knots_tp).unsqueeze(1)
+            x_i = x_i.repeat(1, len(tp))
+            x_i = x_i.transpose(0,-1)
+            k_temp = torch.pow((x - x_i),2) 
+            #print('k1')
+            #print(k_temp[0:5, 0:5])
+#
+            #print('k2')
+            #print(k_temp[0:5, 0:5]/(2*(0.05**2)))
+#
+            #print('k3')
+            #print(torch.exp(-1*k_temp[0:5, 0:5]/(2*(0.05**2))))
+            #
+            
+            if len(rho_sq_t2.size()) >= 1:
+                #rho_sq_t2 = rho_sq_t2*0 + 2*(0.05**2) # for debugging only 
+                k_temp = k_temp.repeat(rho_sq_t2.size()[0],1,1) # this line must be fixed 
+                rho_sq_t2 = rho_sq_t2.view(-1, 1, 1)    
+                k_temp = k_temp / rho_sq_t2
+                k_coef = torch.exp(-1 * k_temp )
+                # add in the nomrialize 
+                k_norm = torch.sum(k_coef, -1, keepdim=True)
+                k_coef = k_coef/k_norm
+                
+                #print('new')
+                #print(k_coef[0,0:5,0:5])
+                #print('old')
+                #print(k_coef2[0:5,0:5])
+
+                
+        
         # using hierarchical priors vs. multivariate priors
         if mvn == 0:
             # regular regressor sampling
@@ -131,11 +188,26 @@ class Model:
                         rr_init_knot.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef),
                         rr_knot_scale).to_event(2)
                 )
-                rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
-
+                
+                #print("rr_knot.size")
+                #print(rr_knot.size())
+                #print("k_coef.size")
+                #print(k_coef.size())
+                #rr_knot = rr_knot.squeeze(1)
+                if est_rho:
+                    rr_coef = (rr_knot.squeeze(1) @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+                else :
+                    rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+                #rr_coef = (rr_knot.squeeze(1) @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+                #rr_coef  = (rr_knot*k_coef).sum(-1)
+                #rr_coef = rr_coef.transpose(-2, -1)
+                #print("rr_coef.size")
+                #print(rr_coef.size())
+                
             # positive regressor sampling
             if n_pr > 0:
                 if geometric_walk:
+                    #print(pr_init_knot_scale)
                 # TODO: development method
                     pr_init_hidden = pyro.sample(
                         "pr_init_hidden",
@@ -143,6 +215,7 @@ class Model:
                             dist.Normal(pr_init_knot_loc, pr_init_knot_scale)
                         ).to_event(1)
                     )
+                    #print(pr_knot_scale)
                     pr_knot_step = pyro.sample(
                         "pr_knot_step",
                         # note that unlike rr_knot, the first one is ignored as we use the initial scale
@@ -151,7 +224,12 @@ class Model:
                     )
                     pr_knot = (pr_init_hidden.log().unsqueeze(-1) + pr_knot_step.cumsum(-1)).exp()
                     pr_init_knot = pr_knot[..., :, 0]
-                    pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+                    #pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+                    if est_rho:
+                        pr_coef = (pr_knot.squeeze(1) @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+                    else: 
+                        pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+                    
                 else:
                     # TODO: original method
                     # pooling latent variables
@@ -171,7 +249,21 @@ class Model:
                                 pr_knot_scale)
                         ).to_event(2)
                     )
-                    pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+                    #print("pr_knot.size")
+                    #print(pr_knot.size())
+                    #print("k_coef.size")
+                    #print(k_coef.size())
+                    #pr_knot = pr_knot.squeeze(1)
+                    #print("pr_knot.size")
+                    #print(pr_knot.size())
+                    if est_rho:
+                        pr_coef = (pr_knot.squeeze(1) @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+                    else: 
+                        pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+                    #####pr_coef  = (pr_knot*k_coef).sum(-1)
+                    #####pr_coef = pr_coef.transpose(-2, -1)
+                    #print("pr_coef.size")
+                    #print(pr_coef.size())
         else:
             # regular regressor sampling
             if n_rr > 0:
@@ -233,6 +325,8 @@ class Model:
             coef_knot = rr_knot
             coef_init_knot = rr_init_knot
             coef = rr_coef
+        
+        
 
         # coefficients likelihood/priors
         coef_prior_list = self.coef_prior_list
@@ -242,6 +336,7 @@ class Model:
                 # TODO: we can move torch conversion to init to enhance speed
                 m = torch.tensor(x['prior_mean'])
                 sd = torch.tensor(x['prior_sd'])
+
                 # tp = torch.tensor(x['prior_tp_idx'])
                 # idx = torch.tensor(x['prior_regressor_col_idx'])
                 start_tp_idx = x['prior_start_tp_idx']
@@ -252,13 +347,25 @@ class Model:
                     dist.Normal(m, sd).to_event(2),
                     obs=coef[..., start_tp_idx:end_tp_idx, idx]
                 )
+                #if name == '1':
+                #    print('name')
+                #    print(name)
+                #    #print('m')
+                #    #print(m)
+                #    print('index')
+                #    print(idx)
+                #    print("start_tp_idx:end_tp_idx")
+                #    print(start_tp_idx,end_tp_idx)
+                #    print('coef.size')
+                #    print(coef[..., start_tp_idx:end_tp_idx, idx].size())
+                #    
 
         # observation likelihood
         yhat = lev + (regressors * coef).sum(-1)
         obs_scale_base = pyro.sample("obs_scale_base", dist.Beta(2, 2)).unsqueeze(-1)
         # from 0.5 * sdy to sdy
         obs_scale = ((obs_scale_base * (1.0 - min_residuals_sd)) + min_residuals_sd) * sdy
-
+        #print(yhat[..., which_valid])
         # with pyro.plate("response_plate", n_valid):
         #     pyro.sample("response",
         #                 dist.StudentT(dof, yhat[..., which_valid], obs_scale),
@@ -267,6 +374,15 @@ class Model:
         pyro.sample("response",
                     dist.StudentT(dof, yhat[..., which_valid], obs_scale).to_event(1),
                     obs=response_tran[which_valid])
+        ## log likelihood
+        d = (yhat[..., which_valid] - response_tran[which_valid])/obs_scale
+        LL = - ((dof+1.0)/2.0)*torch.log(1+d/dof)
+        dof_t = torch.zeros_like(LL) + dof 
+        LL = LL + torch.lgamma((dof_t+1.0)/2.0) - 0.5*torch.log(dof_t*3.1415927410125732)- torch.lgamma(dof_t/2.0)
+        LL = LL.sum(-1)
+        #print('LL.size()')
+        #print(LL.size())
+        
 
         lev_knot = lev_knot_tran + meany
 
@@ -278,5 +394,7 @@ class Model:
             'coef_knot': coef_knot,
             'coef_init_knot': coef_init_knot,
             'obs_scale': obs_scale,
+            'loglikelihood': LL,
+            'rho_coef' : rho_coef,
         })
         return extra_out
