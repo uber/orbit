@@ -209,8 +209,8 @@ class Model:
                 if geometric_walk:
                     #print(pr_init_knot_scale)
                 # TODO: development method
-                    pr_init_hidden = pyro.sample(
-                        "pr_init_hidden",
+                    pr_init_knot = pyro.sample(
+                        "pr_init_knot",
                         dist.FoldedDistribution(
                             dist.Normal(pr_init_knot_loc, pr_init_knot_scale)
                         ).to_event(1)
@@ -222,13 +222,9 @@ class Model:
                         # to sample the first knot
                         dist.Normal(torch.zeros(n_pr, n_knots_coef), pr_knot_scale).to_event(2)
                     )
-                    pr_knot = (pr_init_hidden.log().unsqueeze(-1) + pr_knot_step.cumsum(-1)).exp()
-                    pr_init_knot = pr_knot[..., :, 0]
-                    #pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
-                    if est_rho:
-                        pr_coef = (pr_knot.squeeze(1) @ k_coef.transpose(-2, -1)).transpose(-2, -1)
-                    else: 
-                        pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+
+                    pr_knot = pr_init_knot.unsqueeze(-1) * pr_knot_step.cumsum(-1).exp()
+                    pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
                     
                 else:
                     # TODO: original method

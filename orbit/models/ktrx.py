@@ -72,6 +72,14 @@ class BaseKTRX(BaseTemplate):
         a list of pre-specified knot dates for coefficients
     date_freq : str
         date frequency; if not supplied, pd.infer_freq will be used to imply the date frequency.
+    min_residuals_sd : float
+        a numeric value from 0 to 1 to indicate the upper bound of residual scale paramterer; e.g.
+        0.5 means residual scale will be sampled from [0, 0.5] in a scaled Beta(2, 2) dist.
+    flat_multiplier : bool
+        False (default) to adjust knot scale with a multiplier based on regional regressor volume;
+        otherwise set all multiplier as 1
+    geometric_walk : bool
+        True (default) whether sample positive regressor knot as geometric random walk
     kwargs
         To specify `estimator_type` or additional args for the specified `estimator_type`
 
@@ -102,9 +110,11 @@ class BaseKTRX(BaseTemplate):
                  mvn=0,
                  flat_multiplier=False,
                  geometric_walk=True,
-                 min_residuals_sd=0.5,
+                 
+                 min_residuals_sd=1.0,
                  kernel_asym=[1.0,1.0],
                  est_rho = False,
+
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
         # normal distribution of known knot
@@ -480,6 +490,7 @@ class BaseKTRX(BaseTemplate):
                     (DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER - DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER) +
                     DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
             )
+            multiplier[np.isnan(multiplier)] = DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER
             if self.flat_multiplier:
                 multiplier = np.ones(multiplier.shape)
             # also note that after the following step,
@@ -514,7 +525,7 @@ class BaseKTRX(BaseTemplate):
                     (DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER - DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER) +
                     DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
             )
-
+            multiplier[np.isnan(multiplier)] = DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER
             # also note that after the following step,
             # _positive_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
             # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
@@ -891,7 +902,8 @@ class BaseKTRX(BaseTemplate):
         coefs = np.squeeze(self._get_regression_coefs_matrix(posteriors,
                                                              coefficient_method=coefficient_method,
                                                              date_array=date_array))
-
+        if len(coefs.shape) == 1:
+            coefs = coefs.reshape((1, -1))
         reg_df = pd.DataFrame(data=coefs, columns=self._regressor_col)
         if date_array is not None:
             reg_df[self.date_col] = date_array
