@@ -38,9 +38,10 @@ def test_time_series_splitter():
         'forecast_len': 20,
         'num_splits': 1
 
-    }])
+    }
+])
 @pytest.mark.parametrize("metrics", [None, smape])
-def test_backtester_test_data_only(iclaims_training_data):
+def test_backtester_test_data_only(iclaims_training_data, scheduler_args, metrics):
     df = iclaims_training_data
 
     lgt = LGTMAP(
