@@ -41,7 +41,7 @@ def test_time_series_splitter():
 
     }
 ])
-@pytest.mark.parametrize("metrics", [None, smape])
+@pytest.mark.parametrize("metrics", [None, [smape, mape], smape])
 def test_backtester_test_data_only(iclaims_training_data, scheduler_args, metrics):
     df = iclaims_training_data
 
@@ -62,7 +62,12 @@ def test_backtester_test_data_only(iclaims_training_data, scheduler_args, metric
     eval_out = backtester.score(metrics=metrics)
     evaluated_metrics = set(eval_out['metric_name'].tolist())
 
-    expected_metrics = [x.__name__ for x in backtester._default_metrics]
+    if metrics is None:
+        expected_metrics = [x.__name__ for x in backtester._default_metrics]
+    elif isinstance(metrics, list):
+        expected_metrics = [x.__name__ for x in metrics]
+    else:
+        expected_metrics = metrics.__name__
 
     assert set(expected_metrics) == evaluated_metrics
 
