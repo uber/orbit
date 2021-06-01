@@ -477,7 +477,8 @@ class BaseKTRX(BaseTemplate):
                     (DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER - DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER) +
                     DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
             )
-            multiplier[np.isnan(multiplier)] = DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER
+            # replace entire row of nan (when local_max is equal to local_min) with upper bound
+            multiplier[np.isnan(multiplier).all(axis=-1)] = DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER
             if self.flat_multiplier:
                 multiplier = np.ones(multiplier.shape)
             # also note that after the following step,
@@ -512,7 +513,7 @@ class BaseKTRX(BaseTemplate):
                     (DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER - DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER) +
                     DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
             )
-            multiplier[np.isnan(multiplier)] = DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER
+            multiplier[np.isnan(multiplier).all(axis=-1)] = DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER
             # also note that after the following step,
             # _positive_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
             # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
