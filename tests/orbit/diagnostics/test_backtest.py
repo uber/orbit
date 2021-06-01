@@ -67,7 +67,7 @@ def test_backtester_test_data_only(iclaims_training_data, scheduler_args, metric
     elif isinstance(metrics, list):
         expected_metrics = [x.__name__ for x in metrics]
     else:
-        expected_metrics = metrics.__name__
+        expected_metrics = [metrics.__name__]
 
     assert set(expected_metrics) == evaluated_metrics
 
