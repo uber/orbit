@@ -32,12 +32,12 @@ def test_time_series_splitter():
     {
         'incremental_len': 100,
         'forecast_len': 20,
-        'num_splits': 3
+        'n_splits': 3
 
     },
     {
         'forecast_len': 20,
-        'num_splits': 1
+        'n_splits': 1
 
     }
 ])
