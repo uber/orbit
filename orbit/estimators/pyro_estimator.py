@@ -95,40 +95,20 @@ class PyroEstimatorVI(PyroEstimator):
             if verbose and step % message == 0:
                 scale_rms = guide._loc_scale()[1].detach().pow(2).mean().sqrt().item()
                 print("step {: >4d} loss = {:0.5g}, scale = {:0.5g}".format(step, loss, scale_rms))
-        # add a break
-        #breakpoint() 
-        #print(100)
         # Extract samples.
         vectorize = pyro.plate("samples", num_sample, dim=-1 - model.max_plate_nesting)
-        #print(103)
         with pyro.poutine.trace() as tr:
-            samples = vectorize(guide)()
-        #print(106)    
+            samples = vectorize(guide)()   
         with pyro.poutine.replay(trace=tr.trace):
             samples.update(vectorize(model)())
-        #print(109)    
-        # Convert from torch.Tensors to numpy.ndarrays.
         extract = {
             name: value.detach().squeeze().numpy()
             for name, value in samples.items()
         }
-        #print(115)
         # make sure that model param names are a subset of stan extract keys
         invalid_model_param = set(model_param_names) - set(list(extract.keys()))
         if invalid_model_param:
-            raise EstimatorException("Pyro model definition does not contain required parameters")
-        #print(120)
-        # `stan.optimizing` automatically returns all defined parameters
-        # filter out unnecessary keys
-        #print(model_param_names)
-        #for param in model_param_names:
-        #    print(param)
-        #    #print(extract[param])
-        #    print(type(extract[param]))
-        #    print(extract[param].ndim)
-        #    print(extract[param].shape)
-  
-            
+            raise EstimatorException("Pyro model definition does not contain required parameters")            
         extract = {param: extract[param] for param in model_param_names}
 
         return extract

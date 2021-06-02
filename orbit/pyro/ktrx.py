@@ -124,6 +124,7 @@ class Model:
         # sample coef rho
         
         
+        rho_coef_from_mod = 2*rho_coef
         # hack for saving results 
         if not est_rho:
             rho_coef = pyro.sample('rho_coef',
@@ -132,7 +133,7 @@ class Model:
         if est_rho:
             k_coef2 = self.k_coef 
             rho_coef = pyro.sample('rho_coef',
-                                   dist.Uniform(low = 0.00, high = 1.00))
+                                   dist.Uniform(low = 0.0, high =  rho_coef_from_mod))
             
             rho_sq_t2 = 2*(rho_coef**2)
 
@@ -145,30 +146,18 @@ class Model:
             x_i = x_i.repeat(1, len(tp))
             x_i = x_i.transpose(0,-1)
             k_temp = torch.pow((x - x_i),2) 
-            #print('k1')
-            #print(k_temp[0:5, 0:5])
-#
-            #print('k2')
-            #print(k_temp[0:5, 0:5]/(2*(0.05**2)))
-#
-            #print('k3')
-            #print(torch.exp(-1*k_temp[0:5, 0:5]/(2*(0.05**2))))
-            #
-            
             if len(rho_sq_t2.size()) >= 1:
                 #rho_sq_t2 = rho_sq_t2*0 + 2*(0.05**2) # for debugging only 
                 k_temp = k_temp.repeat(rho_sq_t2.size()[0],1,1) # this line must be fixed 
                 rho_sq_t2 = rho_sq_t2.view(-1, 1, 1)    
                 k_temp = k_temp / rho_sq_t2
+                k_temp[k_temp >= 400.0] = 400.0 
                 k_coef = torch.exp(-1 * k_temp )
                 # add in the nomrialize 
                 k_norm = torch.sum(k_coef, -1, keepdim=True)
-                k_coef = k_coef/k_norm
-                
-                #print('new')
-                #print(k_coef[0,0:5,0:5])
-                #print('old')
-                #print(k_coef2[0:5,0:5])
+                #k_norm[k_norm<=0.0001] = 0.0001
+                k_coef = torch.divide(k_coef,k_norm)
+
 
                 
         
@@ -188,26 +177,16 @@ class Model:
                         rr_init_knot.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef),
                         rr_knot_scale).to_event(2)
                 )
-                
-                #print("rr_knot.size")
-                #print(rr_knot.size())
-                #print("k_coef.size")
-                #print(k_coef.size())
-                #rr_knot = rr_knot.squeeze(1)
+
                 if est_rho:
                     rr_coef = (rr_knot.squeeze(1) @ k_coef.transpose(-2, -1)).transpose(-2, -1)
                 else :
                     rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
-                #rr_coef = (rr_knot.squeeze(1) @ k_coef.transpose(-2, -1)).transpose(-2, -1)
-                #rr_coef  = (rr_knot*k_coef).sum(-1)
-                #rr_coef = rr_coef.transpose(-2, -1)
-                #print("rr_coef.size")
-                #print(rr_coef.size())
+
                 
             # positive regressor sampling
             if n_pr > 0:
                 if geometric_walk:
-                    #print(pr_init_knot_scale)
                 # TODO: development method
                     pr_init_knot = pyro.sample(
                         "pr_init_knot",
@@ -215,7 +194,7 @@ class Model:
                             dist.Normal(pr_init_knot_loc, pr_init_knot_scale)
                         ).to_event(1)
                     )
-                    #print(pr_knot_scale)
+
                     pr_knot_step = pyro.sample(
                         "pr_knot_step",
                         # note that unlike rr_knot, the first one is ignored as we use the initial scale
@@ -224,7 +203,12 @@ class Model:
                     )
 
                     pr_knot = pr_init_knot.unsqueeze(-1) * pr_knot_step.cumsum(-1).exp()
-                    pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+                    
+                    if est_rho:
+                        pr_coef = (pr_knot.squeeze(1) @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+                    else: 
+                        pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+                    #pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
                     
                 else:
                     # TODO: original method
@@ -245,21 +229,10 @@ class Model:
                                 pr_knot_scale)
                         ).to_event(2)
                     )
-                    #print("pr_knot.size")
-                    #print(pr_knot.size())
-                    #print("k_coef.size")
-                    #print(k_coef.size())
-                    #pr_knot = pr_knot.squeeze(1)
-                    #print("pr_knot.size")
-                    #print(pr_knot.size())
                     if est_rho:
                         pr_coef = (pr_knot.squeeze(1) @ k_coef.transpose(-2, -1)).transpose(-2, -1)
                     else: 
                         pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
-                    #####pr_coef  = (pr_knot*k_coef).sum(-1)
-                    #####pr_coef = pr_coef.transpose(-2, -1)
-                    #print("pr_coef.size")
-                    #print(pr_coef.size())
         else:
             # regular regressor sampling
             if n_rr > 0:
@@ -343,21 +316,9 @@ class Model:
                     dist.Normal(m, sd).to_event(2),
                     obs=coef[..., start_tp_idx:end_tp_idx, idx]
                 )
-                #if name == '1':
-                #    print('name')
-                #    print(name)
-                #    #print('m')
-                #    #print(m)
-                #    print('index')
-                #    print(idx)
-                #    print("start_tp_idx:end_tp_idx")
-                #    print(start_tp_idx,end_tp_idx)
-                #    print('coef.size')
-                #    print(coef[..., start_tp_idx:end_tp_idx, idx].size())
-                #    
+  
+        yhat = lev + (regressors * coef).sum(-1) #+ seas_term + meany
 
-        # observation likelihood
-        yhat = lev + (regressors * coef).sum(-1)
         obs_scale_base = pyro.sample("obs_scale_base", dist.Beta(2, 2)).unsqueeze(-1)
         # from 0.5 * sdy to sdy
         obs_scale = ((obs_scale_base * (1.0 - min_residuals_sd)) + min_residuals_sd) * sdy
@@ -367,17 +328,19 @@ class Model:
         #                 dist.StudentT(dof, yhat[..., which_valid], obs_scale),
         #                 obs=response_tran[which_valid])
 
+
+        #print(obs_scale)
         pyro.sample("response",
-                    dist.StudentT(dof, yhat[..., which_valid], obs_scale).to_event(1),
+                    dist.StudentT(dof, loc = yhat[..., which_valid], scale= obs_scale).to_event(1),
                     obs=response_tran[which_valid])
+        
         ## log likelihood
         d = (yhat[..., which_valid] - response_tran[which_valid])/obs_scale
         LL = - ((dof+1.0)/2.0)*torch.log(1+d/dof)
         dof_t = torch.zeros_like(LL) + dof 
         LL = LL + torch.lgamma((dof_t+1.0)/2.0) - 0.5*torch.log(dof_t*3.1415927410125732)- torch.lgamma(dof_t/2.0)
         LL = LL.sum(-1)
-        #print('LL.size()')
-        #print(LL.size())
+
         
 
         lev_knot = lev_knot_tran + meany

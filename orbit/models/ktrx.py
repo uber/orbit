@@ -114,7 +114,6 @@ class BaseKTRX(BaseTemplate):
                  min_residuals_sd=1.0,
                  kernel_asym=[1.0,1.0],
                  est_rho = False,
-
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
         # normal distribution of known knot
@@ -878,7 +877,7 @@ class BaseKTRX(BaseTemplate):
                 if self.est_rho:
                     kernel_coefficients = gauss_kernel(new_tp, 
                                                        self._knots_tp_coefficients, 
-                                                       rho=self.rho_coef, 
+                                                       rho=self.rho_coefficients, 
                                                        norm = [1.0,1.0])    
                     
                     
