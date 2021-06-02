@@ -3,6 +3,8 @@ import torch
 
 import pyro
 import pyro.distributions as dist
+import pyro.poutine as poutine
+from pyro.infer.reparam import LocScaleReparam, SymmetricStableReparam
 
 # FIXME: this is sort of dangerous; consider better implementation later
 torch.set_default_tensor_type('torch.DoubleTensor')
@@ -136,7 +138,7 @@ class Model:
             # positive regressor sampling
             if n_pr > 0:
                 if geometric_walk:
-                # TODO: development method
+                    # TODO: development method
                     pr_init_knot = pyro.sample(
                         "pr_init_knot",
                         dist.FoldedDistribution(

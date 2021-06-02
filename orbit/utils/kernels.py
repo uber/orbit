@@ -21,6 +21,8 @@ def gauss_kernel(x, x_i, rho=1.0, alpha=1.0, n_reduce=-1, point_to_flatten=1):
         smoothing parameter known as "length-scale" in gaussian process
     alpha : float
         marginal standard deviation parameter in gaussian process; one should use 1 in kernel regression
+    n_reduce : int
+        if greater 0 (default=-1), reduce number of positive weights to such input
     point_to_flatten : float
         the time point starting to flatten the weights; default is 1 for normalized time points
 
