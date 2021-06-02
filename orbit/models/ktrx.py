@@ -453,38 +453,37 @@ class BaseKTRX(BaseTemplate):
             self._kernel_coefficients = kernel_coefficients
 
     def _set_knots_scale_matrix(self):
-        # calculate average local absolute volume for each segment
-        local_val = np.ones((self._num_of_positive_regressors, self._num_knots_coefficients))
-
         if self._num_of_positive_regressors > 0:
-            # store local value for the range on the left side since last knot
-            for idx in range(len(self._knots_idx_coef)):
-                if idx < len(self._knots_idx_coef) - 1:
-                    str_idx = self._knots_idx_coef[idx]
-                    end_idx = self._knots_idx_coef[idx + 1]
-                else:
-                    str_idx = self._knots_idx_coef[idx]
-                    end_idx = self.num_of_observations
-
-                local_val[:, idx] = np.mean(np.fabs(self._positive_regressor_matrix[str_idx:end_idx]), axis=0)
-
-            # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
-            # scale parameters
-            local_min = np.amin(local_val, axis=-1, keepdims=True)
-            local_max = np.amax(local_val, axis=-1, keepdims=True)
-            multiplier = (
-                    (local_val - local_min) / (local_max - local_min) *
-                    (DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER - DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER) +
-                    DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
-            )
-            # replace entire row of nan (when local_max is equal to local_min) with upper bound
-            multiplier[np.isnan(multiplier).all(axis=-1)] = DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER
+            # calculate average local absolute volume for each segment
+            local_val = np.ones((self._num_of_positive_regressors, self._num_knots_coefficients))
             if self.flat_multiplier:
-                multiplier = np.ones(multiplier.shape)
+                multiplier = np.ones(local_val.shape)
+            else:
+                multiplier = np.ones(local_val.shape)
+                # store local value for the range on the left side since last knot
+                for idx in range(len(self._knots_idx_coef)):
+                    if idx < len(self._knots_idx_coef) - 1:
+                        str_idx = self._knots_idx_coef[idx]
+                        end_idx = self._knots_idx_coef[idx + 1]
+                    else:
+                        str_idx = self._knots_idx_coef[idx]
+                        end_idx = self.num_of_observations
+
+                    local_val[:, idx] = np.mean(np.fabs(self._positive_regressor_matrix[str_idx:end_idx]), axis=0)
+
+                # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
+                # scale parameters
+                global_med = np.expand_dims(np.mean(np.fabs(self._positive_regressor_matrix), axis=0), -1)
+                test_flag = local_val < 0.01 * global_med
+
+                multiplier[test_flag] = DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
+                # replace entire row of nan (when 0.1 * global_med is equal to global_min) with upper bound
+                multiplier[np.isnan(multiplier).all(axis=-1)] = 1.0
+
             # also note that after the following step,
             # _positive_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
             # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
-            # self._positive_regressor_knot_scale has shape num_of_pr x num_of_knot
+            # after line below, self._positive_regressor_knot_scale has shape num_of_pr x num_of_knot
             self._positive_regressor_knot_scale = (
                     multiplier * np.expand_dims(self._positive_regressor_knot_scale, -1)
             )
@@ -493,6 +492,10 @@ class BaseKTRX(BaseTemplate):
             # do the same for regular regressor
             # calculate average local absolute volume for each segment
             local_val = np.ones((self._num_of_regular_regressors, self._num_knots_coefficients))
+            if self.flat_multiplier:
+                multiplier = np.ones(local_val.shape)
+            else:
+                multiplier = np.ones(local_val.shape)
             # store local value for the range on the left side since last knot
             for idx in range(len(self._knots_idx_coef)):
                 if idx < len(self._knots_idx_coef) - 1:
@@ -506,20 +509,16 @@ class BaseKTRX(BaseTemplate):
 
             # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
             # scale parameters
-            local_min = np.amin(local_val, axis=-1, keepdims=True)
-            local_max = np.amax(local_val, axis=-1, keepdims=True)
-            multiplier = (
-                    (local_val - local_min) / (local_max - local_min) *
-                    (DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER - DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER) +
-                    DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
-            )
-            multiplier[np.isnan(multiplier).all(axis=-1)] = DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER
+            global_med = np.expand_dims(np.median(np.fabs(self._regular_regressor_matrix), axis=0), -1)
+            test_flag = local_val < 0.01 * global_med
+            multiplier[test_flag] = DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
+            # replace entire row of nan (when 0.1 * global_med is equal to global_min) with upper bound
+            multiplier[np.isnan(multiplier).all(axis=-1)] = 1.0
+
             # also note that after the following step,
-            # _positive_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
+            # _regular_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
             # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
             # self._regular_regressor_knot_scale has shape num_of_pr x num_of_knot
-            if self.flat_multiplier:
-                multiplier = np.ones(multiplier.shape)
             self._regular_regressor_knot_scale = (
                     multiplier * np.expand_dims(self._regular_regressor_knot_scale, -1)
             )
@@ -812,9 +811,10 @@ class BaseKTRX(BaseTemplate):
         date_array: array like
             array of date stamp
         coefficient_method: str
-            either "beta" or "knot"; when "beta" is used; curve are sampled/aggregated directly from beta posteriors
-            whereas when "knot" is used we first extract sampled/aggregated posteriors of knot and extract beta
-            this mainly impact the aggregated estimation method; full bayesian should not be impacted
+            either "empirical" or "smooth"; when "empirical" is used; curve are sampled/aggregated directly from
+            coefficients posteriors whereas when "smooth" is used we first extract sampled/aggregated posteriors of knot
+            and extract coefficients this mainly impact the aggregated estimation method; full bayesian should not be
+            impacted
         """
         if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
             return None
