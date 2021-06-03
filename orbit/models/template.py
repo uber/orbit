@@ -17,12 +17,9 @@ ci.add_style("numpy_with_merge_dedup", merge_numpy_docs_dedup)
 
 class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_dedup")):
     """ Base abstract class for univariate time-series model creation
-
     `BaseTemplate` will instantiate an estimator class of `estimator_type`.
-
     Each model defines its own `_supported_estimator_types` to determine if
     the provided `estimator_type` is supported for that particular model.
-
     Parameters
     ----------
     response_col : str
@@ -31,7 +28,6 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
         Name of date variable column, default 'ds'
     estimator_type : orbit.BaseEstimator
         Any subclass of `orbit.BaseEstimator`
-
     Notes
     -----
     For attributes which are input by users and needed to mutate further downstream, we will introduce a
@@ -234,6 +230,25 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
         self._posterior_samples = model_extract
         self._training_metrics = training_metrics
 
+    def get_prediction_df_meta(self, df):
+        # get prediction df meta
+        prediction_df_meta = {
+            'date_array': pd.to_datetime(df[self.date_col]).reset_index(drop=True),
+            'df_length': len(df.index),
+            'prediction_start': df[self.date_col].iloc[0],
+            'prediction_end': df[self.date_col].iloc[-1]
+        }
+
+        if not is_ordered_datetime(prediction_df_meta['date_array']):
+            raise IllegalArgument('Datetime index must be ordered and not repeat')
+
+        # TODO: validate that all regressor columns are present, if any
+
+        if prediction_df_meta['prediction_start'] < self.training_start:
+            raise PredictionException('Prediction start must be after training start.')
+
+        return prediction_df_meta
+    
     def get_posterior_samples(self):
         return self._posterior_samples.copy()
 
@@ -300,10 +315,8 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
 
 class MAPTemplate(BaseTemplate):
     """ Abstract class for MAP (Maximum a Posteriori) prediction
-
     In this module, prediction is based on Maximum a Posteriori (aka Mode) of the posterior.
     This template only supports MAP inference.
-
     Parameters
     ----------
     n_bootstrap_draws : int
@@ -314,7 +327,7 @@ class MAPTemplate(BaseTemplate):
         confident intervals, pass an empty list
     """
 
-    def __init__(self, n_bootstrap_draws=-1, prediction_percentiles=None, **kwargs):
+    def __init__(self, n_bootstrap_draws=1e4, prediction_percentiles=None, **kwargs):
         super().__init__(**kwargs)
 
         # n_bootstrap_draws here only to provide empirical prediction percentiles;
@@ -405,12 +418,10 @@ class MAPTemplate(BaseTemplate):
 
 class FullBayesianTemplate(BaseTemplate):
     """ Abstract class for full Bayesian prediction
-
     In full prediction, the prediction occurs as a function of each parameter posterior sample,
     and the prediction results are aggregated after prediction. Prediction will
     always return the median (aka 50th percentile) along with any additional percentiles that
     are specified.
-
     Parameters
     ----------
     n_bootstrap_draws : int
@@ -453,12 +464,10 @@ class FullBayesianTemplate(BaseTemplate):
     @staticmethod
     def _bootstrap(num_samples, posterior_samples, n):
         """Draw `n` number of bootstrap samples from the posterior_samples.
-
         Args
         ----
         n : int
             The number of bootstrap samples to draw
-
         """
         if n < 2:
             raise IllegalArgument("Error: Number of bootstrap draws must be at least 2")
@@ -526,10 +535,8 @@ class FullBayesianTemplate(BaseTemplate):
 
 class AggregatedPosteriorTemplate(BaseTemplate):
     """ Abstract class for full aggregated posteriors prediction
-
     In aggregated prediction, the parameter posterior samples are reduced using `aggregate_method`
     before performing a single prediction. This template only supports aggregated posterior inference.
-
     Parameters
     ----------
     aggregate_method : { 'mean', 'median' }
@@ -645,4 +652,3 @@ class AggregatedPosteriorTemplate(BaseTemplate):
 
         predicted_df = prepend_date_column(predicted_df, df, self.date_col)
         return predicted_df
-
