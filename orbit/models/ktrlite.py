@@ -2,21 +2,14 @@ import pandas as pd
 import numpy as np
 import math
 from scipy.stats import nct
-import torch
 from copy import deepcopy
 import matplotlib.pyplot as plt
 
-from ..constants import ktrlite as constants
-
 from ..estimators.stan_estimator import StanEstimatorMAP
-from ..exceptions import IllegalArgument, ModelException, PredictionException
-from ..utils.general import is_ordered_datetime
+from ..exceptions import IllegalArgument, ModelException
 from ..utils.kernels import sandwich_kernel
 from ..utils.features import make_fourier_series_df
 from .template import BaseTemplate, MAPTemplate
-from ..constants.constants import PredictionKeys
-from ..initializer.ktrlite import KTRLiteInitializer
-
 from ..constants.constants import PredictionKeys, PredictMethod
 from ..initializer.ktrlite import KTRLiteInitializer
 from ..constants import ktrlite as constants
@@ -105,6 +98,7 @@ class BaseKTRLite(BaseTemplate):
         self._degree_of_freedom = degree_of_freedom
 
         self.span_coefficients = span_coefficients
+        # self.rho_coefficients = rho_coefficients
         self.date_freq = date_freq
 
         # regression attributes -- now is ONLY used for fourier series as seasonality
@@ -170,11 +164,11 @@ class BaseKTRLite(BaseTemplate):
             if 2 * order > self._seasonality[k] - 1:
                 raise IllegalArgument('reduce seasonality_fs_order to avoid over-fitting')
 
-        if not isinstance(self.seasonal_initial_knot_scale, list) and \
-                isinstance(self.seasonal_initial_knot_scale * 1.0, float):
-            self._seasonal_initial_knot_scale = [self.seasonal_initial_knot_scale] * len(self._seasonality)
+        if not isinstance(self.seasonal_knot_pooling_scale, list) and \
+                isinstance(self.seasonal_knot_pooling_scale * 1.0, float):
+            self._seasonal_knot_pooling_scale = [self.seasonal_knot_pooling_scale] * len(self._seasonality)
         else:
-            self._seasonal_initial_knot_scale = self.seasonal_initial_knot_scale
+            self._seasonal_knot_pooling_scale = self.seasonal_knot_pooling_scale
 
         if not isinstance(self.seasonal_knot_scale, list) and isinstance(self.seasonal_knot_scale * 1.0, float):
             self._seasonal_knot_scale = [self.seasonal_knot_scale] * len(self._seasonality)
@@ -185,8 +179,7 @@ class BaseKTRLite(BaseTemplate):
         """given list of seasonalities and their order, create list of seasonal_regressors_columns"""
         self.regressor_col_gp = list()
         self.regressor_col = list()
-        self.coefficients_knot_pooling_loc = list()
-        self.coefficients_knot_pooling_scale = list()
+        self.coefficients_initial_knot_scale = list()
         self.coefficients_knot_scale = list()
 
         if len(self._seasonality) > 0:
@@ -289,10 +282,13 @@ class BaseKTRLite(BaseTemplate):
             self.knots_tp_level = (1 + knots_idx_level) / self.num_of_observations
             self._level_knot_dates = df[self.date_col].values[knots_idx_level]
         else:
+            # to exclude dates which are not within training period
             self._level_knot_dates = pd.to_datetime([
-                x for x in self._level_knot_dates if 
-                (x <= df[self.date_col].max()) and (x >= df[self.date_col].min())
+                x for x in self._level_knot_dates if
+                (x <= df[self.date_col].values[-1]) and (x >= df[self.date_col].values[0])
             ])
+            # since we allow _level_knot_dates to be continuous, we calculate distance between knots
+            # in continuous value as well (instead of index)
             if self.date_freq is None:
                 self.date_freq = pd.infer_freq(df[self.date_col])[0]
             start_date = self.training_start
@@ -342,6 +338,13 @@ class BaseKTRLite(BaseTemplate):
                  **kwargs):
         """Vectorized version of prediction math"""
 
+        ################################################################
+        # Prediction Attributes
+        ################################################################
+        start = self.prediction_input_meta['start']
+        trained_len = self.num_of_observations
+        output_len = self.prediction_input_meta['df_length']
+
         # remove reference from original input
         df = df.copy()
         prediction_df_meta = self.get_prediction_df_meta(df)
@@ -349,9 +352,8 @@ class BaseKTRLite(BaseTemplate):
         ################################################################
         # Model Attributes
         ################################################################
-
         model = deepcopy(posterior_estimates)
-        # TODO: adopt torch as in lgt or dlt?
+        # TODO: adopt torch ?
         # for k, v in model.items():
         #     model[k] = torch.from_numpy(v)
 
@@ -440,8 +442,8 @@ class BaseKTRLite(BaseTemplate):
         # if decompose output dictionary of components
         if decompose:
             decomp_dict = {
-                'prediction': pred_array,
-                'trend': trend,
+                PredictionKeys.PREDICTION.value: pred_array,
+                PredictionKeys.TREND.value: trend,
             }
             decomp_dict.update(seas_decomp)
         else:
@@ -453,8 +455,6 @@ class BaseKTRLite(BaseTemplate):
             self.pred_array = None
 
         return decomp_dict
-
-
 
 
 class KTRLiteMAP(MAPTemplate, BaseKTRLite):
