@@ -248,7 +248,7 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
             raise PredictionException('Prediction start must be after training start.')
 
         return prediction_df_meta
-    
+
     def get_posterior_samples(self):
         return self._posterior_samples.copy()
 
