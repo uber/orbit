@@ -314,7 +314,7 @@ class MAPTemplate(BaseTemplate):
         confident intervals, pass an empty list
     """
 
-    def __init__(self, n_bootstrap_draws=1e4, prediction_percentiles=None, **kwargs):
+    def __init__(self, n_bootstrap_draws=-1, prediction_percentiles=None, **kwargs):
         super().__init__(**kwargs)
 
         # n_bootstrap_draws here only to provide empirical prediction percentiles;

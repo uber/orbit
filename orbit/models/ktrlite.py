@@ -11,7 +11,6 @@ from ..utils.kernels import sandwich_kernel
 from ..utils.features import make_fourier_series_df
 from .template import BaseTemplate, MAPTemplate
 from ..constants.constants import PredictionKeys, PredictMethod
-from ..initializer.ktrlite import KTRLiteInitializer
 from ..constants import ktrlite as constants
 from orbit.constants.palette import OrbitPalette
 
@@ -130,19 +129,9 @@ class BaseKTRLite(BaseTemplate):
         self.num_knots_coefficients = None
         self.knots_tp_coefficients = None
         self.regressor_matrix = None
+        # self.coefficients_knot_dates = None
 
-    def _set_init_values(self):
-        """Override function from Base Template"""
-        # init_values_partial = partial(init_values_callable, seasonality=seasonality)
-        # partialfunc does not work when passed to PyStan because PyStan uses
-        # inspect.getargspec(func) which seems to raise an exception with keyword-only args
-        # caused by using partialfunc
-        # lambda as an alternative workaround
-        if len(self._seasonality) > 1 and self.num_of_regressors > 0:
-            init_values_callable = KTRLiteInitializer(self.num_of_regressors, self.num_knots_coefficients)
-            self._init_values = init_values_callable
-
-    # set defaults
+    # initialization related modules
     def _set_default_args(self):
         """Set default attributes for None
         """
