@@ -11,9 +11,9 @@ from ..utils.kernels import sandwich_kernel
 from ..utils.features import make_fourier_series_df
 from .template import BaseTemplate, MAPTemplate
 from ..constants.constants import PredictionKeys, PredictMethod
-from ..initializer.ktrlite import KTRLiteInitializer
 from ..constants import ktrlite as constants
 from orbit.constants.palette import OrbitPalette
+from ..initializer.ktrlite import KTRLiteInitializer
 
 
 class BaseKTRLite(BaseTemplate):
@@ -98,6 +98,7 @@ class BaseKTRLite(BaseTemplate):
         self._degree_of_freedom = degree_of_freedom
 
         self.span_coefficients = span_coefficients
+        # self.rho_coefficients = rho_coefficients
         self.date_freq = date_freq
 
         # regression attributes -- now is ONLY used for fourier series as seasonality
@@ -129,6 +130,7 @@ class BaseKTRLite(BaseTemplate):
         self.num_knots_coefficients = None
         self.knots_tp_coefficients = None
         self.regressor_matrix = None
+        # self.coefficients_knot_dates = None
 
     def _set_init_values(self):
         """Override function from Base Template"""
@@ -141,7 +143,7 @@ class BaseKTRLite(BaseTemplate):
             init_values_callable = KTRLiteInitializer(self.num_of_regressors, self.num_knots_coefficients)
             self._init_values = init_values_callable
 
-    # set defaults
+    # initialization related modules
     def _set_default_args(self):
         """Set default attributes for None
         """
@@ -245,7 +247,6 @@ class BaseKTRLite(BaseTemplate):
         if self.num_of_regressors > 0:
             self.regressor_matrix = df.filter(items=self.regressor_col, ).values
 
-    # TODO: docstring and make this a utils since it is quite generic?
     @staticmethod
     def get_gap_between_dates(start_date, end_date, freq):
         diff = end_date - start_date
@@ -424,8 +425,6 @@ class BaseKTRLite(BaseTemplate):
         out.update(seas_decomp)
 
         return out
-
-
 
 
 class KTRLiteMAP(MAPTemplate, BaseKTRLite):
