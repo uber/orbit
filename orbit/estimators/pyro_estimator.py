@@ -54,15 +54,18 @@ class PyroEstimatorVI(PyroEstimator):
         Number of samples ot draw for inference, default 100
     num_particles : int
         Number of particles used in :class: `~pyro.infer.Trace_ELBO` for SVI optimization
+    init_scale : float
+        Parameter used in `pyro.infer.autoguide`; recommend a larger number of small dataset
     kwargs
         Additional `PyroEstimator` class args
 
     """
 
-    def __init__(self, num_sample=100, num_particles=100, **kwargs):
+    def __init__(self, num_sample=100, num_particles=100, init_scale=0.1, **kwargs):
         super().__init__(**kwargs)
         self.num_sample = num_sample
         self.num_particles = num_particles
+        self.init_scale = init_scale
 
     def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         # verbose is passed through from orbit.models.base_estimator
@@ -81,7 +84,7 @@ class PyroEstimatorVI(PyroEstimator):
 
         # Perform stochastic variational inference using an auto guide.
         pyro.clear_param_store()
-        guide = AutoLowRankMultivariateNormal(model)
+        guide = AutoLowRankMultivariateNormal(model, init_scale=self.init_scale)
         optim = ClippedAdam({
             "lr": learning_rate,
             "lrd": learning_rate_total_decay ** (1 / num_steps)
