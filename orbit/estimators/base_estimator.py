@@ -17,7 +17,7 @@ class BaseEstimator(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_
         If True (default), output all diagnostics messages from estimators
 
     """
-    def __init__(self, seed=8888, verbose=True):
+    def __init__(self, seed=8888, verbose=False):
         self.seed = seed
         self.verbose = verbose
 
