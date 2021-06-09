@@ -473,8 +473,8 @@ class BaseKTRX(BaseTemplate):
 
                 # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
                 # scale parameters
-                global_med = np.expand_dims(np.mean(np.fabs(self._positive_regressor_matrix), axis=0), -1)
-                test_flag = local_val < 0.01 * global_med
+                global_mean = np.expand_dims(np.mean(np.fabs(self._positive_regressor_matrix), axis=0), -1)
+                test_flag = local_val < 0.01 * global_mean
 
                 multiplier[test_flag] = DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
                 # replace entire row of nan (when 0.1 * global_med is equal to global_min) with upper bound
@@ -509,8 +509,8 @@ class BaseKTRX(BaseTemplate):
 
             # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
             # scale parameters
-            global_med = np.expand_dims(np.median(np.fabs(self._regular_regressor_matrix), axis=0), -1)
-            test_flag = local_val < 0.01 * global_med
+            global_mean = np.expand_dims(np.mean(np.fabs(self._regular_regressor_matrix), axis=0), -1)
+            test_flag = local_val < 0.01 * global_mean
             multiplier[test_flag] = DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
             # replace entire row of nan (when 0.1 * global_med is equal to global_min) with upper bound
             multiplier[np.isnan(multiplier).all(axis=-1)] = 1.0
