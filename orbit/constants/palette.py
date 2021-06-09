@@ -1,5 +1,5 @@
 from enum import Enum
-
+import seaborn as sns
 
 class QualitativePalette(Enum):
     """
@@ -10,12 +10,34 @@ class QualitativePalette(Enum):
     # for time-series plot
     Line4 = ["#e6c72b", "#2be669", "#2b4ae6", "#e62ba8"]
     PostQ = ['#1fc600', '#ff4500']
+
     # large amount of stacking series
     Stack = ["#12939A", "#F15C17", "#DDB27C", "#88572C", "#FF991F", "#DA70BF", "#125C77",
              "#4DC19C", "#776E57", "#17B8BE", "#F6D18A", "#B7885E", "#FFCB99", "#F89570",
              "#829AE3", "#E79FD5", "#1E96BE", "#89DAC1", "#B3AD9E"]
     # bar plot
     Bar5 = ["#ef476fff", "#ffd166ff", "#06d6a0ff", "#118ab2ff", "#073b4cff"]
+
+    # single colors
+    teal = '#008080'
+    dark_teal = '#003f5c'
+    blue = '#0000FF'
+    mid_blue = '#4c72b0'
+    dark_blue = '#2f4b7c'
+    purple = 'a05195'
+    dark_purple = '#665191'
+    coral = '#f95d6a'
+    red = '#FF0000'
+    yellow = '#FFFF00'
+    bee_yellow = '#ffa600'
+    orange = '#dd8452'
+    gray = '#cccccc'
+    black = '#000000'
+    green = '#2eb82e'
+    dark_green = '#145214'
+
+    # paired color list
+    paired_colors = sns.color_palette("Paired")
 
 
 class KTRPalette(Enum):
@@ -36,14 +58,28 @@ class SequentialPalette(Enum):
     Orange10 = ['#fff2e6', '#ffd9b3', '#ffbf80', '#ffa64d', '#ff8c1a', '#e67300', '#b35900', '#804000', '#4d2600',
                 '#1a0d00']
 
+    # continuous sequential color palette
+    # blue teal theme
+    Seafoam = sns.cubehelix_palette(start=.5, rot=-.5, as_cmap=True)
+    # orange yellow theme
+    Sunshine = sns.color_palette("YlOrBr", as_cmap=True)
+    # green theme
+    Forest = sns.cubehelix_palette(start=1.5, rot=.1, as_cmap=True)
+    # coral theme
+    Rose = sns.cubehelix_palette(start=1.2, rot=-.2, as_cmap=True)
+
 
 class DivergingPalette(Enum):
     # diverging colors with two hues for inherently ordered values
     # good for numeric variable has a meaningful central value, like zero. The colors gradients from the center
     # to the right and the left.
     # green and red theme
-    Watermelon = ['#488f31', '#699f54', '#88af76', '#a5bf98', '#c2d0bc', '#dfdfdf', '#e3c2c1', '#e4a3a3', '#e18487',
-                  '#dc646b', '#de425b']
+    Watermelon = sns.diverging_palette(120, 20, as_cmap=True)
     # blue and red theme
-    Unclesam = ['#4589ff', '#779cfc', '#9baff9', '#b9c4f6', '#d4d8f2', '#dfdfdf', '#e3c2c1', '#e4a3a3', '#e18487',
-                '#dc646b', '#de425b']
+    Unclesam = sns.diverging_palette(260, 20, as_cmap=True)
+    # dark teal purple orange theme
+    Sunrise = sns.color_palette("magma", as_cmap=True)
+    # continuous palattes
+    Rainbow = sns.color_palette('Spectral', as_cmap=True)
+
+
