@@ -1,3 +1,4 @@
+import pytest
 import pandas as pd
 import numpy as np
 
@@ -22,7 +23,26 @@ def test_time_series_splitter():
     assert expected_number_of_splits == len(list(tss.split()))
 
 
-def test_backtester_test_data_only(iclaims_training_data):
+@pytest.mark.parametrize("scheduler_args", [
+    {
+        'min_train_len': 100,
+        'incremental_len': 100,
+        'forecast_len': 20
+    },
+    {
+        'incremental_len': 100,
+        'forecast_len': 20,
+        'n_splits': 3
+
+    },
+    {
+        'forecast_len': 20,
+        'n_splits': 1
+
+    }
+])
+@pytest.mark.parametrize("metrics", [None, [smape, mape], smape])
+def test_backtester_test_data_only(iclaims_training_data, scheduler_args, metrics):
     df = iclaims_training_data
 
     lgt = LGTMAP(
@@ -35,16 +55,19 @@ def test_backtester_test_data_only(iclaims_training_data):
     backtester = BackTester(
         model=lgt,
         df=df,
-        min_train_len=100,
-        incremental_len=100,
-        forecast_len=20,
+        **scheduler_args
     )
 
     backtester.fit_predict()
-    eval_out = backtester.score()
+    eval_out = backtester.score(metrics=metrics)
     evaluated_metrics = set(eval_out['metric_name'].tolist())
 
-    expected_metrics = [x.__name__ for x in backtester._default_metrics]
+    if metrics is None:
+        expected_metrics = [x.__name__ for x in backtester._default_metrics]
+    elif isinstance(metrics, list):
+        expected_metrics = [x.__name__ for x in metrics]
+    else:
+        expected_metrics = [metrics.__name__]
 
     assert set(expected_metrics) == evaluated_metrics
 
