@@ -112,7 +112,7 @@ class BaseDLT(BaseETS):
         self._regressor_sigma_prior = self.regressor_sigma_prior
         self._regression_penalty = None
         self._regressor_col = list()
-        
+
         self.num_of_regressors = 0
         # positive regressors
         self.num_of_positive_regressors = 0
@@ -319,7 +319,7 @@ class BaseDLT(BaseETS):
     def _set_dynamic_attributes(self, df):
         """Overriding: func: `~orbit.models.BaseETS._set_dynamic_attributes"""
         # scalar value is suggested by the author of Rlgt
-        self.cauchy_sd = max(self.response) / 30.0
+        self.cauchy_sd = max(np.abs(self.response)) / 30.0
         # extra validation and settings for regression
         self._validate_training_df_with_regression(df)
         self._set_regressor_matrix(df)  # depends on num_of_observations
