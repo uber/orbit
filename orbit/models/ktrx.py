@@ -76,10 +76,10 @@ class BaseKTRX(BaseTemplate):
         a numeric value from 0 to 1 to indicate the upper bound of residual scale parameter; e.g.
         0.5 means residual scale will be sampled from [0, 0.5] in a scaled Beta(2, 2) dist.
     flat_multiplier : bool
-        False (default) to adjust knot scale with a multiplier based on regional regressor volume;
-        otherwise set all multiplier as 1
+        Default set as False. If True, we will adjust knot scale with a multiplier based on regressor volume
+        around each knot; When False, set all multiplier as 1
     geometric_walk : bool
-        True (default) whether sample positive regressor knot as geometric random walk
+        Default set as False. If True we will sample positive regressor knot as geometric random walk
     kwargs
         To specify `estimator_type` or additional args for the specified `estimator_type`
 
@@ -108,8 +108,8 @@ class BaseKTRX(BaseTemplate):
                  coefficients_knot_dates=None,
                  date_freq=None,
                  mvn=0,
-                 flat_multiplier=False,
-                 geometric_walk=True,
+                 flat_multiplier=True,
+                 geometric_walk=False,
                  min_residuals_sd=1.0,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
@@ -487,6 +487,11 @@ class BaseKTRX(BaseTemplate):
             self._positive_regressor_knot_scale = (
                     multiplier * np.expand_dims(self._positive_regressor_knot_scale, -1)
             )
+            # keep a lower bound of scale parameters
+            self._positive_regressor_knot_scale[self._positive_regressor_knot_scale < 1e-4] = 1e-4
+            # TODO: we change the type here, maybe we should change it earlier?
+            self._positive_regressor_init_knot_scale = np.array(self._positive_regressor_init_knot_scale)
+            self._positive_regressor_init_knot_scale[self._positive_regressor_init_knot_scale < 1e-4] = 1e-4
 
         if self._num_of_regular_regressors > 0:
             # do the same for regular regressor
@@ -522,6 +527,11 @@ class BaseKTRX(BaseTemplate):
             self._regular_regressor_knot_scale = (
                     multiplier * np.expand_dims(self._regular_regressor_knot_scale, -1)
             )
+            # keep a lower bound of scale parameters
+            self._regular_regressor_knot_scale[self._regular_regressor_knot_scale < 1e-4] = 1e-4
+            # TODO: we change the type here, maybe we should change it earlier?
+            self._regular_regressor_init_knot_scale = np.array(self._regular_regressor_init_knot_scale)
+            self._regular_regressor_init_knot_scale[self._regular_regressor_init_knot_scale < 1e-4] = 1e-4
 
     def _generate_tp(self, prediction_date_array):
         """Used in _generate_coefs"""
