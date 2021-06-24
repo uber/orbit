@@ -76,8 +76,8 @@ class BaseKTRX(BaseTemplate):
         a numeric value from 0 to 1 to indicate the upper bound of residual scale parameter; e.g.
         0.5 means residual scale will be sampled from [0, 0.5] in a scaled Beta(2, 2) dist.
     flat_multiplier : bool
-        Default set as False. If True, we will adjust knot scale with a multiplier based on regressor volume
-        around each knot; When False, set all multiplier as 1
+        Default set as True. If False, we will adjust knot scale with a multiplier based on regressor volume
+        around each knot; When True, set all multiplier as 1
     geometric_walk : bool
         Default set as False. If True we will sample positive regressor knot as geometric random walk
     kwargs
