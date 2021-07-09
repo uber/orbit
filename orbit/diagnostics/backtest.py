@@ -300,6 +300,9 @@ class BackTester(object):
             both_values['split_key'] = key
             # union each splits
             self._predicted_df = pd.concat((self._predicted_df, both_values), axis=0).reset_index(drop=True)
+            # recast to expected dtype
+            self._predicted_df['training_data'] = self._predicted_df['training_data'].astype('bool')
+            self._predicted_df['split_key'] = self._predicted_df['split_key'].astype('int16')
 
     def get_predicted_df(self):
         return self._predicted_df
@@ -333,7 +336,9 @@ class BackTester(object):
         if metric_signature == {'actual', 'predicted'}:
             eval_out = metric(actual=self._test_actual, predicted=self._test_predicted)
         else:
-            # get signature
+            # get signature and match with the private attributes respectively
+            # mainly used for cases we need training data into test metrics
+            # such as rmsse etc.
             _valid_args = ['_' + x for x in metric_signature]  # add leading underscore to found signatures
             valid_arg_vals = [getattr(self, x) for x in _valid_args]  # get private variable eg `self._test_actual`
             # dictionary of metric args and arg value

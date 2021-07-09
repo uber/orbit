@@ -22,25 +22,78 @@ def test_time_series_splitter():
 
     assert expected_number_of_splits == len(list(tss.split()))
 
+@pytest.mark.parametrize(
+    "scheduler_args",
+    [
+        {
+            'min_train_len': 100,
+            'incremental_len': 100,
+            'forecast_len': 20
+        },
+        {
+            'incremental_len': 100,
+            'forecast_len': 20,
+            'n_splits': 3
+        },
+        {
+            'forecast_len': 20,
+            'n_splits': 1
+        },
+        {
+            'forecast_len': 1,
+            'n_splits': 3
+        }
+    ],
+    ids=['use_min_train_len', 'use_n_splits', 'single_split', 'one_forecast_len']
+)
+def test_backtester_sceduler_args(iclaims_training_data, scheduler_args):
+    df = iclaims_training_data
 
-@pytest.mark.parametrize("scheduler_args", [
-    {
-        'min_train_len': 100,
-        'incremental_len': 100,
-        'forecast_len': 20
-    },
-    {
-        'incremental_len': 100,
-        'forecast_len': 20,
-        'n_splits': 3
+    lgt = LGTMAP(
+        response_col='claims',
+        date_col='week',
+        seasonality=1,
+        verbose=False
+    )
 
-    },
-    {
-        'forecast_len': 20,
-        'n_splits': 1
+    backtester = BackTester(
+        model=lgt,
+        df=df,
+        **scheduler_args
+    )
 
-    }
-])
+    backtester.fit_predict()
+    eval_out = backtester.score(metrics=[smape])
+    evaluated_metrics = set(eval_out['metric_name'].tolist())
+
+    if metrics is None:
+        expected_metrics = [x.__name__ for x in backtester._default_metrics]
+    elif isinstance(metrics, list):
+        expected_metrics = [x.__name__ for x in metrics]
+    else:
+        expected_metrics = [metrics.__name__]
+
+    assert set(expected_metrics) == evaluated_metrics
+
+@pytest.mark.parametrize(
+    "scheduler_args",
+    [
+        {
+            'min_train_len': 100,
+            'incremental_len': 100,
+            'forecast_len': 20
+        },
+        {
+            'incremental_len': 100,
+            'forecast_len': 20,
+            'n_splits': 3
+        },
+        {
+            'forecast_len': 20,
+            'n_splits': 1
+        }
+    ]
+)
 @pytest.mark.parametrize("metrics", [None, [smape, mape], smape])
 def test_backtester_test_data_only(iclaims_training_data, scheduler_args, metrics):
     df = iclaims_training_data
