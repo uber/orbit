@@ -16,7 +16,7 @@ from collections.abc import Mapping, Iterable
 class TimeSeriesSplitter(object):
     """Cross validation splitter for time series data"""
 
-    def __init__(self, df, min_train_len=None, incremental_len=None, forecast_len=None, n_splits=None,
+    def __init__(self, df, forecast_len=1, incremental_len=None, n_splits=None, min_train_len=None,
                  window_type='expanding', date_col=None):
         """Initializes object with DataFrame and splits data
 
@@ -24,14 +24,14 @@ class TimeSeriesSplitter(object):
         ----------
         df : pd.DataFrame
             DataFrame object containing time index, response, and other features
-        min_train_len : int
-            the minimum number of observations required for the training period
-        incremental_len : int
-            the number of observations between each successive backtest period
         forecast_len : int
-            forecast length
+            forecast length; default as 1
+        incremental_len : int
+            the number of observations between each successive backtest period; default as forecast_len
         n_splits : int; default None
             number of splits; when n_splits is specified, min_train_len will be ignored
+        min_train_len : int
+            the minimum number of observations required for the training period
         window_type : {'expanding', 'rolling }; default 'expanding'
             split scheme
         date_col : str
@@ -65,21 +65,19 @@ class TimeSeriesSplitter(object):
 
     def _set_defaults(self):
         self._df_length = self.df.shape[0]
+        if self.incremental_len is None:
+            self.incremental_len = self.forecast_len
         # if n_splits is specified, set min_train_len internally
         if self.n_splits:
-            if self.n_splits == 1:
-                # set incremental_len internally if it's None
-                # this is just to dodge error and it's not used actually
-                if not self.incremental_len:  self.incremental_len = 1
+            # if self.n_splits == 1:
+            #     # set incremental_len internally if it's None
+            #     # this is just to dodge error and it's not used actually
             self.min_train_len = \
                 self._df_length - self.forecast_len - (self.n_splits - 1) * self.incremental_len
 
     def _validate_params(self):
         if self.min_train_len is None and self.n_splits is None:
             raise BacktestException('min_train_len and n_splits cannot both be None...')
-
-        if self.forecast_len is None:
-            raise BacktestException('forecast_len cannot be None...')
 
         if self.window_type not in ['expanding', 'rolling']:
             raise BacktestException('unknown window type...')
@@ -96,7 +94,7 @@ class TimeSeriesSplitter(object):
             raise BacktestException('n_split must be a positive number')
 
         if self.date_col:
-            if not self.date_col in self.df.columns:
+            if self.date_col not in self.df.columns:
                 raise BacktestException('date_col not found in df provided.')
 
     def _set_split_scheme(self):
