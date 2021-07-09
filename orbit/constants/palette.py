@@ -1,5 +1,7 @@
 from enum import Enum
 import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.colors as clr
 
 class QualitativePalette(Enum):
     """
@@ -77,9 +79,35 @@ class DivergingPalette(Enum):
     Watermelon = sns.diverging_palette(120, 20, as_cmap=True)
     # blue and red theme
     Unclesam = sns.diverging_palette(260, 20, as_cmap=True)
-    # dark teal purple orange theme
-    Sunrise = sns.color_palette("magma", as_cmap=True)
-    # continuous palattes
-    Rainbow = sns.color_palette('Spectral', as_cmap=True)
+    # # dark teal purple orange theme
+    # Sunrise = sns.color_palette("magma", as_cmap=True)
+    # # continuous palattes
+    # Rainbow = sns.color_palette('Spectral', as_cmap=True)
 
 
+class OrbitPalette(Enum):
+    # Qualitative Palette
+    # singe uber brand colors
+    uber_black = '#000000'
+    uber_blue = '#276EF1'
+    uber_green = '#3AA76D'
+    uber_yellow = '#FFC043'
+    uber_red = '#D44333'
+    uber_brown = '#99644C'
+    uber_orange = '#ED6E33'
+    uber_purple = '#7356BF'
+    uber_white = '#FFFFFF'
+
+    # uber_discrete =
+
+    # Sequential Palette
+    uber_black_gradient = clr.LinearSegmentedColormap.from_list('custom', [uber_white, uber_black], N=300)
+    uber_blue_gradient = clr.LinearSegmentedColormap.from_list('custom', [uber_white, uber_blue, uber_black], N=300)
+    uber_green_gradient = clr.LinearSegmentedColormap.from_list('custom', [uber_white, uber_green, uber_black], N=300)
+    uber_yellow_gradient = clr.LinearSegmentedColormap.from_list('custom', [uber_white, uber_yellow, uber_black], N=300)
+    uber_red_gradient = clr.LinearSegmentedColormap.from_list('custom', [uber_white, uber_red, uber_black], N=300)
+    uber_purple_gradient = clr.LinearSegmentedColormap.from_list('custom', [uber_white, uber_purple, uber_black], N=300)
+
+    # Diverging Palette
+    uber_rainbow = clr.LinearSegmentedColormap.from_list('custom',
+                                                         ['#FFFFFF', '#FFC043','#3AA76D', '#276EF1', '#7356BF'], N=300)
