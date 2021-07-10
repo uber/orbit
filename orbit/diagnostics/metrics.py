@@ -25,10 +25,16 @@ def wmape(actual, predicted):
 
 
 def mae(actual, predicted):
+    filtered = ~np.isnan(actual)
+    actual = actual[filtered]
+    predicted = predicted[filtered]
     return np.mean(np.abs(actual - predicted))
 
 
 def mse(actual, predicted):
+    filtered = ~np.isnan(actual)
+    actual = actual[filtered]
+    predicted = predicted[filtered]
     return np.mean(np.square(actual - predicted))
 
 
