@@ -7,10 +7,12 @@ import pandas as pd
 import numpy as np
 from copy import deepcopy
 import arviz as az
+import math
 
 from orbit.constants.constants import PredictionKeys
 from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
 from orbit.constants.palette import QualitativePalette
+from orbit.diagnostics.metrics import smape, wmape
 
 az.style.use("arviz-darkgrid")
 
@@ -422,9 +424,6 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     return axes
 
 
-
-
-
 def get_arviz_plot_dict(mod,
                         incl_noise_params=False,
                         incl_trend_params=False,
@@ -505,5 +504,69 @@ def plot_param_diagnostics(mod, incl_noise_params=False, incl_trend_params=False
         axes = az.plot_forest(posterior_samples, **kwargs)
     else:
         raise Exception("please use one of 'trace', 'density', 'posterior', 'pair', 'autocorr', 'forest' for kind.")
+
+    return axes
+
+
+def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
+                        ncol=2, figsize=None, include_vline=False, path=None,
+                        is_visible=True):
+    """function to plot and visualize the prediction results from back testing.
+
+    bt_pred_df : data frame
+        the output of `orbit.diagnostics.backtest.BackTester.fit_predict()`, which includes the actuals/predictions
+        for all the splits
+    metrics : callable
+        the metric function
+    split_key_list: list; default None
+        with given model, which split keys to plot. If None, all the splits will be plotted
+    ncol : int
+        number of columns of the panel; number of rows will be decided accordingly
+    figsize : tuple
+        figure size
+    include_vline : bool
+        if plotting the vertial line to cut the in-sample and out-of-sample predictions for each split
+    path : string
+        path to save the figure
+    is_visible : bool
+        if displaying the figure
+    """
+    if figsize is None:
+        figsize=(16, 8)
+
+    metric_vals = bt_pred_df.groupby('split_key').apply(lambda x:
+        metrics(x[x['training_data'] == False]['actuals'], x[x['training_data'] == False]['prediction']))
+
+    if split_key_list is None:
+        split_key_list_ = bt_pred_df['split_key'].unique()
+    else: split_key_list_ =  split_key_list
+
+    num_splits = len(split_key_list_)
+    nrow = math.ceil(num_splits / ncol)
+    fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False, facecolor='w')
+
+    for idx, split_key in enumerate(split_key_list_):
+        row_idx = idx // ncol
+        col_idx = idx % ncol
+        tmp = bt_pred_df[bt_pred_df['split_key'] == split_key].copy()
+        axes[row_idx, col_idx].plot(tmp['date'], tmp['prediction'], linewidth=4, color='#12939A', alpha=.8)
+        axes[row_idx, col_idx].scatter(tmp['date'], tmp['actuals'], label='actual', color='black', alpha=.6)
+        axes[row_idx, col_idx].grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.4)
+
+        axes[row_idx, col_idx].set_title(label='split {}; {} {:.3f}'. \
+                format(split_key, metrics.__name__, metric_vals[split_key]))
+        if include_vline:
+            cutoff_date = tmp[tmp['training_data'] == False]['date'].min()
+            axes[row_idx, col_idx].axvline(x=cutoff_date, linestyle='--', color='#1f77b4', linewidth=4, alpha=.8)
+            # axes[row_idx, col_idx].text(cutoff_date, axes[row_idx, col_idx].get_ylim()[1],
+            #         "split {}".format(split_key),
+            #         rotation=90, verticalalignment='center')
+
+    if path:
+        fig.savefig(path)
+    if is_visible:
+        plt.show()
+    else:
+        plt.close()
 
     return axes
