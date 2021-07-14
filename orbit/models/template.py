@@ -606,9 +606,11 @@ class AggregatedPosteriorTemplate(BaseTemplate):
         self._aggregate_posteriors[PredictMethod.MEAN.value] = mean_posteriors
         self._aggregate_posteriors[PredictMethod.MEDIAN.value] = median_posteriors
 
-    def fit(self, df):
+    def fit(self, df, keep_posterior_samples=True):
         super().fit(df)
         self._set_aggregate_posteriors()
+        if not keep_posterior_samples:
+            self._posterior_samples = {}
 
     def predict(self, df, decompose=False, **kwargs):
         # raise if model is not fitted
