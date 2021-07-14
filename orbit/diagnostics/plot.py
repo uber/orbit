@@ -509,8 +509,8 @@ def plot_param_diagnostics(mod, incl_noise_params=False, incl_trend_params=False
 
 
 def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
-                        ncol=2, figsize=None, include_vline=False, path=None,
-                        is_visible=True):
+                        ncol=2, figsize=None, include_vline=False,
+                        title="", fontsize=20, path=None, is_visible=True):
     """function to plot and visualize the prediction results from back testing.
 
     bt_pred_df : data frame
@@ -526,6 +526,10 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
         figure size
     include_vline : bool
         if plotting the vertial line to cut the in-sample and out-of-sample predictions for each split
+    title : str
+        title of the plot
+    fontsize: int; optional
+        fontsize of the title
     path : string
         path to save the figure
     is_visible : bool
@@ -543,7 +547,7 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
 
     num_splits = len(split_key_list_)
     nrow = math.ceil(num_splits / ncol)
-    fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False, facecolor='w')
+    fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False, facecolor='w', constrained_layout=False)
 
     for idx, split_key in enumerate(split_key_list_):
         row_idx = idx // ncol
@@ -562,6 +566,8 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
             #         "split {}".format(split_key),
             #         rotation=90, verticalalignment='center')
 
+    plt.suptitle(title, fontsize=fontsize)
+    fig.tight_layout()
     if path:
         fig.savefig(path)
     if is_visible:
