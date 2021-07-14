@@ -186,8 +186,9 @@ class BaseTemplate(object, metaclass=ci.DocInheritMeta(style="numpy_with_merge_d
         return self._init_values
 
     def is_fitted(self):
-        # if empty dict false, else true
-        return bool(self._posterior_samples)
+        # if either aggregate posterior and posterior_samples are non-empty, claim it as fitted model (true),
+        # else false.
+        return bool(self._posterior_samples) or bool(self._aggregate_posteriors)
 
     def _set_dynamic_attributes(self, df):
         """Set required input based on input DataFrame, rather than at object instantiation"""
