@@ -1,4 +1,4 @@
-sphinx
+sphinx==4.0.2
 sphinxcontrib-napoleon
 sphinx-rtd-theme
 matplotlib
