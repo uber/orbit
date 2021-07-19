@@ -4,10 +4,18 @@ orbit.models package
 Submodules
 ----------
 
-orbit.models.base\_model module
--------------------------------
+orbit.models.ets module
+-----------------------
 
-.. automodule:: orbit.models.base_model
+.. automodule:: orbit.models.ets
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+orbit.models.lgt module
+-----------------------
+
+.. automodule:: orbit.models.lgt
    :members:
    :undoc-members:
    :show-inheritance:
@@ -20,10 +28,10 @@ orbit.models.dlt module
    :undoc-members:
    :show-inheritance:
 
-orbit.models.lgt module
+orbit.models.ktrlite module
 -----------------------
 
-.. automodule:: orbit.models.lgt
+.. automodule:: orbit.models.ktrlite
    :members:
    :undoc-members:
    :show-inheritance:
