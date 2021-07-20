@@ -1,16 +1,24 @@
 import seaborn as sns
 from matplotlib import pyplot as plt
 from matplotlib.pyplot import cm
-
 import pandas as pd
 import numpy as np
 from copy import deepcopy
+import os
 # from statsmodels.tsa.seasonal import seasonal_decompose
 
 from orbit.constants import palette
 
+
 pd.options.mode.chained_assignment = None
-import orbit.constants.palette as palette
+STYLE_FILE_NAME = 'OrbitSignature.mplstyle'
+
+
+def get_orbit_style():
+    dir = os.path.dirname(os.path.relpath(__file__))
+    style_file = os.path.join(dir, STYLE_FILE_NAME)
+
+    return style_file
 
 
 def ts_heatmap(df, date_col, value_col, fig_width=10, fig_height=6, normalization=False,
