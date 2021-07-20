@@ -626,7 +626,6 @@ class AggregatedPosteriorTemplate(BaseTemplate):
             posterior_estimates=aggregate_posteriors, df=df, include_error=False, **kwargs
         )
         for k, v in point_predicted_dict.items():
-            print(v.shape)
             point_predicted_dict[k] = np.squeeze(v, 0)
 
         # to derive confidence interval; the condition should be sufficient since we add [50] by default
