@@ -3,6 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.colors as clr
 
+
 class QualitativePalette(Enum):
     """
     Palette for visualizing discrete categorical data
@@ -80,9 +81,9 @@ class DivergingPalette(Enum):
     # blue and red theme
     Unclesam = sns.diverging_palette(260, 20, as_cmap=True)
     # # dark teal purple orange theme
-    # Sunrise = sns.color_palette("magma", as_cmap=True)
+    Sunrise = sns.color_palette("magma", as_cmap=True)
     # # continuous palattes
-    # Rainbow = sns.color_palette('Spectral', as_cmap=True)
+    Rainbow = sns.color_palette('Spectral', as_cmap=True)
 
 
 class OrbitPalette(Enum):
