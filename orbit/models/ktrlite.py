@@ -44,6 +44,8 @@ class BaseKTRLite(BaseTemplate):
         the distance between every two knots for level
     coefficients_knot_length : int
         the distance between every two knots for coefficients
+    knot_location : {'mid_point', 'end_point'}; default 'mid_point'
+        knot locations. When level_knot_dates is specified, this is ignored for level knots.
     date_freq : str
         date frequency; if not supplied, pd.infer_freq will be used to imply the date frequency.
 
@@ -69,6 +71,7 @@ class BaseKTRLite(BaseTemplate):
                  level_knot_dates=None,
                  level_knot_length=None,
                  coefficients_knot_length=None,
+                 knot_location='mid_point',
                  date_freq=None,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
@@ -79,6 +82,7 @@ class BaseKTRLite(BaseTemplate):
         self.level_knot_dates = level_knot_dates
         self.level_knot_length = level_knot_length
         self.coefficients_knot_length = coefficients_knot_length
+        self.knot_location = knot_location
 
         self.seasonality = seasonality
         self.seasonality_fs_order = seasonality_fs_order
@@ -255,10 +259,15 @@ class BaseKTRLite(BaseTemplate):
         return gap
 
     @staticmethod
-    def _set_knots_tp(knots_distance, cutoff):
-        # start in the middle
-        knots_idx_start = round(knots_distance / 2)
-        knots_idx = np.arange(knots_idx_start, cutoff, knots_distance)
+    def _set_knots_tp(knots_distance, cutoff, knot_location):
+        if knot_location == 'mid_point':
+            # start in the middle
+            knots_idx_start = round(knots_distance / 2)
+            knots_idx = np.arange(knots_idx_start, cutoff, knots_distance)
+        elif knot_location == 'end_point':
+            # start in the end
+            num = round(cutoff / knots_distance)
+            knots_idx = np.linspace(knots_distance, cutoff - 1, num=num, endpoint=True).astype(int)
 
         return knots_idx
 
@@ -272,13 +281,13 @@ class BaseKTRLite(BaseTemplate):
         # kernel of level calculations
         if self._level_knot_dates is None:
             if self.level_knot_length is not None:
-                # TODO: approximation; can consider level_knot_length directly as step size
                 knots_distance = self.level_knot_length
             else:
                 number_of_knots = round(1 / self.span_level)
+                # FIXME: is it the best way to calculate knots_distance?
                 knots_distance = math.ceil(self._cutoff / number_of_knots)
 
-            knots_idx_level = self._set_knots_tp(knots_distance, self._cutoff)
+            knots_idx_level = self._set_knots_tp(knots_distance, self._cutoff, self.knot_location)
             self._knots_idx_level = knots_idx_level
             self.knots_tp_level = (1 + knots_idx_level) / self.num_of_observations
             self._level_knot_dates = df[self.date_col].values[knots_idx_level]
@@ -312,7 +321,7 @@ class BaseKTRLite(BaseTemplate):
                 number_of_knots = round(1 / self.span_coefficients)
                 knots_distance = math.ceil(self._cutoff / number_of_knots)
 
-            knots_idx_coef = self._set_knots_tp(knots_distance, self._cutoff)
+            knots_idx_coef = self._set_knots_tp(knots_distance, self._cutoff, self.knot_location)
             self._knots_idx_coef = knots_idx_coef
             self.knots_tp_coefficients = (1 + knots_idx_coef) / self.num_of_observations
             self._coef_knot_dates = df[self.date_col].values[knots_idx_coef]
@@ -369,9 +378,12 @@ class BaseKTRLite(BaseTemplate):
             # TODO: hacky way; let's just assume last two knot distance is knots distance for all knots
             lev_knot_width = self.knots_tp_level[-1] - self.knots_tp_level[-2]
             # check whether we need to put new knots for simulation
-            if new_tp[-1] >= self.knots_tp_level[-1] + lev_knot_width:
+            if new_tp[-1] > 1:
                 # derive knots tp
-                knots_tp_level_out = np.arange(self.knots_tp_level[-1] + lev_knot_width, new_tp[-1], lev_knot_width)
+                if self.knots_tp_level[-1] + lev_knot_width >= new_tp[-1]:
+                    knots_tp_level_out = np.array([new_tp[-1]])
+                else:
+                    knots_tp_level_out = np.arange(self.knots_tp_level[-1] + lev_knot_width, new_tp[-1], lev_knot_width)
                 new_knots_tp_level = np.concatenate([self.knots_tp_level, knots_tp_level_out])
                 lev_knot_out = np.random.laplace(0, self.level_knot_scale,
                                                  size=(lev_knot_in.shape[0], len(knots_tp_level_out)))
