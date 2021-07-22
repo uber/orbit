@@ -102,3 +102,4 @@ napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = True
 
 nbsphinx_kernel_name = 'python3'
+nbsphinx_timeout = 60

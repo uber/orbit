@@ -1,5 +1,5 @@
 from abc import abstractmethod
-
+import numpy as np
 import pyro
 from pyro.infer import SVI, Trace_ELBO
 from pyro.infer.autoguide import AutoLowRankMultivariateNormal, AutoDelta
@@ -19,14 +19,13 @@ class PyroEstimator(BaseEstimator):
         Number of estimator steps in optimization
     learning_rate : float
         Estimator learning rate
-    learning_rate_total_decay: float
-        A config re-parameterized from ``lrd`` in :class:`~pyro.optim.ClippedAdam`.
-        Note this is the total decay over all ``num_steps``, not the per-step decay factor.  Such
-        parameter is independent from ``num_steps``.  e.g. 1.0 means no decay and 0.1 means 90% decay
-        at the final step.
+    learning_rate_total_decay : float
+        A config re-parameterized from ``lrd`` in :class:`~pyro.optim.ClippedAdam`. For example, 0.1 means a 90%
+        reduction of the final step as of original learning rate where linear decay is implied along the steps. In the
+        case of 1.0, no decay is applied.  All steps will have the constant learning rate specified by `learning_rate`.
     seed : int
         Seed int
-    message :  int
+    message : int
         Print to console every `message` number of steps
     kwargs
         Additional BaseEstimator args
@@ -34,7 +33,7 @@ class PyroEstimator(BaseEstimator):
     -----
         See http://docs.pyro.ai/en/stable/_modules/pyro/optim/clipped_adam.html for optimizer details
     """
-    def __init__(self, num_steps=101, learning_rate=0.1, learning_rate_total_decay=1.0, message=100, **kwargs):
+    def __init__(self, num_steps=1001, learning_rate=0.1, learning_rate_total_decay=1.0, message=100, **kwargs):
         super().__init__(**kwargs)
         self.num_steps = num_steps
         self.learning_rate = learning_rate
@@ -55,15 +54,18 @@ class PyroEstimatorVI(PyroEstimator):
         Number of samples ot draw for inference, default 100
     num_particles : int
         Number of particles used in :class: `~pyro.infer.Trace_ELBO` for SVI optimization
+    init_scale : float
+        Parameter used in `pyro.infer.autoguide`; recommend a larger number of small dataset
     kwargs
         Additional `PyroEstimator` class args
 
     """
 
-    def __init__(self, num_sample=100, num_particles=100, **kwargs):
+    def __init__(self, num_sample=100, num_particles=100, init_scale=0.1, **kwargs):
         super().__init__(**kwargs)
         self.num_sample = num_sample
         self.num_particles = num_particles
+        self.init_scale = init_scale
 
     def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         # verbose is passed through from orbit.models.base_estimator
@@ -82,16 +84,17 @@ class PyroEstimatorVI(PyroEstimator):
 
         # Perform stochastic variational inference using an auto guide.
         pyro.clear_param_store()
-        guide = AutoLowRankMultivariateNormal(model)
+        guide = AutoLowRankMultivariateNormal(model, init_scale=self.init_scale)
         optim = ClippedAdam({
             "lr": learning_rate,
             "lrd": learning_rate_total_decay ** (1 / num_steps)
         })
         elbo = Trace_ELBO(num_particles=self.num_particles, vectorize_particles=True)
+        loss_elbo = list()
         svi = SVI(model, guide, optim, elbo)
-
         for step in range(num_steps):
             loss = svi.step()
+            loss_elbo.append(loss)
             if verbose and step % message == 0:
                 scale_rms = guide._loc_scale()[1].detach().pow(2).mean().sqrt().item()
                 print("step {: >4d} loss = {:0.5g}, scale = {:0.5g}".format(step, loss, scale_rms))
@@ -116,13 +119,14 @@ class PyroEstimatorVI(PyroEstimator):
 
         # `stan.optimizing` automatically returns all defined parameters
         # filter out unnecessary keys
-        extract = {param: extract[param] for param in model_param_names}
+        posteriors = {param: extract[param] for param in model_param_names}
+        training_metrics = {'loss_elbo': np.array(loss_elbo)}
 
-        return extract
+        return posteriors, training_metrics
 
 
 class PyroEstimatorMAP(PyroEstimator):
-    """Pyro Estimator for MAP Posteriors"""
+    """Pyro Estimator for MAP Posteriors. DEPRECATED."""
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -148,9 +152,11 @@ class PyroEstimatorMAP(PyroEstimator):
             "betas": (0.5, 0.8)
         })
         elbo = Trace_ELBO()
+        loss_elbo = list()
         svi = SVI(model, guide, optim, elbo)
         for step in range(num_steps):
             loss = svi.step()
+            loss_elbo.append(loss)
             if verbose and step % message == 0:
                 print("step {: >4d} loss = {:0.5g}".format(step, loss))
 
@@ -171,6 +177,7 @@ class PyroEstimatorMAP(PyroEstimator):
 
         # `stan.optimizing` automatically returns all defined parameters
         # filter out unnecessary keys
-        extract = {param: extract[param] for param in model_param_names}
+        posteriors = {param: extract[param] for param in model_param_names}
+        training_metrics = {'loss_elbo': np.array(loss_elbo)}
 
-        return extract
+        return posteriors, training_metrics

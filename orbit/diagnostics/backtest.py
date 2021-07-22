@@ -16,7 +16,7 @@ from collections.abc import Mapping, Iterable
 class TimeSeriesSplitter(object):
     """Cross validation splitter for time series data"""
 
-    def __init__(self, df, min_train_len, incremental_len, forecast_len, n_splits=None,
+    def __init__(self, df, forecast_len=1, incremental_len=None, n_splits=None, min_train_len=None,
                  window_type='expanding', date_col=None):
         """Initializes object with DataFrame and splits data
 
@@ -24,14 +24,14 @@ class TimeSeriesSplitter(object):
         ----------
         df : pd.DataFrame
             DataFrame object containing time index, response, and other features
-        min_train_len : int
-            the minimum number of observations required for the training period
-        incremental_len : int
-            the number of observations between each successive backtest period
         forecast_len : int
-            forecast length
+            forecast length; default as 1
+        incremental_len : int
+            the number of observations between each successive backtest period; default as forecast_len
         n_splits : int; default None
             number of splits; when n_splits is specified, min_train_len will be ignored
+        min_train_len : int
+            the minimum number of observations required for the training period
         window_type : {'expanding', 'rolling }; default 'expanding'
             split scheme
         date_col : str
@@ -52,8 +52,6 @@ class TimeSeriesSplitter(object):
         self.window_type = window_type
         self.date_col = date_col
 
-        # defaults
-        # todo: clean up defaults so you can't set contradicting args
         self._set_defaults()
 
         # validate
@@ -67,12 +65,20 @@ class TimeSeriesSplitter(object):
 
     def _set_defaults(self):
         self._df_length = self.df.shape[0]
+        if self.incremental_len is None:
+            self.incremental_len = self.forecast_len
         # if n_splits is specified, set min_train_len internally
         if self.n_splits:
+            # if self.n_splits == 1:
+            #     # set incremental_len internally if it's None
+            #     # this is just to dodge error and it's not used actually
             self.min_train_len = \
                 self._df_length - self.forecast_len - (self.n_splits - 1) * self.incremental_len
 
     def _validate_params(self):
+        if self.min_train_len is None and self.n_splits is None:
+            raise BacktestException('min_train_len and n_splits cannot both be None...')
+
         if self.window_type not in ['expanding', 'rolling']:
             raise BacktestException('unknown window type...')
 
@@ -88,7 +94,7 @@ class TimeSeriesSplitter(object):
             raise BacktestException('n_split must be a positive number')
 
         if self.date_col:
-            if not self.date_col in self.df.columns:
+            if self.date_col not in self.df.columns:
                 raise BacktestException('date_col not found in df provided.')
 
     def _set_split_scheme(self):
@@ -292,6 +298,9 @@ class BackTester(object):
             both_values['split_key'] = key
             # union each splits
             self._predicted_df = pd.concat((self._predicted_df, both_values), axis=0).reset_index(drop=True)
+            # recast to expected dtype
+            self._predicted_df['training_data'] = self._predicted_df['training_data'].astype('bool')
+            self._predicted_df['split_key'] = self._predicted_df['split_key'].astype('int16')
 
     def get_predicted_df(self):
         return self._predicted_df
@@ -325,7 +334,9 @@ class BackTester(object):
         if metric_signature == {'actual', 'predicted'}:
             eval_out = metric(actual=self._test_actual, predicted=self._test_predicted)
         else:
-            # get signature
+            # get signature and match with the private attributes respectively
+            # mainly used for cases we need training data into test metrics
+            # such as rmsse etc.
             _valid_args = ['_' + x for x in metric_signature]  # add leading underscore to found signatures
             valid_arg_vals = [getattr(self, x) for x in _valid_args]  # get private variable eg `self._test_actual`
             # dictionary of metric args and arg value
@@ -358,6 +369,8 @@ class BackTester(object):
         """
         if metrics is None:
             metrics = self._default_metrics
+        elif not isinstance(metrics, list):
+            metrics = [metrics]
 
         self._validate_metric_callables(metrics)
 
@@ -392,8 +405,8 @@ class BackTester(object):
         return self._score_df
 
 
-def grid_search_orbit(param_grid, model, df, min_train_len,
-                      incremental_len, forecast_len, n_splits=None,
+def grid_search_orbit(param_grid, model, df, min_train_len=None,
+                      incremental_len=None, forecast_len=None, n_splits=None,
                       metrics=None, criteria=None, verbose=True, **kwargs):
     """A gird search unitlity to tune the hyperparameters for orbit models using the orbit.diagnostics.backtest modules.
     Parameters
@@ -425,18 +438,38 @@ def grid_search_orbit(param_grid, model, df, min_train_len,
         data frame of tuning results
 
     """
+    # def _get_params(model):
+    #     # get all the model params for orbit typed models
+    #     params = {}
+    #     for key, val in model.__dict__.items():
+    #         if not key.startswith('_') and key != 'estimator':
+    #             params[key] = val
+
+    #     for key, val in model.__dict__['estimator'].__dict__.items():
+    #         if not key.startswith('_') and key != 'stan_init':
+    #             params[key] = val
+
+    #     return params.copy()
+
     def _get_params(model):
-        # get all the model params for orbit typed models
-        params = {}
-        for key, val in model.__dict__.items():
-            if not key.startswith('_') and key != 'estimator':
-                params[key] = val
+        init_args = dict()
 
-        for key, val in model.__dict__['estimator'].__dict__.items():
-            if not key.startswith('_') and key != 'stan_init':
-                params[key] = val
+        # get all the parent classes and their signatures
+        for cls in inspect.getmro(model.__class__):
+            sig = inspect.signature(cls)
+            for key in sig.parameters.keys():
+                if key != 'kwargs':
+                    if hasattr(model, key):
+                        init_args[key] = getattr(model, key)
+        # deal with the estimator separately
+        for cls in inspect.getmro(model.estimator_type):
+            sig = inspect.signature(cls)
+            for key in sig.parameters.keys():
+                if key != 'kwargs':
+                    if hasattr(model.estimator, key):
+                        init_args[key] = getattr(model.estimator, key)
 
-        return params.copy()
+        return init_args.copy()
 
     def _yield_param_grid(param_grid):
         # an internal function to mimic the ParameterGrid from scikit-learn

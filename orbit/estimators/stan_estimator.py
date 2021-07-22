@@ -18,7 +18,7 @@ class StanEstimator(BaseEstimator):
     Parameters
     ----------
     num_warmup : int
-        Number of samples to discard, default 900
+        Number of samples to warm up and to be discarded, default 900
     num_sample : int
         Number of samples to return, default 100
     chains : int
@@ -31,8 +31,7 @@ class StanEstimator(BaseEstimator):
         Additional `BaseEstimator` class args
 
     """
-    def __init__(self, num_warmup=900, num_sample=100, chains=4,
-                 cores=8, algorithm=None, **kwargs):
+    def __init__(self, num_warmup=900, num_sample=100, chains=4, cores=8, algorithm=None, **kwargs):
         super().__init__(**kwargs)
         self.num_warmup = num_warmup
         self.num_sample = num_sample
@@ -125,26 +124,30 @@ class StanEstimatorMCMC(StanEstimator):
         )
 
         # extract `lp__` in addition to defined model params
-        model_param_names_with_lp = model_param_names[:] + ['lp__']
+        # to make naming consistent across api; we move lp along with warm up lp to `training_metrics`
+        # model_param_names_with_lp = model_param_names[:] + ['lp__']
 
-        stan_extract = stan_mcmc_fit.extract(
-            pars=model_param_names_with_lp,
+        posteriors = stan_mcmc_fit.extract(
+            pars=model_param_names,
             permuted=False
         )
 
         # todo: move dimension cleaning function to the model directly
-        for key, val in stan_extract.items():
+        # flatten the first two dims by preserving the chain order
+        for key, val in posteriors.items():
             if len(val.shape) == 2:
                 # here `order` is important to make samples flattened by chain
-                stan_extract[key] = val.flatten(order='F')
+                posteriors[key] = val.flatten(order='F')
             else:
-                stan_extract[key] = val.reshape((-1, *val.shape[2:]), order='F')
+                posteriors[key] = val.reshape((-1, *val.shape[2:]), order='F')
+        # log-posterior including warm up
+        training_metrics = {'log_posterior': stan_mcmc_fit.get_logposterior(inc_warmup=True)}
 
-        return stan_extract
+        return posteriors, training_metrics
 
 
 class StanEstimatorVI(StanEstimator):
-    """Stan Estimator for VI Sampling
+    """Stan Estimator for VI Sampling [DEPRECATED]
 
     Parameters
     ----------
@@ -247,9 +250,12 @@ class StanEstimatorVI(StanEstimator):
             **self._stan_vi_args
         )
 
-        stan_extract = self._vb_extract(stan_vi_fit)  # `lp__` already automatically included for vb
+        stan_extract = self._vb_extract(stan_vi_fit)
+        # exclude unecessary params
+        posteriors = {param: stan_extract[param] for param in model_param_names}
+        training_metrics = dict()
 
-        return stan_extract
+        return posteriors, training_metrics
 
 
 class StanEstimatorMAP(StanEstimator):
@@ -307,7 +313,8 @@ class StanEstimatorMAP(StanEstimator):
             raise EstimatorException("Stan model definition does not contain required parameters")
 
         # `stan.optimizing` automatically returns all defined parameters
-        # filter out unecessary keys
-        stan_extract = {param: stan_extract[param] for param in model_param_names}
+        # filter out unnecessary keys
+        posteriors = {param: stan_extract[param] for param in model_param_names}
+        training_metrics = dict()
 
-        return stan_extract
+        return posteriors, training_metrics

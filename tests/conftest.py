@@ -32,16 +32,6 @@ def m3_monthly_data():
     return df
 
 
-# @pytest.fixture
-# def synthetic_data():
-#     df, coef = make_synthetic_series(seed=127)
-
-#     train_df = df[df['week'] <= '2019-01-01']
-#     test_df = df[df['week'] > '2019-01-01']
-
-#     return train_df, test_df, coef
-
-
 @pytest.fixture
 def make_daily_data():
     n_obs = 365 * 3
@@ -51,7 +41,7 @@ def make_daily_data():
     coef = [0.2, 0.1, 0.3]
     x, y, coef = make_regression(n_obs, coef, scale=2.0, seed=seed)
 
-    df = pd.DataFrame(np.concatenate([(rw + fs + y).reshape(-1, 1), x], axis=1), columns= ['response'] + list('abc'))
+    df = pd.DataFrame(np.concatenate([(rw + fs + y).reshape(-1, 1), x], axis=1), columns=['response'] + list('abc'))
     df['date'] = pd.date_range(start='2016-01-01', periods=n_obs)
     train_df = df[df['date'] < '2018-01-01']
     test_df = df[df['date'] >= '2018-01-01']

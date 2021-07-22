@@ -55,7 +55,7 @@ def test_ets_full_seasonal_fit(synthetic_data, estimator_type):
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 6
+    expected_num_parameters = 5
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -88,7 +88,7 @@ def test_ets_aggregated_seasonal_fit(synthetic_data, estimator_type):
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 6
+    expected_num_parameters = 5
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -142,7 +142,7 @@ def test_ets_non_seasonal_fit(synthetic_data, estimator_type):
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 4
+    expected_num_parameters = 3
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
