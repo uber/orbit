@@ -385,8 +385,7 @@ class MAPTemplate(BaseTemplate):
             posterior_estimates=aggregate_posteriors, df=df, include_error=False, **kwargs
         )
         for k, v in point_predicted_dict.items():
-            if v.shape[0] == 1:
-                point_predicted_dict[k] = np.squeeze(v, 0)
+            point_predicted_dict[k] = np.squeeze(v, 0)
 
         # to derive confidence interval; the condition should be sufficient since we add [50] by default
         if self.n_bootstrap_draws > 0 and len(self._prediction_percentiles) > 1:
