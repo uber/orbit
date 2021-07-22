@@ -1,13 +1,24 @@
 import seaborn as sns
 from matplotlib import pyplot as plt
 from matplotlib.pyplot import cm
-
 import pandas as pd
 import numpy as np
 from copy import deepcopy
-from statsmodels.tsa.seasonal import seasonal_decompose
+import os
+# from statsmodels.tsa.seasonal import seasonal_decompose
+
+from orbit.constants import palette
+
 
 pd.options.mode.chained_assignment = None
+STYLE_FILE_NAME = 'OrbitSignature.mplstyle'
+
+
+def get_orbit_style():
+    dir = os.path.dirname(os.path.relpath(__file__))
+    style_file = os.path.join(dir, STYLE_FILE_NAME)
+
+    return style_file
 
 
 def ts_heatmap(df, date_col, value_col, fig_width=10, fig_height=6, normalization=False,
@@ -179,7 +190,9 @@ def correlation_heatmap(df, var_list, fig_width=10, fig_height=6,
 #     return ax
 
 
-def dual_axis_ts_plot(df, var1, var2, date_col, fig_width=25, fig_height=6, path=None):
+def dual_axis_ts_plot(df, var1, var2, date_col, fig_width=25, fig_height=6, path=None,
+                      color1=palette.QualitativePalette.mid_blue.value,
+                      color2=palette.QualitativePalette.orange.value):
     """This function plots two time series variables on two y axis. This is handy for comparison of two variables. The dual
     y axis will set on two different scales if the two variables are very different in terms of volume.
     Parameters
@@ -198,6 +211,10 @@ def dual_axis_ts_plot(df, var1, var2, date_col, fig_width=25, fig_height=6, path
         adjust height of the chart
     path : str
         path to save the figure
+    color1: str
+        color for var1
+    color2: str
+        color for var2
 
     Returns
     -------
@@ -205,13 +222,13 @@ def dual_axis_ts_plot(df, var1, var2, date_col, fig_width=25, fig_height=6, path
     """
     df[date_col] = pd.to_datetime(df[date_col])
     fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-    sns.lineplot(data=df, x=date_col, y=var1, label=var1, color='#4c72b0')
-    ax.set_ylabel(f'{var1}', color='#4c72b0')
-    ax.tick_params(axis='y', labelcolor='#4c72b0')
+    sns.lineplot(data=df, x=date_col, y=var1, label=var1, color=color1)
+    ax.set_ylabel(f'{var1}', color=color1)
+    ax.tick_params(axis='y', labelcolor=color1)
     ax2 = ax.twinx()
-    sns.lineplot(data=df, x=date_col, y=var2, ax=ax2, color='#dd8452', label=var2)
-    ax2.set_ylabel(f'{var2}', color='#dd8452')
-    ax2.tick_params(axis='y', labelcolor='#dd8452')
+    sns.lineplot(data=df, x=date_col, y=var2, ax=ax2, color=color2, label=var2)
+    ax2.set_ylabel(f'{var2}', color=color2)
+    ax2.tick_params(axis='y', labelcolor=color2)
     lines, labels = ax.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax2.legend(lines + lines2, labels + labels2, loc=0)
@@ -244,9 +261,10 @@ def wrap_plot_ts(df, date_col, var_list, col_wrap=3, height=2.5, aspect=2):
     df = df[non_zero_varlist]
     df_long = df.melt(id_vars=[date_col])
     ax = sns.relplot(x=date_col, y='value', col='variable',
-                        height=height, aspect=aspect,
-                        col_wrap=col_wrap, kind='line', data=df_long,
-                        facet_kws={'sharey': False, 'sharex': False})
+                     height=height, aspect=aspect,
+                     col_wrap=col_wrap, kind='line', data=df_long,
+                     facet_kws={'sharey': False, 'sharex': False}
+                     )
     ax.set_xticklabels(rotation=45)
     plt.tight_layout()
 
