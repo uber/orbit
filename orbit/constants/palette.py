@@ -1,6 +1,5 @@
 from enum import Enum
 import seaborn as sns
-import matplotlib.pyplot as plt
 import matplotlib.colors as clr
 
 
@@ -91,9 +90,9 @@ class OrbitPalette(Enum):
     # single uber brand colors
     black = '#000000'
     blue = '#276EF1'
-    green = '#3AA76D'
+    green = '#05A357'
     yellow = '#FFC043'
-    red = '#D44333'
+    red = '#E11900'
     brown = '#99644C'
     orange = '#ED6E33'
     purple = '#7356BF'

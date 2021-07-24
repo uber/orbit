@@ -11,6 +11,7 @@ from ..exceptions import BacktestException
 from ..constants.constants import TimeSeriesSplitSchemeNames
 from ..constants.palette import QualitativePalette
 from collections.abc import Mapping, Iterable
+from ..constants.palette import OrbitPalette as OrbitPal
 
 
 class TimeSeriesSplitter(object):
@@ -164,14 +165,16 @@ class TimeSeriesSplitter(object):
     def plot(self, lw=20, fig_width=20):
         _, ax = plt.subplots(figsize=(fig_width, self.n_splits))
         # visualize the train/test windows for each split
+        # TODO: consider redo this with
+        # https://stackoverflow.com/questions/16653815/horizontal-stacked-bar-chart-in-matplotlib
         for idx, scheme in self._split_scheme.items():
             # fill in indices with the training/test groups
             tr_indices = list(scheme[TimeSeriesSplitSchemeNames.TRAIN_IDX.value])
             tt_indices = list(scheme[TimeSeriesSplitSchemeNames.TEST_IDX.value])
 
             indices = tr_indices + tt_indices
-            tr_color = [(QualitativePalette['Bar5'].value)[2]] * len(tr_indices)
-            tt_color = [(QualitativePalette['Bar5'].value)[1]] * len(tt_indices)
+            tr_color = [OrbitPal.blue.value] * len(tr_indices)
+            tt_color = [OrbitPal.orange.value] * len(tt_indices)
 
             # Visualize the results
             ax.scatter(
