@@ -501,6 +501,7 @@ def test_lgt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input
     assert regression_out.shape == expected_regression_shape
     assert num_regressors == len(train_df.columns.tolist()[2:])
 
+
 @pytest.mark.parametrize("param_grid", [
                                             {
                                                 'level_sm_input': [0.3, 0.5, 0.8],
@@ -532,3 +533,26 @@ def test_lgt_grid_tuning(synthetic_data, param_grid):
     assert best_params[0].keys() == param_grid.keys()
     assert set(tuned_df.columns.to_list()) == set(list(param_grid.keys()) + ['metrics'])
     assert tuned_df.shape == (9, 3)
+
+
+def test_lgt_map_single_regressor(iclaims_training_data):
+    df = iclaims_training_data
+    df['claims'] = np.log(df['claims'])
+    regressor_col = ['trend.unemploy']
+
+    lgt = LGTMAP(
+        response_col='claims',
+        date_col='week',
+        regressor_col=regressor_col,
+        seasonality=52,
+        seed=8888,
+    )
+    lgt.fit(df)
+    predicted_df = lgt.predict(df)
+
+    expected_num_parameters = 13
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
+
+    assert predicted_df.shape[0] == df.shape[0]
+    assert predicted_df.columns.tolist() == expected_columns
+    assert len(lgt._posterior_samples) == expected_num_parameters

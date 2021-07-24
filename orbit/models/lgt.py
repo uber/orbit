@@ -92,7 +92,7 @@ class BaseLGT(BaseETS):
         self._regressor_sigma_prior = self.regressor_sigma_prior
         self._regression_penalty = None
         self._regressor_col = list()
-        
+
         self.num_of_regressors = 0
         # positive regressors
         self.num_of_positive_regressors = 0
@@ -349,6 +349,8 @@ class BaseLGT(BaseETS):
         # calculate regression component
         if self.regressor_col is not None and len(self.regressor_col) > 0:
             regressor_beta = regressor_beta.t()
+            if len(regressor_beta.shape) == 1:
+                regressor_beta = regressor_beta.unsqueeze(0)
             regressor_matrix = df[self._regressor_col].values
             regressor_torch = torch.from_numpy(regressor_matrix).double()
             regression = torch.matmul(regressor_torch, regressor_beta)
