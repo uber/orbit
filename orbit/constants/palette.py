@@ -88,27 +88,40 @@ class DivergingPalette(Enum):
 
 class OrbitPalette(Enum):
     # Qualitative Palette
-    # singe uber brand colors
-    uber_black = '#000000'
-    uber_blue = '#276EF1'
-    uber_green = '#3AA76D'
-    uber_yellow = '#FFC043'
-    uber_red = '#D44333'
-    uber_brown = '#99644C'
-    uber_orange = '#ED6E33'
-    uber_purple = '#7356BF'
-    uber_white = '#FFFFFF'
-
-    # uber_discrete =
+    # single uber brand colors
+    black = '#000000'
+    blue = '#276EF1'
+    green = '#3AA76D'
+    yellow = '#FFC043'
+    red = '#D44333'
+    brown = '#99644C'
+    orange = '#ED6E33'
+    purple = '#7356BF'
+    white = '#FFFFFF'
 
     # Sequential Palette
-    uber_black_gradient = clr.LinearSegmentedColormap.from_list('custom', [uber_white, uber_black], N=300)
-    uber_blue_gradient = clr.LinearSegmentedColormap.from_list('custom', [uber_white, uber_blue, uber_black], N=300)
-    uber_green_gradient = clr.LinearSegmentedColormap.from_list('custom', [uber_white, uber_green, uber_black], N=300)
-    uber_yellow_gradient = clr.LinearSegmentedColormap.from_list('custom', [uber_white, uber_yellow, uber_black], N=300)
-    uber_red_gradient = clr.LinearSegmentedColormap.from_list('custom', [uber_white, uber_red, uber_black], N=300)
-    uber_purple_gradient = clr.LinearSegmentedColormap.from_list('custom', [uber_white, uber_purple, uber_black], N=300)
+    black_gradient = clr.LinearSegmentedColormap.from_list('custom', [white, black], N=300)
+    blue_gradient = clr.LinearSegmentedColormap.from_list('custom', [white, blue, black], N=300)
+    green_gradient = clr.LinearSegmentedColormap.from_list('custom', [white, green, black], N=300)
+    yellow_gradient = clr.LinearSegmentedColormap.from_list('custom', [white, yellow, black], N=300)
+    red_gradient = clr.LinearSegmentedColormap.from_list('custom', [white, red, black], N=300)
+    purple_gradient = clr.LinearSegmentedColormap.from_list('custom', [white, purple, black], N=300)
 
     # Diverging Palette
-    uber_rainbow = clr.LinearSegmentedColormap.from_list('custom',
-                                                         ['#FFFFFF', '#FFC043','#3AA76D', '#276EF1', '#7356BF'], N=300)
+    rainbow = clr.LinearSegmentedColormap.from_list(
+        'custom', ['#FFFFFF', '#FFC043', '#3AA76D', '#276EF1', '#7356BF'],
+        N=300)
+
+
+class PredictionPaletteClassic(Enum):
+    # black
+    actual_obs = '#000000'
+    # dark_teal
+    prediction_line = '#12939A'
+    # teal
+    preidction_range = '#42999E'
+    # blue
+    holdout_vertical_line = '#1f77b4'
+    # orange
+    test_obs = '#FF8C00'
+
