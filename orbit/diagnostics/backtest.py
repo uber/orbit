@@ -165,8 +165,6 @@ class TimeSeriesSplitter(object):
     def plot(self, lw=20, fig_width=20):
         _, ax = plt.subplots(figsize=(fig_width, self.n_splits))
         # visualize the train/test windows for each split
-        # TODO: consider redo this with
-        # https://stackoverflow.com/questions/16653815/horizontal-stacked-bar-chart-in-matplotlib
         tr_start = list()
         tr_len = list()
         # technically should be just self.forecast_len
@@ -182,22 +180,6 @@ class TimeSeriesSplitter(object):
             )
             tt_len.append(self.forecast_len)
 
-            # indices = tr_indices + tt_indices
-            # tr_color = [OrbitPal.blue.value] * len(tr_indices)
-            # tt_color = [OrbitPal.orange.value] * len(tt_indices)
-            #
-            # # Visualize the results
-            # ax.scatter(
-            #     indices,
-            #     [idx + 0.5] * len(indices),
-            #     # s=5.0, # not useful
-            #     c=tr_color + tt_color,
-            #     # TODO: consider 's' square marker and other edge colors
-            #     marker="_",
-            #     lw=lw,
-            #     vmin=-0.2,
-            #     vmax=1.2,
-            # )
         tr_start = np.array(tr_start)
         tr_len = np.array(tr_len)
         ax.barh(yticks, tr_start, align='center', height=.5, color='white', alpha=0)
