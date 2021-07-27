@@ -9,10 +9,11 @@ from copy import deepcopy
 import arviz as az
 import math
 
-from orbit.constants.constants import PredictionKeys
+from ..constants.constants import PredictionKeys
 from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
-from orbit.constants.palette import QualitativePalette
-from orbit.diagnostics.metrics import smape, wmape
+from ..constants.palette import QualitativePalette
+from ..constants.palette import PredictionPaletteClassic as PredPal
+from orbit.diagnostics.metrics import smape
 
 az.style.use("arviz-darkgrid")
 
@@ -105,16 +106,18 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
     else:
         ax.scatter(_training_actual_df[date_col].values,
                    _training_actual_df[actual_col].values,
-                   marker='.', color='black', alpha=0.8, s=markersize,
+                   marker='.', color=PredPal.actual_obs.value, alpha=0.8, s=markersize,
                    label='train response')
 
     ax.plot(_predicted_df[date_col].values,
             _predicted_df[pred_col].values,
-            marker=None, color='#12939A', lw=lw, label=PredictionKeys.PREDICTION.value, linestyle=linestyle)
+            marker=None, color=PredPal.prediction_line.value, lw=lw,
+            label=PredictionKeys.PREDICTION.value, linestyle=linestyle)
 
     # vertical line separate training and prediction
     if _training_actual_df[date_col].values[-1] < _predicted_df[date_col].values[-1]:
-        ax.axvline(x=_training_actual_df[date_col].values[-1], color='#1f77b4', linestyle='--')
+        ax.axvline(x=_training_actual_df[date_col].values[-1],
+                   color=PredPal.holdout_vertical_line.value, linestyle='--')
 
     if test_actual_df is not None:
         test_actual_df = test_actual_df.copy()
@@ -122,11 +125,11 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         if line_plot:
             ax.plot(test_actual_df[date_col].values,
                     test_actual_df[actual_col].values,
-                    marker=None, color='#FF8C00', lw=lw, label='train response', linestyle=linestyle)
+                    marker=None, color=PredPal.test_obs.value, lw=lw, label='train response', linestyle=linestyle)
         else:
             ax.scatter(test_actual_df[date_col].values,
                        test_actual_df[actual_col].values,
-                       marker='.', color='#FF8C00', alpha=0.8, s=markersize,
+                       marker='.', color=PredPal.test_obs.value, alpha=0.8, s=markersize,
                        label='test response')
 
     # prediction intervals
@@ -134,7 +137,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         ax.fill_between(_predicted_df[date_col].values,
                         _predicted_df[confid_cols[0]],
                         _predicted_df[confid_cols[1]],
-                        facecolor='#42999E', alpha=0.5)
+                        facecolor=PredPal.preidction_range.value, alpha=0.5)
 
     ax.set_title(title, fontsize=fontsize)
     ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
@@ -151,7 +154,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
 
 def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, plot_components=None,
                               title="", figsize=None, path=None, fontsize=None, is_visible=True):
-    """ Plot predicted componenets with the data frame of decomposed prediction where components
+    """ Plot predicted components with the data frame of decomposed prediction where components
     has been pre-defined as `trend`, `seasonality` and `regression`.
     Parameters
     ----------
@@ -207,13 +210,13 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
     fig, axes = plt.subplots(n_panels, 1, facecolor='w', figsize=figsize)
     for ax, comp in zip(axes, plot_components):
         y = predicted_df[comp].values
-        ax.plot(_predicted_df[date_col], y, marker=None, color='#12939A')
+        ax.plot(_predicted_df[date_col], y, marker=None, color=PredPal.prediction_line.value)
         confid_cols = ["{}_{}".format(comp, _pred_percentiles[0]), "{}_{}".format(comp, _pred_percentiles[1])]
         if set(confid_cols).issubset(predicted_df.columns):
             ax.fill_between(_predicted_df[date_col].values,
                             _predicted_df[confid_cols[0]],
                             _predicted_df[confid_cols[1]],
-                            facecolor='#42999E', alpha=0.5)
+                            facecolor=PredPal.preidction_range.value, alpha=0.5)
         ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
         ax.set_title(comp, fontsize=fontsize)
     plt.suptitle(title, fontsize=fontsize)
@@ -525,7 +528,7 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
     figsize : tuple
         figure size
     include_vline : bool
-        if plotting the vertial line to cut the in-sample and out-of-sample predictions for each split
+        if plotting the vertical line to cut the in-sample and out-of-sample predictions for each split
     title : str
         title of the plot
     fontsize: int; optional
@@ -539,7 +542,7 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
         figsize=(16, 8)
 
     metric_vals = bt_pred_df.groupby('split_key').apply(lambda x:
-        metrics(x[x['training_data'] == False]['actuals'], x[x['training_data'] == False]['prediction']))
+                                                        metrics(x[x['training_data'] == False]['actuals'], x[x['training_data'] == False]['prediction']))
 
     if split_key_list is None:
         split_key_list_ = bt_pred_df['split_key'].unique()
@@ -558,7 +561,7 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
         axes[row_idx, col_idx].grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.4)
 
         axes[row_idx, col_idx].set_title(label='split {}; {} {:.3f}'. \
-                format(split_key, metrics.__name__, metric_vals[split_key]))
+                                         format(split_key, metrics.__name__, metric_vals[split_key]))
         if include_vline:
             cutoff_date = tmp[tmp['training_data'] == False]['date'].min()
             axes[row_idx, col_idx].axvline(x=cutoff_date, linestyle='--', color='#1f77b4', linewidth=4, alpha=.8)

@@ -11,6 +11,7 @@ from ..exceptions import BacktestException
 from ..constants.constants import TimeSeriesSplitSchemeNames
 from ..constants.palette import QualitativePalette
 from collections.abc import Mapping, Iterable
+from ..constants.palette import OrbitPalette as OrbitPal
 
 
 class TimeSeriesSplitter(object):
@@ -164,40 +165,37 @@ class TimeSeriesSplitter(object):
     def plot(self, lw=20, fig_width=20):
         _, ax = plt.subplots(figsize=(fig_width, self.n_splits))
         # visualize the train/test windows for each split
+        tr_start = list()
+        tr_len = list()
+        # technically should be just self.forecast_len
+        tt_len = list()
+        yticks = list(range(self.n_splits))
         for idx, scheme in self._split_scheme.items():
             # fill in indices with the training/test groups
-            tr_indices = list(scheme[TimeSeriesSplitSchemeNames.TRAIN_IDX.value])
-            tt_indices = list(scheme[TimeSeriesSplitSchemeNames.TEST_IDX.value])
-
-            indices = tr_indices + tt_indices
-            tr_color = [(QualitativePalette['Bar5'].value)[2]] * len(tr_indices)
-            tt_color = [(QualitativePalette['Bar5'].value)[1]] * len(tt_indices)
-
-            # Visualize the results
-            ax.scatter(
-                indices,
-                [idx + 0.5] * len(indices),
-                # s=5.0, # not useful
-                c=tr_color + tt_color,
-                # TODO: consider 's' square marker and other edgecolors
-                marker="_",
-                lw=lw,
-                vmin=-0.2,
-                vmax=1.2,
+            tr_start.append(
+                list(scheme[TimeSeriesSplitSchemeNames.TRAIN_IDX.value])[0]
             )
+            tr_len.append(len(
+                list(scheme[TimeSeriesSplitSchemeNames.TRAIN_IDX.value]))
+            )
+            tt_len.append(self.forecast_len)
+
+        tr_start = np.array(tr_start)
+        tr_len = np.array(tr_len)
+        ax.barh(yticks, tr_start, align='center', height=.5, color='white', alpha=0)
+        ax.barh(yticks, tr_len, align='center', height=.5, left=tr_start, color=OrbitPal.blue.value, label='train')
+        ax.barh(yticks, tt_len, align='center', height=.5, left=tr_start + tr_len, color=OrbitPal.orange.value, label='test')
 
         # Formatting
-        # TODO: do a date_col style if date_col is avaliable
+        # TODO: do a date_col style if date_col is available
         middle = 15
         large = 20
 
+        ax.set_yticks(yticks)
         ax.set_ylabel("Split #", fontsize=large)
-        ax.set_yticks(np.arange(self.n_splits) + 0.5)
-        ax.set_yticklabels(list(range(self.n_splits)))
-        ax.set_ylim(0 - 0.2, self.n_splits + 0.2)
         ax.invert_yaxis()
         ax.grid(which="both", color='grey', alpha=0.5)
-        ax.tick_params(axis="both", which="major", labelsize=middle)
+        ax.tick_params(axis="x", which="major", labelsize=middle)
         ax.set_title("Train/Test Split Scheme", fontsize=large)
         return ax
 
