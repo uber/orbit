@@ -261,13 +261,12 @@ class BaseKTRLite(BaseTemplate):
     @staticmethod
     def _set_knots_tp(knots_distance, cutoff, knot_location):
         if knot_location == 'mid_point':
-            # start in the middle
+            # knot in the middle
             knots_idx_start = round(knots_distance / 2)
             knots_idx = np.arange(knots_idx_start, cutoff, knots_distance)
         elif knot_location == 'end_point':
-            # start in the end
-            num = round(cutoff / knots_distance)
-            knots_idx = np.linspace(knots_distance, cutoff - 1, num=num, endpoint=True).astype(int)
+            # knot in the end
+            knots_idx = np.sort(np.arange(cutoff - 1, 0, -knots_distance))
 
         return knots_idx
 
