@@ -15,7 +15,7 @@ from ..constants.palette import QualitativePalette
 from ..constants.palette import PredictionPaletteClassic as PredPal
 from orbit.diagnostics.metrics import smape
 
-az.style.use("arviz-darkgrid")
+# az.style.use("arviz-darkgrid")
 
 
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
@@ -352,7 +352,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
             cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level)/2), \
                                  np.percentile(samples, 100 * (1 + ci_level)/2)
 
-            sns.distplot(samples, bins=n_bins, kde_kws={'shade': True}, ax=axes[i], norm_hist=False)
+            sns.histplot(samples, bins=n_bins, kde_kws={'shade': True}, ax=axes[i])
             # sns.kdeplot(samples, shade=True, ax=axes[i])
             axes[i].set_xlabel(param)
             axes[i].set_ylabel('density')
