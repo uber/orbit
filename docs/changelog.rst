@@ -2,6 +2,25 @@
 
 Changelog
 =========
+1.0.14 (2021-07-29) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.14>`_)
+-------------------
+:Core changes:
+  - Prediction functionality refactoring (#430)
+  - KTRLite model enhancement and interface cleanup (#440)
+  - More flexible scheduling config in Backtester (#447)
+  - Allow extraction of training related metrics (e.g. ELBO loss) in Pyro SVI (#443)
+  - Add a flag to keep the posterior samples or not in aggregated model (#465)
+  - Bug fix and code improvement (#428, #438, #459, #470)
+
+:Documentation:
+  - Clean up and standardize example notebooks (#462)
+  - Tutorial update and enhancement (#431, #474)
+
+:Utilities:
+  - Diagnostic plot with Arviz (#433)
+  - Refine plotting palette (#434, #473)
+  - Create an orbit-featured plotting style (#434)
+
 1.0.13 (2021-04-02) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.13>`_)
 -------------------
 :Core changes:
