@@ -485,12 +485,12 @@ class KTRLiteMAP(MAPTemplate, BaseKTRLite):
         knots_df = self.get_level_knots()
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
-        ax.plot(self.date_array, self.response, color=OrbitPalette.DarkGrey.value, lw=1, alpha=0.7, label='actual')
+        ax.plot(self.date_array, self.response, color=OrbitPalette.blue.value, lw=1, alpha=0.7, label='actual')
         ax.plot(levels_df[self.date_col], levels_df[constants.BaseSamplingParameters.LEVEL.value],
-                color=OrbitPalette.SafetyBlue.value, lw=1, alpha=0.8,
+                color=OrbitPalette.black.value, lw=1, alpha=0.8,
                 label=constants.BaseSamplingParameters.LEVEL.value)
         ax.scatter(knots_df[self.date_col], knots_df[constants.BaseSamplingParameters.LEVEL_KNOT.value],
-                   color=OrbitPalette.Green.value, lw=1, s=markersize, marker='^',  alpha=0.8,
+                   color=OrbitPalette.green.value, lw=1, s=markersize, marker='^',  alpha=0.8,
                    label=constants.BaseSamplingParameters.LEVEL_KNOT.value)
         ax.legend()
         ax.grid(True, which='major', c='grey', ls='-', lw=1, alpha=0.5)
