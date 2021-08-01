@@ -4,11 +4,12 @@ import logging
 import numpy as np
 from copy import copy
 import multiprocessing
+# fix issue in Python 3.9
+multiprocessing.set_start_method("fork")
 from .base_estimator import BaseEstimator
 from ..exceptions import EstimatorException
 from ..utils.stan import get_compiled_stan_model
 from ..utils.general import update_dict
-
 # todo: add stan docstrings
 
 
