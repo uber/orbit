@@ -19,14 +19,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       # You can test your matrix by printing the current Python version
-      - name: Display Python version
+      # Display Python version
         run: python -c "import sys; print(sys.version)"
-      - name: Install dependencies
-        run: |
-            pip install -U pip
-            pip install -U setuptools
-            pip install -r requirements.txt
-            pip install -r requirements-test.txt
-            python setup.py develop
-      - name: Test with pytest
-            pytest -vs tests/ --cov orbit/
+#      - name: Install dependencies
+#        run: |
+#            pip install -U pip
+#            pip install -U setuptools
+#            pip install -r requirements.txt
+#            pip install -r requirements-test.txt
+#            python setup.py develop
+#      - name: Test with pytest
+#            pytest -vs tests/ --cov orbit/
