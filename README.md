@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------------------------------------------------------------------
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/uber/orbit)
 ![PyPI](https://img.shields.io/pypi/v/orbit-ml)
-[![Build Status](https://travis-ci.com/uber/orbit.svg?branch=dev)](https://travis-ci.com/uber/orbit)
+[![Build Status](https://github.com/uber/orbit/workflows/build/badge.svg?branch=dev)](https://github.com/uber/orbit/actions)
 [![Documentation Status](https://readthedocs.org/projects/orbit-ml/badge/?version=latest)](https://orbit-ml.readthedocs.io/en/latest/?badge=latest)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/orbit-ml)
 [![Downloads](https://pepy.tech/badge/orbit-ml)](https://pepy.tech/project/orbit-ml)
@@ -146,7 +146,7 @@ Bibtex:
   P., Horsfall, P., and Goodman, N. D. Pyro: Deep universal probabilistic programming. The Journal of Machine Learning
   Research, 20(1):973–978, 2019.
 - Hoffman, M.D. and Gelman, A. The No-U-Turn sampler: adaptively setting path lengths in Hamiltonian Monte Carlo.
-  J. Mach. Learn. Res., 15(1), pp.1593-1623, 2014.  
+  J. Mach. Learn. Res., 15(1), pp.1593-1623, 2014.
 - Hyndman, R., Koehler, A. B., Ord, J. K., and Snyder, R. D. Forecasting with exponential smoothing:
   the state space approach. Springer Science & Business Media, 2008.
 - Smyl, S. Zhang, Q. Fitting and Extending Exponential Smoothing Models with Stan.
