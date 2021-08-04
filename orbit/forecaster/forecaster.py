@@ -171,7 +171,13 @@ class Forecaster(object):
         """Define condition of a fitted forecaster"""
         # if either aggregate posterior and posterior_samples are non-empty, claim it as fitted model (true),
         # else false.
-        return bool(self._posterior_samples) or bool(self._point_posteriors)
+        if bool(self._posterior_samples):
+            return True
+        # FIXME: not correct; should implement this chunk in child classes
+        for key in self._aggregate_posteriors.keys():
+            if bool(self._aggregate_posteriors[key]):
+                return True
+        return False
     
     def predict(self, df, **kwargs):
         """Predict interface requires concrete implementation from child class"""

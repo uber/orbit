@@ -3,18 +3,17 @@ import numpy as np
 from copy import copy
 
 from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
-from orbit.models.ets import ETSMAP, ETSFull, ETSAggregated
+from orbit.prebuilt import ETS
 from orbit.constants.constants import PredictionKeys
-from orbit.models.ets import ETSInitializer
 
 
-@pytest.mark.parametrize("model_class", [ETSMAP, ETSFull, ETSAggregated])
+@pytest.mark.parametrize("model_class", ['stan-map', 'stan-mcmc'])
 def test_base_ets_init(model_class):
-    ets = model_class()
+    ets = ETS()
 
     is_fitted = ets.is_fitted()
 
-    model_data_input = ets.get_model_data_input()
+    model_data_input = ets.get_data_input_mapper()
     model_param_names = ets.get_model_param_names()
     init_values = ets.get_init_values()
 
@@ -28,7 +27,7 @@ def test_base_ets_init(model_class):
     assert not init_values
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC])
 def test_ets_full_seasonal_fit(synthetic_data, estimator_type):
     train_df, test_df, coef = synthetic_data
 
