@@ -2,7 +2,7 @@
 
 Changelog
 =========
-1.0.14 (2021-07-29) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.14>`_)
+1.0.14 and 1.0.15 (2021-07-29) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.14>`_)
 -------------------
 :Core changes:
   - Prediction functionality refactoring (#430)
