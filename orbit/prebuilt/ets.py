@@ -5,7 +5,7 @@ from ..exceptions import IllegalArgument
 from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
 
 
-def ETS(response_col, date_col, estimator='stan-map', **kwargs):
+def ETS(response_col='y', date_col='ds', estimator='stan-map', **kwargs):
     """
     Args
     ----------
