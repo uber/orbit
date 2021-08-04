@@ -1,6 +1,10 @@
 from __future__ import absolute_import
 
 
+class ForecasterException(Exception):
+    pass
+
+
 class EstimatorException(Exception):
     pass
 

@@ -1,10 +1,11 @@
+from inspect import signature
 from ..models.ets import ETSModel
 from ..forecaster import MAPForecaster, FullBayesianForecaster
 from ..exceptions import IllegalArgument
 from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
 
 
-def ETS(response_col, date_col, seasonality, seasonality_sm_input, level_sm_input, estimator='stan-map', **kwargs):
+def ETS(response_col, date_col, estimator='stan-map', **kwargs):
     """
     Args
     ----------
@@ -27,14 +28,22 @@ def ETS(response_col, date_col, seasonality, seasonality_sm_input, level_sm_inpu
     ----------------
     **kwargs: additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
     """
-    ets = ETSModel(seasonality=seasonality, seasonality_sm_input=seasonality_sm_input, level_sm_input=level_sm_input)
+    ets_args_keys = [x for x in signature(ETSModel).parameters.keys() if x != 'kwargs']
+    ets_args = dict()
+    forecaster_args = dict()
+    for k, v in kwargs.items():
+        if k in ets_args_keys:
+            ets_args[k] = v
+        else:
+            forecaster_args[k] = v
+    ets = ETSModel(**ets_args)
     if estimator == 'stan-map':
         ets_forecaster = MAPForecaster(
             model=ets,
             response_col=response_col,
             date_col=date_col,
             estimator_type=StanEstimatorMAP,
-            **kwargs
+            **forecaster_args
         )
     elif estimator == 'stan-mcmc':
         ets_forecaster = FullBayesianForecaster(
@@ -42,7 +51,7 @@ def ETS(response_col, date_col, seasonality, seasonality_sm_input, level_sm_inpu
             response_col=response_col,
             date_col=date_col,
             estimator_type=StanEstimatorMCMC,
-            **kwargs
+            **forecaster_args
         )
     else:
         raise IllegalArgument('Invalid estimator.')
