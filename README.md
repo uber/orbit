@@ -65,7 +65,7 @@ $ pip install git+https://github.com/uber/orbit.git@dev
 
 ```python
 from orbit.utils.dataset import load_iclaims
-from orbit.models.dlt import DLTFull
+from orbit.template.dlt import DLTFull
 from orbit.diagnostics.plot import plot_predicted_data
 
 # log-transformed data
@@ -76,9 +76,9 @@ train_df = df[:-test_size]
 test_df = df[-test_size:]
 
 dlt = DLTFull(
-    response_col='claims', date_col='week',
-    regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
-    seasonality=52,
+  response_col='claims', date_col='week',
+  regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
+  seasonality=52,
 )
 dlt.fit(df=train_df)
 
@@ -86,9 +86,9 @@ dlt.fit(df=train_df)
 predicted_df = dlt.predict(df=test_df)
 
 plot_predicted_data(
-    training_actual_df=train_df, predicted_df=predicted_df,
-    date_col=dlt.date_col, actual_col=dlt.response_col,
-    test_actual_df=test_df
+  training_actual_df=train_df, predicted_df=predicted_df,
+  date_col=dlt.date_col, actual_col=dlt.response_col,
+  test_actual_df=test_df
 )
 ```
 
