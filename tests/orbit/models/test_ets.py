@@ -2,10 +2,10 @@ import pytest
 import numpy as np
 from copy import copy
 
-from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorVI, StanEstimatorMAP
+from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
 from orbit.models.ets import ETSMAP, ETSFull, ETSAggregated
 from orbit.constants.constants import PredictionKeys
-from orbit.initializer.ets import ETSInitializer
+from orbit.models.ets import ETSInitializer
 
 
 @pytest.mark.parametrize("model_class", [ETSMAP, ETSFull, ETSAggregated])
@@ -31,6 +31,7 @@ def test_base_ets_init(model_class):
 @pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
 def test_ets_full_seasonal_fit(synthetic_data, estimator_type):
     train_df, test_df, coef = synthetic_data
+
     ets = ETSFull(
         response_col='response',
         date_col='week',
@@ -41,6 +42,7 @@ def test_ets_full_seasonal_fit(synthetic_data, estimator_type):
         verbose=False,
         estimator_type=estimator_type
     )
+
     ets.fit(train_df)
 
     init_call = ets.get_init_values()
@@ -58,8 +60,6 @@ def test_ets_full_seasonal_fit(synthetic_data, estimator_type):
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
     assert len(ets._posterior_samples) == expected_num_parameters
-
-    assert ets.is_fitted()
 
 
 @pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
@@ -93,7 +93,6 @@ def test_ets_aggregated_seasonal_fit(synthetic_data, estimator_type):
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
     assert len(ets._posterior_samples) == expected_num_parameters
-    assert ets.is_fitted()
 
 
 @pytest.mark.parametrize("estimator_type", [StanEstimatorMAP])
@@ -124,7 +123,6 @@ def test_ets_map_seasonal_fit(synthetic_data, estimator_type):
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
     assert len(ets._posterior_samples) == expected_num_parameters
-    assert ets.is_fitted()
 
 
 @pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
