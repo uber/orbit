@@ -14,7 +14,7 @@ class MAPForecaster(Forecaster):
     def is_fitted(self):
         # if either aggregate posterior and posterior_samples are non-empty, claim it as fitted model (true),
         # else false.
-        return bool(self._posterior_samples) or bool(self._point_posteriors)
+        return bool(self._point_posteriors['map'])
 
     def fit(self, df):
         super().fit(df)

@@ -4,6 +4,7 @@ from copy import copy
 
 from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
 from orbit.prebuilt import ETS
+from orbit.models.ets import ETSInitializer
 from orbit.constants.constants import PredictionKeys
 
 
@@ -13,7 +14,7 @@ def test_base_ets_init(estimator):
 
     is_fitted = ets.is_fitted()
 
-    model_data_input = ets._model.get_data_input_mapper()
+    model_data_input = ets.get_training_data_input()
     model_param_names = ets._model.get_model_param_names()
     init_values = ets._model.get_init_values()
 
@@ -27,8 +28,7 @@ def test_base_ets_init(estimator):
     assert not init_values
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC])
-def test_ets_full_seasonal_fit(synthetic_data, estimator_type):
+def test_ets_full_seasonal_fit(synthetic_data):
     train_df, test_df, coef = synthetic_data
 
     ets = ETS(
@@ -39,12 +39,11 @@ def test_ets_full_seasonal_fit(synthetic_data, estimator_type):
         num_warmup=50,
         num_sample=50,
         verbose=False,
-        estimator_type=estimator_type
+        estimator='stan-mcmc',
     )
-
     ets.fit(train_df)
 
-    init_call = ets.get_init_values()
+    init_call = ets._model.get_init_values()
     assert isinstance(init_call, ETSInitializer)
     assert init_call.s == 52
     init_values = init_call()
@@ -61,7 +60,6 @@ def test_ets_full_seasonal_fit(synthetic_data, estimator_type):
     assert len(ets._posterior_samples) == expected_num_parameters
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC])
 def test_ets_aggregated_seasonal_fit(synthetic_data, estimator_type):
     train_df, test_df, coef = synthetic_data
 

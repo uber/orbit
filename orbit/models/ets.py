@@ -9,6 +9,7 @@ from .template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
 
 
+# constants for attributes, params and I/Os
 class DataInputMapper(Enum):
     """
     mapping from object input to sampler
@@ -46,6 +47,7 @@ class LatentSamplingParameters(Enum):
     INITIAL_SEASONALITY = 'init_sea'
 
 
+# a callable object for generating initial values in sampling/optimization
 class ETSInitializer(object):
     def __init__(self, s):
         self.s = s
