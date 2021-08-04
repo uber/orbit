@@ -5,7 +5,7 @@ import os
 
 class PredictMethod(Enum):
     """
-    The predict method for all of the stan models. Often used are mean and median.
+    The predict method for all of the stan template. Often used are mean and median.
     """
     MAP = 'map'
     MEAN = 'mean'
@@ -15,7 +15,7 @@ class PredictMethod(Enum):
 
 class InferMethod(Enum):
     """
-    The predict method for all of the stan models. Often used are mean and median.
+    The predict method for all of the stan template. Often used are mean and median.
     """
     VARIATIONAL_INFERENCE = 'vi'
     MARKOV_CHAIN_MONTE_CARLO = 'mcmc'
@@ -61,7 +61,7 @@ class StanModelKeys(Enum):
     the model is the output of SLGT.fit() and input of SLGTModel.
     """
     STAN_INPUTS = "stan_inputs"
-    MODELS = "models"
+    MODELS = "template"
     REGRESSOR_COLUMNS = "regressor_columns"
     RESPONSE_COLUMN = "response_column"
     DATE_INFO = "date_info"

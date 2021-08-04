@@ -68,7 +68,7 @@ class PyroEstimatorVI(PyroEstimator):
         self.init_scale = init_scale
 
     def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
-        # verbose is passed through from orbit.models.base_estimator
+        # verbose is passed through from orbit.template.base_estimator
         verbose = self.verbose
         message = self.message
         learning_rate = self.learning_rate

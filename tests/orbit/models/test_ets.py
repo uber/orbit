@@ -3,20 +3,20 @@ import numpy as np
 from copy import copy
 
 from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
-from orbit.models.ets import ETSMAP, ETSFull, ETSAggregated
+from orbit.models import ETS
+from orbit.template.ets import ETSInitializer
 from orbit.constants.constants import PredictionKeys
-from orbit.models.ets import ETSInitializer
 
 
-@pytest.mark.parametrize("model_class", [ETSMAP, ETSFull, ETSAggregated])
-def test_base_ets_init(model_class):
-    ets = model_class()
+@pytest.mark.parametrize("estimator", ['stan-map', 'stan-mcmc'])
+def test_base_ets_init(estimator):
+    ets = ETS(estimator=estimator)
 
     is_fitted = ets.is_fitted()
 
-    model_data_input = ets.get_model_data_input()
-    model_param_names = ets.get_model_param_names()
-    init_values = ets.get_init_values()
+    model_data_input = ets.get_training_data_input()
+    model_param_names = ets._model.get_model_param_names()
+    init_values = ets._model.get_init_values()
 
     # model is not yet fitted
     assert not is_fitted
@@ -28,11 +28,10 @@ def test_base_ets_init(model_class):
     assert not init_values
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
-def test_ets_full_seasonal_fit(synthetic_data, estimator_type):
+def test_ets_full_seasonal_fit(synthetic_data):
     train_df, test_df, coef = synthetic_data
 
-    ets = ETSFull(
+    ets = ETS(
         response_col='response',
         date_col='week',
         prediction_percentiles=[5, 95],
@@ -40,12 +39,11 @@ def test_ets_full_seasonal_fit(synthetic_data, estimator_type):
         num_warmup=50,
         num_sample=50,
         verbose=False,
-        estimator_type=estimator_type
+        estimator='stan-mcmc',
     )
-
     ets.fit(train_df)
 
-    init_call = ets.get_init_values()
+    init_call = ets._model.get_init_values()
     assert isinstance(init_call, ETSInitializer)
     assert init_call.s == 52
     init_values = init_call()
@@ -62,7 +60,6 @@ def test_ets_full_seasonal_fit(synthetic_data, estimator_type):
     assert len(ets._posterior_samples) == expected_num_parameters
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
 def test_ets_aggregated_seasonal_fit(synthetic_data, estimator_type):
     train_df, test_df, coef = synthetic_data
 
@@ -125,7 +122,7 @@ def test_ets_map_seasonal_fit(synthetic_data, estimator_type):
     assert len(ets._posterior_samples) == expected_num_parameters
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC])
 def test_ets_non_seasonal_fit(synthetic_data, estimator_type):
     train_df, test_df, coef = synthetic_data
 
@@ -226,7 +223,7 @@ def test_map_prediction_percentiles(iclaims_training_data, prediction_percentile
     assert predicted_df.shape[0] == df.shape[0]
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC, StanEstimatorVI])
+@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC])
 @pytest.mark.parametrize("seasonality", [1, 52])
 def test_ets_full_reproducibility(synthetic_data, estimator_type, seasonality):
     train_df, test_df, coef = synthetic_data

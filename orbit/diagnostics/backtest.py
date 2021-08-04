@@ -406,7 +406,7 @@ class BackTester(object):
 def grid_search_orbit(param_grid, model, df, min_train_len=None,
                       incremental_len=None, forecast_len=None, n_splits=None,
                       metrics=None, criteria=None, verbose=True, **kwargs):
-    """A gird search unitlity to tune the hyperparameters for orbit models using the orbit.diagnostics.backtest modules.
+    """A gird search unitlity to tune the hyperparameters for orbit template using the orbit.diagnostics.backtest modules.
     Parameters
     ----------
     param_gird : dict
@@ -437,7 +437,7 @@ def grid_search_orbit(param_grid, model, df, min_train_len=None,
 
     """
     # def _get_params(model):
-    #     # get all the model params for orbit typed models
+    #     # get all the model params for orbit typed template
     #     params = {}
     #     for key, val in model.__dict__.items():
     #         if not key.startswith('_') and key != 'estimator':
