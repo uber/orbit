@@ -1,16 +1,63 @@
 import numpy as np
 from copy import deepcopy
 import torch
+from enum import Enum
 
-from ..constants import ets as constants
 from ..constants.constants import PredictionKeys
-from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP, StanEstimatorVI
 from ..exceptions import IllegalArgument
-from ..initializer.ets import ETSInitializer
-from .template import BaseTemplate, FullBayesianTemplate, AggregatedPosteriorTemplate, MAPTemplate
+from .template import ModelTemplate
+from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
 
 
-class BaseETS(BaseTemplate):
+class DataInputMapper(Enum):
+    """
+    mapping from object input to sampler
+    """
+    # ---------- Seasonality ---------- #
+    _SEASONALITY = 'SEASONALITY'
+    _SEASONALITY_SM_INPUT = 'SEA_SM_INPUT'
+    # ---------- Common Local Trend ---------- #
+    _LEVEL_SM_INPUT = 'LEV_SM_INPUT'
+
+
+class BaseSamplingParameters(Enum):
+    """
+    base parameters in posteriors sampling
+    """
+    # ---------- Common Local Trend ---------- #
+    LOCAL_TREND_LEVELS = 'l'
+    LEVEL_SMOOTHING_FACTOR = 'lev_sm'
+    # ---------- Noise Trend ---------- #
+    RESIDUAL_SIGMA = 'obs_sigma'
+
+
+class SeasonalitySamplingParameters(Enum):
+    """
+    seasonality component related parameters in posteriors sampling
+    """
+    SEASONALITY_LEVELS = 's'
+    SEASONALITY_SMOOTHING_FACTOR = 'sea_sm'
+
+
+class LatentSamplingParameters(Enum):
+    """
+    latent variables to be sampled
+    """
+    INITIAL_SEASONALITY = 'init_sea'
+
+
+class ETSInitializer(object):
+    def __init__(self, s):
+        self.s = s
+
+    def __call__(self):
+        init_values = dict()
+        init_sea = np.clip(np.random.normal(loc=0, scale=0.05, size=self.s - 1), -1.0, 1.0)
+        init_values[LatentSamplingParameters.INITIAL_SEASONALITY.value] = init_sea
+        return init_values
+
+
+class ETSModel(ModelTemplate):
     """
     Parameters
     ----------
@@ -29,9 +76,10 @@ class BaseETS(BaseTemplate):
     **kwargs: additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
     """
     # data labels for sampler
-    _data_input_mapper = constants.DataInputMapper
+    _data_input_mapper = DataInputMapper
     # used to match name of `*.stan` or `*.pyro` file to look for the model
     _model_name = 'ets'
+    _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC]
 
     def __init__(self, seasonality=None, seasonality_sm_input=None, level_sm_input=None, **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
@@ -46,6 +94,8 @@ class BaseETS(BaseTemplate):
         self._seasonality = self.seasonality
         self._seasonality_sm_input = self.seasonality_sm_input
         self._level_sm_input = self.level_sm_input
+        self._set_static_attributes()
+        self._set_model_param_names()
 
     def _set_static_attributes(self):
         """Override function from Base Template"""
@@ -60,7 +110,7 @@ class BaseETS(BaseTemplate):
         if self.seasonality is None:
             self._seasonality = -1
 
-    def _set_init_values(self):
+    def set_init_values(self):
         """Override function from Base Template
         """
         # init_values_partial = partial(init_values_callable, seasonality=seasonality)
@@ -77,20 +127,20 @@ class BaseETS(BaseTemplate):
 
     def _set_model_param_names(self):
         """Set posteriors keys to extract from sampling/optimization api"""
-        self._model_param_names += [param.value for param in constants.BaseSamplingParameters]
+        self._model_param_names += [param.value for param in BaseSamplingParameters]
 
         # append seasonality param names
         if self._seasonality > 1:
-            self._model_param_names += [param.value for param in constants.SeasonalitySamplingParameters]
+            self._model_param_names += [param.value for param in SeasonalitySamplingParameters]
 
-    def _predict(self, posterior_estimates, df, include_error=False, **kwargs):
+    def predict(self, posterior_estimates, df, training_meta, prediction_meta, include_error=False, **kwargs):
         """Vectorized version of prediction math"""
         ################################################################
         # Prediction Attributes
         ################################################################
-        n_forecast_steps = self.prediction_input_meta['n_forecast_steps']
-        start = self.prediction_input_meta['start']
-        trained_len = self.num_of_observations
+        n_forecast_steps = prediction_meta['n_forecast_steps']
+        start = prediction_meta['start']
+        trained_len = training_meta['num_of_observations']
         full_len = trained_len + n_forecast_steps
 
         ################################################################
@@ -109,16 +159,16 @@ class BaseETS(BaseTemplate):
 
         # seasonality components
         seasonality_levels = model.get(
-            constants.SeasonalitySamplingParameters.SEASONALITY_LEVELS.value)
+            SeasonalitySamplingParameters.SEASONALITY_LEVELS.value)
         seasonality_smoothing_factor = model.get(
-            constants.SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
+            SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
         )
 
         # trend components
         level_smoothing_factor = model.get(
-            constants.BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
-        local_trend_levels = model.get(constants.BaseSamplingParameters.LOCAL_TREND_LEVELS.value)
-        residual_sigma = model.get(constants.BaseSamplingParameters.RESIDUAL_SIGMA.value)
+            BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
+        local_trend_levels = model.get(BaseSamplingParameters.LOCAL_TREND_LEVELS.value)
+        residual_sigma = model.get(BaseSamplingParameters.RESIDUAL_SIGMA.value)
 
         ################################################################
         # Seasonality Component
@@ -220,33 +270,3 @@ class BaseETS(BaseTemplate):
 
         return out
 
-
-class ETSMAP(MAPTemplate, BaseETS):
-    """Concrete ETS model for MAP (Maximum a Posteriori) prediction
-
-    Similar to `ETSAggregated` but prediction is based on Maximum a Posteriori (aka Mode)
-    of the posterior.
-
-    This model only supports MAP estimating `estimator_type`s
-
-    """
-    _supported_estimator_types = [StanEstimatorMAP]
-
-    def __init__(self, estimator_type=StanEstimatorMAP, **kwargs):
-        super().__init__(estimator_type=estimator_type, **kwargs)
-
-
-class ETSFull(FullBayesianTemplate, BaseETS):
-    """Concrete ETS model for full Bayesian prediction"""
-    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
-class ETSAggregated(AggregatedPosteriorTemplate, BaseETS):
-    """Concrete ETS model for aggregated posterior prediction"""
-    _supported_estimator_types = [StanEstimatorMCMC, StanEstimatorVI]
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
