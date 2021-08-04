@@ -3,8 +3,8 @@ import numpy as np
 from copy import copy
 
 from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
-from orbit.prebuilt import ETS
-from orbit.models.ets import ETSInitializer
+from orbit.models import ETS
+from orbit.template.ets import ETSInitializer
 from orbit.constants.constants import PredictionKeys
 
 

@@ -24,6 +24,8 @@ class SVIForecaster(Forecaster):
             PredictMethod.MEDIAN.value: dict(),
         }
 
+    def fit(self, df):
+
     @staticmethod
     def _bootstrap(num_samples, posterior_samples, n):
         """Draw `n` number of bootstrap samples from the posterior_samples.

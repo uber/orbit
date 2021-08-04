@@ -6,7 +6,7 @@ from enum import Enum
 from ..constants.constants import PredictMethod
 from ..exceptions import ForecasterException, AbstractMethodException
 from ..utils.general import is_ordered_datetime
-from ..models.template import ModelTemplate
+from ..template.model_template import ModelTemplate
 
 
 class Forecaster(object):
@@ -169,15 +169,8 @@ class Forecaster(object):
     
     def is_fitted(self):
         """Define condition of a fitted forecaster"""
-        # if either aggregate posterior and posterior_samples are non-empty, claim it as fitted model (true),
-        # else false.
         return bool(self._posterior_samples)
-        # # FIXME: not correct; should implement this chunk in child classes
-        # for key in self._aggregate_posteriors.keys():
-        #     if bool(self._aggregate_posteriors[key]):
-        #         return True
-        # return False
-    
+
     def predict(self, df, **kwargs):
         """Predict interface requires concrete implementation from child class"""
         raise AbstractMethodException("Abstract method.  Model should implement concrete .predict().")

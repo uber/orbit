@@ -85,7 +85,7 @@ class StanEstimatorMCMC(StanEstimator):
         Supplemental stan mcmc args to pass to PyStan.sampling()
 
     """
-    # is_mcmc boolean indicator -- some models are parameterized slightly different for
+    # is_mcmc boolean indicator -- some template are parameterized slightly different for
     # MCMC estimator vs other estimators for convergence. Indicator let's model and estimator
     # to remain independent
     _is_mcmc_estimator = True
