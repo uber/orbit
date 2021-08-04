@@ -1,4 +1,4 @@
-from orbit.estimators.pyro_estimator import PyroEstimatorVI, PyroEstimatorMAP
+from orbit.estimators.pyro_estimator import PyroEstimatorVI
 
 
 def test_pyro_estimator_vi(stan_estimator_lgt_model_input):
