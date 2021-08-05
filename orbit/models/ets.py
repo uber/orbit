@@ -22,7 +22,7 @@ def ETS(seasonality=None,
     level_sm_input : float
         float value between [0.0001, 1]. A larger value puts more weight on the current level.
         If None, the model will estimate this value.
-    estimator: string
+    estimator : string
 
     Other Parameters
     ----------------
