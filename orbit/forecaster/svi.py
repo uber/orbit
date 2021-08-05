@@ -9,22 +9,43 @@ from .forecaster import Forecaster
 
 class SVIForecaster(Forecaster):
     def __init__(self,
-                 estimate_method=None,
                  **kwargs):
         super().__init__(**kwargs)
-        # extra fields for svi and mcmc methods
-        self.estimate_method = estimate_method
-        self._n_bootstrap_draws = self.n_bootstrap_draws
-        if not self.n_bootstrap_draws:
-            self._n_bootstrap_draws = -1
+        # method we used to define posteriors and prediction parameters
+        self._point_method = None
 
         # init aggregate posteriors
-        self._aggregate_posteriors = {
+        self._point_posteriors = {
             PredictMethod.MEAN.value: dict(),
             PredictMethod.MEDIAN.value: dict(),
         }
 
-    def fit(self, df):
+    def fit(self, df, point_method=None, keep_samples=True):
+        super().fit(df)
+        self._point_method = point_method
+
+        if point_method is not None:
+            if point_method not in [PredictMethod.MEAN.value, PredictMethod.MEDIAN.value]:
+                raise ForecasterException('Invalid point estimate method.')
+
+        mean_posteriors = {}
+        median_posteriors = {}
+
+        # for each model param, aggregate using `method`
+        for param_name in self._model.get_model_param_names():
+            param_ndarray = self._posterior_samples[param_name]
+            mean_posteriors.update(
+                {param_name: np.mean(param_ndarray, axis=0, keepdims=True)},
+            )
+            median_posteriors.update(
+                {param_name: np.median(param_ndarray, axis=0, keepdims=True)},
+            )
+
+        self._point_posteriors[PredictMethod.MEAN.value] = mean_posteriors
+        self._point_posteriors[PredictMethod.MEDIAN.value] = median_posteriors
+
+        if point_method is not None and not keep_samples:
+            self._posterior_samples = {}
 
     @staticmethod
     def _bootstrap(num_samples, posterior_samples, n):
@@ -44,26 +65,6 @@ class SVIForecaster(Forecaster):
 
         return bootstrap_samples_dict
 
-    # def fit(self, df):
-    #
-    #
-    #     self._posterior_samples = _posterior_samples
-    #     mean_posteriors = {}
-    #     median_posteriors = {}
-    #
-    #     # for each model param, aggregate using `method`
-    #     for param_name in self._model.get_model_param_names():
-    #         param_ndarray = _posterior_samples[param_name]
-    #         mean_posteriors.update(
-    #             {param_name: np.mean(param_ndarray, axis=0, keepdims=True)},
-    #         )
-    #         median_posteriors.update(
-    #             {param_name: np.median(param_ndarray, axis=0, keepdims=True)},
-    #         )
-    #
-    #     self._aggregate_posteriors[PredictMethod.MEAN.value] = mean_posteriors
-    #     self._aggregate_posteriors[PredictMethod.MEDIAN.value] = median_posteriors
-
     def predict(self, df, decompose=False, store_prediction_array=False, **kwargs):
         # raise if model is not fitted
         if not self.is_fitted():
@@ -73,33 +74,87 @@ class SVIForecaster(Forecaster):
         prediction_meta = self.get_prediction_meta()
         training_meta = self.get_training_meta()
 
-        # if bootstrap draws, replace posterior samples with bootstrap
-        posterior_samples = self._bootstrap(
-            num_samples=self.estimator.num_sample,
-            posterior_samples=self._posterior_samples,
-            n=self._n_bootstrap_draws
-        ) if self._n_bootstrap_draws > 1 else self._posterior_samples
+        if self._point_method is None:
+            # full posteriors prediction
+            # if bootstrap draws, replace posterior samples with bootstrap
+            posterior_samples = self._bootstrap(
+                num_samples=self.estimator.num_sample,
+                posterior_samples=self._posterior_samples,
+                n=self._n_bootstrap_draws
+            ) if self._n_bootstrap_draws > 1 else self._posterior_samples
 
-        predicted_dict = self._model.predict(
-            posterior_estimates=posterior_samples,
-            df=df,
-            training_meta=training_meta,
-            prediction_meta=prediction_meta,
-            include_error=True,
-            **kwargs
-        )
+            predicted_dict = self._model.predict(
+                posterior_estimates=posterior_samples,
+                df=df,
+                training_meta=training_meta,
+                prediction_meta=prediction_meta,
+                include_error=True,
+                **kwargs
+            )
 
-        if PredictionKeys.PREDICTION.value not in predicted_dict.keys():
-            raise ForecasterException("cannot find the key:'{}' from return of _predict()".format(
-                PredictionKeys.PREDICTION.value))
+            if PredictionKeys.PREDICTION.value not in predicted_dict.keys():
+                raise ForecasterException("cannot find the key:'{}' from return of _predict()".format(
+                    PredictionKeys.PREDICTION.value))
 
-        # reduce to prediction only if decompose is not requested
-        if not decompose:
-            predicted_dict = {k: v for k, v in predicted_dict.items() if k == PredictionKeys.PREDICTION.value}
+            # reduce to prediction only if decompose is not requested
+            if not decompose:
+                predicted_dict = {k: v for k, v in predicted_dict.items() if k == PredictionKeys.PREDICTION.value}
 
-        if store_prediction_array:
-            self.prediction_array = predicted_dict[PredictionKeys.PREDICTION.value]
-        percentiles_dict = compute_percentiles(predicted_dict, self._prediction_percentiles)
-        predicted_df = pd.DataFrame(percentiles_dict)
-        predicted_df = prepend_date_column(predicted_df, df, self.date_col)
-        return predicted_df
+            if store_prediction_array:
+                self.prediction_array = predicted_dict[PredictionKeys.PREDICTION.value]
+            percentiles_dict = compute_percentiles(predicted_dict, self._prediction_percentiles)
+            predicted_df = pd.DataFrame(percentiles_dict)
+            predicted_df = prepend_date_column(predicted_df, df, self.date_col)
+            return predicted_df
+        else:
+            # perform point prediction
+            point_posteriors = self._point_posteriors.get(self._point_method)
+            point_predicted_dict = self._model.predict(
+                posterior_estimates=point_posteriors,
+                df=df,
+                training_meta=training_meta,
+                prediction_meta=prediction_meta,
+                include_error=False,
+                **kwargs
+            )
+            for k, v in point_predicted_dict.items():
+                point_predicted_dict[k] = np.squeeze(v, 0)
+
+            # to derive confidence interval; the condition should be sufficient since we add [50] by default
+            if self._n_bootstrap_draws > 0 and len(self._prediction_percentiles) > 1:
+                # perform bootstrap; we don't have posterior samples. hence, we just repeat the draw here.
+                posterior_samples = {}
+                for k, v in point_posteriors.items():
+                    posterior_samples[k] = np.repeat(v, self.n_bootstrap_draws, axis=0)
+                predicted_dict = self._model.predict(
+                    posterior_estimates=posterior_samples,
+                    df=df,
+                    training_meta=training_meta,
+                    prediction_meta=prediction_meta,
+                    include_error=True,
+                    **kwargs
+                )
+                percentiles_dict = compute_percentiles(predicted_dict, self._prediction_percentiles)
+                # replace mid point prediction by point estimate
+                percentiles_dict.update(point_predicted_dict)
+
+                if PredictionKeys.PREDICTION.value not in percentiles_dict.keys():
+                    raise ForecasterException("cannot find the key:'{}' from return of _predict()".format(
+                        PredictionKeys.PREDICTION.value))
+
+                # reduce to prediction only if decompose is not requested
+                if not decompose:
+                    k = PredictionKeys.PREDICTION.value
+                    reduced_keys = [k + "_" + str(p) if p != 50 else k for p in self._prediction_percentiles]
+                    percentiles_dict = {k: v for k, v in percentiles_dict.items() if k in reduced_keys}
+                predicted_df = pd.DataFrame(percentiles_dict)
+            else:
+                if not decompose:
+                    # reduce to prediction only if decompose is not requested
+                    point_predicted_dict = {
+                        k: v for k, v in point_predicted_dict.items() if k == PredictionKeys.PREDICTION.value
+                    }
+                predicted_df = pd.DataFrame(point_predicted_dict)
+
+            predicted_df = prepend_date_column(predicted_df, df, self.date_col)
+            return predicted_df

@@ -10,7 +10,7 @@ def ETS(response_col='y',
         seasonality=None,
         seasonality_sm_input=None,
         level_sm_input=None,
-        estimator='stan-map',
+        estimator='stan-mcmc',
         **kwargs):
     """
     Args

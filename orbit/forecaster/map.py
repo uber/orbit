@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from copy import deepcopy
 
 from ..constants.constants import PredictMethod, PredictionKeys
 from ..exceptions import ForecasterException
@@ -8,13 +9,13 @@ from .forecaster import Forecaster
 
 
 class MAPForecaster(Forecaster):
-    def __init__(self, n_bootstrap_draws=1e4, **kwargs):
-        super().__init__(n_bootstrap_draws=n_bootstrap_draws, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._point_posteriors[PredictMethod.MAP.value] = dict()
 
     def is_fitted(self):
-        # if either aggregate posterior and posterior_samples are non-empty, claim it as fitted model (true),
-        # else false.
-        return bool(self._point_posteriors['map'])
+        """Define condition of a fitted forecaster"""
+        return bool(self._point_posteriors[PredictMethod.MAP.value])
 
     def fit(self, df):
         super().fit(df)
@@ -53,11 +54,11 @@ class MAPForecaster(Forecaster):
             point_predicted_dict[k] = np.squeeze(v, 0)
 
         # to derive confidence interval; the condition should be sufficient since we add [50] by default
-        if self.n_bootstrap_draws > 0 and len(self._prediction_percentiles) > 1:
+        if self._n_bootstrap_draws > 0 and len(self._prediction_percentiles) > 1:
             # perform bootstrap; we don't have posterior samples. hence, we just repeat the draw here.
             posterior_samples = {}
             for k, v in point_posteriors.items():
-                posterior_samples[k] = np.repeat(v, self.n_bootstrap_draws, axis=0)
+                posterior_samples[k] = np.repeat(v, self._n_bootstrap_draws, axis=0)
             predicted_dict = self._model.predict(
                 posterior_estimates=posterior_samples,
                 df=df,
@@ -82,7 +83,15 @@ class MAPForecaster(Forecaster):
                 percentiles_dict = {k: v for k, v in percentiles_dict.items() if k in reduced_keys}
             predicted_df = pd.DataFrame(percentiles_dict)
         else:
+            if not decompose:
+                # reduce to prediction only if decompose is not requested
+                point_predicted_dict = {
+                    k: v for k, v in point_predicted_dict.items() if k == PredictionKeys.PREDICTION.value
+                }
             predicted_df = pd.DataFrame(point_predicted_dict)
 
         predicted_df = prepend_date_column(predicted_df, df, self.date_col)
         return predicted_df
+
+    def get_point_posteriors(self):
+        return deepcopy(self._point_posteriors[PredictMethod.MAP.value])
