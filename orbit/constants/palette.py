@@ -118,7 +118,7 @@ class PredictionPaletteClassic(Enum):
     # dark_teal
     prediction_line = '#12939A'
     # teal
-    preidction_range = '#42999E'
+    prediction_interval = '#42999E'
     # blue
     holdout_vertical_line = '#1f77b4'
     # orange

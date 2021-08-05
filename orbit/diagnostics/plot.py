@@ -137,7 +137,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         ax.fill_between(_predicted_df[date_col].values,
                         _predicted_df[confid_cols[0]],
                         _predicted_df[confid_cols[1]],
-                        facecolor=PredPal.preidction_range.value, alpha=0.5)
+                        facecolor=PredPal.prediction_interval.value, alpha=0.5)
 
     ax.set_title(title, fontsize=fontsize)
     ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
@@ -216,7 +216,7 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
             ax.fill_between(_predicted_df[date_col].values,
                             _predicted_df[confid_cols[0]],
                             _predicted_df[confid_cols[1]],
-                            facecolor=PredPal.preidction_range.value, alpha=0.5)
+                            facecolor=PredPal.prediction_interval.value, alpha=0.5)
         ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
         ax.set_title(comp, fontsize=fontsize)
     plt.suptitle(title, fontsize=fontsize)
