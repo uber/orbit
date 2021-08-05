@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 from enum import Enum
 
-from ..constants.constants import PredictMethod
 from ..exceptions import ForecasterException, AbstractMethodException
 from ..utils.general import is_ordered_datetime
 from ..template.model_template import ModelTemplate
@@ -30,6 +29,14 @@ class Forecaster(object):
         self.estimator = self.estimator_type(**kwargs)
 
         self.n_bootstrap_draws = n_bootstrap_draws
+        # n_bootstrap_draws holds original input
+        # _n_bootstrap_draws is validated input to handle default value
+
+        if not self.n_bootstrap_draws:
+            self._n_bootstrap_draws = -1
+        else:
+            self._n_bootstrap_draws = int(self.n_bootstrap_draws)
+
         self.prediction_percentiles = prediction_percentiles
         self._prediction_percentiles = None
 
@@ -48,7 +55,7 @@ class Forecaster(object):
         self._training_data_input = dict()
         # fitted results after fit process
         self._posterior_samples = dict()
-        self._point_posteriors = {PredictMethod.MAP.value: dict()}
+        self._point_posteriors = dict()
         self._training_metrics = None
 
         # set by ._set_prediction_meta() in predict process
@@ -166,7 +173,7 @@ class Forecaster(object):
     # TODO: get this back later
     def _validate_training_df(self, df):
         pass
-    
+
     def is_fitted(self):
         """Define condition of a fitted forecaster"""
         return bool(self._posterior_samples)
@@ -226,3 +233,9 @@ class Forecaster(object):
         
     def get_prediction_meta(self):
         return deepcopy(self._prediction_meta)
+
+    def get_posterior_samples(self):
+        return deepcopy(self._posterior_samples)
+
+    def get_point_posteriors(self):
+        return deepcopy(self._point_posteriors)
