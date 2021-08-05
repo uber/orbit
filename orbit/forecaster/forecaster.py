@@ -17,6 +17,27 @@ class Forecaster(object):
                  n_bootstrap_draws=-1,
                  prediction_percentiles=None,
                  **kwargs):
+        """ Abstract class for providing template of how a forecaster works by containing a model under `ModelTemplate`
+
+        Parameters
+        ----------
+        response_col : str
+            Name of response variable column, default 'y'
+        date_col : str
+            Name of date variable column, default 'ds'
+        n_bootstrap_draws : int
+            Number of samples to bootstrap in order to generate the prediction interval. For full Bayesian and
+            variational inference forecasters, samples are drawn directly from original posteriors. For point-estimated
+            posteriors, it will be used to sample noise parameters.  When -1 or None supplied, full Bayesian and
+            variational inference forecasters will assume number of draws equal the size of original samples while
+            point-estimated posteriors will mute the draw and output prediction without interval.
+        prediction_percentiles : list
+            List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
+            confident intervals, pass an empty list
+
+        **kwargs:
+            additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
+        """
 
         # general fields
         if not isinstance(model, ModelTemplate):
@@ -181,7 +202,7 @@ class Forecaster(object):
     def predict(self, df, **kwargs):
         """Predict interface requires concrete implementation from child class"""
         raise AbstractMethodException("Abstract method.  Model should implement concrete .predict().")
-    
+
     def _set_prediction_meta(self, df):
         # remove reference from original input
         df = df.copy()
@@ -230,7 +251,7 @@ class Forecaster(object):
         })
 
         self._prediction_meta = prediction_meta
-        
+
     def get_prediction_meta(self):
         return deepcopy(self._prediction_meta)
 
