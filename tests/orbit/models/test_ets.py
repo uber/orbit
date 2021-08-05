@@ -49,7 +49,7 @@ def test_ets_full_seasonal_fit(synthetic_data):
     init_values = init_call()
     assert init_values['init_sea'].shape == (51, )
 
-    predict_df = ets.predict(test_df)
+    predict_df = ets.predict(test_df, decompose=False)
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
@@ -60,28 +60,29 @@ def test_ets_full_seasonal_fit(synthetic_data):
     assert len(ets._posterior_samples) == expected_num_parameters
 
 
-def test_ets_aggregated_seasonal_fit(synthetic_data, estimator_type):
+@pytest.mark.parametrize("point_method", ['mean', 'median'])
+def test_ets_aggregated_seasonal_fit(synthetic_data, point_method):
     train_df, test_df, coef = synthetic_data
 
-    ets = ETSAggregated(
+    ets = ETS(
         response_col='response',
         date_col='week',
         seasonality=52,
         num_warmup=50,
         num_sample=50,
         verbose=False,
-        estimator_type=estimator_type
+        estimator='stan-mcmc',
+        n_bootstrap_draws=1e4,
     )
+    ets.fit(train_df, point_method=point_method)
 
-    ets.fit(train_df)
-
-    init_call = ets.get_init_values()
+    init_call = ets._model.get_init_values()
     assert isinstance(init_call, ETSInitializer)
     assert init_call.s == 52
     init_values = init_call()
     assert init_values['init_sea'].shape == (51, )
 
-    predict_df = ets.predict(test_df)
+    predict_df = ets.predict(test_df, decompose=False)
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
@@ -92,20 +93,23 @@ def test_ets_aggregated_seasonal_fit(synthetic_data, estimator_type):
     assert len(ets._posterior_samples) == expected_num_parameters
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMAP])
-def test_ets_map_seasonal_fit(synthetic_data, estimator_type):
+@pytest.mark.parametrize("n_bootstrap_draws", [None, -1, 1e4])
+def test_ets_map_seasonal_fit(synthetic_data, n_bootstrap_draws):
     train_df, test_df, coef = synthetic_data
 
-    ets = ETSMAP(
+    ets = ETS(
         response_col='response',
         date_col='week',
         seasonality=52,
+        num_warmup=50,
+        num_sample=50,
         verbose=False,
-        estimator_type=estimator_type
+        estimator='stan-map',
+        n_bootstrap_draws=n_bootstrap_draws,
     )
 
     ets.fit(train_df)
-    init_call = ets.get_init_values()
+    init_call = ets._model.get_init_values()
     assert isinstance(init_call, ETSInitializer)
     assert init_call.s == 52
     init_values = init_call()
@@ -113,9 +117,13 @@ def test_ets_map_seasonal_fit(synthetic_data, estimator_type):
 
     predict_df = ets.predict(test_df)
 
-    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
+    # if n_bootstrap_draws provided then produce prediction range
+    if n_bootstrap_draws is not None and n_bootstrap_draws > 0:
+        expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
+    else:
+        expected_columns = ['week', 'prediction']
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 5  # no `lp__` parameter in optimizing()
+    expected_num_parameters = 5
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -126,14 +134,12 @@ def test_ets_map_seasonal_fit(synthetic_data, estimator_type):
 def test_ets_non_seasonal_fit(synthetic_data, estimator_type):
     train_df, test_df, coef = synthetic_data
 
-    ets = ETSFull(
+    ets = ETS(
         response_col='response',
         date_col='week',
-        estimator_type=estimator_type,
         num_warmup=50,
         num_sample=50,
     )
-
     ets.fit(train_df)
     predict_df = ets.predict(test_df)
 
@@ -150,7 +156,7 @@ def test_ets_non_seasonal_fit(synthetic_data, estimator_type):
 def test_full_prediction_percentiles(iclaims_training_data, prediction_percentiles):
     df = iclaims_training_data
 
-    ets = ETSFull(
+    ets = ETS(
         response_col='claims',
         date_col='week',
         seasonality=52,
@@ -165,12 +171,14 @@ def test_full_prediction_percentiles(iclaims_training_data, prediction_percentil
     else:
         p_labels = ['_5', '_10', '', '_95']
 
+    # test behaviors without decomposition
     ets.fit(df)
     predicted_df = ets.predict(df)
     expected_columns = ['week'] + ["prediction" + p for p in p_labels]
     assert predicted_df.columns.tolist() == expected_columns
     assert predicted_df.shape[0] == df.shape[0]
 
+    # test behaviors with decomposition
     predicted_df = ets.predict(df, decompose=True)
     plot_components = [
         'prediction',
@@ -185,27 +193,35 @@ def test_full_prediction_percentiles(iclaims_training_data, prediction_percentil
     assert predicted_df.shape[0] == df.shape[0]
 
 
+@pytest.mark.parametrize("n_bootstrap_draws", [-1, 1e4])
 @pytest.mark.parametrize("prediction_percentiles", [None, [5, 10, 95]])
-def test_map_prediction_percentiles(iclaims_training_data, prediction_percentiles):
+def test_map_prediction_percentiles(iclaims_training_data, n_bootstrap_draws, prediction_percentiles):
     df = iclaims_training_data
 
-    ets = ETSMAP(
+    ets = ETS(
         response_col='claims',
         date_col='week',
         seasonality=52,
         seed=8888,
         prediction_percentiles=prediction_percentiles,
+        estimator='stan-map',
+        n_bootstrap_draws=n_bootstrap_draws,
     )
 
-    if not prediction_percentiles:
-        p_labels = ['_5', '', '_95']
+    if n_bootstrap_draws > 0:
+        if not prediction_percentiles:
+            p_labels = ['_5', '', '_95']
+        else:
+            p_labels = ['_5', '_10', '', '_95']
     else:
-        p_labels = ['_5', '_10', '', '_95']
+        p_labels = ['']
 
     ets.fit(df)
     # test behaviors without decomposition
     predicted_df = ets.predict(df)
+
     expected_columns = ['week'] + ["prediction" + p for p in p_labels]
+
     assert predicted_df.columns.tolist() == expected_columns
     assert predicted_df.shape[0] == df.shape[0]
 
@@ -216,6 +232,7 @@ def test_map_prediction_percentiles(iclaims_training_data, prediction_percentile
         PredictionKeys.TREND.value,
         PredictionKeys.SEASONALITY.value]
     expected_columns = ['week']
+
     for pc in predicted_components:
         for p in p_labels:
             expected_columns.append(pc + p)
@@ -223,43 +240,40 @@ def test_map_prediction_percentiles(iclaims_training_data, prediction_percentile
     assert predicted_df.shape[0] == df.shape[0]
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC])
 @pytest.mark.parametrize("seasonality", [1, 52])
-def test_ets_full_reproducibility(synthetic_data, estimator_type, seasonality):
+def test_ets_full_reproducibility(synthetic_data, seasonality):
     train_df, test_df, coef = synthetic_data
 
-    ets1 = ETSFull(
+    ets1 = ETS(
         response_col='response',
         date_col='week',
         prediction_percentiles=[5, 95],
         seasonality=seasonality,
         num_warmup=50,
         num_sample=50,
-        verbose=False,
-        estimator_type=estimator_type
+        estimator='stan-mcmc',
     )
 
     # first fit and predict
     ets1.fit(train_df)
-    posteriors1 = copy(ets1._posterior_samples)
+    posteriors1 = ets1.get_posterior_samples()
     prediction1 = ets1.predict(test_df)
 
     # second fit and predict
     # note a new instance must be created to reset the seed
     # note both fit and predict contain random generation processes
-    ets2 = ETSFull(
+    ets2 = ETS(
         response_col='response',
         date_col='week',
         prediction_percentiles=[5, 95],
         seasonality=seasonality,
         num_warmup=50,
         num_sample=50,
-        verbose=False,
-        estimator_type=estimator_type
+        estimator='stan-mcmc',
     )
 
     ets2.fit(train_df)
-    posteriors2 = copy(ets2._posterior_samples)
+    posteriors2 = ets2.get_posterior_samples()
     prediction2 = ets2.predict(test_df)
 
     # assert same posterior keys
@@ -277,30 +291,31 @@ def test_ets_full_reproducibility(synthetic_data, estimator_type, seasonality):
 def test_ets_map_reproducibility(synthetic_data, seasonality):
     train_df, test_df, coef = synthetic_data
 
-    ets1 = ETSMAP(
+    ets1 = ETS(
         response_col='response',
         date_col='week',
-        prediction_percentiles=[5, 95],
         seasonality=seasonality,
+        estimator='stan-map',
     )
 
     # first fit and predict
     ets1.fit(train_df)
-    posteriors1 = copy(ets1._aggregate_posteriors['map'])
+    posteriors1 = ets1.get_point_posteriors()
     prediction1 = ets1.predict(test_df)
 
     # second fit and predict
     # note a new instance must be created to reset the seed
     # note both fit and predict contain random generation processes
-    ets2 = ETSMAP(
+    ets2 = ETS(
         response_col='response',
         date_col='week',
         prediction_percentiles=[5, 95],
         seasonality=seasonality,
+        estimator='stan-map',
     )
 
     ets2.fit(train_df)
-    posteriors2 = copy(ets2._aggregate_posteriors['map'])
+    posteriors2 = ets2.get_point_posteriors()
     prediction2 = ets2.predict(test_df)
 
     # assert same posterior keys
