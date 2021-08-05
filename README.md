@@ -124,7 +124,7 @@ We document versions and changes in our [changelog](https://github.com/uber/orbi
 
 ## Presentations
 
-Check out the [deck](https://docs.google.com/presentation/d/1R0Ol8xahIE6XlrAjAi0ewu4nRxo-wQn8w6U7z-uiOzI/edit?usp=sharing) we presented in a meet up event in Jul' 2021.
+Check out the [deck](https://docs.google.com/presentation/d/1R0Ol8xahIE6XlrAjAi0ewu4nRxo-wQn8w6U7z-uiOzI/edit?usp=sharing) we presented in a meet up event in Jul. 2021.
 
 ## Citation
 
