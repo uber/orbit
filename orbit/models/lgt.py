@@ -1,13 +1,21 @@
 # from inspect import signature
-from ..template.ets import ETSModel
+from ..template.lgt import LGTModel
 from ..forecaster import MAPForecaster, FullBayesianForecaster
 from ..exceptions import IllegalArgument
 from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
 
 
-def ETS(seasonality=None,
+def LGT(seasonality=None,
         seasonality_sm_input=None,
         level_sm_input=None,
+        regressor_col=None,
+        regressor_sign=None,
+        regressor_beta_prior=None,
+        regressor_sigma_prior=None,
+        regression_penalty='fixed_ridge',
+        lasso_scale=0.5,
+        auto_ridge_scale=0.5,
+        slope_sm_input=None,
         estimator='stan-mcmc',
         **kwargs):
     """
@@ -51,24 +59,32 @@ def ETS(seasonality=None,
     #         ets_args[k] = v
     #     else:
     #         forecaster_args[k] = v
-    ets = ETSModel(
+    lgt = LGTModel(
         seasonality=seasonality,
         seasonality_sm_input=seasonality_sm_input,
-        level_sm_input=level_sm_input
+        level_sm_input=level_sm_input,
+        regressor_col=regressor_col,
+        regressor_sign=regressor_sign,
+        regressor_beta_prior=regressor_beta_prior,
+        regressor_sigma_prior=regressor_sigma_prior,
+        regression_penalty=regression_penalty,
+        lasso_scale=lasso_scale,
+        auto_ridge_scale=auto_ridge_scale,
+        slope_sm_input=slope_sm_input,
     )
     if estimator == 'stan-map':
-        ets_forecaster = MAPForecaster(
-            model=ets,
+        lgt_forecaster = MAPForecaster(
+            model=lgt,
             estimator_type=StanEstimatorMAP,
             **kwargs
         )
     elif estimator == 'stan-mcmc':
-        ets_forecaster = FullBayesianForecaster(
-            model=ets,
+        lgt_forecaster = FullBayesianForecaster(
+            model=lgt,
             estimator_type=StanEstimatorMCMC,
             **kwargs
         )
     else:
         raise IllegalArgument('Invalid estimator.')
 
-    return ets_forecaster
+    return lgt_forecaster
