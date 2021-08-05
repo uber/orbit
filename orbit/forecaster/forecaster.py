@@ -17,6 +17,27 @@ class Forecaster(object):
                  n_bootstrap_draws=-1,
                  prediction_percentiles=None,
                  **kwargs):
+        """ Abstract class for providing template of how a forecaster works by containing a model under `ModelTemplate`
+
+        Parameters
+        ----------
+        response_col : str
+            Name of response variable column, default 'y'
+        date_col : str
+            Name of date variable column, default 'ds'
+        n_bootstrap_draws : int
+            Number of samples to bootstrap in order to generate the prediction interval. For full Bayesian and
+            variational inference forecasters, samples are drawn directly from original posteriors. For point-estimated
+            posteriors, it will be used to sample noise parameters.  When -1 or None supplied, full Bayesian and
+            variational inference forecasters will assume number of draws equal the size of original samples while
+            point-estimated posteriors will mute the draw and output prediction without interval.
+        prediction_percentiles : list
+            List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
+            confident intervals, pass an empty list
+
+        **kwargs:
+            additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
+        """
 
         # general fields
         if not isinstance(model, ModelTemplate):
@@ -80,7 +101,7 @@ class Forecaster(object):
         df = df.copy()
 
         # default set and validation of input data frame
-        # self._validate_training_df(df)
+        self._validate_training_df(df)
         # extract standard training metadata
         self._set_training_meta(df)
         # customize module
@@ -109,6 +130,7 @@ class Forecaster(object):
         self._training_metrics = training_metrics
 
     def _set_training_meta(self, df):
+        """A default pre-processing and information gathering from training input dataframe"""
         training_meta = dict()
         response = df[self.response_col].values
         training_meta['response'] = response
@@ -170,9 +192,21 @@ class Forecaster(object):
     def get_training_data_input(self):
         return self._training_data_input
 
-    # TODO: get this back later
     def _validate_training_df(self, df):
-        pass
+        df_columns = df.columns
+
+        # validate date_col
+        if self.date_col not in df_columns:
+            raise ForecasterException("DataFrame does not contain `date_col`: {}".format(self.date_col))
+
+        # validate ordering of time series
+        date_array = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
+        if not is_ordered_datetime(date_array):
+            raise ForecasterException('Datetime index must be ordered and not repeat')
+
+        # validate response variable is in df
+        if self.response_col not in df_columns:
+            raise ForecasterException("DataFrame does not contain `response_col`: {}".format(self.response_col))
 
     def is_fitted(self):
         """Define condition of a fitted forecaster"""
@@ -181,8 +215,9 @@ class Forecaster(object):
     def predict(self, df, **kwargs):
         """Predict interface requires concrete implementation from child class"""
         raise AbstractMethodException("Abstract method.  Model should implement concrete .predict().")
-    
+
     def _set_prediction_meta(self, df):
+        """A default pre-processing and information gathering from prediction input dataframe"""
         # remove reference from original input
         df = df.copy()
 
@@ -230,7 +265,7 @@ class Forecaster(object):
         })
 
         self._prediction_meta = prediction_meta
-        
+
     def get_prediction_meta(self):
         return deepcopy(self._prediction_meta)
 
