@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from functools import partial
 
 from ..constants.constants import PredictMethod, PredictionKeys
 from ..exceptions import ForecasterException
@@ -158,3 +159,12 @@ class SVIForecaster(Forecaster):
 
             predicted_df = prepend_date_column(predicted_df, df, self.date_col)
             return predicted_df
+
+    def load_extra_methods(self):
+        if self._point_method is None:
+            coef_point_method = PredictMethod.MEDIAN.value
+        else: coef_point_method = self._point_method
+
+        for method in self.extra_methods:
+            setattr(self, method, partial(getattr(self._model, method), coef_point_method,
+                                                                        self._point_posteriors))

@@ -43,14 +43,8 @@ def ETS(seasonality=None,
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
     """
-    # ets_args_keys = [x for x in signature(ETSModel).parameters.keys() if x != 'kwargs']
-    # ets_args = dict()
-    # forecaster_args = dict()
-    # for k, v in kwargs.items():
-    #     if k in ets_args_keys:
-    #         ets_args[k] = v
-    #     else:
-    #         forecaster_args[k] = v
+    _supported_estimators = ['stan-map', 'stan-mcmc']
+
     ets = ETSModel(
         seasonality=seasonality,
         seasonality_sm_input=seasonality_sm_input,
@@ -69,8 +63,6 @@ def ETS(seasonality=None,
             **kwargs
         )
     else:
-        raise IllegalArgument('Invalid estimator.')
+        raise IllegalArgument('Invalid estimator. Must be one of {}'.format(_supported_estimators))
 
     return ets_forecaster
-
-
