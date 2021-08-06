@@ -105,7 +105,7 @@ class Forecaster(object):
         # extract standard training metadata
         self._set_training_meta(df)
         # customize module
-        self._model.set_dynamic_attributes(df)
+        self._model.set_dynamic_attributes(df=df, training_meta=self.get_training_meta())
         # based on the model and df, set training input
         self.set_training_data_input()
         # if model provide initial values, set it
@@ -139,6 +139,9 @@ class Forecaster(object):
         training_meta['response_sd'] = np.nanstd(response)
         training_meta['training_start'] = df[self.date_col].iloc[0]
         training_meta['training_end'] = df[self.date_col].iloc[-1]
+        # TODO: a little overhead here; there is room for further improvement
+        training_meta['date_col'] = self.date_col
+        training_meta['response_col'] = self.response_col
         self._training_meta = training_meta
 
     def get_training_meta(self):

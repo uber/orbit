@@ -73,9 +73,9 @@ class ETSModel(ModelTemplate):
         float value between [0.0001, 1]. A larger value puts more weight on the current level.
         If None, the model will estimate this value.
 
-    Other Parameters
-    ----------------
-    **kwargs: additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
+    **kwargs :
+        additional arguments passed into orbit.estimators e.g. orbit.estimators.stan_estimator,
+        orbit.estimators.pyro_estimator, etc.
     """
     # data labels for sampler
     _data_input_mapper = DataInputMapper
@@ -83,8 +83,15 @@ class ETSModel(ModelTemplate):
     _model_name = 'ets'
     _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC]
 
-    def __init__(self, seasonality=None, seasonality_sm_input=None, level_sm_input=None, **kwargs):
-        super().__init__(**kwargs)  # create estimator in base class
+    def __init__(
+            self,
+            seasonality=None,
+            seasonality_sm_input=None,
+            level_sm_input=None,
+            **kwargs
+    ):
+        # estimator is created in base class
+        super().__init__(**kwargs)
         self.seasonality = seasonality
 
         # fixed smoothing parameters config
@@ -112,6 +119,7 @@ class ETSModel(ModelTemplate):
         if self.seasonality is None:
             self._seasonality = -1
 
+    # TODO: this could be static function by accepting a callable object?
     def set_init_values(self):
         """Override function from Base Template
         """
@@ -271,4 +279,3 @@ class ETSModel(ModelTemplate):
         }
 
         return out
-

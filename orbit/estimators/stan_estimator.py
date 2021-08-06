@@ -1,8 +1,6 @@
 from abc import abstractmethod
-from collections import OrderedDict
-import logging
-import numpy as np
 from copy import copy
+import logging
 import multiprocessing
 from sys import platform, version_info
 if platform == 'darwin' and version_info[0] == 3 and version_info[1] == 9:
@@ -110,7 +108,6 @@ class StanEstimatorMCMC(StanEstimator):
         #   https://pystan2.readthedocs.io/en/latest/api.html
         #   if None, use default as defined in class variable
         init_values = init_values or self.stan_init
-
         stan_mcmc_fit = compiled_stan_file.sampling(
             data=data_input,
             pars=model_param_names,
