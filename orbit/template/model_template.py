@@ -25,7 +25,7 @@ class ModelTemplate(object):
         """Predict interface for users"""
         raise AbstractMethodException("Abstract method.  Model should implement concrete .predict().")
 
-    def set_dynamic_attributes(self, df):
+    def set_dynamic_attributes(self, df, training_meta):
         """Optional; set dynamic fitting input based on input DataFrame, rather than at object instantiation"""
         pass
 
