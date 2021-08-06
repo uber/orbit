@@ -159,6 +159,7 @@ class Forecaster(object):
         training_meta = self.get_training_meta()
         training_data_input = {
             'RESPONSE': training_meta['response'],
+            # response_sd only used in ETS model
             'RESPONSE_SD': training_meta['response_sd'],
             'NUM_OF_OBS': training_meta['num_of_observations'],
             'WITH_MCMC': 1,
@@ -212,8 +213,14 @@ class Forecaster(object):
             raise ForecasterException("DataFrame does not contain `response_col`: {}".format(self.response_col))
 
     def is_fitted(self):
-        """Define condition of a fitted forecaster"""
-        return bool(self._posterior_samples)
+        # if either point posterior or posterior_samples are non-empty, claim it as fitted model (true),
+        # else false.
+        if bool(self._posterior_samples):
+            return True
+        for key in self._point_posteriors.keys():
+            if bool(self._point_posteriors[key]):
+                return True
+        return False
 
     def predict(self, df, **kwargs):
         """Predict interface requires concrete implementation from child class"""
@@ -277,3 +284,6 @@ class Forecaster(object):
 
     def get_point_posteriors(self):
         return deepcopy(self._point_posteriors)
+
+    def get_regression_coefs(self):
+        pass

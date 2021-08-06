@@ -51,6 +51,8 @@ def ETS(seasonality=None,
     #         ets_args[k] = v
     #     else:
     #         forecaster_args[k] = v
+    _supported_estimators = ['stan-map', 'stan-mcmc']
+
     ets = ETSModel(
         seasonality=seasonality,
         seasonality_sm_input=seasonality_sm_input,
@@ -69,6 +71,6 @@ def ETS(seasonality=None,
             **kwargs
         )
     else:
-        raise IllegalArgument('Invalid estimator.')
+        raise IllegalArgument('Invalid estimator. Must be one of {}'.format(_supported_estimators))
 
     return ets_forecaster

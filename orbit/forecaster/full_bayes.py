@@ -18,7 +18,7 @@ class FullBayesianForecaster(Forecaster):
             PredictMethod.MEAN.value: dict(),
             PredictMethod.MEDIAN.value: dict(),
         }
-        
+
     def fit(self, df, point_method=None, keep_samples=True):
         super().fit(df)
         self._point_method = point_method
@@ -45,7 +45,7 @@ class FullBayesianForecaster(Forecaster):
 
         if point_method is not None and not keep_samples:
             self._posterior_samples = {}
-            
+
     @staticmethod
     def _bootstrap(num_samples, posterior_samples, n):
         """Draw `n` number of bootstrap samples from the posterior_samples.
@@ -157,3 +157,13 @@ class FullBayesianForecaster(Forecaster):
 
             predicted_df = prepend_date_column(predicted_df, df, self.date_col)
             return predicted_df
+
+    def get_regression_coefs(self):
+        if hasattr(self._model, '_get_regression_coefs'):
+            if not self.is_fitted():
+                raise ForecasterException("Model is not fitted yet.")
+            if self._point_method is None:
+                coef_point_method = PredictMethod.MEDIAN.value
+            else: coef_point_method = self._point_method
+
+            return self._model._get_regression_coefs(coef_point_method, self._point_posteriors)

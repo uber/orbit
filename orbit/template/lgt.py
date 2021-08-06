@@ -18,6 +18,7 @@ from ..exceptions import IllegalArgument, ModelException
 # from .model_template import ModelTemplate
 from .ets import ETSModel
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
+from ..estimators.pyro_estimator import PyroEstimatorVI
 
 
 class DataInputMapper(Enum):
@@ -149,7 +150,7 @@ class LGTModel(ETSModel):
     _data_input_mapper = DataInputMapper
     # used to match name of `*.stan` or `*.pyro` file to look for the model
     _model_name = 'lgt'
-    _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC]
+    _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC, PyroEstimatorVI]
 
     def __init__(self, regressor_col=None, regressor_sign=None,
                  regressor_beta_prior=None, regressor_sigma_prior=None,
@@ -212,10 +213,10 @@ class LGTModel(ETSModel):
 
         super().__init__(**kwargs)
 
-        self._set_static_attributes()
-        self._set_model_param_names()
+        # self._set_static_attributes()
+        # self._set_model_param_names()
 
-    def _set_init_values(self):
+    def set_init_values(self):
         """Override function from Base Template"""
         # init_values_partial = partial(init_values_callable, seasonality=seasonality)
         # partialfunc does not work when passed to PyStan because PyStan uses
@@ -370,7 +371,7 @@ class LGTModel(ETSModel):
             self.regular_regressor_matrix = df.filter(
                 items=self.regular_regressor_col, ).values
 
-    def _set_dynamic_attributes(self, df, training_meta):
+    def set_dynamic_attributes(self, df, training_meta):
         """Set required input based on input DataFrame, rather than at object instantiation.  It also set
         additional required attributes for LGT"""
         # scalar value is suggested by the author of Rlgt
@@ -583,7 +584,7 @@ class LGTModel(ETSModel):
 
         return out
 
-    def _get_regression_coefs(self, aggregate_method):
+    def _get_regression_coefs(self, point_method, point_posteriors):
         """Return DataFrame regression coefficients
         If PredictMethod is `full` return `mean` of coefficients instead
         """
@@ -594,8 +595,8 @@ class LGTModel(ETSModel):
         if self.num_of_regressors == 0:
             return coef_df
 
-        coef = self._aggregate_posteriors \
-            .get(aggregate_method) \
+        coef = point_posteriors \
+            .get(point_method) \
             .get(RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
 
         # get column names

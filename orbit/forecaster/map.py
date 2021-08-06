@@ -95,3 +95,9 @@ class MAPForecaster(Forecaster):
 
     def get_point_posteriors(self):
         return deepcopy(self._point_posteriors[PredictMethod.MAP.value])
+
+    def get_regression_coefs(self):
+        if hasattr(self._model, '_get_regression_coefs'):
+            if not self.is_fitted():
+                raise ForecasterException("Model is not fitted yet.")
+            return self._model._get_regression_coefs(PredictMethod.MAP.value, self._point_posteriors)

@@ -1,8 +1,9 @@
 # from inspect import signature
 from ..template.lgt import LGTModel
-from ..forecaster import MAPForecaster, FullBayesianForecaster
+from ..forecaster import MAPForecaster, FullBayesianForecaster, SVIForecaster
 from ..exceptions import IllegalArgument
 from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
+from ..estimators.pyro_estimator import PyroEstimatorVI
 
 
 def LGT(seasonality=None,
@@ -59,6 +60,8 @@ def LGT(seasonality=None,
     #         ets_args[k] = v
     #     else:
     #         forecaster_args[k] = v
+    _supported_estimators = ['stan-map', 'stan-mcmc', 'pyro-svi']
+
     lgt = LGTModel(
         seasonality=seasonality,
         seasonality_sm_input=seasonality_sm_input,
@@ -84,7 +87,13 @@ def LGT(seasonality=None,
             estimator_type=StanEstimatorMCMC,
             **kwargs
         )
+    elif estimator == 'pyro-svi':
+        lgt_forecaster = SVIForecaster(
+            model=lgt,
+            estimator_type=PyroEstimatorVI,
+            **kwargs
+        )
     else:
-        raise IllegalArgument('Invalid estimator.')
+        raise IllegalArgument('Invalid estimator. Must be one of {}'.format(_supported_estimators))
 
     return lgt_forecaster
