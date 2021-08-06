@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from copy import deepcopy
+from functools import partial
 
 from ..constants.constants import PredictMethod, PredictionKeys
 from ..exceptions import ForecasterException
@@ -12,10 +13,6 @@ class MAPForecaster(Forecaster):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._point_posteriors[PredictMethod.MAP.value] = dict()
-
-    def is_fitted(self):
-        """Define condition of a fitted forecaster"""
-        return bool(self._point_posteriors[PredictMethod.MAP.value])
 
     def fit(self, df):
         super().fit(df)
@@ -96,8 +93,7 @@ class MAPForecaster(Forecaster):
     def get_point_posteriors(self):
         return deepcopy(self._point_posteriors[PredictMethod.MAP.value])
 
-    def get_regression_coefs(self):
-        if hasattr(self._model, '_get_regression_coefs'):
-            if not self.is_fitted():
-                raise ForecasterException("Model is not fitted yet.")
-            return self._model._get_regression_coefs(PredictMethod.MAP.value, self._point_posteriors)
+    def load_extra_methods(self):
+        for method in self.extra_methods:
+            setattr(self, method, partial(getattr(self._model, method), PredictMethod.MAP.value,
+                                                                        self._point_posteriors))

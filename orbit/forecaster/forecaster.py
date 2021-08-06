@@ -7,6 +7,10 @@ from ..exceptions import ForecasterException, AbstractMethodException
 from ..utils.general import is_ordered_datetime
 from ..template.model_template import ModelTemplate
 
+COMMON_MODEL_CALLABLES = ['get_data_input_mapper', 'get_fitter', 'get_init_values', 'get_model_name',
+                          'get_model_param_names', 'get_supported_estimator_types', 'predict',
+                          'set_dynamic_attributes', 'set_init_values']
+
 
 class Forecaster(object):
     def __init__(self,
@@ -43,6 +47,9 @@ class Forecaster(object):
         if not isinstance(model, ModelTemplate):
             raise ForecasterException('Invalid class of model argument supplied.')
         self._model = model
+        method_list = [attr for attr in dir(model) if callable(getattr(model, attr))
+                and not attr.startswith('__') and not attr.startswith('_') and not attr in COMMON_MODEL_CALLABLES]
+        self.extra_methods = method_list
         self.response_col = response_col
         self.date_col = date_col
         self._validate_supported_estimator_type(estimator_type)
@@ -128,6 +135,8 @@ class Forecaster(object):
 
         self._posterior_samples = _posterior_samples
         self._training_metrics = training_metrics
+        # load extra methods implemented in model layer after fitting
+        self.load_extra_methods()
 
     def _set_training_meta(self, df):
         """A default pre-processing and information gathering from training input dataframe"""
@@ -159,7 +168,7 @@ class Forecaster(object):
         training_meta = self.get_training_meta()
         training_data_input = {
             'RESPONSE': training_meta['response'],
-            # response_sd only used in ETS model
+            # response_sd not used in lgt/dlt
             'RESPONSE_SD': training_meta['response_sd'],
             'NUM_OF_OBS': training_meta['num_of_observations'],
             'WITH_MCMC': 1,
@@ -285,5 +294,5 @@ class Forecaster(object):
     def get_point_posteriors(self):
         return deepcopy(self._point_posteriors)
 
-    def get_regression_coefs(self):
+    def load_extra_methods():
         pass

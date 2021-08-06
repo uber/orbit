@@ -583,7 +583,7 @@ class LGTModel(ETSModel):
 
         return out
 
-    def _get_regression_coefs(self, point_method, point_posteriors):
+    def get_regression_coefs(self, point_method, point_posteriors):
         """Return DataFrame regression coefficients
         If PredictMethod is `full` return `mean` of coefficients instead
         """
