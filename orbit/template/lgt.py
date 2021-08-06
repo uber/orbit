@@ -11,7 +11,6 @@ from ..constants.constants import (
     DEFAULT_REGRESSOR_BETA,
     DEFAULT_REGRESSOR_SIGMA,
     COEFFICIENT_DF_COLS,
-    PredictMethod,
     PredictionKeys
 )
 from ..exceptions import IllegalArgument, ModelException

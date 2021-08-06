@@ -31,6 +31,30 @@ def LGT(seasonality=None,
     level_sm_input : float
         float value between [0.0001, 1]. A larger value puts more weight on the current level.
         If None, the model will estimate this value.
+    regressor_col : list
+        Names of regressor columns, if any
+    regressor_sign :  list
+        list with values { '+', '-', '=' } such that
+        '+' indicates regressor coefficient estimates are constrained to [0, inf).
+        '-' indicates regressor coefficient estimates are constrained to (-inf, 0].
+        '=' indicates regressor coefficient estimates can be any value between (-inf, inf).
+        The length of `regressor_sign` must be the same length as `regressor_col`. If None,
+        all elements of list will be set to '='.
+    regressor_beta_prior : list
+        list of prior float values for regressor coefficient betas. The length of `regressor_beta_prior`
+        must be the same length as `regressor_col`. If None, use non-informative priors.
+    regressor_sigma_prior : list
+        list of prior float values for regressor coefficient sigmas. The length of `regressor_sigma_prior`
+        must be the same length as `regressor_col`. If None, use non-informative priors.
+    regression_penalty : { 'fixed_ridge', 'lasso', 'auto_ridge' }
+        regression penalty method
+    lasso_scale : float
+        float value between [0, 1], applicable only if `regression_penalty` == 'lasso'
+    auto_ridge_scale : float
+        float value between [0, 1], applicable only if `regression_penalty` == 'auto_ridge'
+    slope_sm_input : float
+        float value between [0, 1]. A larger value puts more weight on the current slope.
+        If None, the model will estimate this value.
     estimator : string
 
     Other Parameters
@@ -52,14 +76,6 @@ def LGT(seasonality=None,
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
     """
-    # ets_args_keys = [x for x in signature(ETSModel).parameters.keys() if x != 'kwargs']
-    # ets_args = dict()
-    # forecaster_args = dict()
-    # for k, v in kwargs.items():
-    #     if k in ets_args_keys:
-    #         ets_args[k] = v
-    #     else:
-    #         forecaster_args[k] = v
     _supported_estimators = ['stan-map', 'stan-mcmc', 'pyro-svi']
 
     lgt = LGTModel(
