@@ -166,5 +166,10 @@ class SVIForecaster(Forecaster):
         else: coef_point_method = self._point_method
 
         for method in self.extra_methods:
-            setattr(self, method, partial(getattr(self._model, method), coef_point_method,
-                                                                        self._point_posteriors))
+            setattr(self,
+                    method,
+                    partial(
+                        getattr(self._model, method),
+                        self.get_training_meta(),
+                        coef_point_method,
+                        self._point_posteriors))
