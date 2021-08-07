@@ -95,7 +95,7 @@ def test_ktrlite_span_level(make_daily_data, span_level):
     knots_df = ktrlite.get_level_knots()
     levels_df = ktrlite.get_levels()
     assert knots_df.shape[0] == round(1/span_level)
-    assert levels_df.shape[0] == ktrlite.num_of_observations
+    assert levels_df.shape[0] ==  ktrlite.get_training_meta()['num_of_observations']
 
 
 @pytest.mark.parametrize("level_knot_dates", [pd.date_range(start='2016-03-01', end='2019-01-01', freq='3M'),
@@ -124,8 +124,8 @@ def test_ktrlite_level_knot_dates(make_daily_data, level_knot_dates):
     assert predict_df.columns.tolist() == expected_columns
     assert len(ktrlite._posterior_samples) == expected_num_parameters
     assert smape(test_df['response'].values, predict_df['prediction'].values) <= SMAPE_TOLERANCE
-    assert np.all(np.isin(ktrlite.level_knot_dates, level_knot_dates))
-    assert len(ktrlite.level_knot_dates) == len(level_knot_dates)
+    assert np.all(np.isin(ktrlite._model.level_knot_dates, level_knot_dates))
+    assert len(ktrlite._model.level_knot_dates) == len(level_knot_dates)
 
 
 @pytest.mark.parametrize("level_knot_length", [90, 120])
