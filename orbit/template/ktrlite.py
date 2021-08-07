@@ -8,11 +8,13 @@ from scipy.stats import nct
 import matplotlib.pyplot as plt
 
 from ..constants.constants import PredictionKeys
+from ..constants.constants import PredictMethod
 from ..exceptions import IllegalArgument, ModelException
 from .model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMAP
 from ..utils.kernels import sandwich_kernel
 from ..utils.features import make_fourier_series_df
+from orbit.constants.palette import OrbitPalette
 
 
 class DataInputMapper(Enum):
@@ -186,6 +188,7 @@ class KTRLiteModel(ModelTemplate):
         self.knots_tp_coefficients = None
         self.regressor_matrix = None
         # self.coefficients_knot_dates = None
+        self._set_model_param_names()
 
     def set_init_values(self):
         """Override function from Base Template"""
@@ -199,8 +202,7 @@ class KTRLiteModel(ModelTemplate):
             self._init_values = init_values_callable
 
     def _set_default_args(self):
-        """Set default attributes for None
-        """
+        """Set default attributes for None"""
         if self.seasonality is None:
             self._seasonality = list()
             self._seasonality_fs_order = list()
@@ -393,3 +395,176 @@ class KTRLiteModel(ModelTemplate):
         # set regressors as input matrix and derive kernels
         self._set_regressor_matrix(df, training_meta)
         self._set_kernel_matrix(df, training_meta)
+
+    def _set_model_param_names(self):
+        """Model parameters to extract"""
+        self._model_param_names += [param.value for param in BaseSamplingParameters]
+        if len(self._seasonality) > 0 or self.num_of_regressors > 0:
+            self._model_param_names += [param.value for param in RegressionSamplingParameters]
+
+    def predict(self, posterior_estimates, df, training_meta, prediction_meta, include_error=False, **kwargs):
+        """Vectorized version of prediction math"""
+        ################################################################
+        # Prediction Attributes
+        ################################################################
+        start = prediction_meta['start']
+        trained_len = training_meta['num_of_observations']
+        output_len = prediction_meta['df_length']
+
+        ################################################################
+        # Model Attributes
+        ################################################################
+        model = deepcopy(posterior_estimates)
+        # TODO: adopt torch ?
+        # for k, v in model.items():
+        #     model[k] = torch.from_numpy(v)
+
+        # We can pull any arbitrary value from the dictionary because we hold the
+        # safe assumption: the length of the first dimension is always the number of samples
+        # thus can be safely used to determine `num_sample`. If predict_method is anything
+        # other than full, the value here should be 1
+        arbitrary_posterior_value = list(model.values())[0]
+        num_sample = arbitrary_posterior_value.shape[0]
+
+        ################################################################
+        # Trend Component
+        ################################################################
+        new_tp = np.arange(start + 1, start + output_len + 1) / trained_len
+        if include_error:
+            # in-sample knots
+            lev_knot_in = model.get(BaseSamplingParameters.LEVEL_KNOT.value)
+            # TODO: hacky way; let's just assume last two knot distance is knots distance for all knots
+            lev_knot_width = self.knots_tp_level[-1] - self.knots_tp_level[-2]
+            # check whether we need to put new knots for simulation
+            if new_tp[-1] > 1:
+                # derive knots tp
+                if self.knots_tp_level[-1] + lev_knot_width >= new_tp[-1]:
+                    knots_tp_level_out = np.array([new_tp[-1]])
+                else:
+                    knots_tp_level_out = np.arange(self.knots_tp_level[-1] + lev_knot_width, new_tp[-1], lev_knot_width)
+                new_knots_tp_level = np.concatenate([self.knots_tp_level, knots_tp_level_out])
+                lev_knot_out = np.random.laplace(0, self.level_knot_scale,
+                                                 size=(lev_knot_in.shape[0], len(knots_tp_level_out)))
+                lev_knot_out = np.cumsum(np.concatenate([lev_knot_in[:, -1].reshape(-1, 1), lev_knot_out],
+                                                        axis=1), axis=1)[:, 1:]
+                lev_knot = np.concatenate([lev_knot_in, lev_knot_out], axis=1)
+            else:
+                new_knots_tp_level = self.knots_tp_level
+                lev_knot = lev_knot_in
+            kernel_level = sandwich_kernel(new_tp, new_knots_tp_level)
+        else:
+            lev_knot = model.get(BaseSamplingParameters.LEVEL_KNOT.value)
+            kernel_level = sandwich_kernel(new_tp, self.knots_tp_level)
+
+        obs_scale = model.get(BaseSamplingParameters.OBS_SCALE.value)
+        obs_scale = obs_scale.reshape(-1, 1)
+
+        trend = np.matmul(lev_knot, kernel_level.transpose(1, 0))
+
+        ################################################################
+        # Seasonality Component
+        ################################################################
+        # init of regression matrix depends on length of response vector
+        total_seas_regression = np.zeros(trend.shape, dtype=np.double)
+        seas_decomp = {}
+        # update seasonal regression matrices
+        if self._seasonality and self.regressor_col:
+            df = self._make_seasonal_regressors(df, shift=start)
+            coef_knot = model.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+            kernel_coefficients = sandwich_kernel(new_tp, self.knots_tp_coefficients)
+            coef = np.matmul(coef_knot, kernel_coefficients.transpose(1, 0))
+            pos = 0
+            for idx, cols in enumerate(self.regressor_col_gp):
+                seasonal_regressor_matrix = df[cols].values
+                seas_coef = coef[..., pos:(pos + len(cols)), :]
+                seas_regression = np.sum(seas_coef * seasonal_regressor_matrix.transpose(1, 0), axis=-2)
+                seas_decomp['seasonality_{}'.format(self._seasonality[idx])] = seas_regression
+                pos += len(cols)
+                total_seas_regression += seas_regression
+        if include_error:
+            epsilon = nct.rvs(self._degree_of_freedom, nc=0, loc=0,
+                              scale=obs_scale, size=(num_sample, len(new_tp)))
+            pred_array = trend + total_seas_regression + epsilon
+        else:
+            pred_array = trend + total_seas_regression
+
+        out = {
+            PredictionKeys.PREDICTION.value: pred_array,
+            PredictionKeys.TREND.value: trend,
+        }
+        out.update(seas_decomp)
+
+        return out
+
+    # TODO: need a unit test of this function
+    def get_level_knots(self, training_meta, point_method, point_posteriors):
+        """Given posteriors, return knots and correspondent date"""
+        date_col = training_meta['date_col']
+        lev_knots = point_posteriors[point_method][BaseSamplingParameters.LEVEL_KNOT.value]
+        if len(lev_knots.shape) > 1:
+            lev_knots = np.squeeze(lev_knots, 0)
+        out = {
+            date_col: self._level_knot_dates,
+            BaseSamplingParameters.LEVEL_KNOT.value: lev_knots,
+        }
+        return pd.DataFrame(out)
+
+    def get_levels(self, training_meta, point_method, point_posteriors):
+        date_col = training_meta['date_col']
+        date_array = training_meta['date_array']
+        levs = point_posteriors[PredictMethod.MAP.value][BaseSamplingParameters.LEVEL.value]
+        if len(levs.shape) > 1:
+            levs = np.squeeze(levs, 0)
+        out = {
+            date_col: date_array,
+            BaseSamplingParameters.LEVEL.value: levs,
+        }
+        return pd.DataFrame(out)
+
+    def plot_lev_knots(self, training_meta, point_method, point_posteriors,
+                       path=None, is_visible=True, title="",
+                       fontsize=16, markersize=250, figsize=(16, 8)):
+        """ Plot the fitted level knots along with the actual time series.
+        Parameters
+        ----------
+        path : str; optional
+            path to save the figure
+        is_visible : boolean
+            whether we want to show the plot. If called from unittest, is_visible might = False.
+        title : str; optional
+            title of the plot
+        fontsize : int; optional
+            fontsize of the title
+        markersize : int; optional
+            knot marker size
+        figsize : tuple; optional
+            figsize pass through to `matplotlib.pyplot.figure()`
+       Returns
+        -------
+            matplotlib axes object
+        """
+        date_col = training_meta['date_col']
+        date_array = training_meta['date_array']
+        response = training_meta['response']
+
+        levels_df = self.get_levels(training_meta, point_method, point_posteriors)
+        knots_df = self.get_level_knots(training_meta, point_method, point_posteriors)
+
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        ax.plot(date_array, response, color=OrbitPalette.blue.value, lw=1, alpha=0.7, label='actual')
+        ax.plot(levels_df[date_col], levels_df[BaseSamplingParameters.LEVEL.value],
+                color=OrbitPalette.black.value, lw=1, alpha=0.8,
+                label=BaseSamplingParameters.LEVEL.value)
+        ax.scatter(knots_df[date_col], knots_df[BaseSamplingParameters.LEVEL_KNOT.value],
+                   color=OrbitPalette.green.value, lw=1, s=markersize, marker='^', alpha=0.8,
+                   label=BaseSamplingParameters.LEVEL_KNOT.value)
+        ax.legend()
+        ax.grid(True, which='major', c='grey', ls='-', lw=1, alpha=0.5)
+        ax.set_title(title, fontsize=fontsize)
+        if path:
+            fig.savefig(path)
+        if is_visible:
+            plt.show()
+        else:
+            plt.close()
+        return ax

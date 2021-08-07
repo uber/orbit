@@ -212,9 +212,6 @@ class LGTModel(ETSModel):
 
         super().__init__(**kwargs)
 
-        # self._set_static_attributes()
-        # self._set_model_param_names()
-
     def set_init_values(self):
         """Override function from Base Template"""
         # init_values_partial = partial(init_values_callable, seasonality=seasonality)
@@ -583,7 +580,7 @@ class LGTModel(ETSModel):
 
         return out
 
-    def get_regression_coefs(self, point_method, point_posteriors):
+    def get_regression_coefs(self, training_meta, point_method, point_posteriors):
         """Return DataFrame regression coefficients
         If PredictMethod is `full` return `mean` of coefficients instead
         """
