@@ -12,6 +12,7 @@ from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel, sandwich_kernel
 from ..utils.features import make_fourier_series_df
 from .model_template import ModelTemplate
+from ..estimators.pyro_estimator import PyroEstimatorVI
 
 
 class DataInputMapper(Enum):
@@ -21,11 +22,8 @@ class DataInputMapper(Enum):
     # All of the following have default defined in DEFAULT_SLGT_FIT_ATTRIBUTES
     # ----------  Data Input ---------- #
     # observation related
-    NUM_OF_OBSERVATIONS = 'N_OBS'
-    RESPONSE = 'RESPONSE'
     NUM_OF_VALID_RESPONSE = 'N_VALID_RES'
     WHICH_VALID_RESPONSE = 'WHICH_VALID_RES'
-    RESPONSE_SD = 'SDY'
     RESPONSE_OFFSET = 'MEAN_Y'
     DEGREE_OF_FREEDOM = 'DOF'
     MIN_RESIDUALS_SD = 'MIN_RESIDUALS_SD'
@@ -34,7 +32,7 @@ class DataInputMapper(Enum):
     LEVEL_KNOT_SCALE = 'LEV_KNOT_SCALE'
     _KERNEL_LEVEL = 'K_LEV'
     # ----------  Regression  ---------- #
-    _NUM_KNOTS_COEFFICIENTS  = 'N_KNOTS_COEF'
+    _NUM_KNOTS_COEFFICIENTS = 'N_KNOTS_COEF'
     _KERNEL_COEFFICIENTS = 'K_COEF'
     _NUM_OF_REGULAR_REGRESSORS = 'N_RR'
     _NUM_OF_POSITIVE_REGRESSORS = 'N_PR'
@@ -70,7 +68,7 @@ class RegressionSamplingParameters(Enum):
     The output sampling parameters related with regression component.
     """
     COEFFICIENTS_KNOT = 'coef_knot'
-    COEFFICIENTS_INIT_KNOT= 'coef_init_knot'
+    COEFFICIENTS_INIT_KNOT = 'coef_init_knot'
     COEFFICIENTS = 'coef'
 
 
@@ -83,7 +81,7 @@ DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER = 0.01
 DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER = 1.0
 
 
-class BaseKTRX(ModelTemplate):
+class KTRXModel(ModelTemplate):
     """Base KTRX model object with shared functionality for PyroVI method
     Parameters
     ----------
@@ -141,6 +139,7 @@ class BaseKTRX(ModelTemplate):
     _data_input_mapper = DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
     _model_name = 'ktrx'
+    _supported_estimator_types = [PyroEstimatorVI]
 
     def __init__(self,
                  level_knot_scale=0.1,
@@ -248,6 +247,7 @@ class BaseKTRX(ModelTemplate):
         self._regular_regressor_matrix = None
 
         self._set_static_attributes()
+        self._set_model_param_names()
 
     def _set_model_param_names(self):
         """Overriding base template functions. Model parameters to extract"""
@@ -441,11 +441,11 @@ class BaseKTRX(ModelTemplate):
         # update regression matrices
         if self._num_of_positive_regressors > 0:
             self._positive_regressor_matrix = df.filter(
-                items=self._positive_regressor_col,).values
+                items=self._positive_regressor_col, ).values
 
         if self._num_of_regular_regressors > 0:
             self._regular_regressor_matrix = df.filter(
-                items=self._regular_regressor_col,).values
+                items=self._regular_regressor_col, ).values
 
     def _set_coefficients_kernel_matrix(self, df, training_meta):
         """Derive knots position and kernel matrix and other related meta data"""
@@ -738,8 +738,8 @@ class BaseKTRX(ModelTemplate):
         """Overriding: func: `~orbit.models.BaseETS._set_dynamic_attributes"""
         self._set_valid_response_attributes(training_meta)
         self._set_regressor_matrix(df, training_meta)
-        self._set_coefficients_kernel_matrix(df)
-        self._set_knots_scale_matrix()
+        self._set_coefficients_kernel_matrix(df, training_meta)
+        self._set_knots_scale_matrix(df, training_meta)
         self._set_levs_and_seas(df, training_meta)
         self._filter_coef_prior(df)
 
@@ -771,3 +771,288 @@ class BaseKTRX(ModelTemplate):
 
         return regressor_beta
 
+    def predict(self, posterior_estimates, df, training_meta, prediction_meta,
+                # coefficient_method="smooth",
+                include_error=False, store_prediction_array=False, **kwargs):
+        """Vectorized version of prediction math
+        Args
+        ----
+        coefficient_method: str
+            either "smooth" or "empirical". when "empirical" is used, curves are sampled/aggregated directly
+            from beta posteriors; when "smooth" is used, first extract sampled/aggregated posteriors of knots
+            then beta.
+            this mainly impacts the aggregated estimation method; full bayesian should not be impacted
+        """
+        ################################################################
+        # Model Attributes
+        ################################################################
+        # FIXME: do we still need this?
+        model = deepcopy(posterior_estimates)
+        arbitrary_posterior_value = list(model.values())[0]
+        num_sample = arbitrary_posterior_value.shape[0]
+
+        ################################################################
+        # Prediction Attributes
+        ################################################################
+        output_len = prediction_meta['df_length']
+        prediction_start = prediction_meta['prediction_start']
+        date_array = training_meta['date_array']
+        num_of_observations = training_meta['num_of_observations']
+        training_end = training_meta['training_end']
+
+        # Here assume dates are ordered and consecutive
+        # if prediction_meta['prediction_start'] > self.training_end,
+        # assume prediction starts right after train end
+        if prediction_start > training_end:
+            # time index for prediction start
+            start = num_of_observations
+        else:
+            start = pd.Index(date_array).get_loc(prediction_start)
+
+        new_tp = np.arange(start + 1, start + output_len + 1) / num_of_observations
+        if include_error:
+            # in-sample knots
+            lev_knot_in = model.get(BaseSamplingParameters.LEVEL_KNOT.value)
+            # TODO: hacky way; let's just assume last two knot distance is knots distance for all knots
+            lev_knot_width = self.knots_tp_level[-1] - self.knots_tp_level[-2]
+            # check whether we need to put new knots for simulation
+            if new_tp[-1] >= self.knots_tp_level[-1] + lev_knot_width:
+                # derive knots tp
+                knots_tp_level_out = np.arange(self.knots_tp_level[-1] + lev_knot_width, new_tp[-1], lev_knot_width)
+                new_knots_tp_level = np.concatenate([self.knots_tp_level, knots_tp_level_out])
+                lev_knot_out = np.random.laplace(0, self.level_knot_scale,
+                                                 size=(lev_knot_in.shape[0], len(knots_tp_level_out)))
+                lev_knot_out = np.cumsum(np.concatenate([lev_knot_in[:, -1].reshape(-1, 1), lev_knot_out],
+                                                        axis=1), axis=1)[:, 1:]
+                lev_knot = np.concatenate([lev_knot_in, lev_knot_out], axis=1)
+            else:
+                new_knots_tp_level = self.knots_tp_level
+                lev_knot = lev_knot_in
+            kernel_level = sandwich_kernel(new_tp, new_knots_tp_level)
+        else:
+            lev_knot = model.get(BaseSamplingParameters.LEVEL_KNOT.value)
+            kernel_level = sandwich_kernel(new_tp, self.knots_tp_level)
+        obs_scale = model.get(BaseSamplingParameters.OBS_SCALE.value)
+        obs_scale = obs_scale.reshape(-1, 1)
+
+        if self._seasonal_knots_input is not None:
+            seas = self._generate_seas(df, training_meta,
+                                       self._seasonal_knots_input['_seas_coef_knot_dates'],
+                                       self._seasonal_knots_input['_sea_coef_knot'],
+                                       # self._seasonal_knots_input['_sea_rho'],
+                                       self._seasonal_knots_input['_seasonality'],
+                                       self._seasonal_knots_input['_seasonality_fs_order'])
+            # seas is 1-d array, add the batch size back
+            seas = np.expand_dims(seas, 0)
+        else:
+            # follow component shapes
+            seas = np.zeros((1, output_len))
+
+        trend = np.matmul(lev_knot, kernel_level.transpose((1, 0)))
+        regression = np.zeros(trend.shape)
+        if self._num_of_regressors > 0:
+            regressor_matrix = df.filter(items=self._regressor_col, ).values
+            regressor_betas = self._get_regression_coefs_matrix(
+                training_meta,
+                posterior_estimates,
+                # coefficient_method,
+                date_array=prediction_meta['date_array']
+            )
+            regression = np.sum(regressor_betas * regressor_matrix, axis=-1)
+
+        if include_error:
+            epsilon = nct.rvs(self.degree_of_freedom, nc=0, loc=0,
+                              scale=obs_scale, size=(num_sample, len(new_tp)))
+            pred_array = trend + seas + regression + epsilon
+        else:
+            pred_array = trend + seas + regression
+
+        # if decompose output dictionary of components
+        decomp_dict = {
+            'prediction': pred_array,
+            'trend': trend,
+            'seasonality_input': seas,
+            'regression': regression
+        }
+
+        if store_prediction_array:
+            self.pred_array = pred_array
+        else:
+            self.pred_array = None
+
+        return decomp_dict
+
+    def _get_regression_coefs_matrix(self,
+                                     training_meta,
+                                     posteriors,
+                                     # coefficient_method='smooth',
+                                     date_array=None):
+        """internal function to provide coefficient matrix given a date array
+        Args
+        ----
+        posteriors: dict
+            posterior samples
+        date_array: array like
+            array of date stamp
+        coefficient_method: str
+            either "empirical" or "smooth"; when "empirical" is used; curve are sampled/aggregated directly from
+            coefficients posteriors whereas when "smooth" is used we first extract sampled/aggregated posteriors of knot
+            and extract coefficients this mainly impact the aggregated estimation method; full bayesian should not be
+            impacted
+        """
+        num_of_observations = training_meta['num_of_observations']
+        training_start = training_meta['training_start']
+        training_end = training_meta['training_end']
+        train_date_array = training_meta['date_array']
+
+        if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
+            return None
+
+        if date_array is None:
+            # if coefficient_method == 'smooth':
+            # if date_array not specified, dynamic coefficients in the training perior will be retrieved
+            coef_knots = posteriors.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+            regressor_betas = np.matmul(coef_knots, self._kernel_coefficients.transpose((1, 0)))
+            # back to batch x time step x regressor columns shape
+            regressor_betas = regressor_betas.transpose((0, 2, 1))
+            # elif coefficient_method == 'empirical':
+            #     regressor_betas = model.get(RegressionSamplingParameters.COEFFICIENTS.value)
+            # else:
+            #     raise IllegalArgument('Wrong coefficient_method:{}'.format(coefficient_method))
+        else:
+            date_array = pd.to_datetime(date_array).values
+            output_len = len(date_array)
+            train_len = num_of_observations
+            # some validation of date array
+            if not is_ordered_datetime(date_array):
+                raise IllegalArgument('Datetime index must be ordered and not repeat')
+            prediction_start = date_array[0]
+
+            if prediction_start < training_start:
+                raise ModelException('Prediction start must be after training start.')
+
+            # If we cannot find a match of prediction range, assume prediction starts right after train end
+            if prediction_start > training_end:
+                # time index for prediction start
+                start = train_len
+                coef_repeats = [0] * (start - 1) + [output_len]
+            else:
+                # time index for prediction start
+                start = pd.Index(train_date_array).get_loc(prediction_start)
+                if output_len <= train_len - start:
+                    coef_repeats = [0] * start + [1] * output_len + [0] * (train_len - start - output_len)
+                else:
+                    coef_repeats = [0] * start + [1] * (train_len - start - 1) + [output_len - train_len + start + 1]
+            new_tp = np.arange(start + 1, start + output_len + 1) / num_of_observations
+
+            # if coefficient_method == 'smooth':
+            kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            # kernel_coefficients = parabolic_kernel(new_tp, self._knots_tp_coefficients)
+            coef_knots = posteriors.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+            regressor_betas = np.matmul(coef_knots, kernel_coefficients.transpose((1, 0)))
+            regressor_betas = regressor_betas.transpose((0, 2, 1))
+
+            # elif coefficient_method == 'empirical':
+            #     regressor_betas = model.get(RegressionSamplingParameters.COEFFICIENTS.value)
+            #     regressor_betas = np.repeat(regressor_betas, repeats=coef_repeats, axis=1)
+            # else:
+            #     raise IllegalArgument('Wrong coefficient_method:{}'.format(coefficient_method))
+
+        return regressor_betas
+
+    def _get_regression_coefs(self,
+                              training_meta,
+                              point_method,
+                              point_posteriors,
+                              # TODO: recover this later
+                              # coefficient_method='smooth',
+                              date_array=None,
+                              # TODO: recover this later
+                              # include_ci=False,
+                              # lower=0.05,
+                              # upper=0.95
+                              ):
+        """Return DataFrame regression coefficients
+        """
+        posteriors = point_posteriors.get(point_method)
+        date_col = training_meta['date_col']
+        train_date_array = training_meta['date_array']
+        coefs = np.squeeze(self._get_regression_coefs_matrix(
+            training_meta,
+            posteriors,
+            # TODO: recover this later
+            # coefficient_method=coefficient_method,
+            date_array=date_array)
+        )
+        if len(coefs.shape) == 1:
+            coefs = coefs.reshape((1, -1))
+        reg_df = pd.DataFrame(data=coefs, columns=self._regressor_col)
+        if date_array is not None:
+            reg_df[date_col] = date_array
+        else:
+            reg_df[date_col] = train_date_array
+
+        # re-arrange columns
+        reg_df = reg_df[[date_col] + self._regressor_col]
+        # if include_ci:
+        #     posteriors = self._posterior_samples
+        #     coefs = self._get_regression_coefs_matrix(posteriors, coefficient_method=coefficient_method)
+        #
+        #     coefficients_lower = np.quantile(coefs, lower, axis=0)
+        #     coefficients_upper = np.quantile(coefs, upper, axis=0)
+        #
+        #     reg_df_lower = reg_df.copy()
+        #     reg_df_upper = reg_df.copy()
+        #     for idx, col in enumerate(self._regressor_col):
+        #         reg_df_lower[col] = coefficients_lower[:, idx]
+        #         reg_df_upper[col] = coefficients_upper[:, idx]
+        #     return reg_df, reg_df_lower, reg_df_upper
+
+        return reg_df
+
+    def _get_regression_coef_knots(self, training_meta, point_method, point_posteriors):
+        """Return DataFrame regression coefficient knots
+        """
+        date_col = training_meta['date_col']
+        posteriors = point_posteriors[point_method]
+
+        # init dataframe
+        knots_df = pd.DataFrame()
+        # end if no regressors
+        if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
+            return knots_df
+
+        knots_df[date_col] = self._coefficients_knot_dates
+        # TODO: make the label as a constant
+        knots_df['step'] = self._knots_idx_coef
+        coef_knots = posteriors \
+            .get(posteriors) \
+            .get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+
+        for idx, col in enumerate(self._regressor_col):
+            knots_df[col] = np.transpose(coef_knots[:, idx])
+
+        return knots_df
+
+    def get_regression_coefs(self,
+                             training_meta,
+                             point_method,
+                             point_posteriors,
+                             # TODO: recover this later
+                             # coefficient_method='smooth',
+                             date_array=None,
+                             # TODO: recover this later
+                             # include_ci=False,
+                             # lower=0.05,
+                             # upper=0.95
+                             ):
+
+        return self._get_regression_coefs(
+            training_meta=training_meta,
+            point_method=point_method,
+            point_posteriors=point_posteriors,
+            # coefficient_method=coefficient_method,
+            date_array=date_array,
+            # include_ci=include_ci,
+            # lower=lower, upper=upper
+        )

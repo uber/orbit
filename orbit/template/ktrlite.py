@@ -7,8 +7,7 @@ import math
 from scipy.stats import nct
 import matplotlib.pyplot as plt
 
-from ..constants.constants import PredictionKeys
-from ..constants.constants import PredictMethod
+from ..constants.constants import PredictionKeys, PredictMethod
 from ..exceptions import IllegalArgument, ModelException
 from .model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMAP
@@ -74,9 +73,6 @@ class KTRLiteInitializer(object):
 
 
 class KTRLiteModel(ModelTemplate):
-    _data_input_mapper = DataInputMapper
-    _model_name = 'ktrlite'
-    _supported_estimator_types = [StanEstimatorMAP]
     """
 
      Parameters
@@ -113,6 +109,9 @@ class KTRLiteModel(ModelTemplate):
         additional arguments passed into orbit.estimators e.g. orbit.estimators.stan_estimator,
         orbit.estimators.pyro_estimator, etc.
     """
+    _data_input_mapper = DataInputMapper
+    _model_name = 'ktrlite'
+    _supported_estimator_types = [StanEstimatorMAP]
 
     def __init__(
             self,
@@ -512,7 +511,7 @@ class KTRLiteModel(ModelTemplate):
     def get_levels(self, training_meta, point_method, point_posteriors):
         date_col = training_meta['date_col']
         date_array = training_meta['date_array']
-        levs = point_posteriors[PredictMethod.MAP.value][BaseSamplingParameters.LEVEL.value]
+        levs = point_posteriors[point_method][BaseSamplingParameters.LEVEL.value]
         if len(levs.shape) > 1:
             levs = np.squeeze(levs, 0)
         out = {
