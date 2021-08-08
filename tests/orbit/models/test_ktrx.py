@@ -85,7 +85,8 @@ def test_ktrx_coef_knot_dates(make_daily_data, coefficients_knot_dates):
         level_knot_dates=level_knot_dates,
         level_knots=level_knots,
         seasonal_knots_input=seasonal_knots_input,
-        estimator='pyro-svi'
+        estimator='pyro-svi',
+        n_bootstrap_draws=1e4,
     )
 
     ktrx.fit(train_df, point_method='median')
@@ -133,7 +134,8 @@ def test_ktrx_coef_knot_distance(make_daily_data, coefficients_knot_length):
         level_knot_dates=level_knot_dates,
         level_knots=level_knots,
         seasonal_knots_input=seasonal_knots_input,
-        estimator='pyro-svi'
+        estimator='pyro-svi',
+        n_bootstrap_draws=1e4,
     )
 
     ktrx.fit(train_df, point_method='median')
@@ -189,7 +191,8 @@ def test_ktrx_regressor_sign(make_daily_data, regressor_signs):
         level_knot_dates=level_knot_dates,
         level_knots=level_knots,
         seasonal_knots_input=seasonal_knots_input,
-        estimator='pyro-svi'
+        estimator='pyro-svi',
+        n_bootstrap_draws=1e4,
     )
 
     ktrx.fit(train_df, point_method='median')
@@ -251,7 +254,8 @@ def test_ktrx_prior_ingestion(make_daily_data, coef_prior_list):
         level_knot_dates=level_knot_dates,
         level_knots=level_knots,
         seasonal_knots_input=seasonal_knots_input,
-        estimator='pyro-svi'
+        estimator='pyro-svi',
+        n_bootstrap_draws=1e4,
     )
 
     ktrx.fit(train_df, point_method='median')
