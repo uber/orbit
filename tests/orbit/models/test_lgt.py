@@ -320,7 +320,7 @@ def test_lgt_mixed_signs_and_order(iclaims_training_data, regressor_signs):
 
 
 @pytest.mark.parametrize("prediction_percentiles", [None, [5, 10, 95]])
-def test_prediction_percentiles(iclaims_training_data, prediction_percentiles):
+def test_lgt_prediction_percentiles(iclaims_training_data, prediction_percentiles):
     df = iclaims_training_data
 
     lgt = LGT(
