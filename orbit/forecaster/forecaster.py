@@ -47,8 +47,14 @@ class Forecaster(object):
         if not isinstance(model, ModelTemplate):
             raise ForecasterException('Invalid class of model argument supplied.')
         self._model = model
-        method_list = [attr for attr in dir(model) if callable(getattr(model, attr))
-                and not attr.startswith('__') and not attr.startswith('_') and not attr in COMMON_MODEL_CALLABLES]
+        method_list = [
+            attr for attr in dir(model)
+            # only load public methods
+            if (callable(getattr(model, attr))
+                and not attr.startswith('__')
+                and not attr.startswith('_')
+                and attr not in COMMON_MODEL_CALLABLES)
+        ]
         self.extra_methods = method_list
         self.response_col = response_col
         self.date_col = date_col
