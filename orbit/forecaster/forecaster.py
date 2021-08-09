@@ -294,5 +294,5 @@ class Forecaster(object):
     def get_point_posteriors(self):
         return deepcopy(self._point_posteriors)
 
-    def load_extra_methods():
+    def load_extra_methods(self):
         pass

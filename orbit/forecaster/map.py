@@ -96,4 +96,4 @@ class MAPForecaster(Forecaster):
     def load_extra_methods(self):
         for method in self.extra_methods:
             setattr(self, method, partial(getattr(self._model, method), PredictMethod.MAP.value,
-                                                                        self._point_posteriors))
+                                          self._point_posteriors))
