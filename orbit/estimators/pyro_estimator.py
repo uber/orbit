@@ -45,6 +45,7 @@ class PyroEstimator(BaseEstimator):
         raise NotImplementedError('Concrete fit() method must be implemented')
 
 
+# make the name consistent across VI
 class PyroEstimatorVI(PyroEstimator):
     """Pyro Estimator for VI Sampling
 
