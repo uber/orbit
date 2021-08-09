@@ -2,20 +2,20 @@ from copy import copy
 import pytest
 import numpy as np
 
-from orbit.models import LGT
-from orbit.template.lgt import LGTInitializer
+from orbit.models import DLT
+from orbit.template.dlt import DLTInitializer
 from orbit.constants.constants import PredictionKeys
 
 
 @pytest.mark.parametrize("estimator", ['stan-map', 'stan-mcmc'])
-def test_base_lgt_init(estimator):
-    lgt = LGT(estimator=estimator)
+def test_base_dlt_init(estimator):
+    dlt = DLT(estimator=estimator)
 
-    is_fitted = lgt.is_fitted()
+    is_fitted = dlt.is_fitted()
 
-    model_data_input = lgt.get_training_data_input()
-    model_param_names = lgt._model.get_model_param_names()
-    init_values = lgt._model.get_init_values()
+    model_data_input = dlt.get_training_data_input()
+    model_param_names = dlt._model.get_model_param_names()
+    init_values = dlt._model.get_init_values()
 
     # model is not yet fitted
     assert not is_fitted
@@ -27,130 +27,127 @@ def test_base_lgt_init(estimator):
     assert not init_values
 
 
-@pytest.mark.parametrize("seasonality", [None, 52])
-@pytest.mark.parametrize("estimator", ['stan-mcmc', 'pyro-svi'])
-def test_lgt_full_fit(synthetic_data, seasonality, estimator):
-    train_df, test_df, coef = synthetic_data
-    args = {
-        'response_col': 'response',
-        'date_col': 'week',
-        'prediction_percentiles': [5, 95],
-        'seasonality': seasonality,
-        'verbose': False,
-        'estimator': estimator,
-    }
-
-    if estimator == 'stan-mcmc':
-        args.update({'num_warmup': 50, 'num_sample': 50})
-    elif estimator == 'pyro-svi':
-        args.update({'num_steps': 10})
-
-    expected_num_parameters = 10
-
-    if seasonality == 52:
-        expected_num_parameters += 2
-
-    lgt = LGT(**args)
-    lgt.fit(train_df)
-    init_call = lgt._model.get_init_values()
-    if seasonality:
-        assert isinstance(init_call, LGTInitializer)
-        assert init_call.s == 52
-        init_values = init_call()
-        assert init_values['init_sea'].shape == (51, )
-    else:
-        assert not init_call
-
-    predict_df = lgt.predict(test_df)
-
-    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
-    expected_shape = (51, len(expected_columns))
-
-    assert predict_df.shape == expected_shape
-    assert predict_df.columns.tolist() == expected_columns
-    assert len(lgt._posterior_samples) == expected_num_parameters
-
-
-@pytest.mark.parametrize("seasonality", [None, 52])
-@pytest.mark.parametrize("estimator", ['stan-mcmc', 'pyro-svi'])
-@pytest.mark.parametrize("point_method", ['mean', 'median'])
-def test_lgt_aggregated_fit(synthetic_data, seasonality, estimator, point_method):
-    train_df, test_df, coef = synthetic_data
-    args = {
-        'response_col': 'response',
-        'date_col': 'week',
-        'prediction_percentiles': [5, 95],
-        'seasonality': seasonality,
-        'verbose': False,
-        'estimator': estimator,
-    }
-    if estimator == 'stan-mcmc':
-        args.update({'num_warmup': 50, 'num_sample': 50})
-    elif estimator == 'pyro-svi':
-        args.update({'num_steps': 10, 'num_sample': 50})
-
-    expected_num_parameters = 10
-
-    if seasonality == 52:
-        expected_num_parameters += 2
-
-    lgt = LGT(**args)
-    lgt.fit(train_df, point_method=point_method)
-    init_call = lgt._model.get_init_values()
-    if seasonality:
-        assert isinstance(init_call, LGTInitializer)
-        assert init_call.s == 52
-        init_values = init_call()
-        assert init_values['init_sea'].shape == (51, )
-    else:
-        assert not init_call
-
-    predict_df = lgt.predict(test_df)
-    expected_columns = ['week', 'prediction']
-    expected_shape = (51, len(expected_columns))
-
-    assert predict_df.shape == expected_shape
-    assert predict_df.columns.tolist() == expected_columns
-    assert len(lgt._posterior_samples) == expected_num_parameters
-
-
-@pytest.mark.parametrize("seasonality", [None, 52])
-@pytest.mark.parametrize("estimator", ['stan-map'])
-def test_lgt_map_fit(synthetic_data, seasonality, estimator):
+@pytest.mark.parametrize("estimator", ['stan-mcmc'])
+def test_dlt_full_univariate(synthetic_data, estimator):
     train_df, test_df, coef = synthetic_data
 
-    lgt = LGT(
+    dlt = DLT(
         response_col='response',
         date_col='week',
-        seasonality=seasonality,
+        prediction_percentiles=[5, 95],
+        seasonality=52,
+        num_warmup=50,
         verbose=False,
         estimator=estimator
     )
 
-    lgt.fit(train_df)
-    init_call = lgt._model.get_init_values()
-    if seasonality:
-        assert isinstance(init_call, LGTInitializer)
-        assert init_call.s == 52
-        init_values = init_call()
-        assert init_values['init_sea'].shape == (51, )
-    else:
-        assert not init_call
+    dlt.fit(train_df)
 
-    predict_df = lgt.predict(test_df)
+    init_call = dlt._model.get_init_values()
+    assert isinstance(init_call, DLTInitializer)
+    assert init_call.s == 52
+    init_values = init_call()
+    assert init_values['init_sea'].shape == (51, )
 
-    expected_num_parameters = 10
-    expected_columns = ['week', 'prediction']
-    if seasonality == 52:
-        expected_num_parameters += 2
+    predict_df = dlt.predict(test_df)
 
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
+    expected_num_parameters = 12
+
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
-    assert len(lgt._posterior_samples) == expected_num_parameters
+    assert len(dlt._posterior_samples) == expected_num_parameters
 
 
-@pytest.mark.parametrize("estimator", ['stan-mcmc', 'pyro-svi'])
+@pytest.mark.parametrize("estimator", ['stan-mcmc'])
+@pytest.mark.parametrize("point_method", ['mean', 'median'])
+def test_dlt_aggregated_univariate(synthetic_data, estimator, point_method):
+    train_df, test_df, coef = synthetic_data
+
+    dlt = DLT(
+        response_col='response',
+        date_col='week',
+        seasonality=52,
+        num_warmup=50,
+        verbose=False,
+        estimator=estimator
+    )
+
+    dlt.fit(train_df, point_method=point_method)
+
+    init_call = dlt._model.get_init_values()
+    assert isinstance(init_call, DLTInitializer)
+    assert init_call.s == 52
+    init_values = init_call()
+    assert init_values['init_sea'].shape == (51, )
+
+    predict_df = dlt.predict(test_df)
+
+    expected_columns = ['week', 'prediction']
+    expected_shape = (51, len(expected_columns))
+    expected_num_parameters = 12
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+    assert len(dlt._posterior_samples) == expected_num_parameters
+
+
+def test_dlt_map_univariate(synthetic_data):
+    train_df, test_df, coef = synthetic_data
+
+    dlt = DLT(
+        response_col='response',
+        date_col='week',
+        seasonality=52,
+        num_warmup=50,
+        verbose=False,
+        estimator='stan-map'
+    )
+
+    dlt.fit(train_df)
+
+    init_call = dlt._model.get_init_values()
+    assert isinstance(init_call, DLTInitializer)
+    assert init_call.s == 52
+    init_values = init_call()
+    assert init_values['init_sea'].shape == (51, )
+
+    predict_df = dlt.predict(test_df)
+
+    expected_columns = ['week', 'prediction']
+    expected_shape = (51, len(expected_columns))
+    expected_num_parameters = 12
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+    assert len(dlt._posterior_samples) == expected_num_parameters
+
+
+@pytest.mark.parametrize("estimator", ['stan-mcmc'])
+def test_dlt_non_seasonal_fit(synthetic_data, estimator):
+    train_df, test_df, coef = synthetic_data
+
+    dlt = DLT(
+        response_col='response',
+        date_col='week',
+        estimator=estimator,
+        num_warmup=50,
+    )
+
+    dlt.fit(train_df)
+    predict_df = dlt.predict(test_df)
+
+    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
+    expected_shape = (51, len(expected_columns))
+    expected_num_parameters = 10
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+    assert len(dlt._posterior_samples) == expected_num_parameters
+
+
+@pytest.mark.parametrize("estimator", ['stan-mcmc'])
 @pytest.mark.parametrize(
     "regressor_signs",
     [
@@ -161,41 +158,37 @@ def test_lgt_map_fit(synthetic_data, seasonality, estimator):
     ],
     ids=['positive_only', 'negative_only', 'regular_only', 'mixed_signs']
 )
-def test_lgt_full_with_regression(synthetic_data, estimator, regressor_signs):
+def test_dlt_full_with_regression(synthetic_data, estimator, regressor_signs):
     train_df, test_df, coef = synthetic_data
 
-    if estimator == 'stan-mcmc':
-        lgt = LGT(
-            response_col='response',
-            date_col='week',
-            regressor_col=train_df.columns.tolist()[2:],
-            regressor_sign=regressor_signs,
-            prediction_percentiles=[5, 95],
-            seasonality=52,
-            num_warmup=50,
-            num_sample=50,
-            verbose=False,
-            estimator=estimator
-        )
-    elif estimator == 'pyro-svi':
-        lgt = LGT(
-            response_col='response',
-            date_col='week',
-            regressor_col=train_df.columns.tolist()[2:],
-            regressor_sign=regressor_signs,
-            prediction_percentiles=[5, 95],
-            seasonality=52,
-            num_steps=10,
-            verbose=False,
-            estimator=estimator
-        )
-    else:
-        return None
+    dlt = DLT(
+        response_col='response',
+        date_col='week',
+        regressor_col=train_df.columns.tolist()[2:],
+        regressor_sign=regressor_signs,
+        prediction_percentiles=[5, 95],
+        seasonality=52,
+        num_warmup=50,
+        verbose=False,
+        estimator=estimator
+    )
 
-    lgt.fit(train_df)
-    predict_df = lgt.predict(test_df)
+    dlt.fit(train_df)
+    init_call = dlt._model.get_init_values()
+    assert isinstance(init_call, DLTInitializer)
+    init_values = init_call()
+    assert init_values['init_sea'].shape == (51, )
 
-    regression_out = lgt.get_regression_coefs()
+    if regressor_signs.count('+') > 0:
+        assert init_values['pr_beta'].shape == (regressor_signs.count('+'), )
+    if regressor_signs.count('-') > 0:
+        assert init_values['nr_beta'].shape == (regressor_signs.count('-'), )
+    if regressor_signs.count('=') > 0:
+        assert init_values['rr_beta'].shape == (regressor_signs.count('='), )
+
+    predict_df = dlt.predict(test_df)
+
+    regression_out = dlt.get_regression_coefs()
     num_regressors = regression_out.shape[0]
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
@@ -207,52 +200,42 @@ def test_lgt_full_with_regression(synthetic_data, estimator, regressor_signs):
     assert regression_out.shape == expected_regression_shape
     assert num_regressors == len(train_df.columns.tolist()[2:])
 
+    assert np.sum(regression_out['coefficient'].values >= 0) <= \
+           regressor_signs.count('+') + regressor_signs.count('=')
+    assert np.sum(regression_out['coefficient'].values <= 0) <= \
+           regressor_signs.count('-') + regressor_signs.count('=')
 
-@pytest.mark.parametrize("estimator", ['stan-mcmc', 'pyro-svi'])
+
+@pytest.mark.parametrize("estimator", ['stan-mcmc'])
 @pytest.mark.parametrize(
     "regressor_signs",
     [
         ["+", "+", "+", "+", "+", "+"],
         ["-", "-", "-", "-", "-", "-"],
         ["=", "=", "=", "=", "=", "="],
-        ["+", "=", "+", "=", "-", "-"],
+        ["+", "=", "+", "=", "-", "-"]
     ],
     ids=['positive_only', 'negative_only', 'regular_only', 'mixed_signs']
 )
 @pytest.mark.parametrize("point_method", ['mean', 'median'])
-def test_lgt_aggregated_with_regression(synthetic_data, estimator, regressor_signs, point_method):
+def test_dlt_aggregated_with_regression(synthetic_data, estimator, regressor_signs, point_method):
     train_df, test_df, coef = synthetic_data
 
-    if estimator == 'stan-mcmc':
-        lgt = LGT(
-            response_col='response',
-            date_col='week',
-            regressor_col=train_df.columns.tolist()[2:],
-            regressor_sign=regressor_signs,
-            seasonality=52,
-            num_warmup=50,
-            num_sample=50,
-            verbose=False,
-            estimator=estimator
-        )
-    elif estimator == 'pyro-svi':
-        lgt = LGT(
-            response_col='response',
-            date_col='week',
-            regressor_col=train_df.columns.tolist()[2:],
-            regressor_sign=regressor_signs,
-            seasonality=52,
-            num_steps=10,
-            verbose=False,
-            estimator=estimator
-        )
-    else:
-        return None
+    dlt = DLT(
+        response_col='response',
+        date_col='week',
+        regressor_col=train_df.columns.tolist()[2:],
+        regressor_sign=regressor_signs,
+        seasonality=52,
+        num_warmup=50,
+        verbose=False,
+        estimator=estimator
+    )
 
-    lgt.fit(train_df, point_method=point_method)
-    predict_df = lgt.predict(test_df)
+    dlt.fit(train_df, point_method=point_method)
+    predict_df = dlt.predict(test_df)
 
-    regression_out = lgt.get_regression_coefs()
+    regression_out = dlt.get_regression_coefs()
     num_regressors = regression_out.shape[0]
 
     expected_columns = ['week', 'prediction']
@@ -264,49 +247,76 @@ def test_lgt_aggregated_with_regression(synthetic_data, estimator, regressor_sig
     assert regression_out.shape == expected_regression_shape
     assert num_regressors == len(train_df.columns.tolist()[2:])
 
-    predict_df = lgt.predict(test_df, decompose=True)
+    predict_df = dlt.predict(test_df, decompose=True)
     assert any(predict_df['regression'].values)
 
 
+@pytest.mark.parametrize("global_trend_option", ["linear", "loglinear", "logistic", "flat"])
+def test_dlt_map_global_trend(synthetic_data, global_trend_option):
+    train_df, test_df, coef = synthetic_data
+
+    dlt = DLT(
+        response_col='response',
+        date_col='week',
+        seasonality=52,
+        global_trend_option=global_trend_option,
+        estimator='stan-map'
+    )
+
+    dlt.fit(train_df)
+    predict_df = dlt.predict(test_df)
+
+    expected_columns = ['week', 'prediction']
+    expected_shape = (51, len(expected_columns))
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+
+
 @pytest.mark.parametrize(
-    "regressor_signs", [['=', '=', '+']],
-    ids=['positive_mixed']
+    "regressor_signs",
+    [
+        ['=', '=', '+'],
+        ['=', '=', '-'],
+        ['+', '-', '+'],
+        ['+', '-', '=']
+    ],
+    ids=['positive_mixed', 'negative_mixed', 'positive_negative', 'mixed']
 )
-def test_lgt_mixed_signs_and_order(iclaims_training_data, regressor_signs):
+def test_dlt_mixed_signs_and_order(iclaims_training_data, regressor_signs):
     df = iclaims_training_data
     df['claims'] = np.log(df['claims'])
     raw_regressor_col = ['trend.unemploy', 'trend.filling', 'trend.job']
-    new_regressor_col = [raw_regressor_col[idx] for idx in [2, 1, 0]]
-    new_regressor_signs = [regressor_signs[idx] for idx in [2, 1, 0]]
-    # mixing ordering of cols in df of prediction
+    new_regressor_col = [raw_regressor_col[idx] for idx in [1, 2, 0]]
+    new_regressor_signs = [regressor_signs[idx] for idx in [1, 2, 0]]
+    # mixiing ordering of cols in df of prediction
     new_df = df[['claims', 'week'] + new_regressor_col]
 
-    lgt = LGT(
+    dlt = DLT(
         response_col='claims',
         date_col='week',
         regressor_col=raw_regressor_col,
         regressor_sign=regressor_signs,
-        estimator='stan-map',
         seasonality=52,
         seed=8888,
+        estimator='stan-map'
     )
-    lgt.fit(df)
-    predicted_df_v1 = lgt.predict(df)
-    predicted_df_v2 = lgt.predict(new_df)
+    dlt.fit(df)
+    predicted_df_v1 = dlt.predict(df)
+    predicted_df_v2 = dlt.predict(new_df)
 
     # mixing ordering of signs
-    lgt_new = LGT(
+    dlt_new = DLT(
         response_col='claims',
         date_col='week',
         regressor_col=new_regressor_col,
         regressor_sign=new_regressor_signs,
-        estimator='stan-map',
         seasonality=52,
         seed=8888,
+        estimator='stan-map'
     )
-    lgt_new.fit(df)
-    predicted_df_v3 = lgt_new.predict(df)
-    predicted_df_v4 = lgt_new.predict(new_df)
+    dlt_new.fit(df)
+    predicted_df_v3 = dlt_new.predict(df)
+    predicted_df_v4 = dlt_new.predict(new_df)
 
     pred_v1 = predicted_df_v1['prediction'].values
     pred_v2 = predicted_df_v2['prediction'].values
@@ -320,10 +330,10 @@ def test_lgt_mixed_signs_and_order(iclaims_training_data, regressor_signs):
 
 
 @pytest.mark.parametrize("prediction_percentiles", [None, [5, 10, 95]])
-def test_lgt_prediction_percentiles(iclaims_training_data, prediction_percentiles):
+def test_dlt_prediction_percentiles(iclaims_training_data, prediction_percentiles):
     df = iclaims_training_data
 
-    lgt = LGT(
+    dlt = DLT(
         response_col='claims',
         date_col='week',
         seasonality=52,
@@ -339,13 +349,13 @@ def test_lgt_prediction_percentiles(iclaims_training_data, prediction_percentile
     else:
         p_labels = ['_5', '_10', '', '_95']
 
-    lgt.fit(df)
-    predicted_df = lgt.predict(df)
+    dlt.fit(df)
+    predicted_df = dlt.predict(df)
     expected_columns = ['week'] + ["prediction" + p for p in p_labels]
     assert predicted_df.columns.tolist() == expected_columns
     assert predicted_df.shape[0] == df.shape[0]
 
-    predicted_df = lgt.predict(df, decompose=True)
+    predicted_df = dlt.predict(df, decompose=True)
     predicted_components = [
         'prediction',
         PredictionKeys.TREND.value,
@@ -366,15 +376,19 @@ def test_lgt_prediction_percentiles(iclaims_training_data, prediction_percentile
     [
         ["+", "+", "+", "+", "+", "+"],
         ["=", "=", "=", "=", "=", "="],
-        ["+", "=", "+", "=", "+", "+"]
+        ["-", "-", "-", "-", "-", "-"],
+        ["+", "=", "+", "=", "+", "+"],
+        ["-", "=", "-", "=", "-", "="],
+        ["+", "=", "+", "=", "-", "-"],
     ],
-    ids=['positive_only', 'regular_only', 'mixed_signs']
+    ids=['positive_only', 'regular_only', 'negative_only',
+         'positive_mixed', 'negative_mixed', 'mixed_signs']
 )
 @pytest.mark.parametrize("seasonality", [1, 52])
-def test_lgt_full_reproducibility(synthetic_data, estimator, regressor_signs, seasonality):
+def test_dlt_full_reproducibility(synthetic_data, estimator, regressor_signs, seasonality):
     train_df, test_df, coef = synthetic_data
 
-    lgt_first = LGT(
+    dlt_first = DLT(
         response_col='response',
         date_col='week',
         regressor_col=train_df.columns.tolist()[2:],
@@ -382,21 +396,20 @@ def test_lgt_full_reproducibility(synthetic_data, estimator, regressor_signs, se
         prediction_percentiles=[5, 95],
         seasonality=seasonality,
         num_warmup=50,
-        num_sample=50,
         verbose=False,
         estimator=estimator
     )
 
     # first fit and predict
-    lgt_first.fit(train_df)
-    posteriors_first = copy(lgt_first._posterior_samples)
-    predict_df_first = lgt_first.predict(test_df)
-    regression_out_first = lgt_first.get_regression_coefs()
+    dlt_first.fit(train_df)
+    posteriors_first = copy(dlt_first._posterior_samples)
+    predict_df_first = dlt_first.predict(test_df)
+    regression_out_first = dlt_first.get_regression_coefs()
 
     # second fit and predict
     # note a new instance must be created to reset the seed
     # note both fit and predict contain random generation processes
-    lgt_second = LGT(
+    dlt_second = DLT(
         response_col='response',
         date_col='week',
         regressor_col=train_df.columns.tolist()[2:],
@@ -404,15 +417,14 @@ def test_lgt_full_reproducibility(synthetic_data, estimator, regressor_signs, se
         prediction_percentiles=[5, 95],
         seasonality=seasonality,
         num_warmup=50,
-        num_sample=50,
         verbose=False,
         estimator=estimator
     )
 
-    lgt_second.fit(train_df)
-    posteriors_second = copy(lgt_second._posterior_samples)
-    predict_df_second = lgt_second.predict(test_df)
-    regression_out_second = lgt_second.get_regression_coefs()
+    dlt_second.fit(train_df)
+    posteriors_second = copy(dlt_second._posterior_samples)
+    predict_df_second = dlt_second.predict(test_df)
+    regression_out_second = dlt_second.get_regression_coefs()
 
     # assert same posterior keys
     assert set(posteriors_first.keys()) == set(posteriors_second.keys())
@@ -431,10 +443,10 @@ def test_lgt_full_reproducibility(synthetic_data, estimator, regressor_signs, se
 
 
 @pytest.mark.parametrize("seasonality", [1, 52])
-def test_lgt_map_reproducibility(synthetic_data, seasonality):
+def test_dlt_map_reproducibility(synthetic_data, seasonality):
     train_df, test_df, coef = synthetic_data
 
-    lgt1 = LGT(
+    dlt1 = DLT(
         response_col='response',
         date_col='week',
         prediction_percentiles=[5, 95],
@@ -443,14 +455,14 @@ def test_lgt_map_reproducibility(synthetic_data, seasonality):
     )
 
     # first fit and predict
-    lgt1.fit(train_df)
-    posteriors1 = copy(lgt1._point_posteriors['map'])
-    prediction1 = lgt1.predict(test_df)
+    dlt1.fit(train_df)
+    posteriors1 = copy(dlt1._point_posteriors['map'])
+    prediction1 = dlt1.predict(test_df)
 
     # second fit and predict
     # note a new instance must be created to reset the seed
     # note both fit and predict contain random generation processes
-    lgt2 = LGT(
+    dlt2 = DLT(
         response_col='response',
         date_col='week',
         prediction_percentiles=[5, 95],
@@ -458,9 +470,9 @@ def test_lgt_map_reproducibility(synthetic_data, seasonality):
         estimator='stan-map'
     )
 
-    lgt2.fit(train_df)
-    posteriors2 = copy(lgt2._point_posteriors['map'])
-    prediction2 = lgt2.predict(test_df)
+    dlt2.fit(train_df)
+    posteriors2 = copy(dlt2._point_posteriors['map'])
+    prediction2 = dlt2.predict(test_df)
 
     # assert same posterior keys
     assert set(posteriors1.keys()) == set(posteriors2.keys())
@@ -473,28 +485,60 @@ def test_lgt_map_reproducibility(synthetic_data, seasonality):
     assert np.allclose(prediction1['prediction'].values, prediction2['prediction'].values)
 
 
+@pytest.mark.parametrize("regression_penalty", ['fixed_ridge', 'lasso', 'auto_ridge'])
+def test_dlt_regression_penalty(synthetic_data, regression_penalty):
+    train_df, test_df, coef = synthetic_data
+
+    dlt = DLT(
+        response_col='response',
+        date_col='week',
+        regressor_col=train_df.columns.tolist()[2:],
+        regression_penalty=regression_penalty,
+        seasonality=52,
+        num_warmup=50,
+        verbose=False,
+        estimator='stan-map'
+    )
+
+    dlt.fit(train_df)
+    predict_df = dlt.predict(test_df)
+
+    regression_out = dlt.get_regression_coefs()
+    num_regressors = regression_out.shape[0]
+
+    expected_columns = ['week', 'prediction']
+    expected_shape = (51, len(expected_columns))
+    expected_regression_shape = (6, 3)
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+    assert regression_out.shape == expected_regression_shape
+    assert num_regressors == len(train_df.columns.tolist()[2:])
+
+
 @pytest.mark.parametrize("level_sm_input", [0.0001, 0.5, 1.0])
 @pytest.mark.parametrize("seasonality_sm_input", [0.0, 0.5, 1.0])
 @pytest.mark.parametrize("slope_sm_input", [0.0, 0.5, 1.0])
-def test_lgt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input, slope_sm_input):
+def test_dlt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input, slope_sm_input):
     train_df, test_df, coef = synthetic_data
 
-    lgt = LGT(
+    dlt = DLT(
         response_col='response',
         date_col='week',
         regressor_col=train_df.columns.tolist()[2:],
         level_sm_input=level_sm_input,
         seasonality_sm_input=seasonality_sm_input,
         slope_sm_input=slope_sm_input,
-        estimator='stan-map',
         seasonality=52,
+        num_warmup=50,
         verbose=False,
+        estimator='stan-map'
     )
 
-    lgt.fit(train_df)
-    predict_df = lgt.predict(test_df, n_bootstrap_draw=100)
+    dlt.fit(train_df)
+    predict_df = dlt.predict(test_df)
 
-    regression_out = lgt.get_regression_coefs()
+    regression_out = dlt.get_regression_coefs()
     num_regressors = regression_out.shape[0]
 
     expected_columns = ['week', 'prediction']
@@ -513,11 +557,11 @@ def test_lgt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input
 #                                                 'seasonality_sm_input': [0.3, 0.5, 0.8],
 #                                             },
 #                                             {
-#                                                 'level_sm_input': [0.3, 0.5, 0.8],
+#                                                 'damped_factor': [0.3, 0.5, 0.8],
 #                                                 'slope_sm_input': [0.3, 0.5, 0.8],
 #                                             }
 #                                        ])
-# def test_lgt_grid_tuning(synthetic_data, param_grid):
+# def test_dlt_grid_tuning(synthetic_data, param_grid):
 #     train_df, test_df, coef = synthetic_data
 #     args = {
 #         'response_col': 'response',
@@ -525,10 +569,10 @@ def test_lgt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input
 #         'seasonality': 52
 #     }
 
-#     lgt = LGTMAP(**args)
+#     dlt = DLTMAP(**args)
 
 #     best_params, tuned_df = grid_search_orbit(param_grid,
-#                                         model=lgt,
+#                                         model=dlt,
 #                                         df=train_df,
 #                                         min_train_len=80, incremental_len=20, forecast_len=20,
 #                                         metrics=None, criteria=None, verbose=True)
@@ -540,62 +584,52 @@ def test_lgt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input
 #     assert tuned_df.shape == (9, 3)
 
 
-def test_lgt_map_single_regressor(iclaims_training_data):
+def test_dlt_map_single_regressor(iclaims_training_data):
     df = iclaims_training_data
     df['claims'] = np.log(df['claims'])
     regressor_col = ['trend.unemploy']
 
-    lgt = LGT(
+    dlt = DLT(
         response_col='claims',
         date_col='week',
         regressor_col=regressor_col,
-        estimator='stan-map',
         seasonality=52,
         seed=8888,
+        estimator='stan-map'
     )
-    lgt.fit(df)
-    predicted_df = lgt.predict(df)
+    dlt.fit(df)
+    predicted_df = dlt.predict(df)
 
     expected_num_parameters = 13
     expected_columns = ['week', 'prediction']
 
     assert predicted_df.shape[0] == df.shape[0]
     assert predicted_df.columns.tolist() == expected_columns
-    assert len(lgt._posterior_samples) == expected_num_parameters
+    assert len(dlt._posterior_samples) == expected_num_parameters
 
-@pytest.mark.parametrize("estimator", ['stan-mcmc', 'pyro-svi'])
+
+@pytest.mark.parametrize("estimator", ['stan-mcmc'])
 @pytest.mark.parametrize("keep_samples", [True, False])
 @pytest.mark.parametrize("point_method", ['mean', 'median'])
-def test_lgt_is_fitted(iclaims_training_data, estimator, keep_samples, point_method):
+def test_dlt_is_fitted(iclaims_training_data, estimator, keep_samples, point_method):
     df = iclaims_training_data
     df['claims'] = np.log(df['claims'])
     regressor_col = ['trend.unemploy']
 
-    if estimator == 'stan-mcmc':
-        lgt = LGT(
-            response_col='claims',
-            date_col='week',
-            regressor_col=regressor_col,
-            seasonality=52,
-            seed=8888,
-            num_warmup=50,
-            num_sample=50,
-            verbose=False,
-            estimator=estimator
-        )
-    elif estimator == 'pyro-svi':
-        lgt = LGT(
-            response_col='claims',
-            date_col='week',
-            regressor_col=regressor_col,
-            seasonality=52,
-            seed=8888,
-            num_steps=10,
-            verbose=False,
-            estimator=estimator
-        )
-    lgt.fit(df, keep_samples=keep_samples, point_method=point_method)
-    is_fitted = lgt.is_fitted()
+    dlt = DLT(
+        response_col='claims',
+        date_col='week',
+        regressor_col=regressor_col,
+        seasonality=52,
+        seed=8888,
+        num_warmup=50,
+        num_sample=50,
+        verbose=False,
+        estimator=estimator
+    )
+
+    dlt.fit(df, keep_samples=keep_samples, point_method=point_method)
+    is_fitted = dlt.is_fitted()
 
     # still True when keep_samples is False
     assert is_fitted

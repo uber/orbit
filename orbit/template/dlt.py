@@ -17,12 +17,11 @@ from ..exceptions import IllegalArgument, ModelException
 # from .model_template import ModelTemplate
 from .ets import ETSModel
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
-from ..estimators.pyro_estimator import PyroEstimatorVI
 
 
 class DataInputMapper(Enum):
     """
-    mapping from object input to sampler
+    mapping from object input to stan file
     """
     # ---------- Seasonality ---------- #
     _SEASONALITY = 'SEASONALITY'
@@ -30,6 +29,11 @@ class DataInputMapper(Enum):
     # ---------- Common Local Trend ---------- #
     _LEVEL_SM_INPUT = 'LEV_SM_INPUT'
     _SLOPE_SM_INPUT = 'SLP_SM_INPUT'
+    # ---------- Global Trend ---------- #
+    _GLOBAL_TREND_OPTION = 'GLOBAL_TREND_OPTION'
+    _TIME_DELTA = 'TIME_DELTA'
+    # ---------- Damped Trend ---------- #
+    DAMPED_FACTOR = 'DAMPED_FACTOR'
     # ----------  Noise Distribution  ---------- #
     MIN_NU = 'MIN_NU'
     MAX_NU = 'MAX_NU'
@@ -52,6 +56,13 @@ class DataInputMapper(Enum):
     LASSO_SCALE = 'LASSO_SCALE'
 
 
+class GlobalTrendOption(Enum):
+    linear = 0
+    loglinear = 1
+    logistic = 2
+    flat = 3
+
+
 class BaseSamplingParameters(Enum):
     """
     base parameters in posteriors sampling
@@ -64,11 +75,14 @@ class BaseSamplingParameters(Enum):
     # ---------- Noise Trend ---------- #
     RESIDUAL_SIGMA = 'obs_sigma'
     RESIDUAL_DEGREE_OF_FREEDOM = 'nu'
-    # ---------- LGT Model Specific ---------- #
-    LOCAL_GLOBAL_TREND_SUMS = 'lgt_sum'
-    GLOBAL_TREND_POWER = 'gt_pow'
-    LOCAL_TREND_COEF = 'lt_coef'
-    GLOBAL_TREND_COEF = 'gt_coef'
+    # ---------- DLT Model Specific ---------- #
+    LOCAL_TREND = 'lt_sum'
+
+
+class GlobalTrendSamplingParameters(Enum):
+    GLOBAL_TREND = 'gt_sum'
+    GLOBAL_TREND_SLOPE = 'gb'
+    GLOBAL_TREND_LEVEL = 'gl'
 
 
 class SeasonalitySamplingParameters(Enum):
@@ -103,7 +117,7 @@ class RegressionPenalty(Enum):
 
 
 # a callable object for generating initial values in sampling/optimization
-class LGTInitializer(object):
+class DLTInitializer(object):
     def __init__(self, s, n_pr, n_nr, n_rr):
         self.s = s
         self.n_pr = n_pr
@@ -124,10 +138,11 @@ class LGTInitializer(object):
         if self.n_rr > 0:
             x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.n_rr), -2.0, 2.0)
             init_values[LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS.value] = x
+
         return init_values
 
 
-class LGTModel(ETSModel):
+class DLTModel(ETSModel):
     """
     Parameters
     ----------
@@ -155,6 +170,14 @@ class LGTModel(ETSModel):
     slope_sm_input : float
         float value between [0, 1]. A larger value puts more weight on the current slope.
         If None, the model will estimate this value.
+    period : int
+        Used to set `time_delta` as `1 / max(period, seasonality)`. If None and no seasonality,
+        then `time_delta` == 1
+    damped_factor : float
+        Hyperparameter float value between [0, 1]. A smaller value further dampens the previous
+        global trend value. Default, 0.8
+    global_trend_option : { 'flat', 'linear', 'loglinear', 'logistic' }
+        Transformation function for the shape of the forecasted global trend.
 
     Other Parameters
     ----------------
@@ -163,22 +186,24 @@ class LGTModel(ETSModel):
     # data labels for sampler
     _data_input_mapper = DataInputMapper
     # used to match name of `*.stan` or `*.pyro` file to look for the model
-    _model_name = 'lgt'
-    _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC, PyroEstimatorVI]
+    _model_name = 'dlt'
+    _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC]
 
     def __init__(self, regressor_col=None, regressor_sign=None,
                  regressor_beta_prior=None, regressor_sigma_prior=None,
                  regression_penalty='fixed_ridge', lasso_scale=0.5, auto_ridge_scale=0.5,
-                 slope_sm_input=None, **kwargs):
-        # introduce extra parameters
+                 slope_sm_input=None,
+                 period=1, damped_factor=0.8, global_trend_option='linear', **kwargs):
+
+        self.damped_factor = damped_factor
+        self.global_trend_option = global_trend_option
+        self.period = period
+        # extra parameters for residuals
         self.min_nu = 5.
         self.max_nu = 40.
 
         self.slope_sm_input = slope_sm_input
-        if regressor_col:
-            warnings.warn("Regression for LGT model will be deprecated in next version, please use DLT instead",
-                          PendingDeprecationWarning
-                          )
+
         self.regressor_col = regressor_col
         self.regressor_sign = regressor_sign
         self.regressor_beta_prior = regressor_beta_prior
@@ -187,10 +212,16 @@ class LGTModel(ETSModel):
         self.lasso_scale = lasso_scale
         self.auto_ridge_scale = auto_ridge_scale
 
-        # set private var to arg value
-        # if None set default in _set_default_base_args()
+        # init static data attributes
+        # the following are set by `_set_static_attributes()`
+        # global trend related attributes
         self._slope_sm_input = self.slope_sm_input
 
+        self._global_trend_option = None
+        self._time_delta = 1
+
+        # _regressor_sign stores final values after internal process of regressor_sign
+        # similar to other values start with prefix _
         self._regressor_sign = self.regressor_sign
         self._regressor_beta_prior = self.regressor_beta_prior
         self._regressor_sigma_prior = self.regressor_sigma_prior
@@ -216,15 +247,15 @@ class LGTModel(ETSModel):
 
         # init dynamic data attributes
         # the following are set by `_set_dynamic_attributes()` and generally set during fit()
-        # from input df
-        # response data
         self.cauchy_sd = None
 
         # regression data
+        self.regular_regressor_matrix = None
         self.positive_regressor_matrix = None
         self.negative_regressor_matrix = None
-        self.regular_regressor_matrix = None
 
+        # order matters and super constructor called after attributes are set
+        # since we override _set_static_attributes()
         super().__init__(**kwargs)
 
     def set_init_values(self):
@@ -233,17 +264,32 @@ class LGTModel(ETSModel):
         # partialfunc does not work when passed to PyStan because PyStan uses
         # inspect.getargspec(func) which seems to raise an exception with keyword-only args
         # caused by using partialfunc
-        # lambda as an alternative workaround
+        # lambda does not work in serialization in pickle
+        # callable object as an alternative workaround
         if self._seasonality > 1 or self.num_of_regressors > 0:
-            init_values_callable = LGTInitializer(
+            init_values_callable = DLTInitializer(
                 self._seasonality, self.num_of_positive_regressors, self.num_of_negative_regressors,
-                self.num_of_regular_regressors
+                self.num_of_regular_regressors,
             )
             self._init_values = init_values_callable
+
+    def _validate_global_options(self):
+        if self.global_trend_option not in ['flat', 'linear', 'loglinear', 'logistic']:
+            raise IllegalArgument("{} is not one of 'flat', 'linear', 'loglinear', or 'logistic'".
+                                  format(self.global_trend_option))
+
+    def _validate_regression_penalties(self):
+        if self.regression_penalty not in ['fixed_ridge', 'lasso', 'auto_ridge']:
+            raise IllegalArgument("{} is not one of 'fixed_ridge', 'lasso', 'auto_ridge'".
+                                  format(self.regression_penalty))
 
     def _set_additional_trend_attributes(self):
         """Set additional trend attributes
         """
+        self._validate_global_options()
+        self._global_trend_option = getattr(GlobalTrendOption, self.global_trend_option).value
+        self._time_delta = 1 / max(self.period, self._seasonality, 1)
+
         if self.slope_sm_input is None:
             self._slope_sm_input = -1
 
@@ -287,8 +333,8 @@ class LGTModel(ETSModel):
     def _set_regression_penalty(self):
         """set and validate regression penalty related attributes.
         """
-        regression_penalty = self.regression_penalty
-        self._regression_penalty = getattr(RegressionPenalty, regression_penalty).value
+        self._validate_regression_penalties()
+        self._regression_penalty = getattr(RegressionPenalty, self.regression_penalty).value
 
     def _set_static_regression_attributes(self):
         """set and validate regression related attributes.
@@ -344,10 +390,13 @@ class LGTModel(ETSModel):
         if self._seasonality > 1:
             self._model_param_names += [param.value for param in SeasonalitySamplingParameters]
 
-        # append positive regressors if any
+        # append regressors if any
         if self.num_of_regressors > 0:
             self._model_param_names += [
                 RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value]
+
+        if self._global_trend_option != GlobalTrendOption.flat.value:
+            self._model_param_names += [param.value for param in GlobalTrendSamplingParameters]
 
     def _validate_training_df_with_regression(self, df):
         df_columns = df.columns
@@ -355,7 +404,7 @@ class LGTModel(ETSModel):
         if self.regressor_col is not None and \
                 not set(self.regressor_col).issubset(df_columns):
             raise ModelException(
-                "DataFrame does not contain specified regressor column(s)."
+                "DataFrame does not contain specified regressor colummn(s)."
             )
 
     def _set_regressor_matrix(self, df, num_of_observations):
@@ -383,11 +432,9 @@ class LGTModel(ETSModel):
                 items=self.regular_regressor_col, ).values
 
     def set_dynamic_attributes(self, df, training_meta):
-        """Set required input based on input DataFrame, rather than at object instantiation.  It also set
-        additional required attributes for LGT"""
+        """Overriding: func: `~orbit.models.BaseETS._set_dynamic_attributes"""
         # scalar value is suggested by the author of Rlgt
-        self.cauchy_sd = max(training_meta['response']) / 30.0
-
+        self.cauchy_sd = max(np.abs(training_meta['response'])) / 30.0
         # extra validation and settings for regression
         self._validate_training_df_with_regression(df)
         self._set_regressor_matrix(df, training_meta['num_of_observations'])  # depends on num_of_observations
@@ -431,15 +478,26 @@ class LGTModel(ETSModel):
             BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
         local_trend_levels = model.get(BaseSamplingParameters.LOCAL_TREND_LEVELS.value)
         local_trend_slopes = model.get(BaseSamplingParameters.LOCAL_TREND_SLOPES.value)
+        local_trend = model.get(BaseSamplingParameters.LOCAL_TREND.value)
         residual_degree_of_freedom = model.get(
             BaseSamplingParameters.RESIDUAL_DEGREE_OF_FREEDOM.value)
         residual_sigma = model.get(BaseSamplingParameters.RESIDUAL_SIGMA.value)
 
-        local_trend_coef = model.get(BaseSamplingParameters.LOCAL_TREND_COEF.value)
-        global_trend_power = model.get(BaseSamplingParameters.GLOBAL_TREND_POWER.value)
-        global_trend_coef = model.get(BaseSamplingParameters.GLOBAL_TREND_COEF.value)
-        local_global_trend_sums = model.get(
-            BaseSamplingParameters.LOCAL_GLOBAL_TREND_SUMS.value)
+        # set an additional attribute for damped factor when it is fixed
+        # get it through user input field
+        damped_factor = torch.empty(num_sample, dtype=torch.double)
+        damped_factor.fill_(self.damped_factor)
+
+        if self._global_trend_option != GlobalTrendOption.flat.value:
+            global_trend_level = model.get(GlobalTrendSamplingParameters.GLOBAL_TREND_LEVEL.value).view(
+                num_sample, )
+            global_trend_slope = model.get(GlobalTrendSamplingParameters.GLOBAL_TREND_SLOPE.value).view(
+                num_sample, )
+            global_trend = model.get(GlobalTrendSamplingParameters.GLOBAL_TREND.value)
+        else:
+            global_trend = torch.zeros(local_trend.shape, dtype=torch.double)
+            global_trend_level = torch.zeros(local_trend.shape, dtype=torch.double)
+            global_trend_slope = torch.zeros(local_trend.shape, dtype=torch.double)
 
         # regression components
         regressor_beta = model.get(RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
@@ -447,7 +505,6 @@ class LGTModel(ETSModel):
         ################################################################
         # Regression Component
         ################################################################
-
         # calculate regression component
         if self.regressor_col is not None and len(self.regressor_col) > 0:
             regressor_beta = regressor_beta.t()
@@ -471,8 +528,8 @@ class LGTModel(ETSModel):
                 seasonal_component = seasonality_levels[:, :full_len]
             else:
                 seasonality_forecast_length = full_len - seasonality_levels.shape[1]
-                seasonality_forecast_matrix \
-                    = torch.zeros((num_sample, seasonality_forecast_length), dtype=torch.double)
+                seasonality_forecast_matrix = \
+                    torch.zeros((num_sample, seasonality_forecast_length), dtype=torch.double)
                 seasonal_component = torch.cat(
                     (seasonality_levels, seasonality_forecast_matrix), dim=1)
         else:
@@ -485,7 +542,8 @@ class LGTModel(ETSModel):
         # calculate level component.
         # However, if predicted end of period > training period, update with out-of-samples forecast
         if full_len <= trained_len:
-            trend_component = local_global_trend_sums[:, :full_len]
+            full_local_trend = local_trend[:, :full_len]
+            full_global_trend = global_trend[:, :full_len]
 
             # in-sample error are iids
             if include_error:
@@ -498,9 +556,14 @@ class LGTModel(ETSModel):
                 )
 
                 error_value = torch.from_numpy(error_value.reshape(num_sample, full_len)).double()
-                trend_component += error_value
+                full_local_trend += error_value
         else:
-            trend_component = local_global_trend_sums
+            trend_forecast_length = full_len - trained_len
+            trend_forecast_init = torch.zeros((num_sample, trend_forecast_length), dtype=torch.double)
+            full_local_trend = local_trend[:, :full_len]
+            # for convenience, we lump error on local trend since the formula would
+            # yield the same as yhat + noise - global_trend - seasonality - regression
+            # equivalent with local_trend + noise
             # in-sample error are iids
             if include_error:
                 error_value = nct.rvs(
@@ -508,30 +571,35 @@ class LGTModel(ETSModel):
                     nc=0,
                     loc=0,
                     scale=residual_sigma.unsqueeze(-1),
-                    size=(num_sample, local_global_trend_sums.shape[1])
+                    size=(num_sample, full_local_trend.shape[1])
                 )
 
                 error_value = torch.from_numpy(
-                    error_value.reshape(num_sample, local_global_trend_sums.shape[1])).double()
-                trend_component += error_value
+                    error_value.reshape(num_sample, full_local_trend.shape[1])).double()
+                full_local_trend += error_value
 
-            trend_forecast_matrix = torch.zeros((num_sample, n_forecast_steps), dtype=torch.double)
-            trend_component = torch.cat((trend_component, trend_forecast_matrix), dim=1)
-
+            full_local_trend = torch.cat((full_local_trend, trend_forecast_init), dim=1)
+            full_global_trend = torch.cat((global_trend[:, :full_len], trend_forecast_init), dim=1)
             last_local_trend_level = local_trend_levels[:, -1]
             last_local_trend_slope = local_trend_slopes[:, -1]
 
-            trend_component_zeros = torch.zeros_like(trend_component[:, 0])
-
             for idx in range(trained_len, full_len):
-                current_local_trend = local_trend_coef.flatten() * last_local_trend_slope
-                global_trend_power_term = torch.pow(
-                    torch.abs(last_local_trend_level),
-                    global_trend_power.flatten()
-                )
-                current_global_trend = global_trend_coef.flatten() * global_trend_power_term
-                trend_component[:, idx] \
-                    = last_local_trend_level + current_local_trend + current_global_trend
+                # based on model, split cases for trend update
+                curr_local_trend = \
+                    last_local_trend_level + damped_factor.flatten() * last_local_trend_slope
+                full_local_trend[:, idx] = curr_local_trend
+                # idx = time - 1
+                if self.global_trend_option == GlobalTrendOption.linear.name:
+                    full_global_trend[:, idx] = \
+                        global_trend_level + global_trend_slope * idx * self._time_delta
+                elif self.global_trend_option == GlobalTrendOption.loglinear.name:
+                    full_global_trend[:, idx] = \
+                        global_trend_level + torch.log(1 + global_trend_slope * idx * self._time_delta)
+                elif self.global_trend_option == GlobalTrendOption.logistic.name:
+                    full_global_trend[:, idx] = \
+                        global_trend_level / (1 + torch.exp(-1 * global_trend_slope * idx * self._time_delta))
+                elif self._global_trend_option == GlobalTrendOption.flat.name:
+                    full_global_trend[:, idx] = 0
 
                 if include_error:
                     error_value = nct.rvs(
@@ -542,29 +610,21 @@ class LGTModel(ETSModel):
                         size=num_sample
                     )
                     error_value = torch.from_numpy(error_value).double()
-                    trend_component[:, idx] += error_value
+                    full_local_trend[:, idx] += error_value
 
-                # a 2d tensor of size (num_sample, 2) in which one of the elements
-                # is always zero. We can use this to torch.max() across the sample dimensions
-                trend_component_augmented = torch.cat(
-                    (trend_component[:, idx][:, None], trend_component_zeros[:, None]), dim=1)
-
-                max_value, _ = torch.max(trend_component_augmented, dim=1)
-
-                trend_component[:, idx] = max_value
-
+                # now full_local_trend contains the error term and hence we need to use
+                # curr_local_trend as a proxy of previous level index
                 new_local_trend_level = \
-                    level_smoothing_factor * trend_component[:, idx] \
-                    + (1 - level_smoothing_factor) * last_local_trend_level
-
+                    level_smoothing_factor * full_local_trend[:, idx] \
+                    + (1 - level_smoothing_factor) * curr_local_trend
                 last_local_trend_slope = \
                     slope_smoothing_factor * (new_local_trend_level - last_local_trend_level) \
-                    + (1 - slope_smoothing_factor) * last_local_trend_slope
+                    + (1 - slope_smoothing_factor) * damped_factor.flatten() * last_local_trend_slope
 
                 if self._seasonality > 1 and idx + self._seasonality < full_len:
                     seasonal_component[:, idx + self._seasonality] = \
                         seasonality_smoothing_factor.flatten() \
-                        * (trend_component[:, idx] + seasonal_component[:, idx] -
+                        * (full_local_trend[:, idx] + seasonal_component[:, idx] -
                            new_local_trend_level) \
                         + (1 - seasonality_smoothing_factor.flatten()) * seasonal_component[:, idx]
 
@@ -575,7 +635,7 @@ class LGTModel(ETSModel):
         ################################################################
 
         # trim component with right start index
-        trend_component = trend_component[:, start:]
+        trend_component = full_global_trend[:, start:] + full_local_trend[:, start:]
         seasonal_component = seasonal_component[:, start:]
 
         # sum components
@@ -620,9 +680,10 @@ class LGTModel(ETSModel):
         regressor_cols = pr_cols + nr_cols + rr_cols
 
         # same note
-        regressor_signs = ["Positive"] * self.num_of_positive_regressors + \
-                          ["Negative"] * self.num_of_negative_regressors + \
-                          ["Regular"] * self.num_of_regular_regressors
+        regressor_signs \
+            = ["Positive"] * self.num_of_positive_regressors \
+              + ["Negative"] * self.num_of_negative_regressors \
+              + ["Regular"] * self.num_of_regular_regressors
 
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR_SIGN] = regressor_signs
