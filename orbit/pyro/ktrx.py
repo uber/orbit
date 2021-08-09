@@ -59,9 +59,9 @@ class Model:
         response = self.response
         which_valid = self.which_valid_res
 
-        n_obs = self.n_obs
+        n_obs = self.num_of_obs
         # n_valid = self.n_valid_res
-        sdy = self.sdy
+        sdy = self.response_sd
         meany = self.mean_y
         dof = self.dof
         lev_knot_loc = self.lev_knot_loc
