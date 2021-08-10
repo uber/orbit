@@ -13,6 +13,9 @@ from ..utils.kernels import gauss_kernel, sandwich_kernel
 from ..utils.features import make_fourier_series_df
 from .model_template import ModelTemplate
 from ..estimators.pyro_estimator import PyroEstimatorVI
+from ..estimators.stan_estimator import StanEstimatorMAP
+from ..template.ktrlite import KTRLiteModel
+from ..forecaster import MAPForecaster
 
 
 class DataInputMapper(Enum):
@@ -32,7 +35,7 @@ class DataInputMapper(Enum):
     LEVEL_KNOT_SCALE = 'LEV_KNOT_SCALE'
     _KERNEL_LEVEL = 'K_LEV'
     # ----------  Regression  ---------- #
-    _NUM_KNOTS_COEFFICIENTS = 'N_KNOTS_COEF'
+    regression_segments = 'N_KNOTS_COEF'
     _KERNEL_COEFFICIENTS = 'K_COEF'
     _NUM_OF_REGULAR_REGRESSORS = 'N_RR'
     _NUM_OF_POSITIVE_REGRESSORS = 'N_PR'
@@ -48,9 +51,6 @@ class DataInputMapper(Enum):
     _COEF_PRIOR_LIST = 'COEF_PRIOR_LIST'
     _LEVEL_KNOTS = 'LEV_KNOT_LOC'
     _SEAS_TERM = 'SEAS_TERM'
-    # --------------- mvn
-    MVN = 'MVN'
-    GEOMETRIC_WALK = 'GEOMETRIC_WALK'
 
 
 class BaseSamplingParameters(Enum):
@@ -81,8 +81,8 @@ DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER = 0.01
 DEFAULT_UPPER_BOUND_SCALE_MULTIPLIER = 1.0
 
 
-class KTRXModel(ModelTemplate):
-    """Base KTRX model object with shared functionality for PyroVI method
+class KTRModel(ModelTemplate):
+    """Base KTR model object with shared functionality for PyroVI method
     Parameters
     ----------
     level_knot_scale : float
@@ -121,7 +121,7 @@ class KTRXModel(ModelTemplate):
             '_seasonality_fs_order' : fourier series order for seasonality
     coefficients_knot_length : int
         the distance between every two knots for coefficients
-    coefficients_knot_dates : array like
+    regression_knot_dates : array like
         a list of pre-specified knot dates for coefficients
     date_freq : str
         date frequency; if not supplied, pd.infer_freq will be used to imply the date frequency.
@@ -131,8 +131,6 @@ class KTRXModel(ModelTemplate):
     flat_multiplier : bool
         Default set as True. If False, we will adjust knot scale with a multiplier based on regressor volume
         around each knot; When True, set all multiplier as 1
-    geometric_walk : bool
-        Default set as False. If True we will sample positive regressor knot as geometric random walk
     kwargs
         To specify `estimator_type` or additional args for the specified `estimator_type`
     """
@@ -141,67 +139,93 @@ class KTRXModel(ModelTemplate):
     _model_name = 'ktrx'
     _supported_estimator_types = [PyroEstimatorVI]
 
+    # TODO:
+    # 1. do we want to have both mid-point and end-point segment still?
+    # 2. a clean way to specify segment
+    # 2a. span or simply number of knots?
+    # 2b. of course we allow user to specifically put knots wherever they want
+    # 2c. we can also use distance to back solve the knots but do we really want to do it here?
+    # 2d. do we need both or just one of them for (2a, 2c) ?
+    # 2e. allow a flat estimate if there is only one knot?
+    # 3. things we can get rid of:
+    # 3a. mvn ?
+    # 3b. geometric walk ?
+    # reg {segment num, knot dist, knot dates}
+    # lev {ask same }
+    # seasonality {ask same}
     def __init__(self,
+
                  level_knot_scale=0.1,
+                 level_segments=10,
+                 level_knot_distance=None,
+                 level_knot_dates=None,
+
+                 # seasonality
+                 seasonality=None,
+                 seasonality_segments=2,
+                 seasonality_fs_order=None,
+                 seasonal_initial_knot_scale=1.0,
+                 seasonal_knot_scale=0.1,
+
+                 # regression
                  regressor_col=None,
                  regressor_sign=None,
                  regressor_init_knot_loc=None,
                  regressor_init_knot_scale=None,
                  regressor_knot_scale=None,
-                 span_coefficients=0.3,
-                 rho_coefficients=0.15,
+                 regression_segments=5,
+                 regression_knot_distance=None,
+                 regression_knot_dates=None,
+                 # different for seasonality
+                 regression_rho=0.15,
+                 # shared
                  degree_of_freedom=30,
                  # time-based coefficient priors
                  coef_prior_list=None,
-                 # knot customization
-                 level_knot_dates=None,
-                 level_knots=None,
-                 seasonal_knots_input=None,
-                 coefficients_knot_length=None,
-                 coefficients_knot_dates=None,
+
+                 # shared
                  date_freq=None,
-                 mvn=0,
                  flat_multiplier=True,
-                 geometric_walk=False,
+                 # TODO: rename to residuals upper bound
                  min_residuals_sd=1.0,
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
 
-        # normal distribution of known knot
+        # level configurations
         self.level_knot_scale = level_knot_scale
-
+        self.level_segments = level_segments
+        self.level_knot_distance = level_knot_distance
         self.level_knot_dates = level_knot_dates
-        self._level_knot_dates = level_knot_dates
+        self._level_knot_dates = self.level_knot_dates
 
-        self.level_knots = level_knots
+        # self.level_knots = level_knots
         # self._level_knots = level_knots
-
         self._kernel_level = None
         self._num_knots_level = None
         self.knots_tp_level = None
 
-        self._seasonal_knots_input = seasonal_knots_input
+        # seasonality configurations
+        self.seasonality = seasonality
+        self._seasonality = None
+        self.seasonality_fs_order = seasonality_fs_order
+        self.seasonal_initial_knot_scale = seasonal_initial_knot_scale
+        self.seasonal_knot_scale = seasonal_knot_scale
+        self.seasonality_segments = seasonality_segments
         self._seas_term = 0
 
+        # regression configurations
         self.regressor_col = regressor_col
         self.regressor_sign = regressor_sign
         self.regressor_init_knot_loc = regressor_init_knot_loc
         self.regressor_init_knot_scale = regressor_init_knot_scale
         self.regressor_knot_scale = regressor_knot_scale
+        self.regression_knot_distance = regression_knot_distance
+        self.regression_segments = regression_segments
+        self._regression_knot_dates = regression_knot_dates
 
-        self.coefficients_knot_length = coefficients_knot_length
-        self.span_coefficients = span_coefficients
-        self.rho_coefficients = rho_coefficients
-        self.date_freq = date_freq
+        self.regression_rho = regression_rho
 
-        self.degree_of_freedom = degree_of_freedom
-
-        # multi var norm flag
-        self.mvn = mvn
-        # flat_multiplier flag
         self.flat_multiplier = flat_multiplier
-        self.geometric_walk = geometric_walk
-        self.min_residuals_sd = min_residuals_sd
 
         # set private var to arg value
         # if None set default in _set_default_args()
@@ -212,11 +236,9 @@ class KTRXModel(ModelTemplate):
 
         self.coef_prior_list = coef_prior_list
         self._coef_prior_list = []
-        self._coefficients_knot_dates = coefficients_knot_dates
-        self._knots_idx_coef = None
-
+        self._regression_knots_idx = None
         self._num_of_regressors = 0
-        self._num_knots_coefficients = 0
+        self.regression_segments = 0
 
         # positive regressors
         self._num_of_positive_regressors = 0
@@ -239,12 +261,16 @@ class KTRXModel(ModelTemplate):
         self._is_valid_response = None
         self._which_valid_response = None
         self._num_of_valid_response = 0
-        self._seasonality = None
 
         # regression data
         self._knots_tp_coefficients = None
         self._positive_regressor_matrix = None
         self._regular_regressor_matrix = None
+
+        # other configurations
+        self.date_freq = date_freq
+        self.degree_of_freedom = degree_of_freedom
+        self.min_residuals_sd = min_residuals_sd
 
         self._set_static_attributes()
         self._set_model_param_names()
@@ -256,16 +282,10 @@ class KTRXModel(ModelTemplate):
             self._model_param_names += [param.value for param in RegressionSamplingParameters]
 
     def _set_default_args(self):
-        """Set default attributes for None
-        """
+        """Set default attributes for None"""
         if self.coef_prior_list is not None:
             self._coef_prior_list = deepcopy(self.coef_prior_list)
-        if self.level_knots is None:
-            self._level_knots = list()
-        if self._seasonal_knots_input is not None:
-            self._seasonality = self._seasonal_knots_input['_seasonality']
-        else:
-            self._seasonality = list()
+
         ##############################
         # if no regressors, end here #
         ##############################
@@ -362,10 +382,10 @@ class KTRXModel(ModelTemplate):
             if not all(len_insert == len_insert_prior[0] for len_insert in len_insert_prior):
                 raise IllegalArgument('wrong dimension length in inserted prior dict')
 
-    @staticmethod
-    def _validate_level_knot_inputs(level_knot_dates, level_knots):
-        if len(level_knots) != len(level_knot_dates):
-            raise IllegalArgument('level_knots and level_knot_dates should have the same length')
+    # @staticmethod
+    # def _validate_level_knot_inputs(level_knot_dates, level_knots):
+    #     if len(level_knots) != len(level_knot_dates):
+    #         raise IllegalArgument('level_knots and level_knot_dates should have the same length')
 
     @staticmethod
     def _get_gap_between_dates(start_date, end_date, freq):
@@ -397,7 +417,7 @@ class KTRXModel(ModelTemplate):
         self._set_default_args()
         self._set_static_regression_attributes()
 
-        self._validate_level_knot_inputs(self.level_knot_dates, self.level_knots)
+        # self._validate_level_knot_inputs(self.level_knot_dates, self.level_knots)
 
         if self._coef_prior_list:
             self._validate_coef_prior(self._coef_prior_list)
@@ -457,24 +477,24 @@ class KTRXModel(ModelTemplate):
         # TODO: consider deprecate _cutoff for now since we assume _cutoff always the same as num of obs?
         self._cutoff = num_of_observations
         self._kernel_coefficients = np.zeros((num_of_observations, 0), dtype=np.double)
-        self._num_knots_coefficients = 0
+        self.regression_segments = 0
 
         # kernel of coefficients calculations
         if self._num_of_regressors > 0:
             # if users didn't provide knot positions, evenly distribute it based on span_coefficients
             # or knot length provided by users
-            if self._coefficients_knot_dates is None:
+            if self._regression_knot_dates is None:
                 # original code
-                if self.coefficients_knot_length is not None:
-                    knots_distance = self.coefficients_knot_length
+                if self.regression_knot_distance is not None:
+                    knots_distance = self.regression_knot_distance
                 else:
-                    number_of_knots = round(1 / self.span_coefficients)
+                    number_of_knots = self.regression_segments + 1
                     knots_distance = math.ceil(self._cutoff / number_of_knots)
                 # derive actual date arrays based on the time-point (tp) index
                 knots_idx_coef = self._set_knots_tp(knots_distance, self._cutoff)
                 self._knots_tp_coefficients = (1 + knots_idx_coef) / num_of_observations
-                self._coefficients_knot_dates = df[date_col].values[knots_idx_coef]
-                self._knots_idx_coef = knots_idx_coef
+                self._regression_knot_dates = df[date_col].values[knots_idx_coef]
+                self._regression_knots_idx = knots_idx_coef
                 # TODO: new idea
                 # # ignore this case for now
                 # # if self.coefficients_knot_length is not None:
@@ -487,50 +507,50 @@ class KTRXModel(ModelTemplate):
                 # # derive actual date arrays based on the time-point (tp) index
                 # knots_idx_coef = np.arange(0, self._cutoff, knots_distance)
                 # self._knots_tp_coefficients = (1 + knots_idx_coef) / self.num_of_observations
-                # self._coefficients_knot_dates = df[self.date_col].values[knots_idx_coef]
-                # self._knots_idx_coef = knots_idx_coef
+                # self._regression_knot_dates = df[self.date_col].values[knots_idx_coef]
+                # self._regression_knots_idx = knots_idx_coef
             else:
                 # FIXME: this only works up to daily series (not working on hourly series)
                 # FIXME: didn't provide  self.knots_idx_coef in this case
-                self._coefficients_knot_dates = pd.to_datetime([
-                    x for x in self._coefficients_knot_dates if (x <= df[date_col].max()) \
-                                                                and (x >= df[date_col].min())
+                self._regression_knot_dates = pd.to_datetime([
+                    x for x in self._regression_knot_dates if (x <= df[date_col].max()) \
+                                                              and (x >= df[date_col].min())
                 ])
                 if self.date_freq is None:
                     self.date_freq = pd.infer_freq(df[date_col])[0]
                 start_date = training_meta['training_start']
                 end_date = training_meta['training_end']
-                self._knots_idx_coef = (
-                    self._get_gap_between_dates(start_date, self._coefficients_knot_dates, self.date_freq)
+                self._regression_knots_idx = (
+                    self._get_gap_between_dates(start_date, self._regression_knot_dates, self.date_freq)
                 )
 
                 self._knots_tp_coefficients = np.array(
-                    (self._knots_idx_coef + 1) /
+                    (self._regression_knots_idx + 1) /
                     (self._get_gap_between_dates(start_date, end_date, self.date_freq) + 1)
                 )
-                self._knots_idx_coef = list(self._knots_idx_coef.astype(np.int32))
+                self._regression_knots_idx = list(self._regression_knots_idx.astype(np.int32))
 
-            kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.regression_rho)
 
-            self._num_knots_coefficients = len(self._knots_tp_coefficients)
+            self.regression_segments = len(self._knots_tp_coefficients)
             self._kernel_coefficients = kernel_coefficients
 
     def _set_knots_scale_matrix(self, df, training_meta):
         num_of_observations = training_meta['num_of_observations']
         if self._num_of_positive_regressors > 0:
             # calculate average local absolute volume for each segment
-            local_val = np.ones((self._num_of_positive_regressors, self._num_knots_coefficients))
+            local_val = np.ones((self._num_of_positive_regressors, self.regression_segments))
             if self.flat_multiplier:
                 multiplier = np.ones(local_val.shape)
             else:
                 multiplier = np.ones(local_val.shape)
                 # store local value for the range on the left side since last knot
-                for idx in range(len(self._knots_idx_coef)):
-                    if idx < len(self._knots_idx_coef) - 1:
-                        str_idx = self._knots_idx_coef[idx]
-                        end_idx = self._knots_idx_coef[idx + 1]
+                for idx in range(len(self._regression_knots_idx)):
+                    if idx < len(self._regression_knots_idx) - 1:
+                        str_idx = self._regression_knots_idx[idx]
+                        end_idx = self._regression_knots_idx[idx + 1]
                     else:
-                        str_idx = self._knots_idx_coef[idx]
+                        str_idx = self._regression_knots_idx[idx]
                         end_idx = num_of_observations
 
                     local_val[:, idx] = np.mean(np.fabs(self._positive_regressor_matrix[str_idx:end_idx]), axis=0)
@@ -560,18 +580,18 @@ class KTRXModel(ModelTemplate):
         if self._num_of_regular_regressors > 0:
             # do the same for regular regressor
             # calculate average local absolute volume for each segment
-            local_val = np.ones((self._num_of_regular_regressors, self._num_knots_coefficients))
+            local_val = np.ones((self._num_of_regular_regressors, self.regression_segments))
             if self.flat_multiplier:
                 multiplier = np.ones(local_val.shape)
             else:
                 multiplier = np.ones(local_val.shape)
             # store local value for the range on the left side since last knot
-            for idx in range(len(self._knots_idx_coef)):
-                if idx < len(self._knots_idx_coef) - 1:
-                    str_idx = self._knots_idx_coef[idx]
-                    end_idx = self._knots_idx_coef[idx + 1]
+            for idx in range(len(self._regression_knots_idx)):
+                if idx < len(self._regression_knots_idx) - 1:
+                    str_idx = self._regression_knots_idx[idx]
+                    end_idx = self._regression_knots_idx[idx + 1]
                 else:
-                    str_idx = self._knots_idx_coef[idx]
+                    str_idx = self._regression_knots_idx[idx]
                     end_idx = num_of_observations
 
                 local_val[:, idx] = np.mean(np.fabs(self._regular_regressor_matrix[str_idx:end_idx]), axis=0)
@@ -674,10 +694,36 @@ class KTRXModel(ModelTemplate):
         return seas
 
     def _set_levs_and_seas(self, df, training_meta):
-        num_of_observations = training_meta['num_of_observations']
+        response_col = training_meta['response_col']
         date_col = training_meta['date_col']
+        num_of_observations = training_meta['num_of_observations']
         training_start = training_meta['training_start']
         training_end = training_meta['training_end']
+
+        # use ktrlite to derive levs and seas
+        ktrlite = MAPForecaster(
+            response_col=response_col,
+            date_col=date_col,
+            model=KTRLiteModel(
+                seasonality=self.seasonality,
+                seasonality_fs_order=self.seasonality_fs_order,
+                seasonal_initial_knot_scale=self.seasonal_knot_scale,
+                seasonal_knot_scale=self.seasonal_knot_scale,
+                span_coefficients=1 / self.seasonality_segments,
+                degree_of_freedom=self.degree_of_freedom,
+                span_level=1 / self.level_segments,
+                level_knot_dates=self.level_knot_dates,
+                level_knot_length=self.level_knot_distance,
+                coefficients_knot_length=self.regression_knot_distance,
+                knot_location='end_point',
+                date_freq=self.date_freq,
+            ),
+            estimator_type=StanEstimatorMAP,
+        )
+        ktrlite.fit(df=df)
+        ktrlite_pt_posteriors = ktrlite.get_point_posteriors()
+        self._level_knots = np.squeeze(ktrlite_pt_posteriors['lev_knot'])
+        self.level_knot_dates = ktrlite._model._level_knot_dates
         tp = np.arange(1, num_of_observations + 1) / num_of_observations
         # trim level knots dates when they are beyond training dates
         lev_knot_dates = list()
@@ -686,13 +732,13 @@ class KTRXModel(ModelTemplate):
         for i, x in enumerate(self.level_knot_dates):
             if (x <= df[date_col].max()) and (x >= df[date_col].min()):
                 lev_knot_dates.append(x)
-                lev_knots.append(self.level_knots[i])
+                lev_knots.append(self._level_knots[i])
         self._level_knot_dates = pd.to_datetime(lev_knot_dates)
         self._level_knots = np.array(lev_knots)
         infer_freq = pd.infer_freq(df[date_col])[0]
         start_date = training_start
 
-        if len(self.level_knots) > 0 and len(self.level_knot_dates) > 0:
+        if len(self._level_knots) > 0 and len(self.level_knot_dates) > 0:
             self.knots_tp_level = np.array(
                 (self._get_gap_between_dates(start_date, self._level_knot_dates, infer_freq) + 1) /
                 (self._get_gap_between_dates(start_date, training_end, infer_freq) + 1)
@@ -704,7 +750,11 @@ class KTRXModel(ModelTemplate):
         self._kernel_level = kernel_level
         self._num_knots_level = len(self._level_knot_dates)
 
-        if self._seasonal_knots_input is not None:
+        if self._seasonality:
+            self._seasonal_knots_input = {'_seas_coef_knot_dates': self._regression_knot_dates,
+                                         '_sea_coef_knot': ktrlite_pt_posteriors['coef_knot'],
+                                         '_seasonality': self._seasonality,
+                                         '_seasonality_fs_order': self.seasonality_fs_order}
             self._seas_term = self._generate_seas(
                 df,
                 training_meta,
@@ -1022,9 +1072,9 @@ class KTRXModel(ModelTemplate):
         if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
             return knots_df
 
-        knots_df[date_col] = self._coefficients_knot_dates
+        knots_df[date_col] = self._regression_knot_dates
         # TODO: make the label as a constant
-        knots_df['step'] = self._knots_idx_coef
+        knots_df['step'] = self._regression_knots_idx
         coef_knots = posteriors \
             .get(posteriors) \
             .get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
