@@ -11,6 +11,26 @@ def get_gap_between_dates(start_date, end_date, freq):
 
 def get_knot_locations(training_meta, df,
                        knot_dates=None, knot_distance=None, num_of_segments=None, date_freq=None):
+    """ function to get the knot locations. This function will be used in KTRLite and KTRX model.
+    Parameters
+    ----------
+    training_meta : dict
+        contains the training meta data such as number of observations, date column, training start date, etc
+    df : training data frame
+    knot_dates : list
+        list of dates, which will be used as the knot locations
+    knot_distance : int
+        distance between every two knots
+    num_of_segments : int
+        number of segments, which will be used to calculate the knot distance
+    date_freq : str
+        the date frequency of the input training data
+
+    Returns
+    -------
+    an array of integers, which are the knot location indices (starts at 0).
+
+    """
     num_of_obs = training_meta['num_of_observations']
     date_col = training_meta['date_col']
     training_start = training_meta['training_start']
