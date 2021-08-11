@@ -9,6 +9,17 @@ def get_gap_between_dates(start_date, end_date, freq):
     return gap
 
 
+def get_knot_idx(num_of_obs, knot_distance):
+    """function to calculate the knot idx based on num_of_obs and knot_distance."""
+    # starts with the the ending point
+    # negative values are allowed when 0 is not included in generated sequence
+    knot_idx = np.sort(np.arange(num_of_obs - 1, -1, -knot_distance))
+    if 0 not in knot_idx:
+        knot_idx = np.sort(np.arange(num_of_obs - 1, -1 - knot_distance, -knot_distance))
+
+    return knot_idx
+
+
 def get_knot_locations(training_meta, df,
                        knot_dates=None, knot_distance=None, num_of_segments=None, date_freq=None):
     """ function to get the knot locations. This function will be used in KTRLite and KTRX model.
@@ -50,18 +61,12 @@ def get_knot_locations(training_meta, df,
         knot_idx = get_gap_between_dates(training_start, _knot_dates, date_freq)
 
     elif knot_distance is not None:
-        # end points are used, including the first point and the last one
         if not isinstance(knot_distance, int):
             raise Exception("knot_distance must be an int.")
-        knot_idx = np.arange(0, num_of_obs, knot_distance)
-        if num_of_obs - 1 not in knot_idx:
-            knot_idx = np.append(knot_idx, num_of_obs - 1)
+        knot_idx = get_knot_idx(num_of_obs, knot_distance)
     elif num_of_segments is not None:
-        # end points are used, including the first point and the last one
         knot_distance = np.round(num_of_obs / num_of_segments).astype(int)
-        knot_idx = np.arange(0, num_of_obs, knot_distance)
-        if num_of_obs - 1 not in knot_idx:
-            knot_idx = np.append(knot_idx, num_of_obs - 1)
+        knot_idx = get_knot_idx(num_of_obs, knot_distance)
     else:
         raise Exception("please specify at least one of the followings to determine the knot locations: "
                         "knot_dates, knot_distance, or num_of_segments.")
