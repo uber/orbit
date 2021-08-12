@@ -2,12 +2,9 @@ from copy import copy
 import pytest
 import numpy as np
 
-from orbit.estimators.pyro_estimator import PyroEstimator, PyroEstimatorVI
-from orbit.estimators.stan_estimator import StanEstimator, StanEstimatorMCMC, StanEstimatorMAP
 from orbit.models import LGT
 from orbit.template.lgt import LGTInitializer
 from orbit.constants.constants import PredictionKeys
-# from orbit.diagnostics.backtest import grid_search_orbit
 
 
 @pytest.mark.parametrize("estimator", ['stan-map', 'stan-mcmc'])

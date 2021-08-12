@@ -93,7 +93,13 @@ class MAPForecaster(Forecaster):
     def get_point_posteriors(self):
         return deepcopy(self._point_posteriors[PredictMethod.MAP.value])
 
+    # TODO: should be private
     def load_extra_methods(self):
         for method in self.extra_methods:
-            setattr(self, method, partial(getattr(self._model, method), PredictMethod.MAP.value,
-                                          self._point_posteriors))
+            setattr(self,
+                    method,
+                    partial(getattr(self._model, method),
+                            self.get_training_meta(),
+                            PredictMethod.MAP.value,
+                            self._point_posteriors))
+
