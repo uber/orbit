@@ -10,7 +10,8 @@ def get_knot_dates(start_date, knot_idx, freq):
 
 def get_dates_delta(start_date, end_date, freq):
     """Returns knot index based on date difference normalized with the number of steps by frequency provided
-    Args
+
+    Parameters
     ----
     start_date : numpy datetime
     end_date : numpy datetime array
@@ -42,7 +43,8 @@ def get_knot_idx(
         num_of_segments=None,
         date_freq=None):
     """ function to get the knot locations. This function will be used in KTRLite and KTRX model.
-    Args
+
+    Parameters
     ----------
     num_of_obs : int
         number of observations to derive segments and knots; will be ignored if knot_dates is not None

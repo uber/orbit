@@ -580,7 +580,8 @@ class LGTModel(ETSModel):
 
         return out
 
-    def get_regression_coefs(self, training_meta, point_method, point_posteriors):
+    def get_regression_coefs(self, training_meta, point_method, posteriors,
+                             include_ci=False, lower=0.05, upper=0.95):
         """Return DataFrame regression coefficients
         If PredictMethod is `full` return `mean` of coefficients instead
         """
@@ -591,17 +592,19 @@ class LGTModel(ETSModel):
         if self.num_of_regressors == 0:
             return coef_df
 
-        coef = point_posteriors \
+        coef = posteriors \
             .get(point_method) \
             .get(RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
+
+        if point_method is not None:
+            coef = np.squeeze(coef, 0)
 
         # get column names
         pr_cols = self.positive_regressor_col
         nr_cols = self.negative_regressor_col
         rr_cols = self.regular_regressor_col
 
-        # note ordering here is not the same as `self.regressor_cols` because positive
-        # and negative do not have to be grouped on input
+        # note ordering here is not the same as `self.regressor_cols` because regressors here are grouped by signs
         regressor_cols = pr_cols + nr_cols + rr_cols
 
         # same note
@@ -611,6 +614,20 @@ class LGTModel(ETSModel):
 
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR_SIGN] = regressor_signs
-        coef_df[COEFFICIENT_DF_COLS.COEFFICIENT] = coef.flatten()
+        coef_df[COEFFICIENT_DF_COLS.COEFFICIENT] = coef
 
-        return coef_df
+        # if we have posteriors distribution and also include ci
+        if point_method is None and include_ci:
+            coef_lower = np.quantile(coef, lower, axis=0)
+            coef_upper = np.quantile(coef, upper, axis=0)
+            coef_df_lower = coef_df.copy()
+            coef_df_upper = coef_df.copy()
+            for idx, col in enumerate(regressor_cols):
+                coef_df_lower[col] = coef_lower[:, idx]
+                coef_df_upper[col] = coef_upper[:, idx]
+
+            return coef_df, coef_df_lower, coef_df_upper
+        else:
+            return coef_df
+
+
