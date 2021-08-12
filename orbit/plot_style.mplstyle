@@ -2,7 +2,7 @@
 ### FIGURE
 figure.facecolor: white
 figure.dpi: 100
-figure.titlesize: 14
+figure.titlesize: 16
 figure.titleweight: bold
 
 ### LINES
@@ -16,7 +16,7 @@ xtick.direction: out
 ytick.direction: out
 
 ### FONTS
-font.size: 10
+font.size: 16
 font.family: sans-serif
 font.sans-serif: Arial
 
@@ -24,23 +24,25 @@ font.sans-serif: Arial
 axes.grid: True
 axes.facecolor: white
 axes.linewidth: 0.1
-axes.titlesize: 14
+axes.titlesize: large
 axes.titleweight: bold
-axes.labelsize: 11.5
+axes.labelsize: medium
 axes.labelweight: bold
 axes.spines.top: False
 axes.spines.right: False
 axes.spines.left: False
 axes.spines.bottom: False
-axes.titlepad:20
+axes.titlepad: 25
+axes.labelpad: 20
 
 ### GRIDS
-grid.alpha: 0.4
+grid.alpha: 0.1
 grid.linewidth: 0.5
+grid.color: 000000
 
 ### LEGEND
 legend.framealpha: 0.5
 legend.fancybox: True
 legend.borderpad: 0.5
 legend.loc: upper right
-legend.fontsize: large
+legend.fontsize: small

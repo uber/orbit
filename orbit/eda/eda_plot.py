@@ -4,12 +4,15 @@ import pandas as pd
 
 
 from orbit.constants import palette
+from orbit.utils.plot import get_orbit_style
+
+orbit_style = get_orbit_style()
 
 pd.options.mode.chained_assignment = None
 
 
 def ts_heatmap(df, date_col, value_col, fig_width=10, fig_height=6, normalization=False,
-               path=None, palette='Blues'):
+               path=None, palette=palette.OrbitPalette.BLUE_GRADIENT.value, use_orbit_style=True):
     """this function takes a time series dataframe and plot a time series heatmap with month on the y axis and
     year on the x axis
     Parameters
@@ -42,13 +45,25 @@ def ts_heatmap(df, date_col, value_col, fig_width=10, fig_height=6, normalizatio
     df_pivot = df.pivot_table(index='month', columns='year', values=value_col).sort_index(ascending=False)
     if normalization:
         df_pivot = (df_pivot - df_pivot.mean()) / df_pivot.std()
-    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-    ax = sns.heatmap(df_pivot, cmap=palette)
 
-    if normalization:
-        ax.set_title(f'{value_col} Time Series Heatmap Normalized Index')
+    if use_orbit_style:
+        with plt.style.context(orbit_style):
+            fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+            ax = sns.heatmap(df_pivot, cmap=palette)
 
-    ax.set_title(f'{value_col} (Mean) Time Series Heatmap')
+            if normalization:
+                ax.set_title(f'{value_col} Time Series Heatmap Normalized Index')
+
+            ax.set_title(f'{value_col} (Mean) Time Series Heatmap')
+
+    else:
+        fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+        ax = sns.heatmap(df_pivot)
+
+        if normalization:
+            ax.set_title(f'{value_col} Time Series Heatmap Normalized Index')
+
+        ax.set_title(f'{value_col} (Mean) Time Series Heatmap')
 
     if path:
         fig.savefig(path)
@@ -57,7 +72,7 @@ def ts_heatmap(df, date_col, value_col, fig_width=10, fig_height=6, normalizatio
 
 
 def correlation_heatmap(df, var_list, fig_width=10, fig_height=6,
-                        path=None, fmt='.1g', palette='Blues'):
+                        path=None, fmt='.1g', palette=palette.OrbitPalette.BLUE_GRADIENT.value, use_orbit_style=True):
     """This function takes a list of variables and return a heatmap of pairwise correlation. The columns with
     all zero values will not be plotted.
     Parameters
@@ -82,19 +97,36 @@ def correlation_heatmap(df, var_list, fig_width=10, fig_height=6,
     # filter out all zero columns
     non_zero_varlist = [i for i in var_list if i not in df.columns[(df == 0).all()]]
     df = df[non_zero_varlist].corr()
-    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-    ax = sns.heatmap(df, cmap=palette, annot=True, fmt=fmt)
-    ax.set_xticklabels(
-        ax.get_xticklabels(),
-        rotation=45,
-        horizontalalignment='right'
-    )
-    ax.set_yticklabels(
-        ax.get_yticklabels(),
-        rotation=0,
-        horizontalalignment='right'
-    )
-    ax.set_title('Correlation Heatmap')
+    if use_orbit_style:
+        with plt.style.context(orbit_style):
+            fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+            ax = sns.heatmap(df, cmap=palette, annot=True, fmt=fmt)
+            ax.set_xticklabels(
+                ax.get_xticklabels(),
+                rotation=45,
+                horizontalalignment='right'
+            )
+            ax.set_yticklabels(
+                ax.get_yticklabels(),
+                rotation=0,
+                horizontalalignment='right'
+            )
+            ax.set_title('Correlation Heatmap')
+
+    else:
+        fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+        ax = sns.heatmap(df, annot=True, fmt=fmt)
+        ax.set_xticklabels(
+            ax.get_xticklabels(),
+            rotation=45,
+            horizontalalignment='right'
+        )
+        ax.set_yticklabels(
+            ax.get_yticklabels(),
+            rotation=0,
+            horizontalalignment='right'
+        )
+        ax.set_title('Correlation Heatmap')
 
     if path:
         fig.savefig(path)
@@ -178,8 +210,8 @@ def correlation_heatmap(df, var_list, fig_width=10, fig_height=6,
 
 
 def dual_axis_ts_plot(df, var1, var2, date_col, fig_width=25, fig_height=6, path=None,
-                      color1=palette.QualitativePalette.mid_blue.value,
-                      color2=palette.QualitativePalette.orange.value):
+                      color1=palette.OrbitPalette.BLACK.value,
+                      color2=palette.OrbitPalette.BLUE.value, use_orbit_style=True):
     """This function plots two time series variables on two y axis. This is handy for comparison of two variables. The dual
     y axis will set on two different scales if the two variables are very different in terms of volume.
     Parameters
@@ -208,20 +240,37 @@ def dual_axis_ts_plot(df, var1, var2, date_col, fig_width=25, fig_height=6, path
     one time series plot with dual y axis
     """
     df[date_col] = pd.to_datetime(df[date_col])
-    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-    sns.lineplot(data=df, x=date_col, y=var1, label=var1, color=color1)
-    ax.set_ylabel(f'{var1}', color=color1)
-    ax.tick_params(axis='y', labelcolor=color1)
-    ax2 = ax.twinx()
-    sns.lineplot(data=df, x=date_col, y=var2, ax=ax2, color=color2, label=var2)
-    ax2.set_ylabel(f'{var2}', color=color2)
-    ax2.tick_params(axis='y', labelcolor=color2)
-    lines, labels = ax.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax2.legend(lines + lines2, labels + labels2, loc=0)
-    ax.set_title(f'{var1} vs {var2}')
-    # ax.grid(False)
-    ax2.grid(False)
+    if use_orbit_style:
+        with plt.style.context(orbit_style):
+            fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+            sns.lineplot(data=df, x=date_col, y=var1, label=var1, color=color1)
+            ax.set_ylabel(f'{var1}', color=color1)
+            ax.tick_params(axis='y', labelcolor=color1)
+            ax2 = ax.twinx()
+            sns.lineplot(data=df, x=date_col, y=var2, ax=ax2, color=color2, label=var2)
+            ax2.set_ylabel(f'{var2}', color=color2)
+            ax2.tick_params(axis='y', labelcolor=color2)
+            lines, labels = ax.get_legend_handles_labels()
+            lines2, labels2 = ax2.get_legend_handles_labels()
+            ax2.legend(lines + lines2, labels + labels2, loc=0)
+            ax.set_title(f'{var1} vs {var2}')
+            # ax.grid(False)
+            ax2.grid(False)
+    else:
+        fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+        sns.lineplot(data=df, x=date_col, y=var1, label=var1, color=color1)
+        ax.set_ylabel(f'{var1}', color=color1)
+        ax.tick_params(axis='y', labelcolor=color1)
+        ax2 = ax.twinx()
+        sns.lineplot(data=df, x=date_col, y=var2, ax=ax2, color=color2, label=var2)
+        ax2.set_ylabel(f'{var2}', color=color2)
+        ax2.tick_params(axis='y', labelcolor=color2)
+        lines, labels = ax.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        ax2.legend(lines + lines2, labels + labels2, loc=0)
+        ax.set_title(f'{var1} vs {var2}')
+        # ax.grid(False)
+        ax2.grid(False)
 
     if path:
         fig.savefig(path)
@@ -229,7 +278,8 @@ def dual_axis_ts_plot(df, var1, var2, date_col, fig_width=25, fig_height=6, path
     return ax
 
 
-def wrap_plot_ts(df, date_col, var_list, col_wrap=3, height=2.5, aspect=2):
+def wrap_plot_ts(df, date_col, var_list, col_wrap=3, height=4, aspect=2,
+                 palettes = palette.OrbitPalette.BLUE.value, use_orbit_style=True):
     """This function plots a panel of time series plots.
     Parameters
     -----------
@@ -247,15 +297,32 @@ def wrap_plot_ts(df, date_col, var_list, col_wrap=3, height=2.5, aspect=2):
     non_zero_varlist = [i for i in var_list if i not in df.columns[(df == 0).all()]]
     df = df[non_zero_varlist]
     df_long = df.melt(id_vars=[date_col])
-    ax = sns.relplot(x=date_col, y='value', col='variable',
-                     height=height, aspect=aspect,
-                     col_wrap=col_wrap, kind='line', data=df_long,
-                     facet_kws={'sharey': False, 'sharex': False}
-                     )
-    ax.set_xticklabels(rotation=45)
-    plt.tight_layout()
+    colors = [palettes]
+    custom_palette = sns.set_palette(sns.color_palette(colors))
+
+    if use_orbit_style:
+        with plt.style.context(orbit_style):
+            ax = sns.relplot(x=date_col, y='value', col='variable',
+                             height=height, aspect=aspect,
+                             col_wrap=col_wrap, kind='line', data=df_long,
+                             palette=custom_palette,
+                             facet_kws={'sharey': False, 'sharex': False}
+                             )
+            ax.set_xticklabels(rotation=45)
+            plt.tight_layout()
+
+    else:
+        ax = sns.relplot(x=date_col, y='value', col='variable',
+                         height=height, aspect=aspect,
+                         col_wrap=col_wrap, kind='line', data=df_long,
+                         facet_kws={'sharey': False, 'sharex': False}
+                         )
+        ax.set_xticklabels(rotation=45)
+        plt.tight_layout()
 
     return ax
+
+
 
 
 # def weekly_trend_decomposition(df, var, date_col):
