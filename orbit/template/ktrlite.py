@@ -14,6 +14,7 @@ from ..estimators.stan_estimator import StanEstimatorMAP
 from ..utils.kernels import sandwich_kernel
 from ..utils.features import make_fourier_series_df
 from orbit.constants.palette import OrbitPalette
+from ..utils.knots import get_knot_idx, get_knot_dates
 
 
 class DataInputMapper(Enum):
@@ -302,88 +303,54 @@ class KTRLiteModel(ModelTemplate):
         if self.num_of_regressors > 0:
             self.regressor_matrix = df.filter(items=self.regressor_col, ).values
 
-    @staticmethod
-    def get_gap_between_dates(start_date, end_date, freq):
-        diff = end_date - start_date
-        gap = np.array(diff / np.timedelta64(1, freq))
-
-        return gap
-
-    @staticmethod
-    def _set_knots_tp(knots_distance, cutoff, knot_location):
-        if knot_location == 'mid_point':
-            # knot in the middle
-            knots_idx_start = round(knots_distance / 2)
-            knots_idx = np.arange(knots_idx_start, cutoff, knots_distance)
-        elif knot_location == 'end_point':
-            # knot in the end
-            knots_idx = np.sort(np.arange(cutoff - 1, 0, -knots_distance))
-        else:
-            raise ModelException('Invalid knots segment option.')
-
-        return knots_idx
-
     def _set_kernel_matrix(self, df, training_meta):
         num_of_observations = training_meta['num_of_observations']
-        date_col = training_meta['date_col']
-        training_start = training_meta['training_start']
-        training_end = training_meta['training_end']
+        date_array = training_meta['date_array']
 
-        # Note that our tp starts by 1; to convert back to index of array, reduce it by 1
-        tp = np.arange(1, num_of_observations + 1) / num_of_observations
-
-        # this approach put knots in full range
-        self._cutoff = num_of_observations
-
-        # kernel of level calculations
-        if self._level_knot_dates is None:
-            if self.level_knot_length is not None:
-                knots_distance = self.level_knot_length
-            else:
-                number_of_knots = round(1 / self.span_level)
-                # FIXME: is it the best way to calculate knots_distance?
-                knots_distance = math.ceil(self._cutoff / number_of_knots)
-
-            knots_idx_level = self._set_knots_tp(knots_distance, self._cutoff, self.knot_location)
-            self._knots_idx_level = knots_idx_level
-            self.knots_tp_level = (1 + knots_idx_level) / num_of_observations
-            self._level_knot_dates = df[date_col].values[knots_idx_level]
-        else:
-            # to exclude dates which are not within training period
-            self._level_knot_dates = pd.to_datetime([
-                x for x in self._level_knot_dates if
-                (x <= df[date_col].values[-1]) and (x >= df[date_col].values[0])
-            ])
-            # since we allow _level_knot_dates to be continuous, we calculate distance between knots
-            # in continuous value as well (instead of index)
-            if self.date_freq is None:
-                self.date_freq = pd.infer_freq(df[date_col])[0]
-            start_date = training_start
-            self.knots_tp_level = np.array(
-                (self.get_gap_between_dates(start_date, self._level_knot_dates, self.date_freq) + 1) /
-                (self.get_gap_between_dates(start_date, training_end, self.date_freq) + 1)
-            )
-
-        self.kernel_level = sandwich_kernel(tp, self.knots_tp_level)
-        self.num_knots_level = len(self.knots_tp_level)
-
+        self._knots_idx_level = get_knot_idx(
+            date_array=date_array,
+            num_of_obs=num_of_observations,
+            knot_dates=self.level_knot_dates,
+            knot_distance=self.level_knot_length,
+            num_of_segments=round(1/self.span_level) - 1,
+            date_freq=self.date_freq,
+        )
+        self._knots_idx_ub = num_of_observations - 1
+        self._knots_idx_lb = min(0, self._knots_idx_level[0])
+        # kernel of coefficients calculations
+        # set some default
         self.kernel_coefficients = np.zeros((num_of_observations, 0), dtype=np.double)
         self.num_knots_coefficients = 0
 
-        # kernel of coefficients calculations
-        if self.num_of_regressors > 0:
-            if self.coefficients_knot_length is not None:
-                knots_distance = self.coefficients_knot_length
-            else:
-                number_of_knots = round(1 / self.span_coefficients)
-                knots_distance = math.ceil(self._cutoff / number_of_knots)
+        if self.date_freq is None:
+            self.date_freq = pd.infer_freq(date_array)[0]
 
-            knots_idx_coef = self._set_knots_tp(knots_distance, self._cutoff, self.knot_location)
-            self._knots_idx_coef = knots_idx_coef
-            self.knots_tp_coefficients = (1 + knots_idx_coef) / num_of_observations
-            self._coef_knot_dates = df[date_col].values[knots_idx_coef]
+        if self.num_of_regressors > 0:
+            self._knots_idx_coef = get_knot_idx(
+                date_array=None,
+                num_of_obs=num_of_observations,
+                knot_dates=None,
+                knot_distance=self.coefficients_knot_length,
+                num_of_segments=round(1/self.span_coefficients) - 1,
+                date_freq=self.date_freq,
+            )
+            # if we have seasonality, we need to update the lower bound to align with level
+            self._knots_idx_lb = min(self._knots_idx_lb, self._knots_idx_coef[0])
+
+        tp = (np.arange(num_of_observations) - self._knots_idx_lb) / (self._knots_idx_ub - self._knots_idx_lb)
+        self.knots_tp_level = (self._knots_idx_level - self._knots_idx_lb) / \
+                              (self._knots_idx_ub - self._knots_idx_lb)
+        self.kernel_level = sandwich_kernel(tp, self.knots_tp_level)
+        self.num_knots_level = len(self.knots_tp_level)
+        self._level_knot_dates = get_knot_dates(date_array[0], self._knots_idx_level, self.date_freq)
+
+        # update rest of the seasonality related fields
+        if self.num_of_regressors > 0:
+            self.knots_tp_coefficients = (self._knots_idx_coef - self._knots_idx_lb) / \
+                                         (self._knots_idx_ub - self._knots_idx_lb)
             self.kernel_coefficients = sandwich_kernel(tp, self.knots_tp_coefficients)
             self.num_knots_coefficients = len(self.knots_tp_coefficients)
+            self._coef_knot_dates = get_knot_dates(date_array[0], self._knots_idx_coef, self.date_freq)
 
     def set_dynamic_attributes(self, df, training_meta):
         """Overriding the parent class to customize pre-processing in fitting process"""
