@@ -4,9 +4,10 @@ import math
 from scipy.stats import nct
 from enum import Enum
 import torch
+import matplotlib.pyplot as plt
 from copy import deepcopy
-from ..constants.constants import CoefPriorDictKeys
 
+from ..constants.constants import CoefPriorDictKeys
 from ..exceptions import IllegalArgument, ModelException
 from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel, sandwich_kernel
@@ -16,6 +17,7 @@ from ..estimators.pyro_estimator import PyroEstimatorVI
 from ..estimators.stan_estimator import StanEstimatorMAP
 from ..template.ktrlite import KTRLiteModel
 from ..forecaster import MAPForecaster
+from orbit.constants.palette import OrbitPalette
 
 
 class DataInputMapper(Enum):
@@ -650,12 +652,21 @@ class KTRModel(ModelTemplate):
 
     def _generate_seas(self, df, training_meta, coef_knot_dates, coef_knot, seasonality, seasonality_fs_order):
         """To calculate the seasonality term based on the _seasonal_knots_input.
-        :param df: input df
-        :param coef_knot_dates: dates for coef knots
-        :param coef_knot: knot values for coef
-        :param seasonality: seasonality input
-        :param seasonality_fs_order: seasonality_fs_order input
-        :return:
+        Parameters
+        ----------
+        df : pd.DataFrame
+            input df
+        coef_knot_dates: 1-D array like
+            dates for seasonality coefficient knots
+        coef_knot: 1-D array like
+            knot values for coef
+        seasonality: list
+            seasonality input; list of float
+        seasonality_fs_order: list
+            seasonality_fs_order input list of int
+
+        Returns
+        -----------
         """
         date_col = training_meta['date_col']
         date_array = training_meta['date_array']
@@ -668,16 +679,11 @@ class KTRModel(ModelTemplate):
         df = df.copy()
         if prediction_start > training_end:
             forecast_dates = set(prediction_date_array)
-            n_forecast_steps = len(forecast_dates)
             # time index for prediction start
             start = num_of_observations
         else:
             # compute how many steps to forecast
             forecast_dates = set(prediction_date_array) - set(date_array)
-            # check if prediction df is a subset of training df
-            # e.g. "negative" forecast steps
-            n_forecast_steps = len(forecast_dates) or \
-                               - (len(set(date_array) - set(prediction_date_array)))
             # time index for prediction start
             start = pd.Index(date_array).get_loc(prediction_start)
 
@@ -760,7 +766,6 @@ class KTRModel(ModelTemplate):
                 training_meta,
                 self._seasonal_knots_input['_seas_coef_knot_dates'],
                 self._seasonal_knots_input['_sea_coef_knot'],
-                # self._seasonal_knots_input['_sea_rho'],
                 self._seasonal_knots_input['_seasonality'],
                 self._seasonal_knots_input['_seasonality_fs_order'])
 
@@ -825,7 +830,7 @@ class KTRModel(ModelTemplate):
                 # coefficient_method="smooth",
                 include_error=False, store_prediction_array=False, **kwargs):
         """Vectorized version of prediction math
-        Args
+        Parameters
         ----
         coefficient_method: str
             either "smooth" or "empirical". when "empirical" is used, curves are sampled/aggregated directly
@@ -1106,3 +1111,76 @@ class KTRModel(ModelTemplate):
             # include_ci=include_ci,
             # lower=lower, upper=upper
         )
+
+    # TODO: need a unit test of this function
+    def get_level_knots(self, training_meta, point_method, point_posteriors):
+        """Given posteriors, return knots and correspondent date"""
+        date_col = training_meta['date_col']
+        lev_knots = point_posteriors[point_method][BaseSamplingParameters.LEVEL_KNOT.value]
+        if len(lev_knots.shape) > 1:
+            lev_knots = np.squeeze(lev_knots, 0)
+        out = {
+            date_col: self._level_knot_dates,
+            BaseSamplingParameters.LEVEL_KNOT.value: lev_knots,
+        }
+        return pd.DataFrame(out)
+
+    def get_levels(self, training_meta, point_method, point_posteriors):
+        date_col = training_meta['date_col']
+        date_array = training_meta['date_array']
+        levs = point_posteriors[point_method][BaseSamplingParameters.LEVEL.value]
+        if len(levs.shape) > 1:
+            levs = np.squeeze(levs, 0)
+        out = {
+            date_col: date_array,
+            BaseSamplingParameters.LEVEL.value: levs,
+        }
+        return pd.DataFrame(out)
+
+    def plot_lev_knots(self, training_meta, point_method, point_posteriors,
+                       path=None, is_visible=True, title="",
+                       fontsize=16, markersize=250, figsize=(16, 8)):
+        """ Plot the fitted level knots along with the actual time series.
+        Parameters
+        ----------
+        path : str; optional
+            path to save the figure
+        is_visible : boolean
+            whether we want to show the plot. If called from unittest, is_visible might = False.
+        title : str; optional
+            title of the plot
+        fontsize : int; optional
+            fontsize of the title
+        markersize : int; optional
+            knot marker size
+        figsize : tuple; optional
+            figsize pass through to `matplotlib.pyplot.figure()`
+       Returns
+        -------
+            matplotlib axes object
+        """
+        date_col = training_meta['date_col']
+        date_array = training_meta['date_array']
+        response = training_meta['response']
+
+        levels_df = self.get_levels(training_meta, point_method, point_posteriors)
+        knots_df = self.get_level_knots(training_meta, point_method, point_posteriors)
+
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        ax.plot(date_array, response, color=OrbitPalette.blue.value, lw=1, alpha=0.7, label='actual')
+        ax.plot(levels_df[date_col], levels_df[BaseSamplingParameters.LEVEL.value],
+                color=OrbitPalette.black.value, lw=1, alpha=0.8,
+                label=BaseSamplingParameters.LEVEL.value)
+        ax.scatter(knots_df[date_col], knots_df[BaseSamplingParameters.LEVEL_KNOT.value],
+                   color=OrbitPalette.green.value, lw=1, s=markersize, marker='^', alpha=0.8,
+                   label=BaseSamplingParameters.LEVEL_KNOT.value)
+        ax.legend()
+        ax.grid(True, which='major', c='grey', ls='-', lw=1, alpha=0.5)
+        ax.set_title(title, fontsize=fontsize)
+        if path:
+            fig.savefig(path)
+        if is_visible:
+            plt.show()
+        else:
+            plt.close()
+        return ax
