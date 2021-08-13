@@ -184,7 +184,6 @@ class KTRModel(ModelTemplate):
                  degree_of_freedom=30,
                  # time-based coefficient priors
                  coef_prior_list=None,
-
                  # shared
                  date_freq=None,
                  flat_multiplier=True,
@@ -199,21 +198,25 @@ class KTRModel(ModelTemplate):
         self.level_knot_distance = level_knot_distance
         self.level_knot_dates = level_knot_dates
         self._level_knot_dates = self.level_knot_dates
+        self.level_knots = None
+        self._level_knots = None
 
-        # self.level_knots = level_knots
-        # self._level_knots = level_knots
         self._kernel_level = None
         self._num_knots_level = None
         self.knots_tp_level = None
 
         # seasonality configurations
         self.seasonality = seasonality
-        self._seasonality = None
         self.seasonality_fs_order = seasonality_fs_order
+        self._seasonality = self.seasonality
+        self._seasonality_fs_order = self.seasonality_fs_order
         self.seasonal_initial_knot_scale = seasonal_initial_knot_scale
         self.seasonal_knot_scale = seasonal_knot_scale
         self.seasonality_segments = seasonality_segments
         self._seas_term = 0
+
+        self._seasonality_coef_knot_dates = None
+        self._seasonality_coef_knot = None
 
         # regression configurations
         self.regressor_col = regressor_col
@@ -226,7 +229,6 @@ class KTRModel(ModelTemplate):
         self._regression_knot_dates = regression_knot_dates
 
         self.regression_rho = regression_rho
-
         self.flat_multiplier = flat_multiplier
 
         # set private var to arg value
@@ -288,9 +290,38 @@ class KTRModel(ModelTemplate):
         if self.coef_prior_list is not None:
             self._coef_prior_list = deepcopy(self.coef_prior_list)
 
-        ##############################
+        # set default seasonality and related attributes
+        if self.seasonality is None:
+            self._seasonality = list()
+            self._seasonality_fs_order = list()
+        elif not isinstance(self._seasonality, list) and isinstance(self._seasonality, (int, float)):
+            self._seasonality = [self.seasonality]
+
+        if self._seasonality and self._seasonality_fs_order is None:
+            self._seasonality_fs_order = [2] * len(self._seasonality)
+        elif not isinstance(self._seasonality_fs_order, list) and isinstance(self._seasonality_fs_order, (int, float)):
+            self._seasonality_fs_order = [self.seasonality_fs_order]
+
+        if len(self._seasonality_fs_order) != len(self._seasonality):
+            raise IllegalArgument('length of seasonality and fs_order not matching')
+
+        for k, order in enumerate(self._seasonality_fs_order):
+            if 2 * order > self._seasonality[k] - 1:
+                raise IllegalArgument('reduce seasonality_fs_order to avoid over-fitting')
+
+        # TODO: this is done by KTRLite; we may not need this for now
+        # if not isinstance(self.seasonal_initial_knot_scale, list) and \
+        #         isinstance(self.seasonal_initial_knot_scale * 1.0, float):
+        #     self._seasonal_initial_knot_scale = [self.seasonal_initial_knot_scale] * len(self._seasonality)
+        # else:
+        #     self._seasonal_initial_knot_scale = self.seasonal_initial_knot_scale
+        #
+        # if not isinstance(self.seasonal_knot_scale, list) and isinstance(self.seasonal_knot_scale * 1.0, float):
+        #     self._seasonal_knot_scale = [self.seasonal_knot_scale] * len(self._seasonality)
+        # else:
+        #     self._seasonal_knot_scale = self.seasonal_knot_scale
+
         # if no regressors, end here #
-        ##############################
         if self.regressor_col is None:
             # regardless of what args are set for these, if regressor_col is None
             # these should all be empty lists
@@ -728,6 +759,8 @@ class KTRModel(ModelTemplate):
         )
         ktrlite.fit(df=df)
         ktrlite_pt_posteriors = ktrlite.get_point_posteriors()
+
+        # this part is to download level and seasonality result from KTRLite
         self._level_knots = np.squeeze(ktrlite_pt_posteriors['lev_knot'])
         self.level_knot_dates = ktrlite._model._level_knot_dates
         tp = np.arange(1, num_of_observations + 1) / num_of_observations
@@ -744,30 +777,29 @@ class KTRModel(ModelTemplate):
         infer_freq = pd.infer_freq(df[date_col])[0]
         start_date = training_start
 
-        if len(self._level_knots) > 0 and len(self.level_knot_dates) > 0:
-            self.knots_tp_level = np.array(
-                (self._get_gap_between_dates(start_date, self._level_knot_dates, infer_freq) + 1) /
-                (self._get_gap_between_dates(start_date, training_end, infer_freq) + 1)
-            )
-        else:
-            raise ModelException("User need to supply a list of level knots.")
+        # if len(self._level_knots) > 0 and len(self.level_knot_dates) > 0:
+        self.knots_tp_level = np.array(
+            (self._get_gap_between_dates(start_date, self._level_knot_dates, infer_freq) + 1) /
+            (self._get_gap_between_dates(start_date, training_end, infer_freq) + 1)
+        )
+        # else:
+        #     raise ModelException("User need to supply a list of level knots.")
 
         kernel_level = sandwich_kernel(tp, self.knots_tp_level)
         self._kernel_level = kernel_level
         self._num_knots_level = len(self._level_knot_dates)
 
         if self._seasonality:
-            self._seasonal_knots_input = {'_seas_coef_knot_dates': self._regression_knot_dates,
-                                         '_sea_coef_knot': ktrlite_pt_posteriors['coef_knot'],
-                                         '_seasonality': self._seasonality,
-                                         '_seasonality_fs_order': self.seasonality_fs_order}
+            self._seasonality_coef_knot_dates = ktrlite._model._coef_knot_dates
+            self._seasonality_coef_knot = ktrlite_pt_posteriors['coef_knot']
+
             self._seas_term = self._generate_seas(
                 df,
                 training_meta,
-                self._seasonal_knots_input['_seas_coef_knot_dates'],
-                self._seasonal_knots_input['_sea_coef_knot'],
-                self._seasonal_knots_input['_seasonality'],
-                self._seasonal_knots_input['_seasonality_fs_order'])
+                self._seasonality_coef_knot_dates,
+                self._seasonality_coef_knot ,
+                self._seasonality,
+                self._seasonality_fs_order)
 
     def _filter_coef_prior(self, df):
         if self._coef_prior_list and len(self._regressor_col) > 0:
@@ -890,13 +922,12 @@ class KTRModel(ModelTemplate):
         obs_scale = model.get(BaseSamplingParameters.OBS_SCALE.value)
         obs_scale = obs_scale.reshape(-1, 1)
 
-        if self._seasonal_knots_input is not None:
+        if self._seasonality is not None:
             seas = self._generate_seas(df, training_meta,
-                                       self._seasonal_knots_input['_seas_coef_knot_dates'],
-                                       self._seasonal_knots_input['_sea_coef_knot'],
-                                       # self._seasonal_knots_input['_sea_rho'],
-                                       self._seasonal_knots_input['_seasonality'],
-                                       self._seasonal_knots_input['_seasonality_fs_order'])
+                                       self._seasonality_coef_knot_dates,
+                                       self._seasonality_coef_knot,
+                                       self._seasonality,
+                                       self._seasonality_fs_order)
             # seas is 1-d array, add the batch size back
             seas = np.expand_dims(seas, 0)
         else:
@@ -1113,33 +1144,38 @@ class KTRModel(ModelTemplate):
         )
 
     # TODO: need a unit test of this function
-    def get_level_knots(self, training_meta, point_method, point_posteriors):
+    def get_level_knots(self, training_meta, posteriors):
         """Given posteriors, return knots and correspondent date"""
         date_col = training_meta['date_col']
-        lev_knots = point_posteriors[point_method][BaseSamplingParameters.LEVEL_KNOT.value]
-        if len(lev_knots.shape) > 1:
+        lev_knots = posteriors[BaseSamplingParameters.LEVEL_KNOT.value]
+        if lev_knots.shape[0] > 1:
+            lev_knots = np.median(lev_knots, 0)
+        else:
             lev_knots = np.squeeze(lev_knots, 0)
+
         out = {
             date_col: self._level_knot_dates,
             BaseSamplingParameters.LEVEL_KNOT.value: lev_knots,
         }
         return pd.DataFrame(out)
 
-    def get_levels(self, training_meta, point_method, point_posteriors):
+    def get_levels(self, training_meta, posteriors):
         date_col = training_meta['date_col']
         date_array = training_meta['date_array']
-        levs = point_posteriors[point_method][BaseSamplingParameters.LEVEL.value]
-        if len(levs.shape) > 1:
+        levs = posteriors[BaseSamplingParameters.LEVEL.value]
+        if levs.shape[0] > 1:
+            levs = np.median(levs, 0)
+        else:
             levs = np.squeeze(levs, 0)
+
         out = {
             date_col: date_array,
             BaseSamplingParameters.LEVEL.value: levs,
         }
         return pd.DataFrame(out)
 
-    def plot_lev_knots(self, training_meta, point_method, point_posteriors,
-                       path=None, is_visible=True, title="",
-                       fontsize=16, markersize=250, figsize=(16, 8)):
+    def plot_lev_knots(self, training_meta, posteriors, path=None, is_visible=True, title="", fontsize=16,
+                       markersize=250, figsize=(16, 8)):
         """ Plot the fitted level knots along with the actual time series.
         Parameters
         ----------
@@ -1163,8 +1199,8 @@ class KTRModel(ModelTemplate):
         date_array = training_meta['date_array']
         response = training_meta['response']
 
-        levels_df = self.get_levels(training_meta, point_method, point_posteriors)
-        knots_df = self.get_level_knots(training_meta, point_method, point_posteriors)
+        levels_df = self.get_levels(training_meta, posteriors)
+        knots_df = self.get_level_knots(training_meta, posteriors)
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         ax.plot(date_array, response, color=OrbitPalette.blue.value, lw=1, alpha=0.7, label='actual')

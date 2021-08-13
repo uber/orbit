@@ -160,10 +160,10 @@ class FullBayesianForecaster(Forecaster):
             return predicted_df
 
     def load_extra_methods(self):
-        if self._point_method is None:
-            coef_point_method = PredictMethod.MEDIAN.value
+        if self._point_method is not None:
+            posteriors = self.get_point_posteriors()
         else:
-            coef_point_method = self._point_method
+            posteriors = self.get_posterior_samples()
 
         for method in self.extra_methods:
             setattr(self,
@@ -171,5 +171,5 @@ class FullBayesianForecaster(Forecaster):
                     partial(
                         getattr(self._model, method),
                         self.get_training_meta(),
-                        coef_point_method,
-                        self._point_posteriors))
+                        posteriors
+                    ))

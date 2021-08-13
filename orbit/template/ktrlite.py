@@ -463,33 +463,38 @@ class KTRLiteModel(ModelTemplate):
         return out
 
     # TODO: need a unit test of this function
-    def get_level_knots(self, training_meta, point_method, point_posteriors):
+    def get_level_knots(self, training_meta, posteriors):
         """Given posteriors, return knots and correspondent date"""
         date_col = training_meta['date_col']
-        lev_knots = point_posteriors[point_method][BaseSamplingParameters.LEVEL_KNOT.value]
-        if len(lev_knots.shape) > 1:
+        lev_knots = posteriors[BaseSamplingParameters.LEVEL_KNOT.value]
+        if lev_knots.shape[0] > 1:
+            lev_knots = np.median(lev_knots, 0)
+        else:
             lev_knots = np.squeeze(lev_knots, 0)
+
         out = {
             date_col: self._level_knot_dates,
             BaseSamplingParameters.LEVEL_KNOT.value: lev_knots,
         }
         return pd.DataFrame(out)
 
-    def get_levels(self, training_meta, point_method, point_posteriors):
+    def get_levels(self, training_meta, posteriors):
         date_col = training_meta['date_col']
         date_array = training_meta['date_array']
-        levs = point_posteriors[point_method][BaseSamplingParameters.LEVEL.value]
-        if len(levs.shape) > 1:
+        levs = posteriors[BaseSamplingParameters.LEVEL.value]
+        if levs.shape[0] > 1:
+            levs = np.median(levs, 0)
+        else:
             levs = np.squeeze(levs, 0)
+
         out = {
             date_col: date_array,
             BaseSamplingParameters.LEVEL.value: levs,
         }
         return pd.DataFrame(out)
 
-    def plot_lev_knots(self, training_meta, point_method, point_posteriors,
-                       path=None, is_visible=True, title="",
-                       fontsize=16, markersize=250, figsize=(16, 8)):
+    def plot_lev_knots(self, training_meta, posteriors, path=None, is_visible=True, title="", fontsize=16,
+                       markersize=250, figsize=(16, 8)):
         """ Plot the fitted level knots along with the actual time series.
         Parameters
         ----------
@@ -513,8 +518,8 @@ class KTRLiteModel(ModelTemplate):
         date_array = training_meta['date_array']
         response = training_meta['response']
 
-        levels_df = self.get_levels(training_meta, point_method, point_posteriors)
-        knots_df = self.get_level_knots(training_meta, point_method, point_posteriors)
+        levels_df = self.get_levels(training_meta, posteriors)
+        knots_df = self.get_level_knots(training_meta, posteriors)
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         ax.plot(date_array, response, color=OrbitPalette.blue.value, lw=1, alpha=0.7, label='actual')

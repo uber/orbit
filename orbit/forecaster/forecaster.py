@@ -96,6 +96,9 @@ class Forecaster(object):
         self._prediction_meta = dict()
         self.prediction_array = None
 
+        # determine point approximation method of posteriors
+        self._point_method = None
+
     # TODO: theoretically, we need to shrink estimator type to be consistent with the forecaster as well
     def _validate_supported_estimator_type(self, estimator_type):
         supported_estimator_types = self._model.get_supported_estimator_types()
@@ -298,7 +301,7 @@ class Forecaster(object):
         return deepcopy(self._posterior_samples)
 
     def get_point_posteriors(self):
-        return deepcopy(self._point_posteriors)
+        return deepcopy(self._point_posteriors[self._point_method])
 
     def load_extra_methods(self):
         pass
