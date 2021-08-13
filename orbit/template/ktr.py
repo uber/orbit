@@ -1,3 +1,4 @@
+from orbit.models.ktrlite import KTRLite
 import pandas as pd
 import numpy as np
 import math
@@ -14,10 +15,9 @@ from ..utils.kernels import gauss_kernel, sandwich_kernel
 from ..utils.features import make_fourier_series_df
 from .model_template import ModelTemplate
 from ..estimators.pyro_estimator import PyroEstimatorVI
-from ..estimators.stan_estimator import StanEstimatorMAP
-from ..template.ktrlite import KTRLiteModel
-from ..forecaster import MAPForecaster
+from ..models import KTRLite
 from orbit.constants.palette import OrbitPalette
+from ..utils.knots import get_knot_idx, get_knot_dates
 
 
 class DataInputMapper(Enum):
@@ -37,7 +37,7 @@ class DataInputMapper(Enum):
     LEVEL_KNOT_SCALE = 'LEV_KNOT_SCALE'
     _KERNEL_LEVEL = 'K_LEV'
     # ----------  Regression  ---------- #
-    regression_segments = 'N_KNOTS_COEF'
+    _NUM_KNOTS_COEFFICIENTS = 'N_KNOTS_COEF'
     _KERNEL_COEFFICIENTS = 'K_COEF'
     _NUM_OF_REGULAR_REGRESSORS = 'N_RR'
     _NUM_OF_POSITIVE_REGRESSORS = 'N_PR'
@@ -138,7 +138,7 @@ class KTRModel(ModelTemplate):
     """
     _data_input_mapper = DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
-    _model_name = 'ktrx'
+    _model_name = 'ktr'
     _supported_estimator_types = [PyroEstimatorVI]
 
     # TODO:
@@ -156,19 +156,17 @@ class KTRModel(ModelTemplate):
     # lev {ask same }
     # seasonality {ask same}
     def __init__(self,
-
+                 # level
                  level_knot_scale=0.1,
                  level_segments=10,
                  level_knot_distance=None,
                  level_knot_dates=None,
-
                  # seasonality
                  seasonality=None,
-                 seasonality_segments=2,
                  seasonality_fs_order=None,
+                 seasonality_segments=2,
                  seasonal_initial_knot_scale=1.0,
                  seasonal_knot_scale=0.1,
-
                  # regression
                  regressor_col=None,
                  regressor_sign=None,
@@ -178,7 +176,7 @@ class KTRModel(ModelTemplate):
                  regression_segments=5,
                  regression_knot_distance=None,
                  regression_knot_dates=None,
-                 # different for seasonality
+                 # different from seasonality
                  regression_rho=0.15,
                  # shared
                  degree_of_freedom=30,
@@ -242,7 +240,6 @@ class KTRModel(ModelTemplate):
         self._coef_prior_list = []
         self._regression_knots_idx = None
         self._num_of_regressors = 0
-        self.regression_segments = 0
 
         # positive regressors
         self._num_of_positive_regressors = 0
@@ -420,22 +417,6 @@ class KTRModel(ModelTemplate):
     #     if len(level_knots) != len(level_knot_dates):
     #         raise IllegalArgument('level_knots and level_knot_dates should have the same length')
 
-    @staticmethod
-    def _get_gap_between_dates(start_date, end_date, freq):
-        diff = end_date - start_date
-        gap = np.array(diff / np.timedelta64(1, freq))
-
-        return gap
-
-    @staticmethod
-    def _set_knots_tp(knots_distance, cutoff):
-        """provide a array like outcome of index based on the knots distance and cutoff point"""
-        # start in the middle
-        knots_idx_start = round(knots_distance / 2)
-        knots_idx = np.arange(knots_idx_start, cutoff, knots_distance)
-
-        return knots_idx
-
     def _set_coef_prior_idx(self):
         if self._coef_prior_list and len(self._regressor_col) > 0:
             for x in self._coef_prior_list:
@@ -503,76 +484,36 @@ class KTRModel(ModelTemplate):
     def _set_coefficients_kernel_matrix(self, df, training_meta):
         """Derive knots position and kernel matrix and other related meta data"""
         num_of_observations = training_meta['num_of_observations']
-        date_col = training_meta['date_col']
-        # Note that our tp starts by 1; to convert back to index of array, reduce it by 1
-        tp = np.arange(1, num_of_observations + 1) / num_of_observations
-        # this approach put knots in full range
-        # TODO: consider deprecate _cutoff for now since we assume _cutoff always the same as num of obs?
-        self._cutoff = num_of_observations
+        date_array = training_meta['date_array']
+        # date_col = training_meta['date_col']
+
+        # placeholder
         self._kernel_coefficients = np.zeros((num_of_observations, 0), dtype=np.double)
-        self.regression_segments = 0
+        self._num_knots_coefficients = 0
 
-        # kernel of coefficients calculations
         if self._num_of_regressors > 0:
-            # if users didn't provide knot positions, evenly distribute it based on span_coefficients
-            # or knot length provided by users
-            if self._regression_knot_dates is None:
-                # original code
-                if self.regression_knot_distance is not None:
-                    knots_distance = self.regression_knot_distance
-                else:
-                    number_of_knots = self.regression_segments + 1
-                    knots_distance = math.ceil(self._cutoff / number_of_knots)
-                # derive actual date arrays based on the time-point (tp) index
-                knots_idx_coef = self._set_knots_tp(knots_distance, self._cutoff)
-                self._knots_tp_coefficients = (1 + knots_idx_coef) / num_of_observations
-                self._regression_knot_dates = df[date_col].values[knots_idx_coef]
-                self._regression_knots_idx = knots_idx_coef
-                # TODO: new idea
-                # # ignore this case for now
-                # # if self.coefficients_knot_length is not None:
-                # #     knots_distance = self.coefficients_knot_length
-                # # else:
-                # number_of_knots = round(1 / self.span_coefficients)
-                # # to work with index; has to be discrete
-                # knots_distance = math.ceil(self._cutoff / number_of_knots)
-                # # always has a knot at the starting point
-                # # derive actual date arrays based on the time-point (tp) index
-                # knots_idx_coef = np.arange(0, self._cutoff, knots_distance)
-                # self._knots_tp_coefficients = (1 + knots_idx_coef) / self.num_of_observations
-                # self._regression_knot_dates = df[self.date_col].values[knots_idx_coef]
-                # self._regression_knots_idx = knots_idx_coef
-            else:
-                # FIXME: this only works up to daily series (not working on hourly series)
-                # FIXME: didn't provide  self.knots_idx_coef in this case
-                self._regression_knot_dates = pd.to_datetime([
-                    x for x in self._regression_knot_dates if (x <= df[date_col].max()) \
-                                                              and (x >= df[date_col].min())
-                ])
-                if self.date_freq is None:
-                    self.date_freq = pd.infer_freq(df[date_col])[0]
-                start_date = training_meta['training_start']
-                end_date = training_meta['training_end']
-                self._regression_knots_idx = (
-                    self._get_gap_between_dates(start_date, self._regression_knot_dates, self.date_freq)
-                )
+            self._regression_knots_idx = get_knot_idx(
+                date_array=date_array,
+                num_of_obs=num_of_observations,
+                knot_dates=self._regression_knot_dates,
+                knot_distance=self.regression_knot_distance,
+                num_of_segments=self.regression_segments,
+                date_freq=self.date_freq,
+            )
 
-                self._knots_tp_coefficients = np.array(
-                    (self._regression_knots_idx + 1) /
-                    (self._get_gap_between_dates(start_date, end_date, self.date_freq) + 1)
-                )
-                self._regression_knots_idx = list(self._regression_knots_idx.astype(np.int32))
-
-            kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.regression_rho)
-
-            self.regression_segments = len(self._knots_tp_coefficients)
-            self._kernel_coefficients = kernel_coefficients
+            tp = np.arange(1, num_of_observations + 1) / num_of_observations
+            self._knots_tp_coefficients =  (1 + self._regression_knots_idx) / num_of_observations
+            self._kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.regression_rho)
+            self._num_knots_coefficients = len(self._knots_tp_coefficients)
+            if self.date_freq is None:
+                self.date_freq = pd.infer_freq(date_array)[0]
+            self._regression_knot_dates = get_knot_dates(date_array[0], self._regression_knots_idx, self.date_freq)
 
     def _set_knots_scale_matrix(self, df, training_meta):
         num_of_observations = training_meta['num_of_observations']
         if self._num_of_positive_regressors > 0:
             # calculate average local absolute volume for each segment
-            local_val = np.ones((self._num_of_positive_regressors, self.regression_segments))
+            local_val = np.ones((self._num_of_positive_regressors, self._num_knots_coefficients))
             if self.flat_multiplier:
                 multiplier = np.ones(local_val.shape)
             else:
@@ -613,7 +554,7 @@ class KTRModel(ModelTemplate):
         if self._num_of_regular_regressors > 0:
             # do the same for regular regressor
             # calculate average local absolute volume for each segment
-            local_val = np.ones((self._num_of_regular_regressors, self.regression_segments))
+            local_val = np.ones((self._num_of_regular_regressors, self._num_knots_coefficients))
             if self.flat_multiplier:
                 multiplier = np.ones(local_val.shape)
             else:
@@ -709,12 +650,9 @@ class KTRModel(ModelTemplate):
 
         df = df.copy()
         if prediction_start > training_end:
-            forecast_dates = set(prediction_date_array)
             # time index for prediction start
             start = num_of_observations
         else:
-            # compute how many steps to forecast
-            forecast_dates = set(prediction_date_array) - set(date_array)
             # time index for prediction start
             start = pd.Index(date_array).get_loc(prediction_start)
 
@@ -734,30 +672,27 @@ class KTRModel(ModelTemplate):
         response_col = training_meta['response_col']
         date_col = training_meta['date_col']
         num_of_observations = training_meta['num_of_observations']
-        training_start = training_meta['training_start']
-        training_end = training_meta['training_end']
+        date_array = training_meta['date_array']
 
         # use ktrlite to derive levs and seas
-        ktrlite = MAPForecaster(
+        ktrlite = KTRLite(
             response_col=response_col,
             date_col=date_col,
-            model=KTRLiteModel(
-                seasonality=self.seasonality,
-                seasonality_fs_order=self.seasonality_fs_order,
-                seasonal_initial_knot_scale=self.seasonal_knot_scale,
-                seasonal_knot_scale=self.seasonal_knot_scale,
-                span_coefficients=1 / self.seasonality_segments,
-                degree_of_freedom=self.degree_of_freedom,
-                span_level=1 / self.level_segments,
-                level_knot_dates=self.level_knot_dates,
-                level_knot_length=self.level_knot_distance,
-                coefficients_knot_length=self.regression_knot_distance,
-                knot_location='end_point',
-                date_freq=self.date_freq,
-            ),
-            estimator_type=StanEstimatorMAP,
+            level_knot_scale=self.level_knot_scale,
+            level_segments=self.level_segments,
+            level_knot_dates=self.level_knot_dates,
+            level_knot_distance=self.level_knot_distance,
+            seasonality=self.seasonality,
+            seasonality_fs_order=self.seasonality_fs_order,
+            seasonal_initial_knot_scale=self.seasonal_knot_scale,
+            seasonal_knot_scale=self.seasonal_knot_scale,
+            seasonality_segments=self.seasonality_segments,
+            degree_of_freedom=self.degree_of_freedom,
+            date_freq=self.date_freq,
+            estimator='stan-map',
         )
         ktrlite.fit(df=df)
+        self._ktrlite_model = ktrlite
         ktrlite_pt_posteriors = ktrlite.get_point_posteriors()
 
         # this part is to download level and seasonality result from KTRLite
@@ -774,19 +709,17 @@ class KTRModel(ModelTemplate):
                 lev_knots.append(self._level_knots[i])
         self._level_knot_dates = pd.to_datetime(lev_knot_dates)
         self._level_knots = np.array(lev_knots)
-        infer_freq = pd.infer_freq(df[date_col])[0]
-        start_date = training_start
 
-        # if len(self._level_knots) > 0 and len(self.level_knot_dates) > 0:
-        self.knots_tp_level = np.array(
-            (self._get_gap_between_dates(start_date, self._level_knot_dates, infer_freq) + 1) /
-            (self._get_gap_between_dates(start_date, training_end, infer_freq) + 1)
+        self._level_knots_idx = get_knot_idx(
+            date_array=date_array,
+            num_of_obs=None,
+            knot_dates=self._level_knot_dates,
+            knot_distance=None,
+            num_of_segments=None,
+            date_freq=self.date_freq,
         )
-        # else:
-        #     raise ModelException("User need to supply a list of level knots.")
-
-        kernel_level = sandwich_kernel(tp, self.knots_tp_level)
-        self._kernel_level = kernel_level
+        self.knots_tp_level =  (1 + self._level_knots_idx) / num_of_observations
+        self._kernel_level = sandwich_kernel(tp, self.knots_tp_level)
         self._num_knots_level = len(self._level_knot_dates)
 
         if self._seasonality:
@@ -1032,7 +965,7 @@ class KTRModel(ModelTemplate):
             new_tp = np.arange(start + 1, start + output_len + 1) / num_of_observations
 
             # if coefficient_method == 'smooth':
-            kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.rho_coefficients)
+            kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.regression_rho)
             # kernel_coefficients = parabolic_kernel(new_tp, self._knots_tp_coefficients)
             coef_knots = posteriors.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
             regressor_betas = np.matmul(coef_knots, kernel_coefficients.transpose((1, 0)))

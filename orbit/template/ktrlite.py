@@ -75,8 +75,7 @@ class KTRLiteInitializer(object):
 
 class KTRLiteModel(ModelTemplate):
     """
-
-     Parameters
+    Parameters
     ----------
     seasonality : int, or list of int
         multiple seasonality
@@ -116,34 +115,31 @@ class KTRLiteModel(ModelTemplate):
 
     def __init__(
             self,
+            # level
+            level_knot_scale=0.1,
+            level_segments=10,
+            level_knot_distance=None,
+            level_knot_dates=None,
+            # seasonality
             seasonality=None,
             seasonality_fs_order=None,
-            level_knot_scale=0.5,
+            seasonality_segments=2,
             seasonal_initial_knot_scale=1.0,
             seasonal_knot_scale=0.1,
-            span_level=0.1,
-            span_coefficients=0.3,
             degree_of_freedom=30,
-            # knot customization
-            level_knot_dates=None,
-            level_knot_length=None,
-            coefficients_knot_length=None,
-            knot_location='mid_point',
             date_freq=None,
             **kwargs
     ):
         # estimator is created in base class
         super().__init__(**kwargs)
-        self.span_level = span_level
         self.level_knot_scale = level_knot_scale
-        # customize knot dates for levels
+        self.level_segments = level_segments
         self.level_knot_dates = level_knot_dates
-        self.level_knot_length = level_knot_length
-        self.coefficients_knot_length = coefficients_knot_length
-        self.knot_location = knot_location
+        self.level_knot_distance = level_knot_distance
 
         self.seasonality = seasonality
         self.seasonality_fs_order = seasonality_fs_order
+        self.seasonality_segments = seasonality_segments
         self.seasonal_initial_knot_scale = seasonal_initial_knot_scale
         self.seasonal_knot_scale = seasonal_knot_scale
 
@@ -152,21 +148,18 @@ class KTRLiteModel(ModelTemplate):
         # use public one if knots length is not available
         self._seasonality = self.seasonality
         self._seasonality_fs_order = self.seasonality_fs_order
-        self._seasonal_knot_scale = self.seasonal_knot_scale
         self._seasonal_initial_knot_scale = None
         self._seasonal_knot_scale = None
 
         self._level_knot_dates = self.level_knot_dates
         self._degree_of_freedom = degree_of_freedom
 
-        self.span_coefficients = span_coefficients
-        # self.rho_coefficients = rho_coefficients
         self.date_freq = date_freq
 
         # regression attributes -- used for fourier series as seasonality only
         self.num_of_regressors = 0
         self.regressor_col = list()
-        self.regressor_col_gp = list()
+        self.regressor_col_grp = list()
         self.coefficients_initial_knot_scale = list()
         self.coefficients_knot_scale = list()
 
@@ -234,7 +227,7 @@ class KTRLiteModel(ModelTemplate):
 
     def _set_seasonality_attributes(self):
         """given list of seasonalities and their order, create list of seasonal_regressors_columns"""
-        self.regressor_col_gp = list()
+        self.regressor_col_grp = list()
         self.regressor_col = list()
         self.coefficients_initial_knot_scale = list()
         self.coefficients_knot_scale = list()
@@ -251,7 +244,7 @@ class KTRLiteModel(ModelTemplate):
                 # flatten version of regressor columns
                 self.regressor_col += fs_cols
                 # list of group of regressor columns bundled with seasonality
-                self.regressor_col_gp.append(fs_cols)
+                self.regressor_col_grp.append(fs_cols)
 
         self.num_of_regressors = len(self.regressor_col)
 
@@ -307,47 +300,40 @@ class KTRLiteModel(ModelTemplate):
         num_of_observations = training_meta['num_of_observations']
         date_array = training_meta['date_array']
 
-        self._knots_idx_level = get_knot_idx(
+        self._level_knots_idx = get_knot_idx(
             date_array=date_array,
             num_of_obs=num_of_observations,
             knot_dates=self.level_knot_dates,
-            knot_distance=self.level_knot_length,
-            num_of_segments=round(1/self.span_level) - 1,
+            knot_distance=self.level_knot_distance,
+            num_of_segments=self.level_segments,
             date_freq=self.date_freq,
         )
-        self._knots_idx_ub = num_of_observations - 1
-        self._knots_idx_lb = min(0, self._knots_idx_level[0])
         # kernel of coefficients calculations
         # set some default
         self.kernel_coefficients = np.zeros((num_of_observations, 0), dtype=np.double)
         self.num_knots_coefficients = 0
-
-        if self.date_freq is None:
-            self.date_freq = pd.infer_freq(date_array)[0]
 
         if self.num_of_regressors > 0:
             self._knots_idx_coef = get_knot_idx(
                 date_array=None,
                 num_of_obs=num_of_observations,
                 knot_dates=None,
-                knot_distance=self.coefficients_knot_length,
-                num_of_segments=round(1/self.span_coefficients) - 1,
+                knot_distance=None,
+                num_of_segments=self.seasonality_segments,
                 date_freq=self.date_freq,
             )
-            # if we have seasonality, we need to update the lower bound to align with level
-            self._knots_idx_lb = min(self._knots_idx_lb, self._knots_idx_coef[0])
 
-        tp = (np.arange(num_of_observations) - self._knots_idx_lb) / (self._knots_idx_ub - self._knots_idx_lb)
-        self.knots_tp_level = (self._knots_idx_level - self._knots_idx_lb) / \
-                              (self._knots_idx_ub - self._knots_idx_lb)
+        tp = np.arange(1, num_of_observations + 1) / num_of_observations
+        self.knots_tp_level =  (1 + self._level_knots_idx) / num_of_observations
         self.kernel_level = sandwich_kernel(tp, self.knots_tp_level)
         self.num_knots_level = len(self.knots_tp_level)
-        self._level_knot_dates = get_knot_dates(date_array[0], self._knots_idx_level, self.date_freq)
+        if self.date_freq is None:
+            self.date_freq = pd.infer_freq(date_array)[0]
+        self._level_knot_dates = get_knot_dates(date_array[0], self._level_knots_idx, self.date_freq)
 
         # update rest of the seasonality related fields
         if self.num_of_regressors > 0:
-            self.knots_tp_coefficients = (self._knots_idx_coef - self._knots_idx_lb) / \
-                                         (self._knots_idx_ub - self._knots_idx_lb)
+            self.knots_tp_coefficients = (1 + self._knots_idx_coef) / num_of_observations
             self.kernel_coefficients = sandwich_kernel(tp, self.knots_tp_coefficients)
             self.num_knots_coefficients = len(self.knots_tp_coefficients)
             self._coef_knot_dates = get_knot_dates(date_array[0], self._knots_idx_coef, self.date_freq)
@@ -440,7 +426,7 @@ class KTRLiteModel(ModelTemplate):
             kernel_coefficients = sandwich_kernel(new_tp, self.knots_tp_coefficients)
             coef = np.matmul(coef_knot, kernel_coefficients.transpose(1, 0))
             pos = 0
-            for idx, cols in enumerate(self.regressor_col_gp):
+            for idx, cols in enumerate(self.regressor_col_grp):
                 seasonal_regressor_matrix = df[cols].values
                 seas_coef = coef[..., pos:(pos + len(cols)), :]
                 seas_regression = np.sum(seas_coef * seasonal_regressor_matrix.transpose(1, 0), axis=-2)
@@ -470,6 +456,7 @@ class KTRLiteModel(ModelTemplate):
         if lev_knots.shape[0] > 1:
             lev_knots = np.median(lev_knots, 0)
         else:
+            print("ssssssss")
             lev_knots = np.squeeze(lev_knots, 0)
 
         out = {

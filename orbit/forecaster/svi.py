@@ -48,6 +48,8 @@ class SVIForecaster(Forecaster):
         if point_method is not None and not keep_samples:
             self._posterior_samples = {}
 
+        self.load_extra_methods()
+
     @staticmethod
     def _bootstrap(num_samples, posterior_samples, n):
         """Draw `n` number of bootstrap samples from the posterior_samples.

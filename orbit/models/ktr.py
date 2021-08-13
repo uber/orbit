@@ -1,31 +1,39 @@
-from ..template.ktrx import KTRXModel
+from ..template.ktr import KTRModel
 from ..forecaster import SVIForecaster
 from ..exceptions import IllegalArgument
 from ..estimators.pyro_estimator import PyroEstimatorVI
 
 
-def KTRX(
+def KTR(
         level_knot_scale=0.1,
+        level_segments=10,
+        level_knot_distance=None,
+        level_knot_dates=None,
+        # seasonality
+        seasonality=None,
+        seasonality_fs_order=None,
+        seasonality_segments=2,
+        seasonal_initial_knot_scale=1.0,
+        seasonal_knot_scale=0.1,
+        # regression
         regressor_col=None,
         regressor_sign=None,
         regressor_init_knot_loc=None,
         regressor_init_knot_scale=None,
         regressor_knot_scale=None,
-        span_coefficients=0.3,
-        rho_coefficients=0.15,
+        regression_segments=5,
+        regression_knot_distance=None,
+        regression_knot_dates=None,
+        # different from seasonality
+        regression_rho=0.15,
+        # shared
         degree_of_freedom=30,
         # time-based coefficient priors
         coef_prior_list=None,
-        # knot customization
-        level_knot_dates=None,
-        level_knots=None,
-        seasonal_knots_input=None,
-        coefficients_knot_length=None,
-        coefficients_knot_dates=None,
+        # shared
         date_freq=None,
-        mvn=0,
         flat_multiplier=True,
-        geometric_walk=False,
+        # TODO: rename to residuals upper bound
         min_residuals_sd=1.0,
         estimator='pyro-vi',
         **kwargs):
@@ -103,37 +111,38 @@ def KTRX(
     """
     _supported_estimators = ['pyro-svi']
 
-    ktrx = KTRXModel(
-        level_knot_scale=level_knot_scale,
-        regressor_col=regressor_col,
-        regressor_sign=regressor_sign,
-        regressor_init_knot_loc=regressor_init_knot_loc,
-        regressor_init_knot_scale=regressor_init_knot_scale,
-        regressor_knot_scale=regressor_knot_scale,
-        span_coefficients=span_coefficients,
-        rho_coefficients=rho_coefficients,
-        degree_of_freedom=degree_of_freedom,
-        # time-based coefficient priors
-        coef_prior_list=coef_prior_list,
-        # knot customization
-        level_knot_dates=level_knot_dates,
-        level_knots=level_knots,
-        seasonal_knots_input=seasonal_knots_input,
-        coefficients_knot_length=coefficients_knot_length,
-        coefficients_knot_dates=coefficients_knot_dates,
-        date_freq=date_freq,
-        mvn=mvn,
-        flat_multiplier=flat_multiplier,
-        geometric_walk=geometric_walk,
-        min_residuals_sd=min_residuals_sd,
+    ktr = KTRModel(
+            level_knot_scale=level_knot_scale,
+            level_segments=level_segments,
+            level_knot_distance=level_knot_distance,
+            level_knot_dates=level_knot_dates,
+            seasonality=seasonality,
+            seasonality_fs_order=seasonality_fs_order,
+            seasonality_segments=seasonality_segments,
+            seasonal_initial_knot_scale=seasonal_initial_knot_scale,
+            seasonal_knot_scale=seasonal_knot_scale,
+            regressor_col=regressor_col,
+            regressor_sign=regressor_sign,
+            regressor_init_knot_loc=regressor_init_knot_loc,
+            regressor_init_knot_scale=regressor_init_knot_scale,
+            regressor_knot_scale=regressor_knot_scale,
+            regression_segments=regression_segments,
+            regression_knot_distance=regression_knot_distance,
+            regression_knot_dates=regression_knot_dates,
+            regression_rho=regression_rho,
+            degree_of_freedom=degree_of_freedom,
+            coef_prior_list=coef_prior_list,
+            date_freq=date_freq,
+            flat_multiplier=flat_multiplier,
+            min_residuals_sd=min_residuals_sd,
     )
     if estimator == 'pyro-svi':
-        ktrx_forecaster = SVIForecaster(
-            model=ktrx,
+        ktr_forecaster = SVIForecaster(
+            model=ktr,
             estimator_type=PyroEstimatorVI,
             **kwargs
         )
     else:
         raise IllegalArgument('Invalid estimator. Must be one of {}'.format(_supported_estimators))
 
-    return ktrx_forecaster
+    return ktr_forecaster
