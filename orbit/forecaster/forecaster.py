@@ -301,8 +301,7 @@ class Forecaster(object):
         return deepcopy(self._posterior_samples)
 
     def get_point_posteriors(self):
-        if self._point_method is not None:
-            return deepcopy(self._point_posteriors.get(self._point_method))
+        return deepcopy(self._point_posteriors)
 
     def load_extra_methods(self):
         pass

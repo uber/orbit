@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from copy import deepcopy
 from functools import partial
 
 from ..constants.constants import PredictMethod, PredictionKeys
@@ -95,12 +94,13 @@ class MAPForecaster(Forecaster):
 
     # TODO: should be private
     def load_extra_methods(self):
-        posteriors = self.get_point_posteriors()
         for method in self.extra_methods:
             setattr(self,
                     method,
                     partial(
                         getattr(self._model, method),
                         self.get_training_meta(),
-                        posteriors
+                        PredictMethod.MAP.value,
+                        self.get_point_posteriors(),
+                        self.get_posterior_samples()
                     ))

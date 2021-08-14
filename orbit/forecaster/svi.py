@@ -163,16 +163,13 @@ class SVIForecaster(Forecaster):
             return predicted_df
 
     def load_extra_methods(self):
-        if self._point_method is not None:
-            posteriors = self.get_point_posteriors()
-        else:
-            posteriors = self.get_posterior_samples()
-
         for method in self.extra_methods:
             setattr(self,
                     method,
                     partial(
                         getattr(self._model, method),
                         self.get_training_meta(),
-                        posteriors
+                        self._point_method,
+                        self.get_point_posteriors(),
+                        self.get_posterior_samples()
                     ))
