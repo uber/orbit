@@ -11,7 +11,7 @@ import math
 
 from ..constants.constants import PredictionKeys
 from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
-from ..constants.palette import QualitativePalette
+from ..constants.palette import OrbitPalette
 from ..constants.palette import PredictionPaletteClassic as PredPal
 from orbit.diagnostics.metrics import smape
 
@@ -357,8 +357,8 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
             axes[i].set_xlabel(param)
             axes[i].set_ylabel('density')
             # draw vertical lines
-            axes[i].axvline(mean, color=QualitativePalette['PostQ'].value[0], lw=4, alpha=.5, label='mean')
-            axes[i].axvline(median, color=QualitativePalette['PostQ'].value[1], lw=4, alpha=.5, label='median')
+            axes[i].axvline(mean, color=OrbitPalette['GREEN'].value, lw=4, alpha=.5, label='mean')
+            axes[i].axvline(median, color=OrbitPalette['ORANGE'].value, lw=4, alpha=.5, label='median')
             axes[i].axvline(cred_min, linestyle='--', color='k', alpha=.5, label='95% CI')
             axes[i].axvline(cred_max, linestyle='--', color='k', alpha=.5)
             # axes[i].legend()
@@ -377,20 +377,10 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
             samples = posterior_samples[param]
             # chain order is preserved in the posterior samples
             chained_samples = np.array_split(samples, mod.estimator.chains)
-            # mean = np.mean(samples)
-            # median = np.median(samples)
-            # cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level)/2), \
-            #                         np.percentile(samples, 100 * (1 + ci_level)/2)
 
             for k in range(mod.estimator.chains):
                 axes[i].plot(chained_samples[k], lw=1, alpha=.5, label=f'chain {k+1}')
             axes[i].set_ylabel(param)
-            # axes[i].legend()
-            # draw horizontal lines
-            # axes[i].axhline(mean, color=QualitativePalette['PostQ'].value[0], lw=2, alpha=.5, label='mean')
-            # axes[i].axhline(median, color=QualitativePalette['PostQ'].value[1], lw=2, alpha=.5, label='median')
-            # axes[i].axhline(cred_min, linestyle='--', color='k', alpha=.5, label='95% CI')
-            # axes[i].axhline(cred_max, linestyle='--', color='k', alpha=.5)
 
         handles, labels = axes[0].get_legend_handles_labels()
         fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.15, 0.9))
