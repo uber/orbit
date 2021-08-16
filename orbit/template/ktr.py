@@ -8,8 +8,8 @@ import torch
 import matplotlib.pyplot as plt
 from copy import deepcopy
 
-from ..constants.constants import CoefPriorDictKeys
-from ..exceptions import IllegalArgument, ModelException
+from ..constants.constants import CoefPriorDictKeys, PredictMethod
+from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel, sandwich_kernel
 from ..utils.features import make_fourier_series_df
@@ -582,9 +582,6 @@ class KTRModel(ModelTemplate):
             # _regular_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
             # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
             # self._regular_regressor_knot_scale has shape num_of_pr x num_of_knot
-            print(multiplier.shape)
-            print(self._regular_regressor_knot_scale.shape)
-            print(np.expand_dims(self._regular_regressor_knot_scale, -1).shape)
             self._regular_regressor_knot_scale = (
                     multiplier * np.expand_dims(self._regular_regressor_knot_scale, -1)
             )
@@ -727,7 +724,7 @@ class KTRModel(ModelTemplate):
 
         if self._seasonality:
             self._seasonality_coef_knot_dates = ktrlite._model._coef_knot_dates
-            self._seasonality_coef_knot = ktrlite_pt_posteriors['coef_knot']
+            self._seasonality_coef_knot = ktrlite_pt_posteriors['map']['coef_knot']
 
             self._seas_term = self._generate_seas(
                 df,
@@ -795,7 +792,7 @@ class KTRModel(ModelTemplate):
         return regressor_beta
 
     def predict(self, posterior_estimates, df, training_meta, prediction_meta,
-                # coefficient_method="smooth",
+                coefficient_method="smooth",
                 include_error=False, store_prediction_array=False, **kwargs):
         """Vectorized version of prediction math
         Parameters
@@ -877,7 +874,7 @@ class KTRModel(ModelTemplate):
             regressor_betas = self._get_regression_coefs_matrix(
                 training_meta,
                 posterior_estimates,
-                # coefficient_method,
+                coefficient_method,
                 date_array=prediction_meta['date_array']
             )
             regression = np.sum(regressor_betas * regressor_matrix, axis=-1)
@@ -904,11 +901,7 @@ class KTRModel(ModelTemplate):
 
         return decomp_dict
 
-    def _get_regression_coefs_matrix(self,
-                                     training_meta,
-                                     posteriors,
-                                     # coefficient_method='smooth',
-                                     date_array=None):
+    def _get_regression_coefs_matrix(self, training_meta, posteriors, coefficient_method='smooth', date_array=None):
         """internal function to provide coefficient matrix given a date array
         Args
         ----
@@ -931,16 +924,16 @@ class KTRModel(ModelTemplate):
             return None
 
         if date_array is None:
-            # if coefficient_method == 'smooth':
-            # if date_array not specified, dynamic coefficients in the training perior will be retrieved
-            coef_knots = posteriors.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
-            regressor_betas = np.matmul(coef_knots, self._kernel_coefficients.transpose((1, 0)))
-            # back to batch x time step x regressor columns shape
-            regressor_betas = regressor_betas.transpose((0, 2, 1))
-            # elif coefficient_method == 'empirical':
-            #     regressor_betas = model.get(RegressionSamplingParameters.COEFFICIENTS.value)
-            # else:
-            #     raise IllegalArgument('Wrong coefficient_method:{}'.format(coefficient_method))
+            if coefficient_method == 'smooth':
+                # if date_array not specified, dynamic coefficients in the training perior will be retrieved
+                coef_knots = posteriors.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+                regressor_betas = np.matmul(coef_knots, self._kernel_coefficients.transpose((1, 0)))
+                # back to batch x time step x regressor columns shape
+                regressor_betas = regressor_betas.transpose((0, 2, 1))
+            elif coefficient_method == 'empirical':
+                regressor_betas = posteriors.get(RegressionSamplingParameters.COEFFICIENTS.value)
+            else:
+                raise IllegalArgument('Wrong coefficient_method:{}'.format(coefficient_method))
         else:
             date_array = pd.to_datetime(date_array).values
             output_len = len(date_array)
@@ -951,7 +944,7 @@ class KTRModel(ModelTemplate):
             prediction_start = date_array[0]
 
             if prediction_start < training_start:
-                raise ModelException('Prediction start must be after training start.')
+                raise PredictionException('Prediction start must be after training start.')
 
             # If we cannot find a match of prediction range, assume prediction starts right after train end
             if prediction_start > training_end:
@@ -967,76 +960,74 @@ class KTRModel(ModelTemplate):
                     coef_repeats = [0] * start + [1] * (train_len - start - 1) + [output_len - train_len + start + 1]
             new_tp = np.arange(start + 1, start + output_len + 1) / num_of_observations
 
-            # if coefficient_method == 'smooth':
-            kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.regression_rho)
-            # kernel_coefficients = parabolic_kernel(new_tp, self._knots_tp_coefficients)
-            coef_knots = posteriors.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
-            regressor_betas = np.matmul(coef_knots, kernel_coefficients.transpose((1, 0)))
-            regressor_betas = regressor_betas.transpose((0, 2, 1))
-
-            # elif coefficient_method == 'empirical':
-            #     regressor_betas = model.get(RegressionSamplingParameters.COEFFICIENTS.value)
-            #     regressor_betas = np.repeat(regressor_betas, repeats=coef_repeats, axis=1)
-            # else:
-            #     raise IllegalArgument('Wrong coefficient_method:{}'.format(coefficient_method))
+            if coefficient_method == 'smooth':
+                kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.regression_rho)
+                # kernel_coefficients = parabolic_kernel(new_tp, self._knots_tp_coefficients)
+                coef_knots = posteriors.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+                regressor_betas = np.matmul(coef_knots, kernel_coefficients.transpose((1, 0)))
+                regressor_betas = regressor_betas.transpose((0, 2, 1))
+            elif coefficient_method == 'empirical':
+                regressor_betas = posteriors.get(RegressionSamplingParameters.COEFFICIENTS.value)
+                regressor_betas = np.repeat(regressor_betas, repeats=coef_repeats, axis=1)
+            else:
+                raise IllegalArgument('Wrong coefficient_method:{}'.format(coefficient_method))
 
         return regressor_betas
 
-    def _get_regression_coefs(self,
-                              training_meta,
-                              point_method,
-                              point_posteriors,
-                              # TODO: recover this later
-                              # coefficient_method='smooth',
-                              date_array=None,
-                              # TODO: recover this later
-                              # include_ci=False,
-                              # lower=0.05,
-                              # upper=0.95
-                              ):
+    def get_regression_coefs(self, training_meta, point_method, point_posteriors, posterior_samples,
+                             coefficient_method='smooth', date_array=None,
+                             include_ci=False, lower=0.05, upper=0.95
+                            ):
         """Return DataFrame regression coefficients
         """
-        posteriors = point_posteriors.get(point_method)
         date_col = training_meta['date_col']
-        train_date_array = training_meta['date_array']
-        coefs = np.squeeze(self._get_regression_coefs_matrix(
-            training_meta,
-            posteriors,
-            # TODO: recover this later
-            # coefficient_method=coefficient_method,
-            date_array=date_array)
-        )
+        reg_df = pd.DataFrame()
+        if self._num_of_regressors == 0:
+            return reg_df
+
+        _point_method = point_method
+        if point_method is None:
+            _point_method = PredictMethod.MEDIAN.value
+
+        posteriors = point_posteriors.get(_point_method)
+        coefs = np.squeeze(self._get_regression_coefs_matrix(training_meta,
+                                                             posteriors,
+                                                             coefficient_method=coefficient_method,
+                                                             date_array=date_array))
         if len(coefs.shape) == 1:
             coefs = coefs.reshape((1, -1))
         reg_df = pd.DataFrame(data=coefs, columns=self._regressor_col)
         if date_array is not None:
             reg_df[date_col] = date_array
         else:
-            reg_df[date_col] = train_date_array
-
+            reg_df[date_col] = training_meta['date_array']
         # re-arrange columns
         reg_df = reg_df[[date_col] + self._regressor_col]
-        # if include_ci:
-        #     posteriors = self._posterior_samples
-        #     coefs = self._get_regression_coefs_matrix(posteriors, coefficient_method=coefficient_method)
-        #
-        #     coefficients_lower = np.quantile(coefs, lower, axis=0)
-        #     coefficients_upper = np.quantile(coefs, upper, axis=0)
-        #
-        #     reg_df_lower = reg_df.copy()
-        #     reg_df_upper = reg_df.copy()
-        #     for idx, col in enumerate(self._regressor_col):
-        #         reg_df_lower[col] = coefficients_lower[:, idx]
-        #         reg_df_upper[col] = coefficients_upper[:, idx]
-        #     return reg_df, reg_df_lower, reg_df_upper
+
+        if include_ci:
+            posteriors = posterior_samples
+            coefs = self._get_regression_coefs_matrix(training_meta,
+                                                      posteriors,
+                                                      coefficient_method=coefficient_method,
+                                                      date_array=date_array)
+            coefficients_lower = np.quantile(coefs, lower, axis=0)
+            coefficients_upper = np.quantile(coefs, upper, axis=0)
+            reg_df_lower = reg_df.copy()
+            reg_df_upper = reg_df.copy()
+            for idx, col in enumerate(self._regressor_col):
+                reg_df_lower[col] = coefficients_lower[:, idx]
+                reg_df_upper[col] = coefficients_upper[:, idx]
+            return reg_df, reg_df_lower, reg_df_upper
 
         return reg_df
 
-    def _get_regression_coef_knots(self, training_meta, point_method, point_posteriors):
+    def get_regression_coef_knots(self, training_meta, point_method, point_posteriors, posterior_samples):
         """Return DataFrame regression coefficient knots
         """
         date_col = training_meta['date_col']
-        posteriors = point_posteriors[point_method]
+        _point_method = point_method
+        if point_method is None:
+            _point_method = PredictMethod.MEDIAN.value
 
         # init dataframe
         knots_df = pd.DataFrame()
@@ -1047,8 +1038,8 @@ class KTRModel(ModelTemplate):
         knots_df[date_col] = self._regression_knot_dates
         # TODO: make the label as a constant
         knots_df['step'] = self._regression_knots_idx
-        coef_knots = posteriors \
-            .get(posteriors) \
+        coef_knots = point_posteriors \
+            .get(_point_method) \
             .get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
 
         for idx, col in enumerate(self._regressor_col):
@@ -1056,61 +1047,93 @@ class KTRModel(ModelTemplate):
 
         return knots_df
 
-    def get_regression_coefs(self,
-                             training_meta,
-                             point_method,
-                             point_posteriors,
-                             # TODO: recover this later
-                             # coefficient_method='smooth',
-                             date_array=None,
-                             # TODO: recover this later
-                             # include_ci=False,
-                             # lower=0.05,
-                             # upper=0.95
-                             ):
+    def plot_regression_coefs(self, training_meta, point_method, point_posteriors, posterior_samples,
+                              coefficient_method='smooth', date_array=None,
+                              include_ci=False, lower=0.05, upper=0.95,
+                              with_knot=False, ncol=2, figsize=None, ylim=None, markersize=200):
+        """Plot regression coefficients
+        """
+        # assume your first column is the date; this way can use a static method
+        if include_ci:
+            coef_df, coef_df_lower, coef_df_upper = self.get_regression_coefs(
+                        training_meta, point_method, point_posteriors, posterior_samples,
+                        coefficient_method=coefficient_method, date_array=date_array,
+                        include_ci=include_ci, lower=lower, upper=upper
+                    )
+        else:
+            coef_df = self.get_regression_coefs(
+                        training_meta, point_method, point_posteriors, posterior_samples,
+                        coefficient_method=coefficient_method, date_array=date_array,
+                        include_ci=include_ci, lower=lower, upper=upper
+                    )
+            coef_df_lower, coef_df_upper = None, None
+        if with_knot:
+            knot_df = self.get_regression_coef_knots(training_meta, point_method, point_posteriors, posterior_samples)
+        else:
+            knot_df = None
 
-        return self._get_regression_coefs(
-            training_meta=training_meta,
-            point_method=point_method,
-            point_posteriors=point_posteriors,
-            # coefficient_method=coefficient_method,
-            date_array=date_array,
-            # include_ci=include_ci,
-            # lower=lower, upper=upper
-        )
+        regressor_col = coef_df.columns.tolist()[1:]
+        nrow = math.ceil(len(regressor_col) / ncol)
+        fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False)
+
+        for idx, col in enumerate(regressor_col):
+            row_idx = idx // ncol
+            col_idx = idx % ncol
+            coef = coef_df[col]
+            axes[row_idx, col_idx].plot(coef, alpha=.8, label='coefficients')
+            if coef_df_lower is not None and coef_df_upper is not None:
+                coef_lower = coef_df_lower[col]
+                coef_upper = coef_df_upper[col]
+                axes[row_idx, col_idx].fill_between(np.arange(0, coef_df.shape[0]), coef_lower, coef_upper, alpha=.3)
+            if knot_df is not None:
+                step = knot_df['step']
+                knots = knot_df[col].values
+                axes[row_idx, col_idx].scatter(x=step, y=knots, marker='^', s=markersize, color='green', alpha=0.5)
+            if ylim is not None:
+                axes[row_idx, col_idx].set_ylim(ylim)
+            axes[row_idx, col_idx].set_title('{}'.format(col))
+            axes[row_idx, col_idx].ticklabel_format(useOffset=False)
+
+        plt.tight_layout()
+        return axes
 
     # TODO: need a unit test of this function
-    def get_level_knots(self, training_meta, posteriors):
+    def get_level_knots(self, training_meta, point_method, point_posteriors, posterior_samples):
         """Given posteriors, return knots and correspondent date"""
         date_col = training_meta['date_col']
-        lev_knots = posteriors[BaseSamplingParameters.LEVEL_KNOT.value]
-        if lev_knots.shape[0] > 1:
-            lev_knots = np.median(lev_knots, 0)
-        else:
-            lev_knots = np.squeeze(lev_knots, 0)
-
+        _point_method = point_method
+        if point_method is None:
+            _point_method = PredictMethod.MEDIAN.value
+        lev_knots = point_posteriors \
+                    .get(_point_method) \
+                    .get(BaseSamplingParameters.LEVEL_KNOT.value)
+        lev_knots = np.squeeze(lev_knots, 0)
         out = {
             date_col: self._level_knot_dates,
             BaseSamplingParameters.LEVEL_KNOT.value: lev_knots,
         }
+
         return pd.DataFrame(out)
 
-    def get_levels(self, training_meta, posteriors):
+    def get_levels(self, training_meta, point_method, point_posteriors, posterior_samples):
         date_col = training_meta['date_col']
         date_array = training_meta['date_array']
-        levs = posteriors[BaseSamplingParameters.LEVEL.value]
-        if levs.shape[0] > 1:
-            levs = np.median(levs, 0)
-        else:
-            levs = np.squeeze(levs, 0)
-
+        _point_method = point_method
+        if point_method is None:
+            _point_method = PredictMethod.MEDIAN.value
+        levs = point_posteriors \
+                 .get(_point_method) \
+                 .get(BaseSamplingParameters.LEVEL.value)
+        levs = np.squeeze(levs, 0)
         out = {
             date_col: date_array,
             BaseSamplingParameters.LEVEL.value: levs,
         }
+
         return pd.DataFrame(out)
 
-    def plot_lev_knots(self, training_meta, posteriors, path=None, is_visible=True, title="", fontsize=16,
+    def plot_lev_knots(self, training_meta, point_method, point_posteriors, posterior_samples,
+                       path=None, is_visible=True, title="", fontsize=16,
                        markersize=250, figsize=(16, 8)):
         """ Plot the fitted level knots along with the actual time series.
         Parameters
@@ -1135,8 +1158,8 @@ class KTRModel(ModelTemplate):
         date_array = training_meta['date_array']
         response = training_meta['response']
 
-        levels_df = self.get_levels(training_meta, posteriors)
-        knots_df = self.get_level_knots(training_meta, posteriors)
+        levels_df = self.get_levels(training_meta, point_method, point_posteriors, posterior_samples)
+        knots_df = self.get_level_knots(training_meta, point_method, point_posteriors, posterior_samples)
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         ax.plot(date_array, response, color=OrbitPalette.blue.value, lw=1, alpha=0.7, label='actual')
