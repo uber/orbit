@@ -582,6 +582,9 @@ class KTRModel(ModelTemplate):
             # _regular_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
             # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
             # self._regular_regressor_knot_scale has shape num_of_pr x num_of_knot
+            print(multiplier.shape)
+            print(self._regular_regressor_knot_scale.shape)
+            print(np.expand_dims(self._regular_regressor_knot_scale, -1).shape)
             self._regular_regressor_knot_scale = (
                     multiplier * np.expand_dims(self._regular_regressor_knot_scale, -1)
             )
@@ -696,7 +699,7 @@ class KTRModel(ModelTemplate):
         ktrlite_pt_posteriors = ktrlite.get_point_posteriors()
 
         # this part is to download level and seasonality result from KTRLite
-        self._level_knots = np.squeeze(ktrlite_pt_posteriors['lev_knot'])
+        self._level_knots = np.squeeze(ktrlite_pt_posteriors['map']['lev_knot'])
         self.level_knot_dates = ktrlite._model._level_knot_dates
         tp = np.arange(1, num_of_observations + 1) / num_of_observations
         # trim level knots dates when they are beyond training dates
