@@ -304,6 +304,7 @@ class KTRLiteModel(ModelTemplate):
             num_of_segments=self.level_segments,
             date_freq=self.date_freq,
         )
+        self._level_knots_idx_lb = self._level_knots_idx[0]
         # kernel of coefficients calculations
         # set some default
         self.kernel_coefficients = np.zeros((num_of_observations, 0), dtype=np.double)
@@ -318,9 +319,14 @@ class KTRLiteModel(ModelTemplate):
                 num_of_segments=self.seasonality_segments,
                 date_freq=self.date_freq,
             )
+            self._seas_knots_idx_lb = self._seas_knots_idx[0]
 
-        tp = np.arange(1, num_of_observations + 1) / num_of_observations
-        self.knots_tp_level =  (1 + self._level_knots_idx) / num_of_observations
+        # tp = np.arange(1, num_of_observations + 1) / num_of_observations
+        tp = (np.arange(1, num_of_observations + 1) - self._level_knots_idx_lb) / \
+             (num_of_observations - self._level_knots_idx_lb)
+        # self.knots_tp_level =  (self._level_knots_idx + 1) / num_of_observations
+        self.knots_tp_level = (self._level_knots_idx - self._level_knots_idx_lb + 1) / \
+                              (num_of_observations - self._level_knots_idx_lb)
         self.kernel_level = sandwich_kernel(tp, self.knots_tp_level)
         self.num_knots_level = len(self.knots_tp_level)
         if self.date_freq is None:
@@ -329,7 +335,11 @@ class KTRLiteModel(ModelTemplate):
 
         # update rest of the seasonality related fields
         if self.num_of_regressors > 0:
-            self.knots_tp_coefficients = (1 + self._seas_knots_idx) / num_of_observations
+            tp = (np.arange(1, num_of_observations + 1) - self._seas_knots_idx_lb) / \
+                 (num_of_observations - self._seas_knots_idx_lb)
+            # self.knots_tp_coefficients = (self._seas_knots_idx + 1) / num_of_observations
+            self.knots_tp_coefficients = (self._seas_knots_idx - self._seas_knots_idx_lb + 1) / \
+                                         (num_of_observations - self._seas_knots_idx_lb)
             self.kernel_coefficients = sandwich_kernel(tp, self.knots_tp_coefficients)
             self.num_knots_coefficients = len(self.knots_tp_coefficients)
             self._coef_knot_dates = get_knot_dates(date_array[0], self._seas_knots_idx, self.date_freq)
@@ -503,6 +513,8 @@ class KTRLiteModel(ModelTemplate):
 
         levels_df = self.get_levels(training_meta, point_method, point_posteriors, posterior_samples)
         knots_df = self.get_level_knots(training_meta, point_method, point_posteriors, posterior_samples)
+        levels_df = levels_df[levels_df[date_col] >= date_array.min()]
+        knots_df = knots_df[knots_df[date_col] >= date_array.min()]
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         ax.plot(date_array, response, color=OrbitPalette.blue.value, lw=1, alpha=0.7, label='actual')

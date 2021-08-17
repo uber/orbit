@@ -22,13 +22,13 @@ def test_ktrlite_single_seas(make_daily_data, seasonality_fs_order):
         seasonality=[365.25],
         seasonality_fs_order=seasonality_fs_order,
         estimator='stan-map',
-        n_bootstrap_draws=1e4,
+        n_bootstrap_draws=-1,
     )
 
     ktrlite.fit(train_df)
     predict_df = ktrlite.predict(test_df)
 
-    expected_columns = ['date', 'prediction_5', 'prediction', 'prediction_95']
+    expected_columns = ['date', 'prediction']
     expected_shape = (364, len(expected_columns))
     expected_num_parameters = 6
 
@@ -51,13 +51,13 @@ def test_ktrlite_dual_seas(make_daily_data, seasonality_fs_order):
         seasonality=[7, 365.25],
         seasonality_fs_order=seasonality_fs_order,
         estimator='stan-map',
-        n_bootstrap_draws=1e4,
+        n_bootstrap_draws=-1,
     )
 
     ktrlite.fit(train_df)
     predict_df = ktrlite.predict(test_df)
 
-    expected_columns = ['date', 'prediction_5', 'prediction', 'prediction_95']
+    expected_columns = ['date', 'prediction']
     expected_shape = (364, len(expected_columns))
     expected_num_parameters = 6
 
@@ -67,8 +67,8 @@ def test_ktrlite_dual_seas(make_daily_data, seasonality_fs_order):
     assert smape(test_df['response'].values, predict_df['prediction'].values) <= SMAPE_TOLERANCE
 
 
-@pytest.mark.parametrize("span_level", [.05, .1, .5])
-def test_ktrlite_span_level(make_daily_data, span_level):
+@pytest.mark.parametrize("level_segments", [20, 10, 2])
+def test_ktrlite_span_level(make_daily_data, level_segments):
     train_df, test_df, coef = make_daily_data
 
     ktrlite = KTRLite(
@@ -76,15 +76,15 @@ def test_ktrlite_span_level(make_daily_data, span_level):
         date_col='date',
         seasonality=[7, 365.25],
         seasonality_fs_order=[2, 5],
-        span_level=span_level,
+        level_segments=level_segments,
         estimator='stan-map',
-        n_bootstrap_draws=1e4,
+        n_bootstrap_draws=-1,
     )
 
     ktrlite.fit(train_df)
     predict_df = ktrlite.predict(test_df)
 
-    expected_columns = ['date', 'prediction_5', 'prediction', 'prediction_95']
+    expected_columns = ['date', 'prediction']
     expected_shape = (364, len(expected_columns))
     expected_num_parameters = 6
 
@@ -94,7 +94,7 @@ def test_ktrlite_span_level(make_daily_data, span_level):
     assert smape(test_df['response'].values, predict_df['prediction'].values) <= SMAPE_TOLERANCE
     knots_df = ktrlite.get_level_knots()
     levels_df = ktrlite.get_levels()
-    assert knots_df.shape[0] == round(1/span_level)
+    assert knots_df.shape[0] == level_segments
     assert levels_df.shape[0] ==  ktrlite.get_training_meta()['num_of_observations']
 
 

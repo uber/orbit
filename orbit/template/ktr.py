@@ -488,9 +488,14 @@ class KTRModel(ModelTemplate):
                 num_of_segments=self.regression_segments,
                 date_freq=self.date_freq,
             )
+            self._regression_knots_idx_lb = self._regression_knots_idx[0]
 
-            tp = np.arange(1, num_of_observations + 1) / num_of_observations
-            self._knots_tp_coefficients =  (1 + self._regression_knots_idx) / num_of_observations
+            # tp = np.arange(1, num_of_observations + 1) / num_of_observations
+            tp = (np.arange(1, num_of_observations + 1) - self._regression_knots_idx_lb) / \
+                 (num_of_observations - self._regression_knots_idx_lb)
+            # self._knots_tp_coefficients =  (self._regression_knots_idx + 1) / num_of_observations
+            self._knots_tp_coefficients =  (self._regression_knots_idx - self._regression_knots_idx_lb + 1) / \
+                                           (num_of_observations - self._regression_knots_idx_lb)
             self._kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.regression_rho)
             self._num_knots_coefficients = len(self._knots_tp_coefficients)
             if self.date_freq is None:
@@ -575,7 +580,7 @@ class KTRModel(ModelTemplate):
             self._regular_regressor_init_knot_scale = np.array(self._regular_regressor_init_knot_scale)
             self._regular_regressor_init_knot_scale[self._regular_regressor_init_knot_scale < 1e-4] = 1e-4
 
-    def _generate_tp(self, training_meta, prediction_date_array):
+    def _generate_tp(self, training_meta, seas_knots_idx_lb, prediction_date_array):
         """Used in _generate_coefs"""
         training_end = training_meta['training_end']
         num_of_observations = training_meta['num_of_observations']
@@ -587,26 +592,28 @@ class KTRModel(ModelTemplate):
         else:
             start = pd.Index(date_array).get_loc(prediction_start)
 
-        new_tp = np.arange(start + 1, start + output_len + 1) / num_of_observations
+        new_tp = (np.arange(start + 1, start + output_len + 1) - seas_knots_idx_lb) / \
+                 (num_of_observations - seas_knots_idx_lb)
         return new_tp
 
-    def _generate_insample_tp(self, training_meta, date_array):
+    def _generate_insample_tp(self, training_meta, seas_knots_idx_lb, date_array):
         """Used in _generate_coefs"""
         train_date_array = training_meta['date_array']
         num_of_observations = training_meta['num_of_observations']
         idx = np.nonzero(np.in1d(train_date_array, date_array))[0]
-        tp = (idx + 1) / num_of_observations
+        tp = (idx - seas_knots_idx_lb + 1) / (num_of_observations - seas_knots_idx_lb)
         return tp
 
-    def _generate_coefs(self, training_meta, prediction_date_array, coef_knot_dates, coef_knot):
+    def _generate_coefs(self, training_meta, seas_knots_idx_lb, prediction_date_array, coef_knot_dates, coef_knot):
         """Used in _generate_seas"""
-        new_tp = self._generate_tp(training_meta, prediction_date_array)
-        knots_tp_coef = self._generate_insample_tp(training_meta, coef_knot_dates)
+        new_tp = self._generate_tp(training_meta, seas_knots_idx_lb, prediction_date_array)
+        knots_tp_coef = self._generate_insample_tp(training_meta, seas_knots_idx_lb, coef_knot_dates)
         kernel_coef = sandwich_kernel(new_tp, knots_tp_coef)
         coefs = np.squeeze(np.matmul(coef_knot, kernel_coef.transpose(1, 0)), axis=0).transpose(1, 0)
         return coefs
 
-    def _generate_seas(self, df, training_meta, coef_knot_dates, coef_knot, seasonality, seasonality_fs_order):
+    def _generate_seas(self, df, training_meta, seas_knots_idx_lb,
+                       coef_knot_dates, coef_knot, seasonality, seasonality_fs_order):
         """To calculate the seasonality term based on the _seasonal_knots_input.
         Parameters
         ----------
@@ -647,7 +654,8 @@ class KTRModel(ModelTemplate):
             fs_cols += fs_cols_temp
 
         sea_regressor_matrix = df.filter(items=fs_cols).values
-        sea_coefs = self._generate_coefs(training_meta, prediction_date_array, coef_knot_dates, coef_knot)
+        sea_coefs = self._generate_coefs(training_meta, seas_knots_idx_lb,
+                                         prediction_date_array, coef_knot_dates, coef_knot)
         seas = np.sum(sea_coefs * sea_regressor_matrix, axis=-1)
 
         return seas
@@ -683,28 +691,22 @@ class KTRModel(ModelTemplate):
         # this part is to extract level and seasonality result from KTRLite
         self._level_knots = np.squeeze(ktrlite_pt_posteriors['map']['lev_knot'])
         self._level_knot_dates = ktrlite._model._level_knot_dates
-        tp = np.arange(1, num_of_observations + 1) / num_of_observations
-        # # trim level knots dates when they are beyond training dates
-        # lev_knot_dates = list()
-        # lev_knots = list()
-        # for i, x in enumerate(self.level_knot_dates):
-        #     if (x <= df[date_col].max()) and (x >= df[date_col].min()):
-        #         lev_knot_dates.append(x)
-        #         lev_knots.append(self._level_knots[i])
-        # self._level_knot_dates = pd.to_datetime(lev_knot_dates)
-        # self._level_knots = np.array(lev_knots)
-
-        self._level_knots_idx = get_knot_idx(
-            date_array=date_array,
-            num_of_obs=None,
-            knot_dates=self._level_knot_dates,
-            knot_distance=None,
-            num_of_segments=None,
-            date_freq=self.date_freq,
-        )
-        self.knots_tp_level =  (1 + self._level_knots_idx) / num_of_observations
-        self._kernel_level = sandwich_kernel(tp, self.knots_tp_level)
-        self._num_knots_level = len(self._level_knot_dates)
+        self._level_knots_idx = ktrlite._model._level_knots_idx
+        self.knots_tp_level = ktrlite._model.knots_tp_level
+        self._kernel_level = ktrlite._model.kernel_level
+        self._num_knots_level = ktrlite._model.num_knots_level
+        # tp = np.arange(1, num_of_observations + 1) / num_of_observations
+        # self._level_knots_idx = get_knot_idx(
+        #     date_array=date_array,
+        #     num_of_obs=None,
+        #     knot_dates=self._level_knot_dates,
+        #     knot_distance=None,
+        #     num_of_segments=None,
+        #     date_freq=self.date_freq,
+        # )
+        # self.knots_tp_level =  (1 + self._level_knots_idx) / num_of_observations
+        # self._kernel_level = sandwich_kernel(tp, self.knots_tp_level)
+        # self._num_knots_level = len(self._level_knot_dates)
 
         if self._seasonality:
             self._seasonality_coef_knot_dates = ktrlite._model._coef_knot_dates
@@ -713,6 +715,7 @@ class KTRModel(ModelTemplate):
             self._seas_term = self._generate_seas(
                 df,
                 training_meta,
+                self._ktrlite_model._model._seas_knots_idx_lb,
                 self._seasonality_coef_knot_dates,
                 self._seasonality_coef_knot ,
                 self._seasonality,
@@ -813,7 +816,9 @@ class KTRModel(ModelTemplate):
         else:
             start = pd.Index(date_array).get_loc(prediction_start)
 
-        new_tp = np.arange(start + 1, start + output_len + 1) / num_of_observations
+        offset = self._ktrlite_model._model._level_knots_idx_lb
+        new_tp = (np.arange(start + 1, start + output_len + 1) - offset) / \
+                 (num_of_observations - offset)
         if include_error:
             # in-sample knots
             lev_knot_in = model.get(BaseSamplingParameters.LEVEL_KNOT.value)
@@ -840,7 +845,7 @@ class KTRModel(ModelTemplate):
         obs_scale = obs_scale.reshape(-1, 1)
 
         if self._seasonality is not None:
-            seas = self._generate_seas(df, training_meta,
+            seas = self._generate_seas(df, training_meta, self._ktrlite_model._model._seas_knots_idx_lb,
                                        self._seasonality_coef_knot_dates,
                                        self._seasonality_coef_knot,
                                        self._seasonality,
@@ -942,7 +947,9 @@ class KTRModel(ModelTemplate):
                     coef_repeats = [0] * start + [1] * output_len + [0] * (train_len - start - output_len)
                 else:
                     coef_repeats = [0] * start + [1] * (train_len - start - 1) + [output_len - train_len + start + 1]
-            new_tp = np.arange(start + 1, start + output_len + 1) / num_of_observations
+            offset = self._regression_knots_idx_lb
+            new_tp = (np.arange(start + 1, start + output_len + 1) - offset) / \
+                     (num_of_observations - offset)
 
             if coefficient_method == 'smooth':
                 kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.regression_rho)
@@ -1037,6 +1044,8 @@ class KTRModel(ModelTemplate):
                               with_knot=False, ncol=2, figsize=None, ylim=None, markersize=200):
         """Plot regression coefficients
         """
+        date_col = training_meta['date_col']
+        date_array = training_meta['date_array']
         # assume your first column is the date; this way can use a static method
         if include_ci:
             coef_df, coef_df_lower, coef_df_upper = self.get_regression_coefs(
@@ -1053,6 +1062,7 @@ class KTRModel(ModelTemplate):
             coef_df_lower, coef_df_upper = None, None
         if with_knot:
             knot_df = self.get_regression_coef_knots(training_meta, point_method, point_posteriors, posterior_samples)
+            knot_df = knot_df[knot_df[date_col] >= date_array.min()]
         else:
             knot_df = None
 
@@ -1144,6 +1154,8 @@ class KTRModel(ModelTemplate):
 
         levels_df = self.get_levels(training_meta, point_method, point_posteriors, posterior_samples)
         knots_df = self.get_level_knots(training_meta, point_method, point_posteriors, posterior_samples)
+        levels_df = levels_df[levels_df[date_col] >= date_array.min()]
+        knots_df = knots_df[knots_df[date_col] >= date_array.min()]
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         ax.plot(date_array, response, color=OrbitPalette.blue.value, lw=1, alpha=0.7, label='actual')
