@@ -12,7 +12,7 @@ def KTR(
         # seasonality
         seasonality=None,
         seasonality_fs_order=None,
-        seasonality_segments=2,
+        seasonality_segments=3,
         seasonal_initial_knot_scale=1.0,
         seasonal_knot_scale=0.1,
         # regression
@@ -35,6 +35,7 @@ def KTR(
         flat_multiplier=True,
         # TODO: rename to residuals upper bound
         min_residuals_sd=1.0,
+        ktrlite_optim_args=dict(),
         estimator='pyro-vi',
         **kwargs):
     """
@@ -135,6 +136,7 @@ def KTR(
             date_freq=date_freq,
             flat_multiplier=flat_multiplier,
             min_residuals_sd=min_residuals_sd,
+            ktrlite_optim_args=ktrlite_optim_args
     )
     if estimator == 'pyro-svi':
         ktr_forecaster = SVIForecaster(

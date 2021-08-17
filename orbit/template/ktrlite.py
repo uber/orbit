@@ -104,10 +104,6 @@ class KTRLiteModel(ModelTemplate):
         knot locations. When level_knot_dates is specified, this is ignored for level knots.
     date_freq : str
         date frequency; if not supplied, pd.infer_freq will be used to imply the date frequency.
-
-    **kwargs :
-        additional arguments passed into orbit.estimators e.g. orbit.estimators.stan_estimator,
-        orbit.estimators.pyro_estimator, etc.
     """
     _data_input_mapper = DataInputMapper
     _model_name = 'ktrlite'
@@ -314,7 +310,7 @@ class KTRLiteModel(ModelTemplate):
         self.num_knots_coefficients = 0
 
         if self.num_of_regressors > 0:
-            self._knots_idx_coef = get_knot_idx(
+            self._seas_knots_idx = get_knot_idx(
                 date_array=None,
                 num_of_obs=num_of_observations,
                 knot_dates=None,
@@ -333,10 +329,10 @@ class KTRLiteModel(ModelTemplate):
 
         # update rest of the seasonality related fields
         if self.num_of_regressors > 0:
-            self.knots_tp_coefficients = (1 + self._knots_idx_coef) / num_of_observations
+            self.knots_tp_coefficients = (1 + self._seas_knots_idx) / num_of_observations
             self.kernel_coefficients = sandwich_kernel(tp, self.knots_tp_coefficients)
             self.num_knots_coefficients = len(self.knots_tp_coefficients)
-            self._coef_knot_dates = get_knot_dates(date_array[0], self._knots_idx_coef, self.date_freq)
+            self._coef_knot_dates = get_knot_dates(date_array[0], self._seas_knots_idx, self.date_freq)
 
     def set_dynamic_attributes(self, df, training_meta):
         """Overriding the parent class to customize pre-processing in fitting process"""

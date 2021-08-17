@@ -133,28 +133,12 @@ class KTRModel(ModelTemplate):
     flat_multiplier : bool
         Default set as True. If False, we will adjust knot scale with a multiplier based on regressor volume
         around each knot; When True, set all multiplier as 1
-    kwargs
-        To specify `estimator_type` or additional args for the specified `estimator_type`
     """
     _data_input_mapper = DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
     _model_name = 'ktr'
     _supported_estimator_types = [PyroEstimatorVI]
 
-    # TODO:
-    # 1. do we want to have both mid-point and end-point segment still?
-    # 2. a clean way to specify segment
-    # 2a. span or simply number of knots?
-    # 2b. of course we allow user to specifically put knots wherever they want
-    # 2c. we can also use distance to back solve the knots but do we really want to do it here?
-    # 2d. do we need both or just one of them for (2a, 2c) ?
-    # 2e. allow a flat estimate if there is only one knot?
-    # 3. things we can get rid of:
-    # 3a. mvn ?
-    # 3b. geometric walk ?
-    # reg {segment num, knot dist, knot dates}
-    # lev {ask same }
-    # seasonality {ask same}
     def __init__(self,
                  # level
                  level_knot_scale=0.1,
@@ -187,6 +171,7 @@ class KTRModel(ModelTemplate):
                  flat_multiplier=True,
                  # TODO: rename to residuals upper bound
                  min_residuals_sd=1.0,
+                 ktrlite_optim_args=dict(),
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
 
@@ -246,12 +231,14 @@ class KTRModel(ModelTemplate):
         self._positive_regressor_col = list()
         self._positive_regressor_init_knot_loc = list()
         self._positive_regressor_init_knot_scale = list()
+        self._positive_regressor_knot_scale_1d = list()
         self._positive_regressor_knot_scale = list()
         # regular regressors
         self._num_of_regular_regressors = 0
         self._regular_regressor_col = list()
         self._regular_regressor_init_knot_loc = list()
         self._regular_regressor_init_knot_scale = list()
+        self._regular_regressor_knot_scale_1d = list()
         self._regular_regressor_knot_scale = list()
         self._regressor_col = list()
 
@@ -272,6 +259,7 @@ class KTRModel(ModelTemplate):
         self.date_freq = date_freq
         self.degree_of_freedom = degree_of_freedom
         self.min_residuals_sd = min_residuals_sd
+        self.ktrlite_optim_args = ktrlite_optim_args
 
         self._set_static_attributes()
         self._set_model_param_names()
@@ -370,7 +358,7 @@ class KTRModel(ModelTemplate):
                 self._positive_regressor_init_knot_loc.append(self._regressor_init_knot_loc[index])
                 self._positive_regressor_init_knot_scale.append(self._regressor_init_knot_scale[index])
                 # used for 'pr_knot' sampling in pyro
-                self._positive_regressor_knot_scale.append(self._regressor_knot_scale[index])
+                self._positive_regressor_knot_scale_1d.append(self._regressor_knot_scale[index])
             else:
                 self._num_of_regular_regressors += 1
                 self._regular_regressor_col.append(self.regressor_col[index])
@@ -378,16 +366,16 @@ class KTRModel(ModelTemplate):
                 self._regular_regressor_init_knot_loc.append(self._regressor_init_knot_loc[index])
                 self._regular_regressor_init_knot_scale.append(self._regressor_init_knot_scale[index])
                 # used for 'rr_knot' sampling in pyro
-                self._regular_regressor_knot_scale.append(self._regressor_knot_scale[index])
+                self._regular_regressor_knot_scale_1d.append(self._regressor_knot_scale[index])
         # regular first, then positive
         self._regressor_col = self._regular_regressor_col + self._positive_regressor_col
         # numpy conversion
         self._positive_regressor_init_knot_loc = np.array(self._positive_regressor_init_knot_loc)
         self._positive_regressor_init_knot_scale = np.array(self._positive_regressor_init_knot_scale)
-        self._positive_regressor_knot_scale = np.array(self._positive_regressor_knot_scale)
+        self._positive_regressor_knot_scale_1d = np.array(self._positive_regressor_knot_scale_1d)
         self._regular_regressor_init_knot_loc = np.array(self._regular_regressor_init_knot_loc)
         self._regular_regressor_init_knot_scale = np.array(self._regular_regressor_init_knot_scale)
-        self._regular_regressor_knot_scale = np.array(self._regular_regressor_knot_scale)
+        self._regular_regressor_knot_scale_1d = np.array(self._regular_regressor_knot_scale_1d)
 
     @staticmethod
     def _validate_coef_prior(coef_prior_list):
@@ -538,12 +526,10 @@ class KTRModel(ModelTemplate):
                 # replace entire row of nan (when 0.1 * global_med is equal to global_min) with upper bound
                 multiplier[np.isnan(multiplier).all(axis=-1)] = 1.0
 
-            # also note that after the following step,
-            # _positive_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
             # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
-            # after line below, self._positive_regressor_knot_scale has shape num_of_pr x num_of_knot
+            # self._positive_regressor_knot_scale has shape num_of_pr x num_of_knot
             self._positive_regressor_knot_scale = (
-                    multiplier * np.expand_dims(self._positive_regressor_knot_scale, -1)
+                    multiplier * np.expand_dims(self._positive_regressor_knot_scale_1d, -1)
             )
             # keep a lower bound of scale parameters
             self._positive_regressor_knot_scale[self._positive_regressor_knot_scale < 1e-4] = 1e-4
@@ -578,12 +564,10 @@ class KTRModel(ModelTemplate):
             # replace entire row of nan (when 0.1 * global_med is equal to global_min) with upper bound
             multiplier[np.isnan(multiplier).all(axis=-1)] = 1.0
 
-            # also note that after the following step,
-            # _regular_regressor_knot_scale is a 2D array unlike _regular_regressor_knot_scale
             # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
             # self._regular_regressor_knot_scale has shape num_of_pr x num_of_knot
             self._regular_regressor_knot_scale = (
-                    multiplier * np.expand_dims(self._regular_regressor_knot_scale, -1)
+                    multiplier * np.expand_dims(self._regular_regressor_knot_scale_1d, -1)
             )
             # keep a lower bound of scale parameters
             self._regular_regressor_knot_scale[self._regular_regressor_knot_scale < 1e-4] = 1e-4
@@ -690,25 +674,25 @@ class KTRModel(ModelTemplate):
             degree_of_freedom=self.degree_of_freedom,
             date_freq=self.date_freq,
             estimator='stan-map',
+            **self.ktrlite_optim_args
         )
         ktrlite.fit(df=df)
         self._ktrlite_model = ktrlite
         ktrlite_pt_posteriors = ktrlite.get_point_posteriors()
 
-        # this part is to download level and seasonality result from KTRLite
+        # this part is to extract level and seasonality result from KTRLite
         self._level_knots = np.squeeze(ktrlite_pt_posteriors['map']['lev_knot'])
-        self.level_knot_dates = ktrlite._model._level_knot_dates
+        self._level_knot_dates = ktrlite._model._level_knot_dates
         tp = np.arange(1, num_of_observations + 1) / num_of_observations
-        # trim level knots dates when they are beyond training dates
-        lev_knot_dates = list()
-        lev_knots = list()
-        # TODO: any faster way instead of a simple loop?
-        for i, x in enumerate(self.level_knot_dates):
-            if (x <= df[date_col].max()) and (x >= df[date_col].min()):
-                lev_knot_dates.append(x)
-                lev_knots.append(self._level_knots[i])
-        self._level_knot_dates = pd.to_datetime(lev_knot_dates)
-        self._level_knots = np.array(lev_knots)
+        # # trim level knots dates when they are beyond training dates
+        # lev_knot_dates = list()
+        # lev_knots = list()
+        # for i, x in enumerate(self.level_knot_dates):
+        #     if (x <= df[date_col].max()) and (x >= df[date_col].min()):
+        #         lev_knot_dates.append(x)
+        #         lev_knots.append(self._level_knots[i])
+        # self._level_knot_dates = pd.to_datetime(lev_knot_dates)
+        # self._level_knots = np.array(lev_knots)
 
         self._level_knots_idx = get_knot_idx(
             date_array=date_array,

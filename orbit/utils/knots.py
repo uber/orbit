@@ -69,7 +69,7 @@ def get_knot_idx(
 
     if knot_dates is not None:
         if date_array is None:
-            raise IllegalArgument('When knot_dates are supplied, user need to supply date_array as well.')
+            raise IllegalArgument('When knot_dates are supplied, users need to supply date_array as well.')
         knot_dates = np.array(knot_dates, dtype='datetime64')
 
         # filter out

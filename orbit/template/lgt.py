@@ -141,10 +141,6 @@ class LGTModel(ETSModel):
     level_sm_input : float
         float value between [0.0001, 1]. A larger value puts more weight on the current level.
         If None, the model will estimate this value.
-
-    Other Parameters
-    ----------------
-    **kwargs: additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
     """
     # data labels for sampler
     _data_input_mapper = DataInputMapper
