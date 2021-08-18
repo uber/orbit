@@ -24,11 +24,11 @@ def orbit_style_decorator(func):
             # default to be True if arg is not specified
             use_orbit_style = True
         # try:
-        if not use_orbit_style:
-            return func(*args, **kwargs)
-        elif use_orbit_style:
+        if use_orbit_style:
             with plt.style.context(orbit_style):
                 return func(*args, **kwargs)
+        else:
+            return func(*args, **kwargs)
         # except:
         #     kwargs['use_orbit_style'] = True
         #     with plt.style.context(orbit_style):
