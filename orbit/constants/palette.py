@@ -36,24 +36,26 @@ class OrbitPalette(Enum):
 
 class PredictionPaletteClassic(Enum):
     # black
-    actual_obs = '#000000'
+    # actual_obs = '#000000'
     ACTUAL_OBS = '#000000'
     # dark_teal
-    prediction_line = '#12939A'
+    # prediction_line = '#12939A'
     # teal
-    prediction_interval = '#42999E'
+    # prediction_interval = '#42999E'
     # blue
     PREDICTION_LINE = '#276EF1'
+    PREDICTION_INTERVAL = '#276EF1'
     # blue 50%
     # prediction_range =
     # black dotted
       # # teal
-    preidction_range = '#42999E'
+    # preidction_range = '#42999E'
     # blue
     HOLDOUT_VERTICAL_LINE = '#000000'
-    holdout_vertical_line = '#1f77b4'
+    # holdout_vertical_line = '#1f77b4'
     # orange
-    test_obs = '#FF8C00'
+    # test_obs = '#FF8C00'
+    TEST_OBS = '#FFC043'
 
 
 # class QualitativePalette(Enum):
