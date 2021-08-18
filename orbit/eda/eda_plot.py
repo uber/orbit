@@ -3,19 +3,14 @@ from matplotlib import pyplot as plt
 import pandas as pd
 
 from orbit.constants import palette
-from orbit.utils.plot import get_orbit_style
-
-orbit_style = get_orbit_style()
-# from orbit.utils.decorators import orbit_style_decorator
 from orbit.utils.plot import orbit_style_decorator
-
 
 pd.options.mode.chained_assignment = None
 
 
 @orbit_style_decorator
 def ts_heatmap(df, date_col, value_col, fig_width=10, fig_height=6, normalization=False,
-               path=None, palette=palette.OrbitPalette.BLUE_GRADIENT.value, use_orbit_style=True):
+               path=None, palette=palette.OrbitPalette.BLUE_GRADIENT.value):
     """this function takes a time series dataframe and plot a time series heatmap with month on the y axis and
     year on the x axis
     Parameters
@@ -36,12 +31,10 @@ def ts_heatmap(df, date_col, value_col, fig_width=10, fig_height=6, normalizatio
         path to save the figure
     palette : str, optional
         color palette
-    use_orbit_style: boolean, optional
-        specify whether to use orbit style for plotting
 
     Returns
     -------
-    one time series heatmap chart
+        one time series heatmap chart
     """
     df = df[[date_col, value_col]]
     df[date_col] = pd.to_datetime(df[date_col])
@@ -123,7 +116,7 @@ def correlation_heatmap(df, var_list, fig_width=10, fig_height=6,
 @orbit_style_decorator
 def dual_axis_ts_plot(df, var1, var2, date_col, fig_width=25, fig_height=6, path=None,
                       color1=palette.OrbitPalette.BLACK.value,
-                      color2=palette.OrbitPalette.BLUE.value, use_orbit_style=True):
+                      color2=palette.OrbitPalette.BLUE.value):
     """This function plots two time series variables on two y axis. This is handy for comparison of two variables. The dual
     y axis will set on two different scales if the two variables are very different in terms of volume.
     Parameters
@@ -175,8 +168,7 @@ def dual_axis_ts_plot(df, var1, var2, date_col, fig_width=25, fig_height=6, path
 
 
 @orbit_style_decorator
-def wrap_plot_ts(df, date_col, var_list, col_wrap=3, height=4, aspect=2,
-                 palettes=palette.OrbitPalette.BLUE.value, use_orbit_style=True):
+def wrap_plot_ts(df, date_col, var_list, col_wrap=3, height=4, aspect=2, palettes=palette.OrbitPalette.BLUE.value):
     """This function plots a panel of time series plots.
     Parameters
     -----------
@@ -186,8 +178,6 @@ def wrap_plot_ts(df, date_col, var_list, col_wrap=3, height=4, aspect=2,
         date column name
     var_list : list
         list of variable names
-    use_orbit_style: boolean
-        specify whether to use orbit style for plotting
 
     Returns
     -------

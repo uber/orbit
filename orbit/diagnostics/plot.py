@@ -27,7 +27,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                         pred_col=PredictionKeys.PREDICTION.value, prediction_percentiles=None,
                         title="", test_actual_df=None, is_visible=True,
                         figsize=None, path=None, fontsize=None,
-                        line_plot=False, markersize=50, lw=2, linestyle='-', use_orbit_style=True):
+                        line_plot=False, markersize=50, lw=2, linestyle='-'):
     """
     plot training actual response together with predicted data; if actual response of predicted
     data is there, plot it too.
@@ -65,8 +65,6 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         out-of-sample prediction line width
     linestyle : str
         linestyle of prediction plot
-    use_orbit_style: boolean, optional
-        specify whether to use orbit style for plotting
 
     Returns
     -------
@@ -188,8 +186,7 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
         fontsize of the title
     is_visible : boolean
         whether we want to show the plot. If called from unittest, is_visible might = False.
-    use_orbit_style: boolean, optional
-        specify whether to use orbit style for plotting
+
    Returns
     -------
         matplotlib axes object
@@ -322,8 +319,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         if plot smoothing parameters; default False
     is_visible : boolean
         whether we want to show the plot. If called from unittest, is_visible might = False.
-    use_orbit_style: boolean, optional
-        specify whether to use orbit style for plotting
+
     Returns
     -------
         matplotlib axes object
