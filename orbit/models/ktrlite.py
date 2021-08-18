@@ -5,19 +5,18 @@ from ..estimators.stan_estimator import StanEstimatorMAP
 
 
 def KTRLite(
+        # level
+        level_knot_scale=0.1,
+        level_segments=10,
+        level_knot_distance=None,
+        level_knot_dates=None,
+        # seasonality
         seasonality=None,
         seasonality_fs_order=None,
-        level_knot_scale=0.5,
+        seasonality_segments=2,
         seasonal_initial_knot_scale=1.0,
         seasonal_knot_scale=0.1,
-        span_level=0.1,
-        span_coefficients=0.3,
         degree_of_freedom=30,
-        # knot customization
-        level_knot_dates=None,
-        level_knot_length=None,
-        coefficients_knot_length=None,
-        knot_location='mid_point',
         date_freq=None,
         estimator='stan-map',
         **kwargs):
@@ -75,19 +74,17 @@ def KTRLite(
     _supported_estimators = ['stan-map']
 
     ktrlite = KTRLiteModel(
+        level_knot_scale=level_knot_scale,
+        level_segments=level_segments,
+        level_knot_distance=level_knot_distance,
+        level_knot_dates=level_knot_dates,
+        # seasonality
         seasonality=seasonality,
         seasonality_fs_order=seasonality_fs_order,
-        level_knot_scale=level_knot_scale,
+        seasonality_segments=seasonality_segments,
         seasonal_initial_knot_scale=seasonal_initial_knot_scale,
         seasonal_knot_scale=seasonal_knot_scale,
-        span_level=span_level,
-        span_coefficients=span_coefficients,
         degree_of_freedom=degree_of_freedom,
-        # knot customization
-        level_knot_dates=level_knot_dates,
-        level_knot_length=level_knot_length,
-        coefficients_knot_length=coefficients_knot_length,
-        knot_location=knot_location,
         date_freq=date_freq,
     )
     if estimator == 'stan-map':

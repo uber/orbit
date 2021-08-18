@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from copy import deepcopy
 from functools import partial
 
 from ..constants.constants import PredictMethod, PredictionKeys
@@ -13,19 +12,22 @@ class MAPForecaster(Forecaster):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._point_posteriors[PredictMethod.MAP.value] = dict()
+        self._point_method = PredictMethod.MAP.value
 
     def fit(self, df):
         super().fit(df)
-        # FIXME: shouldn't the expand dim be done inside estimator to make this layer consistent?
         posterior_samples = self._posterior_samples
         map_posterior = {}
         for param_name in self._model.get_model_param_names():
             param_array = posterior_samples[param_name]
-            # add dimension so it works with vector math in `_predict`
+            # add one dimension as batch to have consistent logic with `.predict()`
             param_array = np.expand_dims(param_array, axis=0)
             map_posterior.update({param_name: param_array})
 
         self._point_posteriors[PredictMethod.MAP.value] = map_posterior
+        # TODO: right now this is hacky:
+        #  need to do it one more time to over-write the extra methods with right posterior
+        self.load_extra_methods()
 
     def predict(self, df, decompose=False, **kwargs):
         # raise if model is not fitted
@@ -90,15 +92,15 @@ class MAPForecaster(Forecaster):
         predicted_df = prepend_date_column(predicted_df, df, self.date_col)
         return predicted_df
 
-    def get_point_posteriors(self):
-        return deepcopy(self._point_posteriors[PredictMethod.MAP.value])
-
     # TODO: should be private
     def load_extra_methods(self):
         for method in self.extra_methods:
             setattr(self,
                     method,
-                    partial(getattr(self._model, method),
-                            self.get_training_meta(),
-                            PredictMethod.MAP.value,
-                            self._point_posteriors))
+                    partial(
+                        getattr(self._model, method),
+                        self.get_training_meta(),
+                        PredictMethod.MAP.value,
+                        self.get_point_posteriors(),
+                        self.get_posterior_samples()
+                    ))

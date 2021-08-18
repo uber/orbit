@@ -11,7 +11,8 @@ from ..constants.constants import (
     DEFAULT_REGRESSOR_BETA,
     DEFAULT_REGRESSOR_SIGMA,
     COEFFICIENT_DF_COLS,
-    PredictionKeys
+    PredictionKeys,
+    PredictMethod
 )
 from ..exceptions import IllegalArgument, ModelException
 # from .model_template import ModelTemplate
@@ -155,10 +156,6 @@ class LGTModel(ETSModel):
     slope_sm_input : float
         float value between [0, 1]. A larger value puts more weight on the current slope.
         If None, the model will estimate this value.
-
-    Other Parameters
-    ----------------
-    **kwargs: additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
     """
     # data labels for sampler
     _data_input_mapper = DataInputMapper
@@ -595,7 +592,8 @@ class LGTModel(ETSModel):
 
         return out
 
-    def get_regression_coefs(self, training_meta, point_method, point_posteriors):
+    def get_regression_coefs(self, training_meta, point_method, point_posteriors, posterior_samples,
+                             include_ci=False, lower=0.05, upper=0.95):
         """Return DataFrame regression coefficients
         If PredictMethod is `full` return `mean` of coefficients instead
         """
@@ -606,8 +604,12 @@ class LGTModel(ETSModel):
         if self.num_of_regressors == 0:
             return coef_df
 
+        _point_method = point_method
+        if point_method is None:
+            _point_method = PredictMethod.MEDIAN.value
+
         coef = point_posteriors \
-            .get(point_method) \
+            .get(_point_method) \
             .get(RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
 
         # get column names
@@ -615,8 +617,7 @@ class LGTModel(ETSModel):
         nr_cols = self.negative_regressor_col
         rr_cols = self.regular_regressor_col
 
-        # note ordering here is not the same as `self.regressor_cols` because positive
-        # and negative do not have to be grouped on input
+        # note ordering here is not the same as `self.regressor_cols` because regressors here are grouped by signs
         regressor_cols = pr_cols + nr_cols + rr_cols
 
         # same note
@@ -628,4 +629,18 @@ class LGTModel(ETSModel):
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR_SIGN] = regressor_signs
         coef_df[COEFFICIENT_DF_COLS.COEFFICIENT] = coef.flatten()
 
-        return coef_df
+        # if we have posteriors distribution and also include ci
+        if point_method is None and include_ci:
+            coef_samples = posterior_samples.get(RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
+            coef_lower = np.quantile(coef_samples, lower, axis=0)
+            coef_upper = np.quantile(coef_samples, upper, axis=0)
+            coef_df_lower = coef_df.copy()
+            coef_df_upper = coef_df.copy()
+            coef_df_lower[COEFFICIENT_DF_COLS.COEFFICIENT] = coef_lower
+            coef_df_upper[COEFFICIENT_DF_COLS.COEFFICIENT] = coef_upper
+
+            return coef_df, coef_df_lower, coef_df_upper
+        else:
+            return coef_df
+
+

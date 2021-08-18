@@ -72,10 +72,6 @@ class ETSModel(ModelTemplate):
     level_sm_input : float
         float value between [0.0001, 1]. A larger value puts more weight on the current level.
         If None, the model will estimate this value.
-
-    **kwargs :
-        additional arguments passed into orbit.estimators e.g. orbit.estimators.stan_estimator,
-        orbit.estimators.pyro_estimator, etc.
     """
     # data labels for sampler
     _data_input_mapper = DataInputMapper

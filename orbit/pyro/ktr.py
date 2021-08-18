@@ -78,9 +78,7 @@ class Model:
         n_knots_coef = self.n_knots_coef
 
         lev_knot_scale = self.lev_knot_scale
-        # mult var norm stuff
-        mvn = self.mvn
-        geometric_walk = self.geometric_walk
+
         min_residuals_sd = self.min_residuals_sd
         if min_residuals_sd > 1.0:
             min_residuals_sd = torch.tensor(1.0)
@@ -116,106 +114,42 @@ class Model:
             dist.Normal(lev_knot_loc - meany, lev_knot_scale).expand([n_knots_lev]).to_event(1)
         )
         lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
+        # regular regressor sampling
+        if n_rr > 0:
+            # pooling latent variables
+            rr_init_knot = pyro.sample(
+                "rr_init_knot", dist.Normal(
+                    rr_init_knot_loc,
+                    rr_init_knot_scale).to_event(1)
+            )
+            rr_knot = pyro.sample(
+                "rr_knot",
+                dist.Normal(
+                    rr_init_knot.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef),
+                    rr_knot_scale).to_event(2)
+            )
+            rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
 
-        # using hierarchical priors vs. multivariate priors
-        if mvn == 0:
-            # regular regressor sampling
-            if n_rr > 0:
-                # pooling latent variables
-                rr_init_knot = pyro.sample(
-                    "rr_init_knot", dist.Normal(
-                        rr_init_knot_loc,
-                        rr_init_knot_scale).to_event(1)
-                )
-                rr_knot = pyro.sample(
-                    "rr_knot",
+        # positive regressor sampling
+        if n_pr > 0:
+            # pooling latent variables
+            pr_init_knot = pyro.sample(
+                "pr_knot_loc",
+                dist.FoldedDistribution(
+                    dist.Normal(pr_init_knot_loc,
+                                pr_init_knot_scale)
+                ).to_event(1)
+            )
+
+            pr_knot = pyro.sample(
+                "pr_knot",
+                dist.FoldedDistribution(
                     dist.Normal(
-                        rr_init_knot.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef),
-                        rr_knot_scale).to_event(2)
-                )
-                rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
-
-            # positive regressor sampling
-            if n_pr > 0:
-                if geometric_walk:
-                    # TODO: development method
-                    pr_init_knot = pyro.sample(
-                        "pr_init_knot",
-                        dist.FoldedDistribution(
-                            dist.Normal(pr_init_knot_loc, pr_init_knot_scale)
-                        ).to_event(1)
-                    )
-                    pr_knot_step = pyro.sample(
-                        "pr_knot_step",
-                        # note that unlike rr_knot, the first one is ignored as we use the initial scale
-                        # to sample the first knot
-                        dist.Normal(torch.zeros(n_pr, n_knots_coef), pr_knot_scale).to_event(2)
-                    )
-                    pr_knot = pr_init_knot.unsqueeze(-1) * pr_knot_step.cumsum(-1).exp()
-                    pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
-                else:
-                    # TODO: original method
-                    # pooling latent variables
-                    pr_init_knot = pyro.sample(
-                        "pr_knot_loc",
-                        dist.FoldedDistribution(
-                            dist.Normal(pr_init_knot_loc,
-                                        pr_init_knot_scale)
-                        ).to_event(1)
-                    )
-
-                    pr_knot = pyro.sample(
-                        "pr_knot",
-                        dist.FoldedDistribution(
-                            dist.Normal(
-                                pr_init_knot.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef),
-                                pr_knot_scale)
-                        ).to_event(2)
-                    )
-                    pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
-        else:
-            # regular regressor sampling
-            if n_rr > 0:
-                rr_init_knot = pyro.deterministic("rr_init_knot", torch.zeros(rr_init_knot_loc.shape))
-
-                # updated mod
-                loc_temp = rr_init_knot_loc.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef)
-                scale_temp = torch.diag_embed(rr_init_knot_scale.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef))
-
-                # the sampling
-                rr_knot = pyro.sample(
-                    "rr_knot",
-                    dist.MultivariateNormal(
-                        loc=loc_temp,
-                        covariance_matrix=scale_temp
-                    ).to_event(1)
-                )
-                rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
-
-            # positive regressor sampling
-            if n_pr > 0:
-                # this part is junk just so that the pr_init_knot has a prior; but it does not connect to anything else
-                # pooling latent variables
-                pr_init_knot = pyro.sample(
-                    "pr_init_knot",
-                    dist.FoldedDistribution(
-                        dist.Normal(pr_init_knot_loc,
-                                    pr_init_knot_scale)
-                    ).to_event(1)
-                )
-                # updated mod
-                loc_temp = pr_init_knot_loc.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef)
-                scale_temp = torch.diag_embed(pr_init_knot_scale.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef))
-
-                pr_knot = pyro.sample(
-                    "pr_knot",
-                    dist.MultivariateNormal(
-                        loc=loc_temp,
-                        covariance_matrix=scale_temp
-                    ).to_event(1)
-                )
-                pr_knot = torch.exp(pr_knot)
-                pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+                        pr_init_knot.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef),
+                        pr_knot_scale)
+                ).to_event(2)
+            )
+            pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
 
         # concatenating all latent variables
         coef_init_knot = torch.zeros(n_rr + n_pr)

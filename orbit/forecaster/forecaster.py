@@ -96,6 +96,9 @@ class Forecaster(object):
         self._prediction_meta = dict()
         self.prediction_array = None
 
+        # determine point approximation method of posteriors
+        self._point_method = None
+
     # TODO: theoretically, we need to shrink estimator type to be consistent with the forecaster as well
     def _validate_supported_estimator_type(self, estimator_type):
         supported_estimator_types = self._model.get_supported_estimator_types()
@@ -142,7 +145,7 @@ class Forecaster(object):
         self._posterior_samples = _posterior_samples
         self._training_metrics = training_metrics
         # load extra methods implemented in model layer after fitting
-        self.load_extra_methods()
+        # self.load_extra_methods()
 
     def _set_training_meta(self, df):
         """A default pre-processing and information gathering from training input dataframe"""

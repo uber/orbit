@@ -16,11 +16,14 @@ This project
 - is stable and being incubated for long-term support. It may contain new experimental code, for which APIs are subject to change.
 - requires PyStan as a system dependency. PyStan is licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html), which is a free, copyleft license for software.
 
-
 # Orbit: A Python Package for Bayesian Forecasting
 
 Orbit is a Python package for Bayesian time series forecasting and inference. It provides a
 familiar and intuitive initialize-fit-predict interface for time series tasks, while utilizing probabilistic programming languages under the hood.
+
+For details, check out our documentation and tutorials:
+- HTML (stable): https://orbit-ml.readthedocs.io/en/stable/
+- HTML (latest): https://orbit-ml.readthedocs.io/en/latest/
 
 Currently, it supports concrete implementations for the following
 models:
@@ -95,13 +98,17 @@ plot_predicted_data(
 ![full-pred](https://raw.githubusercontent.com/uber/orbit/dev/docs/img/dlt-mcmc-pred.png)
 
 ## Demo
-More examples can be found under [tutorials](https://github.com/uber/orbit/tree/dev/docs/tutorials)
-and [examples](https://github.com/uber/orbit/tree/dev/examples).
 
-A backtest demo:
+Forecasting / Nowcasting with Regression in DLT:
+
+[![Open All Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1kStoPB_Xo3yDy_n_qqh5_jRpHt_RcDkV?usp=sharing)
+
+Backtest on M3 Data:
+
 [![Open All Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/edwinnglabs/ts_playground/blob/main/orbit_m3_backtest.ipynb)
 
-
+More examples can be found under [tutorials](https://github.com/uber/orbit/tree/dev/docs/tutorials)
+and [examples](https://github.com/uber/orbit/tree/dev/examples).
 
 # Contributing
 We welcome community contributors to the project. Before you start, please read our
@@ -114,11 +121,10 @@ We document versions and changes in our [changelog](https://github.com/uber/orbi
 
 
 # References
-##  Documentation
 
-- HTML documentation (stable): https://orbit-ml.readthedocs.io/en/stable/
-- HTML documentation (latest): https://orbit-ml.readthedocs.io/en/latest/
-- HTML documentation (deprecated): https://uber.github.io/orbit/
+## Presentations
+
+Check out the [deck](https://docs.google.com/presentation/d/1R0Ol8xahIE6XlrAjAi0ewu4nRxo-wQn8w6U7z-uiOzI/edit?usp=sharing) we presented in a meet up event in Jul. 2021.
 
 ## Citation
 
