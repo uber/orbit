@@ -7,6 +7,7 @@ from ..exceptions import ForecasterException, AbstractMethodException
 from ..utils.general import is_ordered_datetime
 from ..template.model_template import ModelTemplate
 
+
 COMMON_MODEL_CALLABLES = ['get_data_input_mapper', 'get_fitter', 'get_init_values', 'get_model_name',
                           'get_model_param_names', 'get_supported_estimator_types', 'predict',
                           'set_dynamic_attributes', 'set_init_values']

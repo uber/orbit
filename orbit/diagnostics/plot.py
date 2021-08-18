@@ -14,11 +14,8 @@ from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
 from ..constants.palette import OrbitPalette
 from ..constants.palette import PredictionPaletteClassic as PredPal
 from orbit.diagnostics.metrics import smape
+from orbit.utils.plot import get_orbit_style, orbit_style_decorator
 
-from orbit.utils.plot import get_orbit_style
-from orbit.utils.plot import orbit_style_decorator
-
-# from orbit.utils.decorators import orbit_style_decorator
 
 orbit_style = get_orbit_style()
 
@@ -165,7 +162,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
 
 @orbit_style_decorator
 def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, plot_components=None,
-                              title="", figsize=None, path=None, fontsize=None, is_visible=True, use_orbit_style=True):
+                              title="", figsize=None, path=None, fontsize=None, is_visible=True):
     """ Plot predicted components with the data frame of decomposed prediction where components
     has been pre-defined as `trend`, `seasonality` and `regression`.
     Parameters
@@ -250,7 +247,7 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
 @orbit_style_decorator
 def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon',
                            metric_col='smape', bar_width=0.1, path=None,
-                           figsize=None, fontsize=None, is_visible=False, use_orbit_style=True):
+                           figsize=None, fontsize=None, is_visible=False):
     if not figsize:
         figsize = [20, 6]
 
@@ -299,7 +296,7 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
 @orbit_style_decorator
 def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
                           pair_type='scatter', figsize=None, path=None, fontsize=None,
-                          incl_trend_params=False, incl_smooth_params=False, is_visible=True, use_orbit_style=True):
+                          incl_trend_params=False, incl_smooth_params=False, is_visible=True):
     """ Data Viz for posterior samples
 
     Params
@@ -439,7 +436,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
 def get_arviz_plot_dict(mod,
                         incl_noise_params=False,
                         incl_trend_params=False,
-                        incl_smooth_params=False, use_orbit_style=True):
+                        incl_smooth_params=False):
     """ This is a utility to prepare the plotting dictionary data for package arviz.
     arviz will interpret each key as the name of a different random variable.
     Each array should have shape (chains, draws, *shape).
@@ -479,7 +476,7 @@ def get_arviz_plot_dict(mod,
 
 @orbit_style_decorator
 def plot_param_diagnostics(mod, incl_noise_params=False, incl_trend_params=False, incl_smooth_params=False,
-                           which='trace', use_orbit_style=True, **kwargs):
+                           which='trace', **kwargs):
     """
     Parameters
     -----------
@@ -524,7 +521,7 @@ def plot_param_diagnostics(mod, incl_noise_params=False, incl_trend_params=False
 @orbit_style_decorator
 def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
                         ncol=2, figsize=None, include_vline=False,
-                        title="", fontsize=20, path=None, is_visible=True, use_orbit_style=True):
+                        title="", fontsize=20, path=None, is_visible=True):
     """function to plot and visualize the prediction results from back testing.
 
     bt_pred_df : data frame

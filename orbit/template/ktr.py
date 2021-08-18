@@ -18,6 +18,7 @@ from ..estimators.pyro_estimator import PyroEstimatorVI
 from ..models import KTRLite
 from orbit.constants.palette import OrbitPalette
 from ..utils.knots import get_knot_idx, get_knot_dates
+from ..utils.plot import orbit_style_decorator
 
 
 class DataInputMapper(Enum):
@@ -490,7 +491,7 @@ class KTRModel(ModelTemplate):
             )
 
             tp = np.arange(1, num_of_observations + 1) / num_of_observations
-            self._knots_tp_coefficients =  (1 + self._regression_knots_idx) / num_of_observations
+            self._knots_tp_coefficients = (1 + self._regression_knots_idx) / num_of_observations
             self._kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.regression_rho)
             self._num_knots_coefficients = len(self._knots_tp_coefficients)
             if self.date_freq is None:
@@ -702,7 +703,7 @@ class KTRModel(ModelTemplate):
             num_of_segments=None,
             date_freq=self.date_freq,
         )
-        self.knots_tp_level =  (1 + self._level_knots_idx) / num_of_observations
+        self.knots_tp_level = (1 + self._level_knots_idx) / num_of_observations
         self._kernel_level = sandwich_kernel(tp, self.knots_tp_level)
         self._num_knots_level = len(self._level_knot_dates)
 
@@ -714,7 +715,7 @@ class KTRModel(ModelTemplate):
                 df,
                 training_meta,
                 self._seasonality_coef_knot_dates,
-                self._seasonality_coef_knot ,
+                self._seasonality_coef_knot,
                 self._seasonality,
                 self._seasonality_fs_order)
 
@@ -961,7 +962,7 @@ class KTRModel(ModelTemplate):
     def get_regression_coefs(self, training_meta, point_method, point_posteriors, posterior_samples,
                              coefficient_method='smooth', date_array=None,
                              include_ci=False, lower=0.05, upper=0.95
-                            ):
+                             ):
         """Return DataFrame regression coefficients
         """
         date_col = training_meta['date_col']
@@ -1031,6 +1032,7 @@ class KTRModel(ModelTemplate):
 
         return knots_df
 
+    @orbit_style_decorator
     def plot_regression_coefs(self, training_meta, point_method, point_posteriors, posterior_samples,
                               coefficient_method='smooth', date_array=None,
                               include_ci=False, lower=0.05, upper=0.95,
@@ -1040,16 +1042,16 @@ class KTRModel(ModelTemplate):
         # assume your first column is the date; this way can use a static method
         if include_ci:
             coef_df, coef_df_lower, coef_df_upper = self.get_regression_coefs(
-                        training_meta, point_method, point_posteriors, posterior_samples,
-                        coefficient_method=coefficient_method, date_array=date_array,
-                        include_ci=include_ci, lower=lower, upper=upper
-                    )
+                training_meta, point_method, point_posteriors, posterior_samples,
+                coefficient_method=coefficient_method, date_array=date_array,
+                include_ci=include_ci, lower=lower, upper=upper
+            )
         else:
             coef_df = self.get_regression_coefs(
-                        training_meta, point_method, point_posteriors, posterior_samples,
-                        coefficient_method=coefficient_method, date_array=date_array,
-                        include_ci=include_ci, lower=lower, upper=upper
-                    )
+                training_meta, point_method, point_posteriors, posterior_samples,
+                coefficient_method=coefficient_method, date_array=date_array,
+                include_ci=include_ci, lower=lower, upper=upper
+            )
             coef_df_lower, coef_df_upper = None, None
         if with_knot:
             knot_df = self.get_regression_coef_knots(training_meta, point_method, point_posteriors, posterior_samples)
@@ -1089,8 +1091,8 @@ class KTRModel(ModelTemplate):
         if point_method is None:
             _point_method = PredictMethod.MEDIAN.value
         lev_knots = point_posteriors \
-                    .get(_point_method) \
-                    .get(BaseSamplingParameters.LEVEL_KNOT.value)
+            .get(_point_method) \
+            .get(BaseSamplingParameters.LEVEL_KNOT.value)
         lev_knots = np.squeeze(lev_knots, 0)
         out = {
             date_col: self._level_knot_dates,
@@ -1106,8 +1108,8 @@ class KTRModel(ModelTemplate):
         if point_method is None:
             _point_method = PredictMethod.MEDIAN.value
         levs = point_posteriors \
-                 .get(_point_method) \
-                 .get(BaseSamplingParameters.LEVEL.value)
+            .get(_point_method) \
+            .get(BaseSamplingParameters.LEVEL.value)
         levs = np.squeeze(levs, 0)
         out = {
             date_col: date_array,
@@ -1116,6 +1118,7 @@ class KTRModel(ModelTemplate):
 
         return pd.DataFrame(out)
 
+    @orbit_style_decorator
     def plot_lev_knots(self, training_meta, point_method, point_posteriors, posterior_samples,
                        path=None, is_visible=True, title="", fontsize=16,
                        markersize=250, figsize=(16, 8)):
@@ -1146,12 +1149,12 @@ class KTRModel(ModelTemplate):
         knots_df = self.get_level_knots(training_meta, point_method, point_posteriors, posterior_samples)
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
-        ax.plot(date_array, response, color=OrbitPalette.blue.value, lw=1, alpha=0.7, label='actual')
+        ax.plot(date_array, response, color=OrbitPalette.BLUE.value, lw=1, alpha=0.7, label='actual')
         ax.plot(levels_df[date_col], levels_df[BaseSamplingParameters.LEVEL.value],
-                color=OrbitPalette.black.value, lw=1, alpha=0.8,
+                color=OrbitPalette.BLACK.value, lw=1, alpha=0.8,
                 label=BaseSamplingParameters.LEVEL.value)
         ax.scatter(knots_df[date_col], knots_df[BaseSamplingParameters.LEVEL_KNOT.value],
-                   color=OrbitPalette.green.value, lw=1, s=markersize, marker='^', alpha=0.8,
+                   color=OrbitPalette.GREEN.value, lw=1, s=markersize, marker='^', alpha=0.8,
                    label=BaseSamplingParameters.LEVEL_KNOT.value)
         ax.legend()
         ax.grid(True, which='major', c='grey', ls='-', lw=1, alpha=0.5)
