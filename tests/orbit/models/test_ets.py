@@ -300,7 +300,7 @@ def test_ets_map_reproducibility(synthetic_data, seasonality):
 
     # first fit and predict
     ets1.fit(train_df)
-    posteriors1 = ets1.get_point_posteriors()
+    posteriors1 = ets1.get_point_posteriors()['map']
     prediction1 = ets1.predict(test_df)
 
     # second fit and predict
@@ -315,7 +315,7 @@ def test_ets_map_reproducibility(synthetic_data, seasonality):
     )
 
     ets2.fit(train_df)
-    posteriors2 = ets2.get_point_posteriors()
+    posteriors2 = ets2.get_point_posteriors()['map']
     prediction2 = ets2.predict(test_df)
 
     # assert same posterior keys

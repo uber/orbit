@@ -5,7 +5,7 @@ import pandas as pd
 from orbit.models import KTRLite
 from orbit.diagnostics.metrics import smape
 
-SMAPE_TOLERANCE = 0.5
+SMAPE_TOLERANCE = 0.6
 STABILITY_RTOL = 1e-4
 
 
@@ -22,13 +22,13 @@ def test_ktrlite_single_seas(make_daily_data, seasonality_fs_order):
         seasonality=[365.25],
         seasonality_fs_order=seasonality_fs_order,
         estimator='stan-map',
-        n_bootstrap_draws=1e4,
+        n_bootstrap_draws=-1,
     )
 
     ktrlite.fit(train_df)
     predict_df = ktrlite.predict(test_df)
 
-    expected_columns = ['date', 'prediction_5', 'prediction', 'prediction_95']
+    expected_columns = ['date', 'prediction']
     expected_shape = (364, len(expected_columns))
     expected_num_parameters = 6
 
@@ -51,13 +51,13 @@ def test_ktrlite_dual_seas(make_daily_data, seasonality_fs_order):
         seasonality=[7, 365.25],
         seasonality_fs_order=seasonality_fs_order,
         estimator='stan-map',
-        n_bootstrap_draws=1e4,
+        n_bootstrap_draws=-1,
     )
 
     ktrlite.fit(train_df)
     predict_df = ktrlite.predict(test_df)
 
-    expected_columns = ['date', 'prediction_5', 'prediction', 'prediction_95']
+    expected_columns = ['date', 'prediction']
     expected_shape = (364, len(expected_columns))
     expected_num_parameters = 6
 
@@ -67,8 +67,8 @@ def test_ktrlite_dual_seas(make_daily_data, seasonality_fs_order):
     assert smape(test_df['response'].values, predict_df['prediction'].values) <= SMAPE_TOLERANCE
 
 
-@pytest.mark.parametrize("span_level", [.05, .1, .5])
-def test_ktrlite_span_level(make_daily_data, span_level):
+@pytest.mark.parametrize("level_segments", [20, 10, 2])
+def test_ktrlite_level_segments(make_daily_data, level_segments):
     train_df, test_df, coef = make_daily_data
 
     ktrlite = KTRLite(
@@ -76,15 +76,15 @@ def test_ktrlite_span_level(make_daily_data, span_level):
         date_col='date',
         seasonality=[7, 365.25],
         seasonality_fs_order=[2, 5],
-        span_level=span_level,
+        level_segments=level_segments,
         estimator='stan-map',
-        n_bootstrap_draws=1e4,
+        n_bootstrap_draws=-1,
     )
 
     ktrlite.fit(train_df)
     predict_df = ktrlite.predict(test_df)
 
-    expected_columns = ['date', 'prediction_5', 'prediction', 'prediction_95']
+    expected_columns = ['date', 'prediction']
     expected_shape = (364, len(expected_columns))
     expected_num_parameters = 6
 
@@ -94,7 +94,7 @@ def test_ktrlite_span_level(make_daily_data, span_level):
     assert smape(test_df['response'].values, predict_df['prediction'].values) <= SMAPE_TOLERANCE
     knots_df = ktrlite.get_level_knots()
     levels_df = ktrlite.get_levels()
-    assert knots_df.shape[0] == round(1/span_level)
+    assert knots_df.shape[0] in [level_segments + 1, level_segments + 2]
     assert levels_df.shape[0] ==  ktrlite.get_training_meta()['num_of_observations']
 
 
@@ -128,8 +128,8 @@ def test_ktrlite_level_knot_dates(make_daily_data, level_knot_dates):
     assert len(ktrlite._model.level_knot_dates) == len(level_knot_dates)
 
 
-@pytest.mark.parametrize("level_knot_length", [90, 120])
-def test_ktrlite_level_knot_distance(make_daily_data, level_knot_length):
+@pytest.mark.parametrize("level_knot_distance", [90, 120])
+def test_ktrlite_level_knot_distance(make_daily_data, level_knot_distance):
     train_df, test_df, coef = make_daily_data
 
     ktrlite = KTRLite(
@@ -137,7 +137,7 @@ def test_ktrlite_level_knot_distance(make_daily_data, level_knot_length):
         date_col='date',
         seasonality=[7, 365.25],
         seasonality_fs_order=[2, 5],
-        level_knot_length=level_knot_length,
+        level_knot_distance=level_knot_distance,
         estimator='stan-map',
         n_bootstrap_draws=1e4,
     )
@@ -155,8 +155,8 @@ def test_ktrlite_level_knot_distance(make_daily_data, level_knot_length):
     assert smape(test_df['response'].values, predict_df['prediction'].values) <= SMAPE_TOLERANCE
 
 
-@pytest.mark.parametrize("coefficients_knot_length", [90, 120])
-def test_ktrlite_coef_knot_distance(make_daily_data, coefficients_knot_length):
+@pytest.mark.parametrize("seas_segments", [2, 5])
+def test_ktrlite_seas_segments(make_daily_data, seas_segments):
     train_df, test_df, coef = make_daily_data
 
     ktrlite = KTRLite(
@@ -164,15 +164,16 @@ def test_ktrlite_coef_knot_distance(make_daily_data, coefficients_knot_length):
         date_col='date',
         seasonality=[7, 365.25],
         seasonality_fs_order=[2, 5],
-        coefficients_knot_length=coefficients_knot_length,
+        level_segments=10,
+        seasonality_segments=seas_segments,
         estimator='stan-map',
-        n_bootstrap_draws=1e4,
+        n_bootstrap_draws=-1,
     )
 
     ktrlite.fit(train_df)
     predict_df = ktrlite.predict(test_df)
 
-    expected_columns = ['date', 'prediction_5', 'prediction', 'prediction_95']
+    expected_columns = ['date', 'prediction']
     expected_shape = (364, len(expected_columns))
     expected_num_parameters = 6
 
