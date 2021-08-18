@@ -94,7 +94,7 @@ def get_knot_idx(
         knot_idx = get_knot_idx_by_dist(num_of_obs, knot_distance)
 
     elif num_of_segments is not None:
-        knot_distance = np.round(num_of_obs / num_of_segments).astype(int)
+        knot_distance = np.round((num_of_obs - 1) / num_of_segments).astype(int)
         knot_idx = get_knot_idx_by_dist(num_of_obs, knot_distance)
     else:
         raise Exception("please specify at least one of the followings to determine the knot locations: "
