@@ -15,14 +15,22 @@ from ..constants.palette import OrbitPalette
 from ..constants.palette import PredictionPaletteClassic as PredPal
 from orbit.diagnostics.metrics import smape
 
+from orbit.utils.plot import get_orbit_style
+from orbit.utils.plot import orbit_style_decorator
+
+# from orbit.utils.decorators import orbit_style_decorator
+
+orbit_style = get_orbit_style()
+
+
 # az.style.use("arviz-darkgrid")
 
-
+@orbit_style_decorator
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                         pred_col=PredictionKeys.PREDICTION.value, prediction_percentiles=None,
                         title="", test_actual_df=None, is_visible=True,
                         figsize=None, path=None, fontsize=None,
-                        line_plot=False, markersize=70, lw=2, linestyle='-'):
+                        line_plot=False, markersize=50, lw=2, linestyle='-', use_orbit_style=True):
     """
     plot training actual response together with predicted data; if actual response of predicted
     data is there, plot it too.
@@ -60,6 +68,9 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         out-of-sample prediction line width
     linestyle : str
         linestyle of prediction plot
+    use_orbit_style: boolean, optional
+        specify whether to use orbit style for plotting
+
     Returns
     -------
         matplotlib axes object
@@ -102,22 +113,22 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
     if line_plot:
         ax.plot(_training_actual_df[date_col].values,
                 _training_actual_df[actual_col].values,
-                marker=None, color='black', lw=lw, label='train response', linestyle=linestyle)
+                marker=None, color=PredPal.ACTUAL_OBS.value, lw=lw, label='train response', linestyle=linestyle)
     else:
         ax.scatter(_training_actual_df[date_col].values,
                    _training_actual_df[actual_col].values,
-                   marker='.', color=PredPal.actual_obs.value, alpha=0.8, s=markersize,
+                   marker='.', color=PredPal.ACTUAL_OBS.value, alpha=0.8, s=markersize,
                    label='train response')
 
     ax.plot(_predicted_df[date_col].values,
             _predicted_df[pred_col].values,
-            marker=None, color=PredPal.prediction_line.value, lw=lw,
+            marker=None, color=PredPal.PREDICTION_LINE.value, lw=lw,
             label=PredictionKeys.PREDICTION.value, linestyle=linestyle)
 
     # vertical line separate training and prediction
     if _training_actual_df[date_col].values[-1] < _predicted_df[date_col].values[-1]:
         ax.axvline(x=_training_actual_df[date_col].values[-1],
-                   color=PredPal.holdout_vertical_line.value, linestyle='--')
+                   color=PredPal.HOLDOUT_VERTICAL_LINE.value, alpha=0.5, linestyle='--')
 
     if test_actual_df is not None:
         test_actual_df = test_actual_df.copy()
@@ -125,11 +136,11 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         if line_plot:
             ax.plot(test_actual_df[date_col].values,
                     test_actual_df[actual_col].values,
-                    marker=None, color=PredPal.test_obs.value, lw=lw, label='train response', linestyle=linestyle)
+                    marker=None, color=PredPal.TEST_OBS.value, lw=lw, label='train response', linestyle=linestyle)
         else:
             ax.scatter(test_actual_df[date_col].values,
                        test_actual_df[actual_col].values,
-                       marker='.', color=PredPal.test_obs.value, alpha=0.8, s=markersize,
+                       marker='.', color=PredPal.TEST_OBS.value, s=markersize,
                        label='test response')
 
     # prediction intervals
@@ -137,10 +148,10 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         ax.fill_between(_predicted_df[date_col].values,
                         _predicted_df[confid_cols[0]],
                         _predicted_df[confid_cols[1]],
-                        facecolor=PredPal.prediction_interval.value, alpha=0.5)
+                        facecolor=PredPal.PREDICTION_INTERVAL.value, alpha=0.3)
 
     ax.set_title(title, fontsize=fontsize)
-    ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
+    # ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5) --comment out since we have orbit style
     ax.legend()
     if path:
         fig.savefig(path)
@@ -152,8 +163,9 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
     return ax
 
 
+@orbit_style_decorator
 def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, plot_components=None,
-                              title="", figsize=None, path=None, fontsize=None, is_visible=True):
+                              title="", figsize=None, path=None, fontsize=None, is_visible=True, use_orbit_style=True):
     """ Plot predicted components with the data frame of decomposed prediction where components
     has been pre-defined as `trend`, `seasonality` and `regression`.
     Parameters
@@ -179,6 +191,8 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
         fontsize of the title
     is_visible : boolean
         whether we want to show the plot. If called from unittest, is_visible might = False.
+    use_orbit_style: boolean, optional
+        specify whether to use orbit style for plotting
    Returns
     -------
         matplotlib axes object
@@ -207,17 +221,17 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
     if len(_pred_percentiles) != 2:
         raise ValueError("prediction_percentiles has to be None or a list with length=2.")
 
-    fig, axes = plt.subplots(n_panels, 1, facecolor='w', figsize=figsize)
+    fig, axes = plt.subplots(n_panels, 1, figsize=figsize) #facecolor='w', )
     for ax, comp in zip(axes, plot_components):
         y = predicted_df[comp].values
-        ax.plot(_predicted_df[date_col], y, marker=None, color=PredPal.prediction_line.value)
+        ax.plot(_predicted_df[date_col], y, marker=None, color=PredPal.PREDICTION_INTERVAL.value)
         confid_cols = ["{}_{}".format(comp, _pred_percentiles[0]), "{}_{}".format(comp, _pred_percentiles[1])]
         if set(confid_cols).issubset(predicted_df.columns):
             ax.fill_between(_predicted_df[date_col].values,
                             _predicted_df[confid_cols[0]],
                             _predicted_df[confid_cols[1]],
-                            facecolor=PredPal.prediction_interval.value, alpha=0.5)
-        ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
+                            facecolor=PredPal.PREDICTION_INTERVAL.value, alpha=0.3)
+        # ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
         ax.set_title(comp, fontsize=fontsize)
     plt.suptitle(title, fontsize=fontsize)
     fig.tight_layout()
@@ -231,10 +245,12 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
 
     return axes
 
+# TODO: update palatte
 
+@orbit_style_decorator
 def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon',
                            metric_col='smape', bar_width=0.1, path=None,
-                           figsize=None, fontsize=None, is_visible=False):
+                           figsize=None, fontsize=None, is_visible=False, use_orbit_style=True):
     if not figsize:
         figsize = [20, 6]
 
@@ -280,9 +296,10 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
         plt.close()
 
 
+@orbit_style_decorator
 def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
                           pair_type='scatter', figsize=None, path=None, fontsize=None,
-                          incl_trend_params=False, incl_smooth_params=False, is_visible=True):
+                          incl_trend_params=False, incl_smooth_params=False, is_visible=True, use_orbit_style=True):
     """ Data Viz for posterior samples
 
     Params
@@ -308,7 +325,8 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         if plot smoothing parameters; default False
     is_visible : boolean
         whether we want to show the plot. If called from unittest, is_visible might = False.
-
+    use_orbit_style: boolean, optional
+        specify whether to use orbit style for plotting
     Returns
     -------
         matplotlib axes object
@@ -324,7 +342,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
 
     if len(mod._regressor_col) > 0:
         for i, regressor in enumerate(mod._regressor_col):
-            posterior_samples[regressor] = posterior_samples['beta'][:,i]
+            posterior_samples[regressor] = posterior_samples['beta'][:, i]
 
     params_ = mod._regressor_col + ['obs_sigma']
 
@@ -349,8 +367,8 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
             samples = posterior_samples[param]
             mean = np.mean(samples)
             median = np.median(samples)
-            cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level)/2), \
-                                 np.percentile(samples, 100 * (1 + ci_level)/2)
+            cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level) / 2), \
+                                 np.percentile(samples, 100 * (1 + ci_level) / 2)
 
             sns.histplot(samples, bins=n_bins, kde_kws={'shade': True}, ax=axes[i])
             # sns.kdeplot(samples, shade=True, ax=axes[i])
@@ -379,7 +397,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
             chained_samples = np.array_split(samples, mod.estimator.chains)
 
             for k in range(mod.estimator.chains):
-                axes[i].plot(chained_samples[k], lw=1, alpha=.5, label=f'chain {k+1}')
+                axes[i].plot(chained_samples[k], lw=1, alpha=.5, label=f'chain {k + 1}')
             axes[i].set_ylabel(param)
 
         handles, labels = axes[0].get_legend_handles_labels()
@@ -417,10 +435,11 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     return axes
 
 
+@orbit_style_decorator
 def get_arviz_plot_dict(mod,
                         incl_noise_params=False,
                         incl_trend_params=False,
-                        incl_smooth_params=False):
+                        incl_smooth_params=False, use_orbit_style=True):
     """ This is a utility to prepare the plotting dictionary data for package arviz.
     arviz will interpret each key as the name of a different random variable.
     Each array should have shape (chains, draws, *shape).
@@ -435,7 +454,7 @@ def get_arviz_plot_dict(mod,
     posterior_samples = mod.get_posterior_samples()
     if len(mod._regressor_col) > 0:
         for i, regressor in enumerate(mod._regressor_col):
-            posterior_samples[regressor] = posterior_samples['beta'][:,i]
+            posterior_samples[regressor] = posterior_samples['beta'][:, i]
     params_ = mod._regressor_col
 
     if incl_noise_params:
@@ -458,8 +477,9 @@ def get_arviz_plot_dict(mod,
     return posterior_samples
 
 
+@orbit_style_decorator
 def plot_param_diagnostics(mod, incl_noise_params=False, incl_trend_params=False, incl_smooth_params=False,
-                           which='trace', **kwargs):
+                           which='trace', use_orbit_style=True, **kwargs):
     """
     Parameters
     -----------
@@ -501,9 +521,10 @@ def plot_param_diagnostics(mod, incl_noise_params=False, incl_trend_params=False
     return axes
 
 
+@orbit_style_decorator
 def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
                         ncol=2, figsize=None, include_vline=False,
-                        title="", fontsize=20, path=None, is_visible=True):
+                        title="", fontsize=20, path=None, is_visible=True, use_orbit_style=True):
     """function to plot and visualize the prediction results from back testing.
 
     bt_pred_df : data frame
@@ -529,14 +550,16 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
         if displaying the figure
     """
     if figsize is None:
-        figsize=(16, 8)
+        figsize = (16, 8)
 
     metric_vals = bt_pred_df.groupby('split_key').apply(lambda x:
-                                                        metrics(x[x['training_data'] == False]['actuals'], x[x['training_data'] == False]['prediction']))
+                                                        metrics(x[x['training_data'] == False]['actuals'],
+                                                                x[x['training_data'] == False]['prediction']))
 
     if split_key_list is None:
         split_key_list_ = bt_pred_df['split_key'].unique()
-    else: split_key_list_ =  split_key_list
+    else:
+        split_key_list_ = split_key_list
 
     num_splits = len(split_key_list_)
     nrow = math.ceil(num_splits / ncol)
