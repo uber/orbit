@@ -145,7 +145,7 @@ class Forecaster(object):
         self._posterior_samples = _posterior_samples
         self._training_metrics = training_metrics
         # load extra methods implemented in model layer after fitting
-        self.load_extra_methods()
+        # self.load_extra_methods()
 
     def _set_training_meta(self, df):
         """A default pre-processing and information gathering from training input dataframe"""
@@ -301,7 +301,7 @@ class Forecaster(object):
         return deepcopy(self._posterior_samples)
 
     def get_point_posteriors(self):
-        return deepcopy(self._point_posteriors[self._point_method])
+        return deepcopy(self._point_posteriors)
 
     def load_extra_methods(self):
         pass

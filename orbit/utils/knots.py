@@ -25,12 +25,12 @@ def get_dates_delta(start_date, end_date, freq):
 
 def get_knot_idx_by_dist(num_of_obs, knot_distance):
     """function to calculate the knot idx based on num_of_obs and knot_distance."""
-    # TODO: more doc string
     # starts with the the ending point
-    # negative values are allowed when 0 is not included in generated sequence
+    # use negative values or simply append 0 to the sequence?
     knot_idx = np.sort(np.arange(num_of_obs - 1, -1, -knot_distance))
     if 0 not in knot_idx:
-        knot_idx = np.sort(np.arange(num_of_obs - 1, -1 - knot_distance, -knot_distance))
+        # knot_idx = np.sort(np.arange(num_of_obs - 1, -1 - knot_distance, -knot_distance))
+        knot_idx = np.sort(np.append(knot_idx, 0))
 
     return knot_idx
 
@@ -69,16 +69,13 @@ def get_knot_idx(
 
     if knot_dates is not None:
         if date_array is None:
-            raise IllegalArgument('When knot_dates are supplied, user need to supply date_array as well.')
+            raise IllegalArgument('When knot_dates are supplied, users need to supply date_array as well.')
         knot_dates = np.array(knot_dates, dtype='datetime64')
 
-        # filter out future knot_dates
-        # note that we purposefully allow knot dates before
-        # train start
+        # filter out
         _knot_dates = pd.to_datetime([
             x for x in knot_dates if
-            # (x <= date_array[-1]) and (x >= date_array[0])
-            x <= date_array[-1]
+            (x <= date_array.max()) and (x >= date_array.min())
         ])
 
         if date_freq is None:
@@ -97,7 +94,7 @@ def get_knot_idx(
         knot_idx = get_knot_idx_by_dist(num_of_obs, knot_distance)
 
     elif num_of_segments is not None:
-        knot_distance = np.round(num_of_obs / num_of_segments).astype(int)
+        knot_distance = np.round((num_of_obs - 1) / num_of_segments).astype(int)
         knot_idx = get_knot_idx_by_dist(num_of_obs, knot_distance)
     else:
         raise Exception("please specify at least one of the followings to determine the knot locations: "

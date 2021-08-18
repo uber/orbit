@@ -11,7 +11,8 @@ from ..constants.constants import (
     DEFAULT_REGRESSOR_BETA,
     DEFAULT_REGRESSOR_SIGMA,
     COEFFICIENT_DF_COLS,
-    PredictionKeys
+    PredictionKeys,
+    PredictMethod
 )
 from ..exceptions import IllegalArgument, ModelException
 # from .model_template import ModelTemplate
@@ -140,10 +141,6 @@ class LGTModel(ETSModel):
     level_sm_input : float
         float value between [0.0001, 1]. A larger value puts more weight on the current level.
         If None, the model will estimate this value.
-
-    Other Parameters
-    ----------------
-    **kwargs: additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
     """
     # data labels for sampler
     _data_input_mapper = DataInputMapper
@@ -580,7 +577,7 @@ class LGTModel(ETSModel):
 
         return out
 
-    def get_regression_coefs(self, training_meta, point_method, posteriors,
+    def get_regression_coefs(self, training_meta, point_method, point_posteriors, posterior_samples,
                              include_ci=False, lower=0.05, upper=0.95):
         """Return DataFrame regression coefficients
         If PredictMethod is `full` return `mean` of coefficients instead
@@ -592,12 +589,13 @@ class LGTModel(ETSModel):
         if self.num_of_regressors == 0:
             return coef_df
 
-        coef = posteriors \
-            .get(point_method) \
-            .get(RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
+        _point_method = point_method
+        if point_method is None:
+            _point_method = PredictMethod.MEDIAN.value
 
-        if point_method is not None:
-            coef = np.squeeze(coef, 0)
+        coef = point_posteriors \
+            .get(_point_method) \
+            .get(RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
 
         # get column names
         pr_cols = self.positive_regressor_col
@@ -614,17 +612,17 @@ class LGTModel(ETSModel):
 
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR_SIGN] = regressor_signs
-        coef_df[COEFFICIENT_DF_COLS.COEFFICIENT] = coef
+        coef_df[COEFFICIENT_DF_COLS.COEFFICIENT] = coef.flatten()
 
         # if we have posteriors distribution and also include ci
         if point_method is None and include_ci:
-            coef_lower = np.quantile(coef, lower, axis=0)
-            coef_upper = np.quantile(coef, upper, axis=0)
+            coef_samples = posterior_samples.get(RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
+            coef_lower = np.quantile(coef_samples, lower, axis=0)
+            coef_upper = np.quantile(coef_samples, upper, axis=0)
             coef_df_lower = coef_df.copy()
             coef_df_upper = coef_df.copy()
-            for idx, col in enumerate(regressor_cols):
-                coef_df_lower[col] = coef_lower[:, idx]
-                coef_df_upper[col] = coef_upper[:, idx]
+            coef_df_lower[COEFFICIENT_DF_COLS.COEFFICIENT] = coef_lower
+            coef_df_upper[COEFFICIENT_DF_COLS.COEFFICIENT] = coef_upper
 
             return coef_df, coef_df_lower, coef_df_upper
         else:
