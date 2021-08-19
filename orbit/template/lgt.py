@@ -642,5 +642,3 @@ class LGTModel(ETSModel):
             return coef_df, coef_df_lower, coef_df_upper
         else:
             return coef_df
-
-
