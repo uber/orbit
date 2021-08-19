@@ -200,7 +200,7 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
                            PredictionKeys.REGRESSION.value]
 
     plot_components = [p for p in plot_components if p in _predicted_df.columns.tolist()]
-    n_panels = len(plot_components)
+    nrows = len(plot_components)
     if not figsize:
         figsize = (16, 8)
 
@@ -215,8 +215,22 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
     if len(_pred_percentiles) != 2:
         raise ValueError("prediction_percentiles has to be None or a list with length=2.")
 
-    fig, axes = plt.subplots(n_panels, 1, figsize=figsize) #facecolor='w', )
-    for ax, comp in zip(axes, plot_components):
+    if nrows > 1:
+        fig, axes = plt.subplots(nrows=nrows, ncols=1, figsize=figsize)
+        axes = axes.flatten()
+        for ax, comp in zip(axes, plot_components):
+            y = predicted_df[comp].values
+            ax.plot(_predicted_df[date_col], y, marker=None, color=PredPal.PREDICTION_INTERVAL.value)
+            confid_cols = ["{}_{}".format(comp, _pred_percentiles[0]), "{}_{}".format(comp, _pred_percentiles[1])]
+            if set(confid_cols).issubset(predicted_df.columns):
+                ax.fill_between(_predicted_df[date_col].values,
+                                _predicted_df[confid_cols[0]],
+                                _predicted_df[confid_cols[1]],
+                                facecolor=PredPal.PREDICTION_INTERVAL.value, alpha=0.3)
+            ax.set_title(comp, fontsize=fontsize)
+    else:
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
+        comp = plot_components[0]
         y = predicted_df[comp].values
         ax.plot(_predicted_df[date_col], y, marker=None, color=PredPal.PREDICTION_INTERVAL.value)
         confid_cols = ["{}_{}".format(comp, _pred_percentiles[0]), "{}_{}".format(comp, _pred_percentiles[1])]
@@ -225,8 +239,8 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
                             _predicted_df[confid_cols[0]],
                             _predicted_df[confid_cols[1]],
                             facecolor=PredPal.PREDICTION_INTERVAL.value, alpha=0.3)
-        # ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5)
         ax.set_title(comp, fontsize=fontsize)
+
     plt.suptitle(title, fontsize=fontsize)
     fig.tight_layout()
 

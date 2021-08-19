@@ -625,31 +625,35 @@ class KTRModel(ModelTemplate):
         Returns
         -----------
         """
-        date_col = training_meta['date_col']
-        date_array = training_meta['date_array']
-        training_end = training_meta['training_end']
-        num_of_observations = training_meta['num_of_observations']
-
-        prediction_date_array = df[date_col].values
-        prediction_start = prediction_date_array[0]
-
         df = df.copy()
-        if prediction_start > training_end:
-            # time index for prediction start
-            start = num_of_observations
+        if seasonality is not None and len(seasonality) > 0:
+
+            date_col = training_meta['date_col']
+            date_array = training_meta['date_array']
+            training_end = training_meta['training_end']
+            num_of_observations = training_meta['num_of_observations']
+
+            prediction_date_array = df[date_col].values
+            prediction_start = prediction_date_array[0]
+
+            if prediction_start > training_end:
+                # time index for prediction start
+                start = num_of_observations
+            else:
+                # time index for prediction start
+                start = pd.Index(date_array).get_loc(prediction_start)
+
+            fs_cols = []
+            for idx, s in enumerate(seasonality):
+                order = seasonality_fs_order[idx]
+                df, fs_cols_temp = make_fourier_series_df(df, s, order=order, prefix='seas{}_'.format(s), shift=start)
+                fs_cols += fs_cols_temp
+
+            sea_regressor_matrix = df.filter(items=fs_cols).values
+            sea_coefs = self._generate_coefs(training_meta, prediction_date_array, coef_knot_dates, coef_knot)
+            seas = np.sum(sea_coefs * sea_regressor_matrix, axis=-1)
         else:
-            # time index for prediction start
-            start = pd.Index(date_array).get_loc(prediction_start)
-
-        fs_cols = []
-        for idx, s in enumerate(seasonality):
-            order = seasonality_fs_order[idx]
-            df, fs_cols_temp = make_fourier_series_df(df, s, order=order, prefix='seas{}_'.format(s), shift=start)
-            fs_cols += fs_cols_temp
-
-        sea_regressor_matrix = df.filter(items=fs_cols).values
-        sea_coefs = self._generate_coefs(training_meta, prediction_date_array, coef_knot_dates, coef_knot)
-        seas = np.sum(sea_coefs * sea_regressor_matrix, axis=-1)
+            seas = np.zeros(df.shape[0])
 
         return seas
 
@@ -875,7 +879,8 @@ class KTRModel(ModelTemplate):
         decomp_dict = {
             'prediction': pred_array,
             'trend': trend,
-            'seasonality_input': seas,
+            # this is an input from ktrlite
+            'seasonality': seas,
             'regression': regression
         }
 
