@@ -15,6 +15,7 @@ from ..utils.kernels import sandwich_kernel
 from ..utils.features import make_fourier_series_df
 from orbit.constants.palette import OrbitPalette
 from ..utils.knots import get_knot_idx, get_knot_dates
+from ..utils.plot import orbit_style_decorator
 
 
 class DataInputMapper(Enum):
@@ -475,6 +476,7 @@ class KTRLiteModel(ModelTemplate):
 
         return pd.DataFrame(out)
 
+    @orbit_style_decorator
     def plot_lev_knots(self, training_meta, point_method, point_posteriors, posterior_samples,
                        path=None, is_visible=True, title="", fontsize=16,
                        markersize=250, figsize=(16, 8)):
