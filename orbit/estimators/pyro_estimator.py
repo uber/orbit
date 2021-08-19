@@ -1,5 +1,6 @@
 from abc import abstractmethod
 import numpy as np
+import logging
 import pyro
 from pyro.infer import SVI, Trace_ELBO
 from pyro.infer.autoguide import AutoLowRankMultivariateNormal, AutoDelta
@@ -67,6 +68,11 @@ class PyroEstimatorVI(PyroEstimator):
         self.num_sample = num_sample
         self.num_particles = num_particles
         self.init_scale = init_scale
+        if self.verbose:
+            msg_template = "Using {} steps, {} samples, {} learning rate and {} particles for SVI."
+            msg = msg_template.format(
+                self.num_steps, self.num_sample, self.learning_rate, self.num_particles)
+            logging.info(msg)
 
     def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         # verbose is passed through from orbit.template.base_estimator
