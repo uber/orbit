@@ -28,10 +28,9 @@ def KTR(
         regression_rho=0.15,
         # shared
         degree_of_freedom=30,
+        date_freq=None,
         # time-based coefficient priors
         coef_prior_list=None,
-        # shared
-        date_freq=None,
         flat_multiplier=True,
         # TODO: rename to residuals upper bound
         min_residuals_sd=1.0,
@@ -39,10 +38,26 @@ def KTR(
         estimator='pyro-vi',
         **kwargs):
     """
-    Args
+    Parameters
     ----------
     level_knot_scale : float
         sigma for level; default to be .1
+    level_segments : int
+        the number of segments partitioned by the knots of level (trend)
+    level_knot_distance : int
+        the distance between every two knots of level (trend)
+    level_knot_dates : array like
+        list of pre-specified dates for the level knots
+    seasonality : int, or list of int
+        multiple seasonality
+    seasonality_fs_order : int, or list of int
+        fourier series order for seasonality
+    seasonality_segments : int
+        the number of segments partitioned by the knots of seasonality
+    seasonal_initial_knot_scale : float
+        scale parameter for seasonal regressors initial coefficient knots; default to be 1
+    seasonal_knot_scale : float
+        scale parameter for seasonal regressors drift of coefficient knots; default to be 0.1.
     regressor_col : array-like strings
         regressor columns
     regressor_sign : list
@@ -54,41 +69,30 @@ def KTR(
         default to be 1.
     regressor_knot_scale : list
         list of regressor knot sigma priors; default to be 0.1.
-    span_coefficients : float between (0, 1)
-        window width to decide the number of windows for the regression term
-    rho_coefficients : float
+    regression_segments : int
+        the number of segments partitioned by the knots of regression
+    regression_knot_distance : int
+        the distance between every two knots of regression
+    regression_knot_dates : array-like
+        list of pre-specified dates for regression knots
+    regression_rho : float
         sigma in the Gaussian kernel for the regression term
     degree of freedom : int
         degree of freedom for error t-distribution
+    date_freq : str
+        date frequency; if not supplied, pd.infer_freq will be used to imply the date frequency.
     coef_prior_list : list of dicts
         each dict in the list should have keys as
         'name', prior_start_tp_idx' (inclusive), 'prior_end_tp_idx' (not inclusive),
         'prior_mean', 'prior_sd', and 'prior_regressor_col'
-    level_knot_dates : array like
-        list of pre-specified dates for level knots
-    level_knots : array like
-        list of knot locations for level
-        level_knot_dates and level_knots should be of the same length
-    seasonal_knots_input : dict
-         a dictionary for seasonality inputs with the following keys:
-            '_seas_coef_knot_dates' : knot dates for seasonal regressors
-            '_sea_coef_knot' : knot locations for sesonal regressors
-            '_seasonality' : seasonality order
-            '_seasonality_fs_order' : fourier series order for seasonality
-    coefficients_knot_length : int
-        the distance between every two knots for coefficients
-    coefficients_knot_dates : array like
-        a list of pre-specified knot dates for coefficients
-    date_freq : str
-        date frequency; if not supplied, pd.infer_freq will be used to imply the date frequency.
     min_residuals_sd : float
         a numeric value from 0 to 1 to indicate the upper bound of residual scale parameter; e.g.
         0.5 means residual scale will be sampled from [0, 0.5] in a scaled Beta(2, 2) dist.
     flat_multiplier : bool
         Default set as True. If False, we will adjust knot scale with a multiplier based on regressor volume
         around each knot; When True, set all multiplier as 1
-    geometric_walk : bool
-        Default set as False. If True we will sample positive regressor knot as geometric random walk
+    ktrlite_optim_args : dict
+        the optimizing config for the ktrlite model (to fit level/seasonality). Default to be dict().
     estimator : string; {'pyro-svi'}
 
     Other Parameters
@@ -108,7 +112,7 @@ def KTR(
         confident intervals, pass an empty list
 
     **kwargs:
-        additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
+        additional arguments passed into orbit.estimators.pyro_estimator
     """
     _supported_estimators = ['pyro-svi']
 

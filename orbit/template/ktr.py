@@ -90,6 +90,22 @@ class KTRModel(ModelTemplate):
     ----------
     level_knot_scale : float
         sigma for level; default to be .1
+    level_segments : int
+        the number of segments partitioned by the knots of level (trend)
+    level_knot_distance : int
+        the distance between every two knots of level (trend)
+    level_knot_dates : array like
+        list of pre-specified dates for the level knots
+    seasonality : int, or list of int
+        multiple seasonality
+    seasonality_fs_order : int, or list of int
+        fourier series order for seasonality
+    seasonality_segments : int
+        the number of segments partitioned by the knots of seasonality
+    seasonal_initial_knot_scale : float
+        scale parameter for seasonal regressors initial coefficient knots; default to be 1
+    seasonal_knot_scale : float
+        scale parameter for seasonal regressors drift of coefficient knots; default to be 0.1.
     regressor_col : array-like strings
         regressor columns
     regressor_sign : list
@@ -101,39 +117,30 @@ class KTRModel(ModelTemplate):
         default to be 1.
     regressor_knot_scale : list
         list of regressor knot sigma priors; default to be 0.1.
-    span_coefficients : float between (0, 1)
-        window width to decide the number of windows for the regression term
-    rho_coefficients : float
+    regression_segments : int
+        the number of segments partitioned by the knots of regression
+    regression_knot_distance : int
+        the distance between every two knots of regression
+    regression_knot_dates : array-like
+        list of pre-specified dates for regression knots
+    regression_rho : float
         sigma in the Gaussian kernel for the regression term
     degree of freedom : int
         degree of freedom for error t-distribution
+    date_freq : str
+        date frequency; if not supplied, pd.infer_freq will be used to imply the date frequency.
     coef_prior_list : list of dicts
         each dict in the list should have keys as
         'name', prior_start_tp_idx' (inclusive), 'prior_end_tp_idx' (not inclusive),
         'prior_mean', 'prior_sd', and 'prior_regressor_col'
-    level_knot_dates : array like
-        list of pre-specified dates for level knots
-    level_knots : array like
-        list of knot locations for level
-        level_knot_dates and level_knots should be of the same length
-    seasonal_knots_input : dict
-         a dictionary for seasonality inputs with the following keys:
-            '_seas_coef_knot_dates' : knot dates for seasonal regressors
-            '_sea_coef_knot' : knot locations for seasonal regressors
-            '_seasonality' : seasonality order
-            '_seasonality_fs_order' : fourier series order for seasonality
-    coefficients_knot_length : int
-        the distance between every two knots for coefficients
-    regression_knot_dates : array like
-        a list of pre-specified knot dates for coefficients
-    date_freq : str
-        date frequency; if not supplied, pd.infer_freq will be used to imply the date frequency.
     min_residuals_sd : float
         a numeric value from 0 to 1 to indicate the upper bound of residual scale parameter; e.g.
         0.5 means residual scale will be sampled from [0, 0.5] in a scaled Beta(2, 2) dist.
     flat_multiplier : bool
         Default set as True. If False, we will adjust knot scale with a multiplier based on regressor volume
         around each knot; When True, set all multiplier as 1
+    ktrlite_optim_args : dict
+        the optimizing config for the ktrlite model (to fit level/seasonality). Default to be dict().
     """
     _data_input_mapper = DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
@@ -161,14 +168,12 @@ class KTRModel(ModelTemplate):
                  regression_segments=5,
                  regression_knot_distance=None,
                  regression_knot_dates=None,
-                 # different from seasonality
                  regression_rho=0.15,
                  # shared
                  degree_of_freedom=30,
+                 date_freq=None,
                  # time-based coefficient priors
                  coef_prior_list=None,
-                 # shared
-                 date_freq=None,
                  flat_multiplier=True,
                  # TODO: rename to residuals upper bound
                  min_residuals_sd=1.0,
@@ -613,13 +618,15 @@ class KTRModel(ModelTemplate):
         ----------
         df : pd.DataFrame
             input df
-        coef_knot_dates: 1-D array like
+        training_meta: dict
+            meta dictionary for the training input
+        coef_knot_dates : 1-D array like
             dates for seasonality coefficient knots
-        coef_knot: 1-D array like
+        coef_knot : 1-D array like
             knot values for coef
-        seasonality: list
+        seasonality : list
             seasonality input; list of float
-        seasonality_fs_order: list
+        seasonality_fs_order : list
             seasonality_fs_order input list of int
 
         Returns
@@ -786,11 +793,15 @@ class KTRModel(ModelTemplate):
         """Vectorized version of prediction math
         Parameters
         ----
-        coefficient_method: str
+        coefficient_method : str
             either "smooth" or "empirical". when "empirical" is used, curves are sampled/aggregated directly
             from beta posteriors; when "smooth" is used, first extract sampled/aggregated posteriors of knots
             then beta.
             this mainly impacts the aggregated estimation method; full bayesian should not be impacted
+        include_error : bool
+            if generating the noise samples
+        store_prediction_array : bool
+            if storing the prediction array
         """
         ################################################################
         # Model Attributes
@@ -895,15 +906,15 @@ class KTRModel(ModelTemplate):
         """internal function to provide coefficient matrix given a date array
         Args
         ----
-        posteriors: dict
+        posteriors : dict
             posterior samples
-        date_array: array like
+        date_array : array like
             array of date stamp
-        coefficient_method: str
-            either "empirical" or "smooth"; when "empirical" is used; curve are sampled/aggregated directly from
-            coefficients posteriors whereas when "smooth" is used we first extract sampled/aggregated posteriors of knot
-            and extract coefficients this mainly impact the aggregated estimation method; full bayesian should not be
-            impacted
+        coefficient_method : str
+            either "smooth" or "empirical". when "empirical" is used, curves are sampled/aggregated directly
+            from beta posteriors; when "smooth" is used, first extract sampled/aggregated posteriors of knots
+            then beta.
+            this mainly impacts the aggregated estimation method; full bayesian should not be impacted.
         """
         num_of_observations = training_meta['num_of_observations']
         training_start = training_meta['training_start']
@@ -968,7 +979,27 @@ class KTRModel(ModelTemplate):
                              coefficient_method='smooth', date_array=None,
                              include_ci=False, lower=0.05, upper=0.95
                              ):
-        """Return DataFrame regression coefficients
+        """Return DataFrame regression coefficients.
+
+        Parameters
+        ----------
+        coefficient_method : str
+            either "smooth" or "empirical". when "empirical" is used, curves are sampled/aggregated directly
+            from beta posteriors; when "smooth" is used, first extract sampled/aggregated posteriors of knots
+            then beta.
+        date_array : array-like
+            the list of dates for which the regressio coefficients will be reported.
+            Default to be None. When it's None, all the dates in the training data will be used.
+        include_ci : bool
+            if including the confidence intervals for the regression coefficients
+        lower : float between (0, 1). default to be 0.05
+            lower bound for the CI
+        upper : float between (0, 1). default to be 0.95.
+            upper bound for the CI
+
+        Returns
+        -------
+        Pandas data frame holding the dynamic regression coefficients
         """
         date_col = training_meta['date_col']
         reg_df = pd.DataFrame()
@@ -1042,7 +1073,32 @@ class KTRModel(ModelTemplate):
                               coefficient_method='smooth', date_array=None,
                               include_ci=False, lower=0.05, upper=0.95,
                               with_knot=False, ncol=2, figsize=None, ylim=None, markersize=200):
-        """Plot regression coefficients
+        """Plot regression coefficients.
+
+        Parameters
+        ----------
+        coefficient_method : str
+            either "smooth" or "empirical". when "empirical" is used, curves are sampled/aggregated directly
+            from beta posteriors; when "smooth" is used, first extract sampled/aggregated posteriors of knots
+            then beta.
+        date_array : array-like
+            the list of dates for which the regressio coefficients will be reported.
+            Default to be None. When it's None, all the dates in the training data will be used.
+        include_ci : bool
+            if including the confidence intervals for the regression coefficients
+        lower : float between (0, 1). default to be 0.05
+            lower bound for the CI
+        upper : float between (0, 1). default to be 0.95.
+            upper bound for the CI
+        with_knot : bool
+            if plotting the regression knots in the graph
+        ncol : int
+            number of columns of the panel grid
+        markersize : int; optional
+            knot marker size
+        figsize : tuple; optional
+            figsize passed to `matplotlib.pyplot.figure()`
+
         """
         # assume your first column is the date; this way can use a static method
         if include_ci:
@@ -1141,7 +1197,7 @@ class KTRModel(ModelTemplate):
         markersize : int; optional
             knot marker size
         figsize : tuple; optional
-            figsize pass through to `matplotlib.pyplot.figure()`
+            figsize passed to `matplotlib.pyplot.figure()`
        Returns
         -------
             matplotlib axes object
