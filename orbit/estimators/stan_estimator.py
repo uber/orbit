@@ -10,79 +10,6 @@ from .base_estimator import BaseEstimator
 from ..exceptions import EstimatorException
 from ..utils.stan import get_compiled_stan_model
 from ..utils.general import update_dict
-# todo: add stan docstrings
-
-# import sys
-# import os
-# import io
-# from contextlib import contextmanager,redirect_stderr,redirect_stdout
-# from os import devnull
-# from IPython.utils import io
-
-
-# class suppress_stdout_stderr(object):
-#     """
-#     A context manager for doing a "deep suppression" of stdout and stderr in
-#     Python, i.e. will suppress all print, even if the print originates in a
-#     compiled C/Fortran sub-function.
-#        This will not suppress raised exceptions, since exceptions are printed
-#     to stderr just before a script exits, and after the context manager has
-#     exited (at least, I think that is why it lets exceptions through).
-#     """
-#
-#     def __init__(self):
-#         # Open a pair of null files
-#         self.null_fds = [os.open(os.devnull, os.O_RDWR) for x in range(2)]
-#         # Save the actual stdout (1) and stderr (2) file descriptors.
-#         self.save_fds = (os.dup(1), os.dup(2))
-#
-#     def __enter__(self):
-#         # Assign the null pointers to stdout and stderr.
-#         os.dup2(self.null_fds[0], 1)
-#         os.dup2(self.null_fds[1], 2)
-#
-#     def __exit__(self, *_):
-#         # Re-assign the real stdout/stderr back to (1) and (2)
-#         os.dup2(self.save_fds[0], 1)
-#         os.dup2(self.save_fds[1], 2)
-#         # Close the null files
-#         os.close(self.null_fds[0])
-#         os.close(self.null_fds[1])
-
-
-# class suppress_stdout_stderr2(object):
-#     """
-#     A context manager for doing a "deep suppression" of stdout and stderr in
-#     Python, i.e. will suppress all print, even if the print originates in a
-#     compiled C/Fortran sub-function.
-#        This will not suppress raised exceptions, since exceptions are printed
-#     to stderr just before a script exits, and after the context manager has
-#     exited (at least, I think that is why it lets exceptions through).
-#     """
-#
-#     def __init__(self):
-#         # Open a pair of null files
-#         # self.save_stdout = sys.stdout
-#         sys.stdout = io.BytesIO()
-#         # self.save_stdout = copy(sys.stdout)
-#
-#     def __enter__(self):
-#         # Assign the null pointers to stdout and stderr.
-#         sys.stdout = io.BytesIO()
-#         # sys.stdout = open(self.null_fds, 'w')
-#         # sys.stdout = self.save_stdout
-#
-#     def __exit__(self, *_):
-#         pass
-#         # sys.stdout = self.save_stdout
-#
-#
-# @contextmanager
-# def suppress_stdout_stderr3():
-#     """A context manager that redirects stdout and stderr to devnull"""
-#     with open(devnull, 'w') as fnull:
-#         with redirect_stderr(fnull) as err, redirect_stdout(fnull) as out:
-#             yield (err, out)
 
 
 class StanEstimator(BaseEstimator):
@@ -133,12 +60,6 @@ class StanEstimator(BaseEstimator):
         self._num_iter_per_chain = self._num_warmup_per_chain + self._num_sample_per_chain
         self._total_iter = self._num_iter_per_chain * self.chains
 
-        if self.verbose:
-            msg_template = "Using {} chains, {} cores, {} warmup and {} samples per chain for sampling."
-            msg = msg_template.format(
-                self.chains, self.cores, self._num_warmup_per_chain, self._num_sample_per_chain)
-            logging.info(msg)
-
     @abstractmethod
     def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         raise NotImplementedError('Concrete fit() method must be implemented')
@@ -172,6 +93,11 @@ class StanEstimatorMCMC(StanEstimator):
 
     def _set_computed_stan_mcmc_configs(self):
         self._stan_mcmc_args = update_dict({}, self._stan_mcmc_args)
+        if self.verbose:
+            msg_template = "Using {} chains, {} cores, {} warmup and {} samples per chain for sampling."
+            msg = msg_template.format(
+                self.chains, self.cores, self._num_warmup_per_chain, self._num_sample_per_chain)
+            logging.info(msg)
 
     def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         compiled_stan_file = get_compiled_stan_model(model_name)
@@ -244,6 +170,14 @@ class StanEstimatorMAP(StanEstimator):
     def _set_computed_stan_map_configs(self):
         default_stan_map_args = {}
         self._stan_map_args = update_dict(default_stan_map_args, self._stan_map_args)
+        if self.verbose:
+            msg_template = "Using {} algorithm for optimizing."
+            if self.algorithm is None:
+                algorithm = "LBFGS"
+            else:
+                algorithm = self.algorithm
+            msg = msg_template.format(algorithm)
+            logging.info(msg)
 
     def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         compiled_stan_file = get_compiled_stan_model(model_name)
@@ -281,3 +215,76 @@ class StanEstimatorMAP(StanEstimator):
         training_metrics = dict()
 
         return posteriors, training_metrics
+
+
+# import sys
+# import os
+# import io
+# from contextlib import contextmanager,redirect_stderr,redirect_stdout
+# from os import devnull
+# from IPython.utils import io
+
+
+# class suppress_stdout_stderr(object):
+#     """
+#     A context manager for doing a "deep suppression" of stdout and stderr in
+#     Python, i.e. will suppress all print, even if the print originates in a
+#     compiled C/Fortran sub-function.
+#        This will not suppress raised exceptions, since exceptions are printed
+#     to stderr just before a script exits, and after the context manager has
+#     exited (at least, I think that is why it lets exceptions through).
+#     """
+#
+#     def __init__(self):
+#         # Open a pair of null files
+#         self.null_fds = [os.open(os.devnull, os.O_RDWR) for x in range(2)]
+#         # Save the actual stdout (1) and stderr (2) file descriptors.
+#         self.save_fds = (os.dup(1), os.dup(2))
+#
+#     def __enter__(self):
+#         # Assign the null pointers to stdout and stderr.
+#         os.dup2(self.null_fds[0], 1)
+#         os.dup2(self.null_fds[1], 2)
+#
+#     def __exit__(self, *_):
+#         # Re-assign the real stdout/stderr back to (1) and (2)
+#         os.dup2(self.save_fds[0], 1)
+#         os.dup2(self.save_fds[1], 2)
+#         # Close the null files
+#         os.close(self.null_fds[0])
+#         os.close(self.null_fds[1])
+
+
+# class suppress_stdout_stderr2(object):
+#     """
+#     A context manager for doing a "deep suppression" of stdout and stderr in
+#     Python, i.e. will suppress all print, even if the print originates in a
+#     compiled C/Fortran sub-function.
+#        This will not suppress raised exceptions, since exceptions are printed
+#     to stderr just before a script exits, and after the context manager has
+#     exited (at least, I think that is why it lets exceptions through).
+#     """
+#
+#     def __init__(self):
+#         # Open a pair of null files
+#         # self.save_stdout = sys.stdout
+#         sys.stdout = io.BytesIO()
+#         # self.save_stdout = copy(sys.stdout)
+#
+#     def __enter__(self):
+#         # Assign the null pointers to stdout and stderr.
+#         sys.stdout = io.BytesIO()
+#         # sys.stdout = open(self.null_fds, 'w')
+#         # sys.stdout = self.save_stdout
+#
+#     def __exit__(self, *_):
+#         pass
+#         # sys.stdout = self.save_stdout
+#
+#
+# @contextmanager
+# def suppress_stdout_stderr3():
+#     """A context manager that redirects stdout and stderr to devnull"""
+#     with open(devnull, 'w') as fnull:
+#         with redirect_stderr(fnull) as err, redirect_stdout(fnull) as out:
+#             yield (err, out)
