@@ -25,16 +25,14 @@ For details, check out our documentation and tutorials:
 - HTML (stable): https://orbit-ml.readthedocs.io/en/stable/
 - HTML (latest): https://orbit-ml.readthedocs.io/en/latest/
 
-Currently, it supports concrete implementations for the following
-models:
+Currently, it supports concrete implementations for the following models:
 
 -  Exponential Smoothing (ETS)
--  Damped Local Trend (DLT)
 -  Local Global Trend (LGT)
--  Kernel Time-based Regression (KTR-Lite)
+-  Damped Local Trend (DLT)
+-  Kernel Time-based Regression (KTR)
 
-It also supports the following sampling methods for
-model estimation:
+It also supports the following sampling/optimization methods for model estimation/inferences:
 
 -  Markov-Chain Monte Carlo (MCMC) as a full sampling method
 -  Maximum a Posteriori (MAP) as a point estimate method
@@ -68,7 +66,7 @@ $ pip install git+https://github.com/uber/orbit.git@dev
 
 ```python
 from orbit.utils.dataset import load_iclaims
-from orbit.template.dlt import DLTFull
+from orbit.models import DLT
 from orbit.diagnostics.plot import plot_predicted_data
 
 # log-transformed data
@@ -78,7 +76,7 @@ test_size = 52
 train_df = df[:-test_size]
 test_df = df[-test_size:]
 
-dlt = DLTFull(
+dlt = DLT(
   response_col='claims', date_col='week',
   regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
   seasonality=52,
@@ -95,7 +93,7 @@ plot_predicted_data(
 )
 ```
 
-![full-pred](https://raw.githubusercontent.com/uber/orbit/dev/docs/img/dlt-mcmc-pred.png)
+![full-pred](docs/img/dlt-mcmc-pred.png)
 
 ## Demo
 
@@ -124,7 +122,8 @@ We document versions and changes in our [changelog](https://github.com/uber/orbi
 
 ## Presentations
 
-Check out the [deck](https://docs.google.com/presentation/d/1R0Ol8xahIE6XlrAjAi0ewu4nRxo-wQn8w6U7z-uiOzI/edit?usp=sharing) we presented in a meet up event in Jul. 2021.
+Check out the [deck](https://docs.google.com/presentation/d/1R0Ol8xahIE6XlrAjAi0ewu4nRxo-wQn8w6U7z-uiOzI/edit?usp=sharing)
+for a [meet-up](https://www.meetup.com/UberEvents/events/279446143/) event in July 2021.
 
 ## Citation
 
