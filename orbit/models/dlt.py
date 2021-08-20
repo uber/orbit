@@ -84,7 +84,7 @@ def DLT(seasonality=None,
         confident intervals, pass an empty list
 
     **kwargs:
-        additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
+        additional arguments passed into orbit.estimators.stan_estimator
     """
     _supported_estimators = ['stan-map', 'stan-mcmc']
 

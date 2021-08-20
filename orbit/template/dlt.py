@@ -655,8 +655,21 @@ class DLTModel(ETSModel):
 
     def get_regression_coefs(self, training_meta, point_method, point_posteriors, posterior_samples,
                              include_ci=False, lower=0.05, upper=0.95):
-        """Return DataFrame regression coefficients
-        If PredictMethod is `full` return `mean` of coefficients instead
+        """Return DataFrame regression coefficients.
+          If point_method is None when fitting, return the median of coefficients.
+
+        Parameters
+        -----------
+        include_ci : bool
+            if including the confidence intervals for the regression coefficients
+        lower : float between (0, 1). default to be 0.05
+            lower bound for the CI
+        upper : float between (0, 1). default to be 0.95.
+            upper bound for the CI
+
+        Returns
+        -------
+        pandas data frame holding the regression coefficients
         """
         # init dataframe
         coef_df = pd.DataFrame()

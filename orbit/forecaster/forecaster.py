@@ -26,6 +26,9 @@ class Forecaster(object):
 
         Parameters
         ----------
+        model : an instance of a concrete model
+        estimator_type : class of estimator
+            StanEstimatorMAP, StanEstimatorMCMC, or PyroEstimatorVI
         response_col : str
             Name of response variable column, default 'y'
         date_col : str
