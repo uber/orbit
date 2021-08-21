@@ -3,25 +3,10 @@ import torch
 
 import pyro
 import pyro.distributions as dist
-import pyro.poutine as poutine
-from pyro.infer.reparam import LocScaleReparam, SymmetricStableReparam
 
 # FIXME: this is sort of dangerous; consider better implementation later
 torch.set_default_tensor_type('torch.DoubleTensor')
 pyro.enable_validation(True)
-
-
-# class TruncatedNormal(dist.Rejector):
-#     def __init__(self, loc, scale, min_x0=None):
-#         propose = dist.Normal(loc, scale)
-#         if min_x0 is None:
-#             min_x0 = torch.zeros(1)
-#
-#         def log_prob_accept(x):
-#             return (x > min_x0).type_as(x).log()
-#
-#         log_scale = torch.log(1 - dist.Normal(loc, scale).cdf(min_x0))
-#         super(TruncatedNormal, self).__init__(propose, log_prob_accept, log_scale)
 
 
 class Model:
@@ -79,11 +64,10 @@ class Model:
 
         lev_knot_scale = self.lev_knot_scale
 
-        min_residuals_sd = self.min_residuals_sd
-        if min_residuals_sd > 1.0:
-            min_residuals_sd = torch.tensor(1.0)
-        if min_residuals_sd < 0:
-            min_residuals_sd = torch.tensor(0.0)
+        resid_scale_ub = self.resid_scale_ub
+        if resid_scale_ub > sdy:
+            resid_scale_ub = sdy
+
         # expand dim to n_rr x n_knots_coef
         rr_init_knot_loc = self.rr_init_knot_loc
         rr_init_knot_scale = self.rr_init_knot_scale
@@ -190,14 +174,10 @@ class Model:
 
         # observation likelihood
         yhat = lev + (regressors * coef).sum(-1)
-        obs_scale_base = pyro.sample("obs_scale_base", dist.Beta(2, 2)).unsqueeze(-1)
-        # from 0.5 * sdy to sdy
-        obs_scale = ((obs_scale_base * (1.0 - min_residuals_sd)) + min_residuals_sd) * sdy
-
-        # with pyro.plate("response_plate", n_valid):
-        #     pyro.sample("response",
-        #                 dist.StudentT(dof, yhat[..., which_valid], obs_scale),
-        #                 obs=response_tran[which_valid])
+        # set lower and upper bound of scale parameter
+        # Beta(5, 1) set up some gravity to ask for extra evidence to reduce the scale sharply
+        obs_scale_base = pyro.sample("obs_scale_base", dist.Beta(5, 1)).unsqueeze(-1)
+        obs_scale = obs_scale_base * resid_scale_ub
 
         pyro.sample("response",
                     dist.StudentT(dof, yhat[..., which_valid], obs_scale).to_event(1),

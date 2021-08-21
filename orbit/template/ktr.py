@@ -32,7 +32,7 @@ class DataInputMapper(Enum):
     WHICH_VALID_RESPONSE = 'WHICH_VALID_RES'
     RESPONSE_OFFSET = 'MEAN_Y'
     DEGREE_OF_FREEDOM = 'DOF'
-    MIN_RESIDUALS_SD = 'MIN_RESIDUALS_SD'
+    _RESIDUALS_SCALE_UPPER = 'RESID_SCALE_UB'
     # ----------  Level  ---------- #
     _NUM_KNOTS_LEVEL = 'N_KNOTS_LEV'
     LEVEL_KNOT_SCALE = 'LEV_KNOT_SCALE'
@@ -133,9 +133,7 @@ class KTRModel(ModelTemplate):
         each dict in the list should have keys as
         'name', prior_start_tp_idx' (inclusive), 'prior_end_tp_idx' (not inclusive),
         'prior_mean', 'prior_sd', and 'prior_regressor_col'
-    min_residuals_sd : float
-        a numeric value from 0 to 1 to indicate the upper bound of residual scale parameter; e.g.
-        0.5 means residual scale will be sampled from [0, 0.5] in a scaled Beta(2, 2) dist.
+    residuals_scale_upper : float
     flat_multiplier : bool
         Default set as True. If False, we will adjust knot scale with a multiplier based on regressor volume
         around each knot; When True, set all multiplier as 1
@@ -175,8 +173,7 @@ class KTRModel(ModelTemplate):
                  # time-based coefficient priors
                  coef_prior_list=None,
                  flat_multiplier=True,
-                 # TODO: rename to residuals upper bound
-                 min_residuals_sd=1.0,
+                 residuals_scale_upper=1.0,
                  ktrlite_optim_args=dict(),
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
@@ -264,7 +261,8 @@ class KTRModel(ModelTemplate):
         # other configurations
         self.date_freq = date_freq
         self.degree_of_freedom = degree_of_freedom
-        self.min_residuals_sd = min_residuals_sd
+        self.residuals_scale_upper = residuals_scale_upper
+        self._residuals_scale_upper = residuals_scale_upper
         self.ktrlite_optim_args = ktrlite_optim_args
 
         self._set_static_attributes()
@@ -691,6 +689,11 @@ class KTRModel(ModelTemplate):
         ktrlite.fit(df=df)
         self._ktrlite_model = ktrlite
         ktrlite_pt_posteriors = ktrlite.get_point_posteriors()
+        ktrlite_obs_scale = ktrlite_pt_posteriors['map']['obs_scale']
+        # if input None for upper bound of residuals scale, use data-driven input
+        if self.residuals_scale_upper is None:
+            # make it 5 times to have some buffer in case we over-fit in KTRLite
+            self._residuals_scale_upper = min(ktrlite_obs_scale * 5, training_meta['response_sd'])
 
         # this part is to extract level and seasonality result from KTRLite
         self._level_knots = np.squeeze(ktrlite_pt_posteriors['map']['lev_knot'])
