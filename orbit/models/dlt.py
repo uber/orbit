@@ -66,6 +66,7 @@ def DLT(seasonality=None,
     global_trend_option : { 'flat', 'linear', 'loglinear', 'logistic' }
         Transformation function for the shape of the forecasted global trend.
     estimator : string; {'stan-mcmc', 'stan-map'}
+        default to be 'stan-mcmc'.
 
     Other Parameters
     ----------------

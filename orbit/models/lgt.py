@@ -56,6 +56,7 @@ def LGT(seasonality=None,
         float value between [0, 1]. A larger value puts more weight on the current slope.
         If None, the model will estimate this value.
     estimator : string; {'stan-mcmc', 'stan-map', 'pyro-svi'}
+        default to be 'stan-mcmc'.
 
     Other Parameters
     ----------------
