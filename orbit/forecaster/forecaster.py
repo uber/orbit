@@ -301,6 +301,9 @@ class Forecaster(object):
     def get_prediction_meta(self):
         return deepcopy(self._prediction_meta)
 
+    def get_training_metrics(self):
+        return deepcopy(self._training_metrics)
+
     def get_posterior_samples(self):
         return deepcopy(self._posterior_samples)
 
