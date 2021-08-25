@@ -416,6 +416,11 @@ class MAPTemplate(BaseTemplate):
                 percentiles_dict = {k: v for k, v in percentiles_dict.items() if k in reduced_keys}
             predicted_df = pd.DataFrame(percentiles_dict)
         else:
+            # reduce to prediction only if decompose is not requested
+            if not decompose:
+                point_predicted_dict = {
+                    k: v for k, v in point_predicted_dict.items() if k == PredictionKeys.PREDICTION.value
+                }
             predicted_df = pd.DataFrame(point_predicted_dict)
 
         predicted_df = prepend_date_column(predicted_df, df, self.date_col)
@@ -528,6 +533,8 @@ class FullBayesianTemplate(BaseTemplate):
                 PredictionKeys.PREDICTION.value))
 
         # reduce to prediction only if decompose is not requested
+        # note that unlike other template, we can filter the keys before percentiles computation
+        # hence, we can reduce with mapping on PredictionKeys
         if not decompose:
             predicted_dict = {k: v for k, v in predicted_dict.items() if k == PredictionKeys.PREDICTION.value}
 
@@ -656,6 +663,11 @@ class AggregatedPosteriorTemplate(BaseTemplate):
                 percentiles_dict = {k: v for k, v in percentiles_dict.items() if k in reduced_keys}
             predicted_df = pd.DataFrame(percentiles_dict)
         else:
+            # reduce to prediction only if decompose is not requested
+            if not decompose:
+                point_predicted_dict = {
+                    k: v for k, v in point_predicted_dict.items() if k == PredictionKeys.PREDICTION.value
+                }
             predicted_df = pd.DataFrame(point_predicted_dict)
 
         predicted_df = prepend_date_column(predicted_df, df, self.date_col)
