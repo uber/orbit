@@ -9,7 +9,7 @@ def reduce_by_max(x, n=2):
 
 # Gaussian-Kernel
 # https://en.wikipedia.org/wiki/Kernel_smoother
-def gauss_kernel(x, x_i, rho=1.0, alpha=1.0, n_reduce=-1, point_to_flatten=1):
+def gauss_kernel(x, x_i, rho=0.1, alpha=1.0, n_reduce=-1, point_to_flatten=1):
     """
     Parameters
     ----------
