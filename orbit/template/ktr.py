@@ -173,7 +173,7 @@ class KTRModel(ModelTemplate):
                  # time-based coefficient priors
                  coef_prior_list=None,
                  flat_multiplier=True,
-                 residuals_scale_upper=1.0,
+                 residuals_scale_upper=None,
                  ktrlite_optim_args=dict(),
                  **kwargs):
         super().__init__(**kwargs)  # create estimator in base class
@@ -521,11 +521,11 @@ class KTRModel(ModelTemplate):
 
                     local_val[:, idx] = np.mean(np.fabs(self._positive_regressor_matrix[str_idx:end_idx]), axis=0)
 
-                # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
-                # scale parameters
                 global_mean = np.expand_dims(np.mean(np.fabs(self._positive_regressor_matrix), axis=0), -1)
                 test_flag = local_val < 0.01 * global_mean
 
+                # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
+                # scale parameters
                 multiplier[test_flag] = DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
                 # replace entire row of nan (when 0.1 * global_mean is equal to global_min) with upper bound
                 multiplier[np.isnan(multiplier).all(axis=-1)] = 1.0
