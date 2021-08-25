@@ -36,8 +36,8 @@ def gauss_kernel(x, x_i, rho=1.0, alpha=1.0, n_reduce=-1, point_to_flatten=1):
 
     See Also
     --------
-      1. https://mc-stan.org/docs/2_24/stan-users-guide/gaussian-process-regression.html
-      2. https://en.wikipedia.org/wiki/Local_regression
+    1. https://mc-stan.org/docs/2_24/stan-users-guide/gaussian-process-regression.html
+    2. https://en.wikipedia.org/wiki/Local_regression
     """
     N = len(x)
     M = len(x_i)
@@ -70,7 +70,7 @@ def sandwich_kernel(x, x_i):
 
     Returns
     -------
-    np.ndarray
+    np.ndarray :
         2D array with size N x M such that
         N as the number of entry points
         M as the number of reference points
@@ -78,8 +78,8 @@ def sandwich_kernel(x, x_i):
 
     See Also
     --------
-      1. https://mc-stan.org/docs/2_24/stan-users-guide/gaussian-process-regression.html
-      2. https://en.wikipedia.org/wiki/Local_regression
+    1. https://mc-stan.org/docs/2_24/stan-users-guide/gaussian-process-regression.html
+    2. https://en.wikipedia.org/wiki/Local_regression
     """
     N = len(x)
     M = len(x_i)
@@ -106,6 +106,7 @@ def sandwich_kernel(x, x_i):
 
 
 def parabolic_kernel(x, x_i):
+    # TODO: docstring
     N = len(x)
     M = len(x_i)
     k = np.zeros((N, M), dtype=np.double)
