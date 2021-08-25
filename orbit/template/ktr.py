@@ -549,16 +549,16 @@ class KTRModel(ModelTemplate):
                 multiplier = np.ones(local_val.shape)
             else:
                 multiplier = np.ones(local_val.shape)
-            # store local value for the range on the left side since last knot
-            for idx in range(len(self._regression_knots_idx)):
-                if idx < len(self._regression_knots_idx) - 1:
-                    str_idx = self._regression_knots_idx[idx]
-                    end_idx = self._regression_knots_idx[idx + 1]
-                else:
-                    str_idx = self._regression_knots_idx[idx]
-                    end_idx = num_of_observations
+                # store local value for the range on the left side since last knot
+                for idx in range(len(self._regression_knots_idx)):
+                    if idx < len(self._regression_knots_idx) - 1:
+                        str_idx = self._regression_knots_idx[idx]
+                        end_idx = self._regression_knots_idx[idx + 1]
+                    else:
+                        str_idx = self._regression_knots_idx[idx]
+                        end_idx = num_of_observations
 
-                local_val[:, idx] = np.mean(np.fabs(self._regular_regressor_matrix[str_idx:end_idx]), axis=0)
+                    local_val[:, idx] = np.mean(np.fabs(self._regular_regressor_matrix[str_idx:end_idx]), axis=0)
 
             # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
             # scale parameters
