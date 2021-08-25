@@ -1,6 +1,8 @@
 import numpy as np
+import pandas as pd
 from statsmodels.tsa.arima_process import ArmaProcess
 import math
+from math import pi
 from orbit.exceptions import IllegalArgument
 
 
@@ -179,94 +181,152 @@ def make_regression(series_len, coefs, loc=0.0, scale=0.5, cov=None, noise_scale
     return x, y, coefs
 
 
-# def make_ts_multiplicative(series_len=200, seasonality=-1, coefs=None, regressor_relevance=0.0,
-#                            regressor_log_loc=0.0, regressor_log_scale=0.2,
-#                            regressor_log_cov=None,
-#                            noise_to_signal_ratio=1.0, regression_sparsity=0.5,
-#                            obs_val_base=1000, regresspr_val_base=1000,
-#                            trend_type='rw', rw_loc=0.001, rw_scale=0.1, seas_scale=.05,
-#                            response_col='y', seed=0):
-#     """ [Deprecated] Module to generate multiplicative time-series with trend, seasonality and regression components
-#     Parameters
-#     ----------
-#     series_len: int
-#     seasonality: int
-#     coefs: 1-D array_like for regression coefs
-#     regressor_relevance: float
-#         0 to 1; higher value indicates less number of useful regressors
-#     regressor_log_loc: float
-#     regressor_log_scale: float
-#     regressor_log_cov: 2-D array_like, of shape (num_of_regressors, num_of_regressors)
-#         covariance of regressors in log unit scale
-#     noise_to_signal_ratio: float
-#     regression_sparsity: float
-#         0 to 1 to control probability of value > 0 at time t of a regressor
-#     obs_val_base: float
-#         positive values
-#     regresspr_val_base: float
-#         positive values
-#     trend_type: str
-#         ['arma', 'rw']
-#     seas_scale: float
-#     response_col: str
-#     seed: int
-#     Notes
-#     ------
-#         Some ideas are from https://scikit-learn.org/stable/auto_examples/linear_model/plot_bayesian_ridge.html
-#         and https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.BayesianRidge.html#sklearn.linear_model.BayesianRidge
-#     """
-#     with_regression = False
-#     if coefs is not None:
-#         with_regression = True
-#     # make regression
-#     if with_regression:
-#         num_of_regressors = len(coefs)
-#         num_irrelevant_coefs = int(num_of_regressors * regressor_relevance)
-#         if num_irrelevant_coefs >= 1:
-#             irrelevant_coef_idx = np.random.choice(num_of_regressors, num_irrelevant_coefs, replace=False)
-#             coefs[irrelevant_coef_idx] = 0.0
-#         if regressor_log_cov is None:
-#             x_log1p = np.random.default_rng(seed).normal(
-#                 regressor_log_loc, regressor_log_scale, series_len * num_of_regressors).reshape(series_len, -1) + 1
-#         else:
-#             x_log1p = np.random.default_rng(seed).multivariate_normal(
-#                 np.array([regressor_log_loc] * num_of_regressors, dtype=np.float64),
-#                 regressor_log_cov, series_len)
-#         # control probability of regression kick-in
-#         z = np.random.default_rng(seed).binomial(
-#             1, regression_sparsity, series_len * num_of_regressors).reshape(series_len, -1)
-#         x_obs = x_log1p * z
-#
-#     trend = make_trend(series_len=series_len, rw_loc=rw_loc, rw_scale=rw_scale, method=trend_type, seed=seed)
-#     seas = make_seasonality(series_len=series_len, seasonality=seasonality, scale=seas_scale, seed=seed)
-#
-#     # make noise
-#     obs_log_scale = noise_to_signal_ratio * regressor_log_scale
-#     noise = np.random.default_rng(seed).normal(0, obs_log_scale, series_len)
-#
-#     # make observed data
-#     if with_regression:
-#         y = np.round(obs_val_base * np.exp(trend + seas + np.matmul(x_obs, coefs) + noise)).reshape(-1, 1)
-#         X = np.round(np.expm1(x_obs) * regresspr_val_base)
-#         observed_matrix = np.concatenate([y, X], axis=1)
-#         regressor_cols = [f"regressor_{x}" for x in range(1, num_of_regressors + 1)]
-#         df_cols = [response_col] + regressor_cols
-#     else:
-#         y = np.round(obs_val_base * np.exp(trend + seas + noise)).reshape(-1, 1)
-#         observed_matrix = y
-#         df_cols = [response_col]
-#
-#     # TODO: right now we hard-coded the frequency; it is not impactful since in orbit we are only using date_col
-#     # TODO: as index
-#     # datetime index
-#     if seasonality == 52:
-#         dt = pd.date_range(start='2016-01-04', periods=series_len, freq="1W")
-#     elif seasonality == 12:
-#         dt = pd.date_range(start='2016-01-04', periods=series_len, freq="1M")
-#     else:
-#         dt = pd.date_range(start='2016-01-04', periods=series_len, freq="1D")
-#
-#     df = pd.DataFrame(observed_matrix, columns=df_cols)
-#     df['date'] = dt
-#
-#     return df, trend, seas, coefs
+def sim_stepwise_coef_data(n, RS, p=3, n_jump=2):
+    """
+    Parameters
+    ----------
+    n : int
+        number of obseravtions
+    RS : int
+        seed
+    p : int
+        number of predictors
+    n_jump
+        number of jumps
+    Returns
+    -------
+    np.ndarray
+
+    Notes
+    -----
+    This code is purely experimental
+
+    """
+    np.random.seed(RS)
+
+    # initializing coefficients at zeros, simulate all coefficient values
+    lev = np.cumsum(np.concatenate((np.array([5.0]), np.random.normal(0, 0.01, n - 1))))
+
+    jump_tp = np.round(np.random.uniform(0, n, (p, n_jump)), 0).astype(np.int32)
+    jump_amp = np.random.normal(0, 0.05, (p, n_jump))
+
+    beta = np.zeros((n, p))
+    beta[0, :] = -2
+    for idx in range(p):
+        beta[jump_tp[idx], idx] = jump_amp[idx]
+    beta = np.cumsum(beta, 0)
+    #     beta += np.random.normal(0, 1e-2, (n, p))
+    # strictly positive coefficients
+    beta = np.exp(beta)
+
+    # simulate regressors
+    covariates = np.random.normal(0, 10, (n, p))
+
+    # observation with noise
+    y = lev + (covariates * beta).sum(-1) + 0.3 * np.random.normal(0, 1, n)
+
+    regressor_col = ['x{}'.format(pp) for pp in range(1, p + 1)]
+    data = pd.DataFrame(covariates, columns=regressor_col)
+    data['y'] = y
+    data['date'] = pd.date_range(start='1/1/2018', periods=len(y))
+
+    # hack for p = 3
+    data['beta1'] = beta[:, 0]
+    data['beta2'] = beta[:, 1]
+    data['beta3'] = beta[:, 2]
+
+    return data
+
+
+def sim_data_grw(n, RS, p=3):
+    """ coefficients curve are geometric random walk like
+
+    Notes
+    -----
+    This code is purely experimental
+    """
+    np.random.seed(RS)
+    beta_init = np.concatenate((
+        np.random.normal(2.0, 1.0, size=(1, 1)),  # leves
+        np.random.normal(-3.0, 0.05, size=(1, p))  # regression coefficients
+    ), axis=-1)
+
+    beta_drift = np.random.normal(0.0, 0.05, size=(n - 1, p + 1))  # drift
+
+    beta = np.concatenate((beta_init, beta_drift), axis=0)
+
+    # geometric random walk
+    beta = np.exp(np.cumsum(beta, 0))
+
+    # simulate regressors
+    covar_lev = np.ones((n, 1))
+    covar = np.concatenate((covar_lev, np.random.normal(0, 10.0, (n, p))), axis=1)
+
+    # observation with noise
+    y = (covar * beta).sum(-1) + 0.3 * np.random.normal(0, 1, n)
+
+    regressor_col = ['x{}'.format(pp) for pp in range(1, p + 1)]
+    regressor_col
+    data = pd.DataFrame(covar[:, 1:], columns=regressor_col)
+    beta_col = ['beta{}'.format(pp) for pp in range(1, p + 1)]
+    beta_data = pd.DataFrame(beta[:, 1:], columns=beta_col)
+    data = pd.concat([data, beta_data], axis=1)
+
+    data['y'] = y
+    data['date'] = pd.date_range(start='1/1/2018', periods=len(y))
+
+    return data
+
+
+def sim_data_rw(n, RS, p=3):
+    """ coefficients curve are random walk like
+    """
+    np.random.seed(RS)
+
+    # initializing coefficients at zeros, simulate all coefficient values
+    lev = np.cumsum(np.concatenate((np.array([5.0]), np.random.normal(0, 0.01, n - 1))))
+    beta = np.concatenate(
+        [np.random.uniform(0.05, 0.12, size=(1, p)),
+         np.random.normal(0.0, 0.01, size=(n - 1, p))],
+        axis=0)
+    beta = np.cumsum(beta, 0)
+
+    # simulate regressors
+    covariates = np.random.normal(0, 10, (n, p))
+
+    # observation with noise
+    y = lev + (covariates * beta).sum(-1) + 0.3 * np.random.normal(0, 1, n)
+
+    regressor_col = ['x{}'.format(pp) for pp in range(1, p + 1)]
+    data = pd.DataFrame(covariates, columns=regressor_col)
+    beta_col = ['beta{}'.format(pp) for pp in range(1, p + 1)]
+    beta_data = pd.DataFrame(beta, columns=beta_col)
+    data = pd.concat([data, beta_data], axis=1)
+
+    data['y'] = y
+    data['date'] = pd.date_range(start='1/1/2018', periods=len(y))
+
+    return data
+
+
+def sim_data_seasonal(n, RS):
+    """ coefficients curve are sine-cosine like
+    """
+    np.random.seed(RS)
+    # make the time varing coefs
+    tau = np.arange(1, n + 1) / n
+    data = pd.DataFrame({
+        'tau': tau,
+        'date': pd.date_range(start='1/1/2018', periods=n),
+        'beta1': 2 * tau,
+        'beta2': 1.01 + np.sin(2 * pi * tau),
+        'beta3': 1.01 + np.sin(4 * pi * (tau - 1 / 8)),
+        'x1': np.random.normal(0, 10, size=n),
+        'x2': np.random.normal(0, 10, size=n),
+        'x3': np.random.normal(0, 10, size=n),
+        'trend': np.cumsum(np.concatenate((np.array([1]), np.random.normal(0, 0.1, n - 1)))),
+        'error': np.random.normal(0, 1, size=n)  # stats.t.rvs(30, size=n),#
+    })
+
+    data['y'] = data.x1 * data.beta1 + data.x2 * data.beta2 + data.x3 * data.beta3 + data.error
+    return data

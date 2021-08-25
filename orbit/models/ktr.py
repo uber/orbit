@@ -33,7 +33,7 @@ def KTR(
         coef_prior_list=None,
         flat_multiplier=True,
         # TODO: rename to residuals upper bound
-        min_residuals_sd=1.0,
+        residuals_scale_upper=None,
         ktrlite_optim_args=dict(),
         estimator='pyro-vi',
         **kwargs):
@@ -85,9 +85,7 @@ def KTR(
         each dict in the list should have keys as
         'name', prior_start_tp_idx' (inclusive), 'prior_end_tp_idx' (not inclusive),
         'prior_mean', 'prior_sd', and 'prior_regressor_col'
-    min_residuals_sd : float
-        a numeric value from 0 to 1 to indicate the upper bound of residual scale parameter; e.g.
-        0.5 means residual scale will be sampled from [0, 0.5] in a scaled Beta(2, 2) dist.
+    residuals_scale_upper : float
     flat_multiplier : bool
         Default set as True. If False, we will adjust knot scale with a multiplier based on regressor volume
         around each knot; When True, set all multiplier as 1
@@ -139,7 +137,7 @@ def KTR(
             coef_prior_list=coef_prior_list,
             date_freq=date_freq,
             flat_multiplier=flat_multiplier,
-            min_residuals_sd=min_residuals_sd,
+            residuals_scale_upper=residuals_scale_upper,
             ktrlite_optim_args=ktrlite_optim_args
     )
     if estimator == 'pyro-svi':

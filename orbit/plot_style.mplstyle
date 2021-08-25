@@ -44,5 +44,5 @@ grid.color: 000000
 legend.framealpha: 0.5
 legend.fancybox: True
 legend.borderpad: 0.5
-legend.loc: upper right
+legend.loc: best
 legend.fontsize: small
