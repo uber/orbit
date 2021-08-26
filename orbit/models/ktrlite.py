@@ -441,7 +441,7 @@ class BaseKTRLite(BaseTemplate):
 class KTRLiteMAP(MAPTemplate, BaseKTRLite):
     """Concrete KTRLite model for MAP (Maximum a Posteriori) prediction
 
-    This model only supports MAP estimating `estimator_type`s
+    This model only supports MAP estimator type
     """
     _supported_estimator_types = [StanEstimatorMAP]
 

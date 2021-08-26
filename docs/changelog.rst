@@ -2,7 +2,7 @@
 
 Changelog
 =========
-1.0.15 (2021-08-02) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.15>`_)
+1.0.15 (2021-08-02) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.15>`__)
 -------------------------------------------------------------------------------------------------
 :Core changes:
   - Prediction functionality refactoring (#430)
@@ -21,7 +21,7 @@ Changelog
   - Refine plotting palette (#434, #473)
   - Create an orbit-featured plotting style (#434)
 
-1.0.13 (2021-04-02) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.13>`_)
+1.0.13 (2021-04-02) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.13>`__)
 -------------------------------------------------------------------------------------------------
 :Core changes:
   - Implement a new model KTRLite (#380)
@@ -39,14 +39,14 @@ Changelog
   - New EDA plot utilities (#403, #407, #408)
   - More options for exisiting plot utilities (#396)
 
-1.0.12 (2021-02-19) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.12>`_)
+1.0.12 (2021-02-19) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.12>`__)
 -------------------------------------------------------------------------------------------------
 - Documentation update (#354, #362)
 - Providing prediction intervals for point posteriors such as AggregatedPosterior and MAP (#357, #359)
 - Abstract classes created to refactor posteriors estimation as templates (#360)
 - Automating documentation and tutorials; migrating docs to readthedocs (#291)
 
-1.0.11 (2021-02-18) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.11>`_)
+1.0.11 (2021-02-18) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.11>`__)
 -------------------------------------------------------------------------------------------------
 :Core changes:
   - a simple ETS class is created (#280,  #296)
