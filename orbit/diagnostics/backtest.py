@@ -9,7 +9,6 @@ from itertools import product
 from .metrics import smape, wmape, mape, mse, mae, rmsse
 from ..exceptions import BacktestException
 from ..constants.constants import TimeSeriesSplitSchemeNames
-from ..constants.palette import QualitativePalette
 from collections.abc import Mapping, Iterable
 from ..constants.palette import OrbitPalette as OrbitPal
 
@@ -183,8 +182,8 @@ class TimeSeriesSplitter(object):
         tr_start = np.array(tr_start)
         tr_len = np.array(tr_len)
         ax.barh(yticks, tr_start, align='center', height=.5, color='white', alpha=0)
-        ax.barh(yticks, tr_len, align='center', height=.5, left=tr_start, color=OrbitPal.blue.value, label='train')
-        ax.barh(yticks, tt_len, align='center', height=.5, left=tr_start + tr_len, color=OrbitPal.orange.value, label='test')
+        ax.barh(yticks, tr_len, align='center', height=.5, left=tr_start, color=OrbitPal.BLUE.value, label='train')
+        ax.barh(yticks, tt_len, align='center', height=.5, left=tr_start + tr_len, color=OrbitPal.ORANGE.value, label='test')
 
         # Formatting
         # TODO: do a date_col style if date_col is available
