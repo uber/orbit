@@ -117,6 +117,8 @@ latex_elements = {
 
     # Additional stuff for the LaTeX preamble.
     #'preamble': '',
+
+    'maxlistdepth': '6',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -125,8 +127,10 @@ latex_elements = {
 latex_documents = [
     ('index', 'orbit-ml.tex',
      u'orbit-ml Documentation',
-     u'Someone at Uber', 'manual'),
+     u'Someone at Uber',
+    'manual'),
 ]
+
 
 # The name of an image file (relative to this directory) to place at
 # the top of the title page.
