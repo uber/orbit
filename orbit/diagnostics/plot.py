@@ -23,9 +23,9 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                         title="", test_actual_df=None, is_visible=True,
                         figsize=None, path=None, fontsize=None,
                         line_plot=False, markersize=70, lw=2, linestyle='-'):
-    """
-    plot training actual response together with predicted data; if actual response of predicted
+    """ Plot training actual response together with predicted data; if actual response of predicted
     data is there, plot it too.
+
     Parameters
     ----------
     training_actual_df : pd.DataFrame
@@ -60,6 +60,7 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         out-of-sample prediction line width
     linestyle : str
         linestyle of prediction plot
+
     Returns
     -------
         matplotlib axes object

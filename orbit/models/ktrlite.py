@@ -230,9 +230,13 @@ class BaseKTRLite(BaseTemplate):
 
     def _make_seasonal_regressors(self, df, shift):
         """
+
+        Parameters
+        ----------
         df : pd.DataFrame
         shift: int
             use 0 for fitting; use delta of prediction start and train start for prediction
+
         Returns
         -------
         pd.DataFrame
@@ -488,8 +492,9 @@ class KTRLiteMAP(MAPTemplate, BaseKTRLite):
             knot marker size
         figsize : tuple; optional
             figsize pass through to `matplotlib.pyplot.figure()`
+
        Returns
-        -------
+       -------
             matplotlib axes object
         """
         levels_df = self.get_levels()

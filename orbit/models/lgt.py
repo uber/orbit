@@ -54,9 +54,10 @@ class BaseLGT(BaseETS):
     slope_sm_input : float
         float value between [0, 1]. A larger value puts more weight on the current slope.
         If None, the model will estimate this value.
+
     See Also
     --------
-    :class: `~orbit.models.ets.BaseETS`
+    :class: orbit.models.ets.BaseETS
     """
     _data_input_mapper = constants.DataInputMapper
     _model_name = 'lgt'
