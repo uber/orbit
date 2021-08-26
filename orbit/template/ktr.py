@@ -933,6 +933,8 @@ class KTRModel(ModelTemplate):
                 coef_knots = posteriors.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
                 regressor_betas = np.matmul(coef_knots, self._kernel_coefficients.transpose((1, 0)))
                 # back to batch x time step x regressor columns shape
+                if len(regressor_betas.shape) == 2:
+                    regressor_betas = np.expand_dims(regressor_betas, 0)
                 regressor_betas = regressor_betas.transpose((0, 2, 1))
             elif coefficient_method == 'empirical':
                 regressor_betas = posteriors.get(RegressionSamplingParameters.COEFFICIENTS.value)
@@ -969,6 +971,8 @@ class KTRModel(ModelTemplate):
                 # kernel_coefficients = parabolic_kernel(new_tp, self._knots_tp_coefficients)
                 coef_knots = posteriors.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
                 regressor_betas = np.matmul(coef_knots, kernel_coefficients.transpose((1, 0)))
+                if len(regressor_betas.shape) == 2:
+                    regressor_betas = np.expand_dims(regressor_betas, 0)
                 regressor_betas = regressor_betas.transpose((0, 2, 1))
             elif coefficient_method == 'empirical':
                 regressor_betas = posteriors.get(RegressionSamplingParameters.COEFFICIENTS.value)
@@ -1019,7 +1023,7 @@ class KTRModel(ModelTemplate):
                                                              coefficient_method=coefficient_method,
                                                              date_array=date_array))
         if len(coefs.shape) == 1:
-            coefs = coefs.reshape((1, -1))
+            coefs = np.expand_dims(coefs, -1)
         reg_df = pd.DataFrame(data=coefs, columns=self._regressor_col)
         if date_array is not None:
             reg_df[date_col] = date_array
@@ -1066,6 +1070,8 @@ class KTRModel(ModelTemplate):
             .get(_point_method) \
             .get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
 
+        if len(coef_knots.shape) == 2:
+            coef_knots = np.expand_dims(coef_knots, 0)
         for idx, col in enumerate(self._regressor_col):
             knots_df[col] = np.transpose(coef_knots[:, idx])
 
