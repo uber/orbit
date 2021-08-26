@@ -175,3 +175,35 @@ def test_ktrx_prior_ingestion(make_daily_data, coef_prior_list):
     assert predict_df.columns.tolist() == expected_columns
     assert len(ktr._posterior_samples) == expected_num_parameters
     assert smape(test_df['response'].values, predict_df['prediction'].values) <= SMAPE_TOLERANCE
+
+
+def test_ktr_single_regressor(iclaims_training_data):
+    df = iclaims_training_data
+    df['claims'] = np.log(df['claims'])
+    regressor_col = ['trend.unemploy']
+
+    ktr = KTR(
+        date_col='week',
+        response_col='claims',
+        regressor_col=regressor_col,
+        seasonality=[52],
+        seasonality_fs_order=[3],
+        level_knot_scale=.1,
+        level_segments=10,
+        seasonality_segments=3,
+        regression_segments=5,
+        regression_rho=0.15,
+        # pyro optimization parameters
+        seed=8888,
+        num_steps=100,
+        num_sample=100,
+    )
+    ktr.fit(df)
+    coef_df = ktr.get_regression_coefs()
+    knot_df = ktr.get_regression_coef_knots()
+
+    expected_columns_coef = ['week', 'trend.unemploy']
+    expected_columns_knot = ['week', 'step', 'trend.unemploy']
+
+    assert coef_df.columns.tolist() == expected_columns_coef
+    assert knot_df.columns.tolist() == expected_columns_knot
