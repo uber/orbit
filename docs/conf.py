@@ -104,3 +104,46 @@ napoleon_include_init_with_doc = True
 
 nbsphinx_kernel_name = 'python3'
 nbsphinx_timeout = 60
+
+
+# -- Options for LaTeX output ------------------------------------------
+
+latex_elements = {
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
+
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
+
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
+}
+
+# Grouping the document tree into LaTeX files. List of tuples
+# (source start file, target name, title, author, documentclass
+# [howto/manual]).
+latex_documents = [
+    ('index', 'orbit-ml.tex',
+     u'orbit-ml Documentation',
+     u'Someone at Uber', 'manual'),
+]
+
+# The name of an image file (relative to this directory) to place at
+# the top of the title page.
+#latex_logo = None
+
+# For "manual" documents, if this is true, then toplevel headings
+# are parts, not chapters.
+#latex_use_parts = False
+
+# If true, show page references after internal links.
+#latex_show_pagerefs = False
+
+# If true, show URL addresses after external links.
+#latex_show_urls = False
+
+# Documents to append as an appendix to all manuals.
+#latex_appendices = []
+
+# If false, no module index is generated.
+#latex_domain_indices = True
