@@ -156,6 +156,7 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
                               title="", figsize=None, path=None, fontsize=None, is_visible=True):
     """ Plot predicted components with the data frame of decomposed prediction where components
     has been pre-defined as `trend`, `seasonality` and `regression`.
+
     Parameters
     ----------
     predicted_df : pd.DataFrame
@@ -180,8 +181,9 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
     is_visible : boolean
         whether we want to show the plot. If called from unittest, is_visible might = False.
    Returns
-    -------
+   -------
         matplotlib axes object
+
     """
 
     _predicted_df = predicted_df.copy()
@@ -285,8 +287,8 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
                           incl_trend_params=False, incl_smooth_params=False, is_visible=True):
     """ Data Viz for posterior samples
 
-    Params
-    ------
+    Parameters
+    ----------
     mod : orbit model object
     kind : str, {'density', 'trace', 'pair'}
         which kind of plot to be made.

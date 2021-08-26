@@ -3,7 +3,7 @@
 Changelog
 =========
 1.0.15 (2021-08-02) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.15>`_)
--------------------
+-------------------------------------------------------------------------------------------------
 :Core changes:
   - Prediction functionality refactoring (#430)
   - KTRLite model enhancement and interface cleanup (#440)
@@ -22,7 +22,7 @@ Changelog
   - Create an orbit-featured plotting style (#434)
 
 1.0.13 (2021-04-02) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.13>`_)
--------------------
+-------------------------------------------------------------------------------------------------
 :Core changes:
   - Implement a new model KTRLite (#380)
   - Refactoring of BaseTemplate (#382, #384)
@@ -40,14 +40,14 @@ Changelog
   - More options for exisiting plot utilities (#396)
 
 1.0.12 (2021-02-19) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.12>`_)
--------------------
+-------------------------------------------------------------------------------------------------
 - Documentation update (#354, #362)
 - Providing prediction intervals for point posteriors such as AggregatedPosterior and MAP (#357, #359)
 - Abstract classes created to refactor posteriors estimation as templates (#360)
 - Automating documentation and tutorials; migrating docs to readthedocs (#291)
 
 1.0.11 (2021-02-18) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.11>`_)
--------------------
+-------------------------------------------------------------------------------------------------
 :Core changes:
   - a simple ETS class is created (#280,  #296)
   - DLT is replacing LGT as the model used in the quick start and general demos (#305)
@@ -67,11 +67,11 @@ Changelog
   - plotting functions now returns the plot object (#327, #325, #287, #279)
 
 1.0.10 (2020-11-15) (Initial Release)
--------------------
+-------------------------------------
 - dpl v2 for travis config (#295)
 
 1.0.9 (2020-11-15)
--------------------
+------------------
 - debug travis pypi deployment (#293)
 - Debug travis package deployment (#294)
 

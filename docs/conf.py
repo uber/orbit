@@ -41,8 +41,8 @@ extensions = [
     # 'sphinx.ext.doctest',
     'sphinx.ext.mathjax',
     'sphinx.ext.githubpages',
-    'sphinx.ext.viewcode',
-    'sphinxcontrib.bibtex',
+    # 'sphinx.ext.viewcode',
+    # 'sphinxcontrib.bibtex',
     'sphinx.ext.napoleon',
     'IPython.sphinxext.ipython_console_highlighting',
     'IPython.sphinxext.ipython_directive',
@@ -107,7 +107,7 @@ nbsphinx_timeout = 60
 
 
 # -- Options for LaTeX output ------------------------------------------
-latex_engine = 'lualatex'
+# latex_engine = 'lualatex'
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #'papersize': 'letterpaper',
