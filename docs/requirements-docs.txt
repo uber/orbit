@@ -4,3 +4,4 @@ sphinx-rtd-theme
 matplotlib
 nbsphinx
 IPython
+sphinxcontrib-bibtex<2.0.0
