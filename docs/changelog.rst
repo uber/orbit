@@ -2,6 +2,11 @@
 
 Changelog
 =========
+1.0.16 (2021-08-27) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.16>`__)
+-------------------------------------------------------------------------------------------------
+:Core changes:
+  - Bug fix and code improvement before next major release (#540, #541, #546)
+
 1.0.15 (2021-08-02) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.15>`__)
 -------------------------------------------------------------------------------------------------
 :Core changes:
