@@ -12,6 +12,7 @@ from .template import BaseTemplate, FullBayesianTemplate, AggregatedPosteriorTem
 
 class BaseETS(BaseTemplate):
     """
+
     Parameters
     ----------
     seasonality : int
@@ -27,6 +28,7 @@ class BaseETS(BaseTemplate):
     Other Parameters
     ----------------
     **kwargs: additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
+
     """
     # data labels for sampler
     _data_input_mapper = constants.DataInputMapper

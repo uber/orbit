@@ -230,9 +230,13 @@ class BaseKTRLite(BaseTemplate):
 
     def _make_seasonal_regressors(self, df, shift):
         """
+
+        Parameters
+        ----------
         df : pd.DataFrame
         shift: int
             use 0 for fitting; use delta of prediction start and train start for prediction
+
         Returns
         -------
         pd.DataFrame
@@ -441,7 +445,7 @@ class BaseKTRLite(BaseTemplate):
 class KTRLiteMAP(MAPTemplate, BaseKTRLite):
     """Concrete KTRLite model for MAP (Maximum a Posteriori) prediction
 
-    This model only supports MAP estimating `estimator_type`s
+    This model only supports MAP estimator type
     """
     _supported_estimator_types = [StanEstimatorMAP]
 
@@ -488,8 +492,9 @@ class KTRLiteMAP(MAPTemplate, BaseKTRLite):
             knot marker size
         figsize : tuple; optional
             figsize pass through to `matplotlib.pyplot.figure()`
+
        Returns
-        -------
+       -------
             matplotlib axes object
         """
         levels_df = self.get_levels()
