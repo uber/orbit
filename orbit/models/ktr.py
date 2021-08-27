@@ -35,7 +35,7 @@ def KTR(
         # TODO: rename to residuals upper bound
         residuals_scale_upper=None,
         ktrlite_optim_args=dict(),
-        estimator='pyro-vi',
+        estimator='pyro-svi',
         **kwargs):
     """
     Parameters
