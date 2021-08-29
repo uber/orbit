@@ -110,3 +110,35 @@ def make_seasonal_dummies(df, date_col, freq, sparse=True, drop_first=True):
     cols = dummies.columns.tolist()
     out = pd.concat([df, dummies], axis=1)
     return out, cols
+
+
+def make_seasonal_regressors(n, periods, orders, labels, shift=0):
+    """
+
+    Parameters
+    ----------
+    n : int
+        total length of time steps to generate seasonality; e.g. can simply be the length of your date array or
+        dataframe
+    periods : list
+        list of period (a.k.a seasonality)
+    orders : list
+        list of fourier series order; needs to be the same length of s
+    labels : list
+        list of string to label each component
+    shift : int
+        shift of time step/index to generate the series
+
+    Returns
+    -------
+    dict :
+        a dictionary contains sine-cosine like regressors where keys are mapped by label provided
+    """
+    out = dict()
+    for idx, period in enumerate(periods):
+        order = orders[idx]
+        label = labels[idx]
+        fs = make_fourier_series(n=n, period=period, order=order, shift=shift)
+        out[label] = fs
+    return out
+

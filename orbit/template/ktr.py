@@ -12,7 +12,7 @@ from ..constants.constants import CoefPriorDictKeys, PredictMethod
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel, sandwich_kernel
-from ..utils.features import make_fourier_series_df
+from ..utils.features import make_seasonal_regressors
 from .model_template import ModelTemplate
 from ..estimators.pyro_estimator import PyroEstimatorVI
 from ..models import KTRLite
@@ -195,6 +195,8 @@ class KTRModel(ModelTemplate):
         self.seasonality = seasonality
         self.seasonality_fs_order = seasonality_fs_order
         self._seasonality = self.seasonality
+        # used to name different seasonal components in prediction
+        self._seasonality_labels = list()
         self._seasonality_fs_order = self.seasonality_fs_order
         self.seasonal_initial_knot_scale = seasonal_initial_knot_scale
         self.seasonal_knot_scale = seasonal_knot_scale
@@ -202,7 +204,7 @@ class KTRModel(ModelTemplate):
         self._seas_term = 0
 
         self._seasonality_coef_knot_dates = None
-        self._seasonality_coef_knot = None
+        self._seasonality_coef_knots = None
 
         # regression configurations
         self.regressor_col = regressor_col
@@ -294,9 +296,12 @@ class KTRModel(ModelTemplate):
         if len(self._seasonality_fs_order) != len(self._seasonality):
             raise IllegalArgument('length of seasonality and fs_order not matching')
 
-        for k, order in enumerate(self._seasonality_fs_order):
-            if 2 * order > self._seasonality[k] - 1:
+        seasonality_labels = list()
+        for idx, order in enumerate(self._seasonality_fs_order):
+            if 2 * order > self._seasonality[idx] - 1:
                 raise IllegalArgument('reduce seasonality_fs_order to avoid over-fitting')
+            seasonality_labels.append('seasonality_{}'.format(self._seasonality[idx]))
+        self._seasonality_labels = seasonality_labels
 
         # TODO: this is done by KTRLite; we may not need this for now
         # if not isinstance(self.seasonal_initial_knot_scale, list) and \
@@ -580,7 +585,7 @@ class KTRModel(ModelTemplate):
             self._regular_regressor_init_knot_scale[self._regular_regressor_init_knot_scale < 1e-4] = 1e-4
 
     def _generate_tp(self, training_meta, prediction_date_array):
-        """Used in _generate_coefs"""
+        """Used in _generate_seas"""
         training_end = training_meta['training_end']
         num_of_observations = training_meta['num_of_observations']
         date_array = training_meta['date_array']
@@ -595,22 +600,22 @@ class KTRModel(ModelTemplate):
         return new_tp
 
     def _generate_insample_tp(self, training_meta, date_array):
-        """Used in _generate_coefs"""
+        """Used in _generate_seas"""
         train_date_array = training_meta['date_array']
         num_of_observations = training_meta['num_of_observations']
         idx = np.nonzero(np.in1d(train_date_array, date_array))[0]
         tp = (idx + 1) / num_of_observations
         return tp
 
-    def _generate_coefs(self, training_meta, prediction_date_array, coef_knot_dates, coef_knot):
-        """Used in _generate_seas"""
-        new_tp = self._generate_tp(training_meta, prediction_date_array)
-        knots_tp_coef = self._generate_insample_tp(training_meta, coef_knot_dates)
-        kernel_coef = sandwich_kernel(new_tp, knots_tp_coef)
-        coefs = np.squeeze(np.matmul(coef_knot, kernel_coef.transpose(1, 0)), axis=0).transpose(1, 0)
-        return coefs
+    # def _generate_coefs(self, training_meta, prediction_date_array, coef_knot_dates, coef_knot):
+    #     """Used in _generate_seas"""
+    #     new_tp = self._generate_tp(training_meta, prediction_date_array)
+    #     knots_tp_coef = self._generate_insample_tp(training_meta, coef_knot_dates)
+    #     kernel_coef = sandwich_kernel(new_tp, knots_tp_coef)
+    #     coefs = np.squeeze(np.matmul(coef_knot, kernel_coef.transpose(1, 0)), axis=0).transpose(1, 0)
+    #     return coefs
 
-    def _generate_seas(self, df, training_meta, coef_knot_dates, coef_knot, seasonality, seasonality_fs_order):
+    def _generate_seas(self, df, training_meta, coef_knot_dates, coef_knots, seasonality, seasonality_fs_order):
         """To calculate the seasonality term based on the _seasonal_knots_input.
         Parameters
         ----------
@@ -620,8 +625,8 @@ class KTRModel(ModelTemplate):
             meta dictionary for the training input
         coef_knot_dates : 1-D array like
             dates for seasonality coefficient knots
-        coef_knot : 1-D array like
-            knot values for coef
+        coef_knots : dict
+            dict of seasonal coefficient knots from each seasonality
         seasonality : list
             seasonality input; list of float
         seasonality_fs_order : list
@@ -629,8 +634,13 @@ class KTRModel(ModelTemplate):
 
         Returns
         -----------
+        dict :
+            a dictionary contains seasonal regression components mapped by each seasonality
         """
         df = df.copy()
+        # store each component as a dictionary
+        seas_decomp = dict()
+
         if seasonality is not None and len(seasonality) > 0:
 
             date_col = training_meta['date_col']
@@ -648,19 +658,34 @@ class KTRModel(ModelTemplate):
                 # time index for prediction start
                 start = pd.Index(date_array).get_loc(prediction_start)
 
-            fs_cols = []
-            for idx, s in enumerate(seasonality):
-                order = seasonality_fs_order[idx]
-                df, fs_cols_temp = make_fourier_series_df(df, s, order=order, prefix='seas{}_'.format(s), shift=start)
-                fs_cols += fs_cols_temp
+            # dictionary
+            seas_regressors = make_seasonal_regressors(
+                n=df.shape[0],
+                periods=seasonality,
+                orders=seasonality_fs_order,
+                labels=self._seasonality_labels,
+                shift=start,
+            )
 
-            sea_regressor_matrix = df.filter(items=fs_cols).values
-            sea_coefs = self._generate_coefs(training_meta, prediction_date_array, coef_knot_dates, coef_knot)
-            seas = np.sum(sea_coefs * sea_regressor_matrix, axis=-1)
+            new_tp = self._generate_tp(training_meta, prediction_date_array)
+            knots_tp_coef = self._generate_insample_tp(training_meta, coef_knot_dates)
+            coef_kernel = sandwich_kernel(new_tp, knots_tp_coef)
+
+            # init of regression matrix depends on length of response vector
+            total_seas_regression = np.zeros((1, df.shape[0]), dtype=np.double)
+
+            for k in self._seasonality_labels:
+                seas_regresor_matrix = seas_regressors[k]
+                coef_knot = coef_knots[k]
+                # time-step x coefficients
+                seas_coef = np.squeeze(np.matmul(coef_knot, coef_kernel.transpose(1, 0)), axis=0).transpose(1, 0)
+                seas_regression = np.sum(seas_coef * seas_regresor_matrix, axis=-1)
+                seas_decomp[k] = np.expand_dims(seas_regression, 0)
+                total_seas_regression += seas_regression
         else:
-            seas = np.zeros(df.shape[0])
+            total_seas_regression = np.zeros((1, df.shape[0]), dtype=np.double)
 
-        return seas
+        return total_seas_regression, seas_decomp
 
     def _set_levs_and_seas(self, df, training_meta):
         response_col = training_meta['response_col']
@@ -687,7 +712,7 @@ class KTRModel(ModelTemplate):
             **self.ktrlite_optim_args
         )
         ktrlite.fit(df=df)
-        self._ktrlite_model = ktrlite
+        # self._ktrlite_model = ktrlite
         ktrlite_pt_posteriors = ktrlite.get_point_posteriors()
         ktrlite_obs_scale = ktrlite_pt_posteriors['map']['obs_scale']
         # if input None for upper bound of residuals scale, use data-driven input
@@ -723,15 +748,25 @@ class KTRModel(ModelTemplate):
 
         if self._seasonality:
             self._seasonality_coef_knot_dates = ktrlite._model._coef_knot_dates
-            self._seasonality_coef_knot = ktrlite_pt_posteriors['map']['coef_knot']
+            coef_knots_flatten = ktrlite_pt_posteriors['map']['coef_knot']
+            coef_knots = dict()
+            pos = 0
+            for idx, label in enumerate(self._seasonality_labels):
+                order = self._seasonality_fs_order[idx]
+                coef_knots[label] = coef_knots_flatten[..., pos:(pos + 2 * order), :]
+                pos += 2 * order
+            self._seasonality_coef_knots = coef_knots
 
-            self._seas_term = self._generate_seas(
+            # we just need total here and because of
+            self._seas_term, _ = self._generate_seas(
                 df,
                 training_meta,
                 self._seasonality_coef_knot_dates,
-                self._seasonality_coef_knot,
+                self._seasonality_coef_knots,
                 self._seasonality,
                 self._seasonality_fs_order)
+            # remove batch size as an input for models
+            self._seas_term = np.squeeze(self._seas_term, 0)
 
     def _filter_coef_prior(self, df):
         if self._coef_prior_list and len(self._regressor_col) > 0:
@@ -858,17 +893,19 @@ class KTRModel(ModelTemplate):
         obs_scale = model.get(BaseSamplingParameters.OBS_SCALE.value)
         obs_scale = obs_scale.reshape(-1, 1)
 
-        if self._seasonality is not None:
-            seas = self._generate_seas(df, training_meta,
-                                       self._seasonality_coef_knot_dates,
-                                       self._seasonality_coef_knot,
-                                       self._seasonality,
-                                       self._seasonality_fs_order)
-            # seas is 1-d array, add the batch size back
-            seas = np.expand_dims(seas, 0)
-        else:
-            # follow component shapes
-            seas = np.zeros((1, output_len))
+        # if self._seasonality is not None:
+        # condition of seasonality is checked inside
+        total_seas, seas_decomp = self._generate_seas(df, training_meta,
+                                                      self._seasonality_coef_knot_dates,
+                                                      self._seasonality_coef_knots,
+                                                      self._seasonality,
+                                                      self._seasonality_fs_order)
+
+        #     # seas is 1-d array, add the batch size back
+        #     seas = np.expand_dims(seas, 0)
+        # else:
+        #     # follow component shapes
+        #     seas = np.zeros((1, output_len))
 
         trend = np.matmul(lev_knot, kernel_level.transpose((1, 0)))
         regression = np.zeros(trend.shape)
@@ -885,18 +922,19 @@ class KTRModel(ModelTemplate):
         if include_error:
             epsilon = nct.rvs(self.degree_of_freedom, nc=0, loc=0,
                               scale=obs_scale, size=(num_sample, len(new_tp)))
-            pred_array = trend + seas + regression + epsilon
-        else:
-            pred_array = trend + seas + regression
+            trend += epsilon
+
+        pred_array = trend + total_seas + regression
 
         # if decompose output dictionary of components
         decomp_dict = {
             'prediction': pred_array,
             'trend': trend,
-            # this is an input from ktrlite
-            'seasonality': seas,
             'regression': regression
         }
+
+        # this is an input from ktrlite
+        decomp_dict.update(seas_decomp)
 
         if store_prediction_array:
             self.pred_array = pred_array
