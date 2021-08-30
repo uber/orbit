@@ -2,6 +2,11 @@
 
 Changelog
 =========
+1.0.17 (2021-08-30) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.17>`__)
+-------------------------------------------------------------------------------------------------
+:Core changes:
+  - Use global mean instead of median in ktrx model before next major release
+
 1.0.16 (2021-08-27) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.16>`__)
 -------------------------------------------------------------------------------------------------
 :Core changes:
