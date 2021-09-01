@@ -14,13 +14,8 @@ from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
 from ..constants.palette import OrbitPalette
 from ..constants.palette import PredictionPaletteClassic as PredPal
 from orbit.diagnostics.metrics import smape
-from orbit.utils.plot import get_orbit_style, orbit_style_decorator
+from orbit.utils.plot import orbit_style_decorator
 
-
-orbit_style = get_orbit_style()
-
-
-# az.style.use("arviz-darkgrid")
 
 @orbit_style_decorator
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
@@ -348,11 +343,11 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
 
     posterior_samples = deepcopy(mod._posterior_samples)
 
-    if len(mod._regressor_col) > 0:
-        for i, regressor in enumerate(mod._regressor_col):
+    if len(mod._model._regressor_col) > 0:
+        for i, regressor in enumerate(mod._model._regressor_col):
             posterior_samples[regressor] = posterior_samples['beta'][:, i]
 
-    params_ = mod._regressor_col + ['obs_sigma']
+    params_ = mod._model._regressor_col + ['obs_sigma']
 
     if incl_trend_params:
         # trend params in LGT or DLT
@@ -460,10 +455,10 @@ def get_arviz_plot_dict(mod,
         raise Exception("This utility works for model object with MCMC or VI inference only.")
 
     posterior_samples = mod.get_posterior_samples()
-    if len(mod._regressor_col) > 0:
-        for i, regressor in enumerate(mod._regressor_col):
+    if len(mod._model._regressor_col) > 0:
+        for i, regressor in enumerate(mod._model._regressor_col):
             posterior_samples[regressor] = posterior_samples['beta'][:, i]
-    params_ = mod._regressor_col
+    params_ = mod._model._regressor_col
 
     if incl_noise_params:
         params_ += ['obs_sigma']
