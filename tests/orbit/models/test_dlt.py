@@ -5,6 +5,7 @@ import numpy as np
 from orbit.models import DLT
 from orbit.template.dlt import DLTInitializer
 from orbit.constants.constants import PredictionKeys
+from orbit.diagnostics.backtest import grid_search_orbit
 
 
 @pytest.mark.parametrize("estimator", ['stan-map', 'stan-mcmc'])
@@ -551,37 +552,38 @@ def test_dlt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input
     assert num_regressors == len(train_df.columns.tolist()[2:])
 
 
-# @pytest.mark.parametrize("param_grid", [
-#                                             {
-#                                                 'level_sm_input': [0.3, 0.5, 0.8],
-#                                                 'seasonality_sm_input': [0.3, 0.5, 0.8],
-#                                             },
-#                                             {
-#                                                 'damped_factor': [0.3, 0.5, 0.8],
-#                                                 'slope_sm_input': [0.3, 0.5, 0.8],
-#                                             }
-#                                        ])
-# def test_dlt_grid_tuning(synthetic_data, param_grid):
-#     train_df, test_df, coef = synthetic_data
-#     args = {
-#         'response_col': 'response',
-#         'date_col': 'week',
-#         'seasonality': 52
-#     }
+@pytest.mark.parametrize("param_grid", [
+                                            {
+                                                'level_sm_input': [0.3, 0.5, 0.8],
+                                                'seasonality_sm_input': [0.3, 0.5, 0.8],
+                                            },
+                                            {
+                                                'damped_factor': [0.3, 0.5, 0.8],
+                                                'slope_sm_input': [0.3, 0.5, 0.8],
+                                            }
+                                       ])
+def test_dlt_grid_tuning(synthetic_data, param_grid):
+    train_df, test_df, coef = synthetic_data
+    args = {
+        'response_col': 'response',
+        'date_col': 'week',
+        'seasonality': 52,
+        'estimator': 'stan-map',
+    }
 
-#     dlt = DLTMAP(**args)
+    dlt = DLT(**args)
 
-#     best_params, tuned_df = grid_search_orbit(param_grid,
-#                                         model=dlt,
-#                                         df=train_df,
-#                                         min_train_len=80, incremental_len=20, forecast_len=20,
-#                                         metrics=None, criteria=None, verbose=True)
+    best_params, tuned_df = grid_search_orbit(param_grid,
+                                        model=dlt,
+                                        df=train_df,
+                                        min_train_len=80, incremental_len=20, forecast_len=20,
+                                        metrics=None, criteria=None, verbose=True)
 
 
 
-#     assert best_params[0].keys() == param_grid.keys()
-#     assert set(tuned_df.columns.to_list()) == set(list(param_grid.keys()) + ['metrics'])
-#     assert tuned_df.shape == (9, 3)
+    assert best_params[0].keys() == param_grid.keys()
+    assert set(tuned_df.columns.to_list()) == set(list(param_grid.keys()) + ['metrics'])
+    assert tuned_df.shape == (9, 3)
 
 
 def test_dlt_map_single_regressor(iclaims_training_data):

@@ -11,6 +11,7 @@ from ..exceptions import BacktestException
 from ..constants.constants import TimeSeriesSplitSchemeNames
 from collections.abc import Mapping, Iterable
 from ..constants.palette import OrbitPalette as OrbitPal
+from orbit.utils.plot import orbit_style_decorator
 
 
 class TimeSeriesSplitter(object):
@@ -161,6 +162,7 @@ class TimeSeriesSplitter(object):
                 message += f"Test start date: {tt_start_date} Test end date: {tt_end_date}\n"
         return message
 
+    @orbit_style_decorator
     def plot(self, lw=20, fig_width=20):
         _, ax = plt.subplots(figsize=(fig_width, self.n_splits))
         # visualize the train/test windows for each split
@@ -449,9 +451,17 @@ def grid_search_orbit(param_grid, model, df, min_train_len=None,
     #     return params.copy()
 
     def _get_params(model):
+        init_args_tmpl = dict()
         init_args = dict()
 
-        # get all the parent classes and their signatures
+        # get all the signatures in the hierarchy of model templates
+        for cls in inspect.getmro(model._model.__class__):
+            sig = inspect.signature(cls)
+            for key in sig.parameters.keys():
+                if key != 'kwargs':
+                    if hasattr(model._model, key):
+                        init_args_tmpl[key] = getattr(model._model, key)
+        # get all the signatures in the hierarchy of forecaster
         for cls in inspect.getmro(model.__class__):
             sig = inspect.signature(cls)
             for key in sig.parameters.keys():
@@ -466,7 +476,7 @@ def grid_search_orbit(param_grid, model, df, min_train_len=None,
                     if hasattr(model.estimator, key):
                         init_args[key] = getattr(model.estimator, key)
 
-        return init_args.copy()
+        return init_args_tmpl.copy(), init_args.copy()
 
     def _yield_param_grid(param_grid):
         # an internal function to mimic the ParameterGrid from scikit-learn
@@ -491,7 +501,7 @@ def grid_search_orbit(param_grid, model, df, min_train_len=None,
                     yield params
 
     param_list_dict = list(_yield_param_grid(param_grid))
-    params = _get_params(model)
+    params_tmpl, params = _get_params(model)
     res = pd.DataFrame(param_list_dict)
     metric_values = list()
 
@@ -500,16 +510,21 @@ def grid_search_orbit(param_grid, model, df, min_train_len=None,
             print("tuning hyper-params {}".format(tuned_param_dict))
 
         params_ = params.copy()
+        params_tmpl_ = params_tmpl.copy()
         for key, val in tuned_param_dict.items():
-            if key not in params_.keys():
-                raise Exception("tuned hyper-param {} is not in the model's parameters".format(key))
-            else:
+            if key in params_tmpl_.keys():
+                params_tmpl_[key] = val
+            elif key in params_.keys():
                 params_[key] = val
+            else:
+                raise Exception("tuned hyper-param {} is not in the model's parameters".format(key))
 
         # it is safer to reinstantiate a model object than using deepcopy...
-        model_ = model.__class__(**params_)
+        new_model_template = model._model.__class__(**params_tmpl_)
+        new_model = model.__class__(model=new_model_template, **params_)
+
         bt = BackTester(
-            model=model_,
+            model=new_model,
             df=df,
             min_train_len=min_train_len,
             n_splits=n_splits,
