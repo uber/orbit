@@ -95,9 +95,9 @@ plot_predicted_data(
 
 ![full-pred](docs/img/dlt-mcmc-pred.png)
 
-## Demo (based on v1.0.13)
+## Demo 
 
-Forecasting / Nowcasting with Regression in DLT:
+Forecasting / Nowcasting with Regression in DLT (based on v1.0.13):
 
 [![Open All Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1kStoPB_Xo3yDy_n_qqh5_jRpHt_RcDkV?usp=sharing)
 
