@@ -95,7 +95,7 @@ plot_predicted_data(
 
 ![full-pred](docs/img/dlt-mcmc-pred.png)
 
-## Demo
+## Demo (based on v1.0.13)
 
 Forecasting / Nowcasting with Regression in DLT:
 
