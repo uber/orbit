@@ -4,7 +4,6 @@ from scipy.stats import nct
 from copy import deepcopy
 import torch
 from enum import Enum
-import warnings
 
 from ..constants.constants import (
     DEFAULT_REGRESSOR_SIGN,
@@ -14,8 +13,7 @@ from ..constants.constants import (
     PredictMethod,
     PredictionKeys
 )
-from ..exceptions import IllegalArgument, ModelException
-# from .model_template import ModelTemplate
+from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .ets import ETSModel
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
 
@@ -420,14 +418,21 @@ class DLTModel(ETSModel):
         if self.num_of_positive_regressors > 0:
             self.positive_regressor_matrix = df.filter(
                 items=self.positive_regressor_col, ).values
+            print("checking")
+            if not np.all(np.isfinite(self.positive_regressor_matrix)):
+                raise ModelException("Invalid regressors values. They must be all not missing and finite.")
 
         if self.num_of_negative_regressors > 0:
             self.negative_regressor_matrix = df.filter(
                 items=self.negative_regressor_col, ).values
+            if not np.all(np.isfinite(self.negative_regressor_matrix)):
+                raise ModelException("Invalid regressors values. They must be all not missing and finite.")
 
         if self.num_of_regular_regressors > 0:
             self.regular_regressor_matrix = df.filter(
                 items=self.regular_regressor_col, ).values
+            if not np.all(np.isfinite(self.regular_regressor_matrix)):
+                raise ModelException("Invalid regressors values. They must be all not missing and finite.")
 
     def set_dynamic_attributes(self, df, training_meta):
         """Overriding: func: `~orbit.models.BaseETS._set_dynamic_attributes"""
@@ -505,10 +510,12 @@ class DLTModel(ETSModel):
         ################################################################
         # calculate regression component
         if self.regressor_col is not None and len(self.regressor_col) > 0:
+            regressor_matrix = df[self._regressor_col].values
+            if not np.all(np.isfinite(regressor_matrix)):
+                raise PredictionException("Invalid regressors values. They must be all not missing and finite.")
             regressor_beta = regressor_beta.t()
             if len(regressor_beta.shape) == 1:
                 regressor_beta = regressor_beta.unsqueeze(0)
-            regressor_matrix = df[self._regressor_col].values
             regressor_torch = torch.from_numpy(regressor_matrix).double()
             regression = torch.matmul(regressor_torch, regressor_beta)
             regression = regression.t()

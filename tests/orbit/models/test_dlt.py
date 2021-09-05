@@ -6,6 +6,7 @@ from orbit.models import DLT
 from orbit.template.dlt import DLTInitializer
 from orbit.constants.constants import PredictionKeys
 from orbit.diagnostics.backtest import grid_search_orbit
+from orbit.exceptions import ModelException, PredictionException
 
 
 @pytest.mark.parametrize("estimator", ['stan-map', 'stan-mcmc'])
@@ -48,7 +49,7 @@ def test_dlt_full_univariate(synthetic_data, estimator):
     assert isinstance(init_call, DLTInitializer)
     assert init_call.s == 52
     init_values = init_call()
-    assert init_values['init_sea'].shape == (51, )
+    assert init_values['init_sea'].shape == (51,)
 
     predict_df = dlt.predict(test_df)
 
@@ -81,7 +82,7 @@ def test_dlt_aggregated_univariate(synthetic_data, estimator, point_method):
     assert isinstance(init_call, DLTInitializer)
     assert init_call.s == 52
     init_values = init_call()
-    assert init_values['init_sea'].shape == (51, )
+    assert init_values['init_sea'].shape == (51,)
 
     predict_df = dlt.predict(test_df)
 
@@ -112,7 +113,7 @@ def test_dlt_map_univariate(synthetic_data):
     assert isinstance(init_call, DLTInitializer)
     assert init_call.s == 52
     init_values = init_call()
-    assert init_values['init_sea'].shape == (51, )
+    assert init_values['init_sea'].shape == (51,)
 
     predict_df = dlt.predict(test_df)
 
@@ -148,7 +149,77 @@ def test_dlt_non_seasonal_fit(synthetic_data, estimator):
     assert len(dlt._posterior_samples) == expected_num_parameters
 
 
-@pytest.mark.parametrize("estimator", ['stan-mcmc'])
+@pytest.mark.parametrize(
+    "regressor_signs",
+    [
+        ["+", "+", "+", "+", "+", "+"],
+        ["-", "-", "-", "-", "-", "-"],
+        ["=", "=", "=", "=", "=", "="],
+    ],
+    ids=['positive_only', 'negative_only', 'regular_only']
+)
+@pytest.mark.parametrize(
+    "invalid_input", [
+        np.nan, np.inf, -1 * np.inf
+    ],
+    ids=['nan', 'infinite', 'neg-infinite']
+)
+def test_invalid_regressor(synthetic_data, regressor_signs, invalid_input):
+    train_df, test_df, coef = synthetic_data
+    regressor_col = train_df.columns.tolist()[2:]
+    # make invalid values
+    train_df[regressor_col[0]][36] = invalid_input
+    expected_flag = False
+    try:
+        dlt = DLT(
+            response_col='response',
+            date_col='week',
+            regressor_col=regressor_col,
+            regressor_sign=regressor_signs,
+            prediction_percentiles=[5, 95],
+            seasonality=52,
+            num_warmup=50,
+            verbose=False,
+            estimator='stan-map'
+        )
+        dlt.fit(train_df)
+    except ModelException:
+        expected_flag = True
+
+    assert expected_flag
+
+
+@pytest.mark.parametrize(
+    "invalid_input", [
+        np.nan, np.inf, -1 * np.inf
+    ],
+    ids=['nan', 'infinite', 'neg-infinite']
+)
+def test_invalid_predict_regressor(synthetic_data, invalid_input):
+    train_df, test_df, coef = synthetic_data
+    regressor_col = train_df.columns.tolist()[2:]
+    # make invalid values
+    test_df[regressor_col[0]][3] = invalid_input
+    expected_flag = False
+    try:
+        dlt = DLT(
+            response_col='response',
+            date_col='week',
+            regressor_col=regressor_col,
+            prediction_percentiles=[5, 95],
+            seasonality=52,
+            num_warmup=50,
+            verbose=False,
+            estimator='stan-map'
+        )
+        dlt.fit(train_df)
+        dlt.predict(test_df)
+    except PredictionException:
+        expected_flag = True
+
+    assert expected_flag
+
+
 @pytest.mark.parametrize(
     "regressor_signs",
     [
@@ -159,7 +230,7 @@ def test_dlt_non_seasonal_fit(synthetic_data, estimator):
     ],
     ids=['positive_only', 'negative_only', 'regular_only', 'mixed_signs']
 )
-def test_dlt_full_with_regression(synthetic_data, estimator, regressor_signs):
+def test_dlt_full_with_regression(synthetic_data, regressor_signs):
     train_df, test_df, coef = synthetic_data
 
     dlt = DLT(
@@ -171,21 +242,21 @@ def test_dlt_full_with_regression(synthetic_data, estimator, regressor_signs):
         seasonality=52,
         num_warmup=50,
         verbose=False,
-        estimator=estimator
+        estimator='stan-mcmc'
     )
 
     dlt.fit(train_df)
     init_call = dlt._model.get_init_values()
     assert isinstance(init_call, DLTInitializer)
     init_values = init_call()
-    assert init_values['init_sea'].shape == (51, )
+    assert init_values['init_sea'].shape == (51,)
 
     if regressor_signs.count('+') > 0:
-        assert init_values['pr_beta'].shape == (regressor_signs.count('+'), )
+        assert init_values['pr_beta'].shape == (regressor_signs.count('+'),)
     if regressor_signs.count('-') > 0:
-        assert init_values['nr_beta'].shape == (regressor_signs.count('-'), )
+        assert init_values['nr_beta'].shape == (regressor_signs.count('-'),)
     if regressor_signs.count('=') > 0:
-        assert init_values['rr_beta'].shape == (regressor_signs.count('='), )
+        assert init_values['rr_beta'].shape == (regressor_signs.count('='),)
 
     predict_df = dlt.predict(test_df)
 
@@ -553,15 +624,15 @@ def test_dlt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input
 
 
 @pytest.mark.parametrize("param_grid", [
-                                            {
-                                                'level_sm_input': [0.3, 0.5, 0.8],
-                                                'seasonality_sm_input': [0.3, 0.5, 0.8],
-                                            },
-                                            {
-                                                'damped_factor': [0.3, 0.5, 0.8],
-                                                'slope_sm_input': [0.3, 0.5, 0.8],
-                                            }
-                                       ])
+    {
+        'level_sm_input': [0.3, 0.5, 0.8],
+        'seasonality_sm_input': [0.3, 0.5, 0.8],
+    },
+    {
+        'damped_factor': [0.3, 0.5, 0.8],
+        'slope_sm_input': [0.3, 0.5, 0.8],
+    }
+])
 def test_dlt_grid_tuning(synthetic_data, param_grid):
     train_df, test_df, coef = synthetic_data
     args = {
@@ -574,12 +645,10 @@ def test_dlt_grid_tuning(synthetic_data, param_grid):
     dlt = DLT(**args)
 
     best_params, tuned_df = grid_search_orbit(param_grid,
-                                        model=dlt,
-                                        df=train_df,
-                                        min_train_len=80, incremental_len=20, forecast_len=20,
-                                        metrics=None, criteria=None, verbose=True)
-
-
+                                              model=dlt,
+                                              df=train_df,
+                                              min_train_len=80, incremental_len=20, forecast_len=20,
+                                              metrics=None, criteria=None, verbose=True)
 
     assert best_params[0].keys() == param_grid.keys()
     assert set(tuned_df.columns.to_list()) == set(list(param_grid.keys()) + ['metrics'])
