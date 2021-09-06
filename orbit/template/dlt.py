@@ -418,7 +418,6 @@ class DLTModel(ETSModel):
         if self.num_of_positive_regressors > 0:
             self.positive_regressor_matrix = df.filter(
                 items=self.positive_regressor_col, ).values
-            print("checking")
             if not np.all(np.isfinite(self.positive_regressor_matrix)):
                 raise ModelException("Invalid regressors values. They must be all not missing and finite.")
 
