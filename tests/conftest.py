@@ -150,7 +150,7 @@ def synthetic_data():
     )
     df['week'] = pd.date_range(start='2016-01-04', periods=n_obs, freq='7D')
     df = df[['week', 'response'] + list('abcdef')]
-    train_df = df[df['week'] <= '2019-01-01']
-    test_df = df[df['week'] > '2019-01-01']
+    train_df = df[df['week'] <= '2019-01-01'].reset_index(drop=True)
+    test_df = df[df['week'] > '2019-01-01'].reset_index(drop=True)
 
     return train_df, test_df, coef

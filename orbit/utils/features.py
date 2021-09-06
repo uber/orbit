@@ -141,4 +141,3 @@ def make_seasonal_regressors(n, periods, orders, labels, shift=0):
         fs = make_fourier_series(n=n, period=period, order=order, shift=shift)
         out[label] = fs
     return out
-
