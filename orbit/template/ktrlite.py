@@ -502,12 +502,12 @@ class KTRLiteModel(ModelTemplate):
         knots_df = self.get_level_knots(training_meta, point_method, point_posteriors, posterior_samples)
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
-        ax.plot(date_array, response, color=OrbitPalette.blue.value, lw=1, alpha=0.7, label='actual')
+        ax.plot(date_array, response, color=OrbitPalette.BLUE.value, lw=1, alpha=0.7, label='actual')
         ax.plot(levels_df[date_col], levels_df[BaseSamplingParameters.LEVEL.value],
-                color=OrbitPalette.black.value, lw=1, alpha=0.8,
+                color=OrbitPalette.BLACK.value, lw=1, alpha=0.8,
                 label=BaseSamplingParameters.LEVEL.value)
         ax.scatter(knots_df[date_col], knots_df[BaseSamplingParameters.LEVEL_KNOT.value],
-                   color=OrbitPalette.green.value, lw=1, s=markersize, marker='^', alpha=0.8,
+                   color=OrbitPalette.GREEN.value, lw=1, s=markersize, marker='^', alpha=0.8,
                    label=BaseSamplingParameters.LEVEL_KNOT.value)
         ax.legend()
         ax.grid(True, which='major', c='grey', ls='-', lw=1, alpha=0.5)
