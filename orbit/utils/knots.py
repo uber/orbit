@@ -3,14 +3,12 @@ import pandas as pd
 from ..exceptions import IllegalArgument
 
 
-def get_knot_dates(date_array, knot_idx, freq):
-    start_date = date_array[0]
+def get_knot_dates(start_date, knot_idx, freq):
 
-    if freq is None:
-        freq = date_array.diff().min()
-        knot_dates = knot_idx * freq + start_date
-    else:
+    if type(freq) is str:
         knot_dates = knot_idx * np.timedelta64(1, freq) + start_date
+    else:
+        knot_dates = knot_idx * freq + start_date
     return knot_dates
 
 
