@@ -99,7 +99,7 @@ class KTRLiteModel(ModelTemplate):
     degree of freedom : int
         degree of freedom for error t-distribution
     date_freq : str
-        date frequency; if not supplied, the minimum timestamp difference in the data would be used
+        date frequency; if not supplied, the minimum timestamp difference in the date would be used
     """
     _data_input_mapper = DataInputMapper
     _model_name = 'ktrlite'

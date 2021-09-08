@@ -4,11 +4,8 @@ from ..exceptions import IllegalArgument
 
 
 def get_knot_dates(start_date, knot_idx, freq):
+    knot_dates = knot_idx * freq + start_date
 
-    if type(freq) is str:
-        knot_dates = knot_idx * np.timedelta64(1, freq) + start_date
-    else:
-        knot_dates = knot_idx * freq + start_date
     return knot_dates
 
 
@@ -19,11 +16,11 @@ def get_dates_delta(start_date, end_date, freq):
     ----
     start_date : numpy datetime
     end_date : numpy datetime array
-    freq : pd.infer_freq
+    freq : pandas timedelta; min date gap
     """
     date_diff = end_date - start_date
     # can also be deemed as the "knot_idx"
-    norm_delta = np.array(date_diff / np.timedelta64(1, freq)).astype(int)
+    norm_delta = np.array(date_diff / freq).astype(int)
     return norm_delta
 
 
@@ -84,7 +81,7 @@ def get_knot_idx(
 
         if date_freq is None:
             # infer date freq if not supplied
-            date_freq = pd.infer_freq(date_array)[0]
+            date_freq = date_array.diff().min()
 
         knot_idx = get_dates_delta(
             start_date=date_array[0],
