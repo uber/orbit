@@ -4,7 +4,7 @@ from ..exceptions import IllegalArgument
 
 
 def get_knot_dates(start_date, knot_idx, freq):
-    knot_dates = knot_idx * np.timedelta64(1, freq) + start_date
+    knot_dates = knot_idx * freq + start_date
     return knot_dates
 
 
