@@ -5,7 +5,7 @@ import numpy as np
 from orbit.models import LGT
 from orbit.template.lgt import LGTInitializer
 from orbit.constants.constants import PredictionKeys
-from orbit.diagnostics.backtest import grid_search_orbit
+from orbit.utils.params_tuning import grid_search_orbit
 
 
 @pytest.mark.parametrize("estimator", ['stan-map', 'stan-mcmc'])
