@@ -29,6 +29,8 @@ class MAPForecaster(Forecaster):
         #  need to do it one more time to over-write the extra methods with right posterior
         self.load_extra_methods()
 
+        return self
+
     def predict(self, df, decompose=False, **kwargs):
         # raise if model is not fitted
         if not self.is_fitted():

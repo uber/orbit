@@ -49,6 +49,8 @@ class FullBayesianForecaster(Forecaster):
 
         self.load_extra_methods()
 
+        return self
+
     @staticmethod
     def _bootstrap(num_samples, posterior_samples, n):
         """Draw `n` number of bootstrap samples from the posterior_samples.
