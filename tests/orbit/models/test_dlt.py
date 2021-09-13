@@ -5,7 +5,7 @@ import numpy as np
 from orbit.models import DLT
 from orbit.template.dlt import DLTInitializer
 from orbit.constants.constants import PredictionKeys
-from orbit.diagnostics.backtest import grid_search_orbit
+from orbit.utils.params_tuning import grid_search_orbit
 from orbit.exceptions import ModelException, PredictionException
 
 

@@ -171,3 +171,25 @@ def stan_estimator_lgt_model_input():
     }
     return stan_model_name, model_param_names, data_input
 
+
+@pytest.fixture
+def ca_hourly_electricity_data():
+    """This dataset contains energy consumption of the entire region in southern CA served by the SDGE
+    (San Diego Gas and electric) utility in the year of 2018.
+
+    Sources: https://github.com/pratha19/Hourly_Energy_Consumption_Prediction
+    """
+    test_file = pkg_resources.resource_filename(
+        'tests',
+        'resources/hourly1418CA_2018.csv'
+    )
+    df = pd.read_csv(
+        test_file,
+        parse_dates=['Dates', 'Date'],
+    )
+
+    train_df = df[df['Date'] < '2018-07-01']
+    test_df = df[df['Date'] >= '2018-07-01']
+
+    return train_df, test_df
+

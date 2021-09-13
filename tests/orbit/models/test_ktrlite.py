@@ -234,3 +234,28 @@ def test_ktrlite_predict_decompose_point_estimate(make_daily_data):
     assert predict_df.columns.tolist() == expected_columns
     assert len(ktrlite._posterior_samples) == expected_num_parameters
     assert smape(test_df['response'].values, predict_df['prediction'].values) <= SMAPE_TOLERANCE
+
+
+def test_ktrlite_hourly_data(ca_hourly_electricity_data):
+    train_df, test_df = ca_hourly_electricity_data
+
+    ktrlite = KTRLite(
+        response_col='SDGE',
+        date_col='Dates',
+        seasonality=[24],
+        seasonality_fs_order=[3],
+        estimator='stan-map',
+        n_bootstrap_draws=-1,
+    )
+
+    ktrlite.fit(train_df)
+    predict_df = ktrlite.predict(test_df)
+
+    expected_columns = ['Dates', 'prediction']
+    expected_shape = (4392, len(expected_columns))
+    expected_num_parameters = 6
+
+    assert predict_df.shape == expected_shape
+    assert predict_df.columns.tolist() == expected_columns
+    assert len(ktrlite._posterior_samples) == expected_num_parameters
+    assert smape(test_df['SDGE'].values, predict_df['prediction'].values) <= SMAPE_TOLERANCE
