@@ -346,12 +346,6 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
 
     params_plt = deepcopy(mod._model._regressor_col)
 
-    # if incl_trend_params:
-    #     # trend params in LGT or DLT
-    #     params_plt += ['gt_pow', 'lt_coef', 'gt_coef', 'gb', 'gl']
-    # if incl_smooth_params:
-    #     params_plt += ['lev_sm', 'slp_sm', 'sea_sm']
-
     if params is not None:
         for param in params:
             if param not in posterior_samples.keys():
