@@ -556,8 +556,8 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
         figsize = (16, 8)
 
     metric_vals = bt_pred_df.groupby('split_key').apply(lambda x:
-                                                        metrics(x[x['training_data'] == False]['actuals'],
-                                                                x[x['training_data'] == False]['prediction']))
+                                                        metrics(x[x['training_data']]['actuals'],
+                                                                x[x['training_data']]['prediction']))
 
     if split_key_list is None:
         split_key_list_ = bt_pred_df['split_key'].unique()
