@@ -454,13 +454,6 @@ def get_arviz_plot_dict(mod, params=None):
             posterior_samples[regressor] = posterior_samples['beta'][:, i]
     params_plt = deepcopy(mod._model._regressor_col)
 
-    # if incl_noise_params:
-    #     params_plt += ['obs_sigma']
-    # if incl_trend_params:
-    #     params_plt += ['gt_pow', 'lt_coef', 'gt_coef', 'gb', 'gl']
-    # if incl_smooth_params:
-    #     params_plt += ['lev_sm', 'slp_sm', 'sea_sm']
-
     if params is not None:
         for param in params:
             if param not in posterior_samples.keys():
@@ -548,8 +541,8 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
         figsize = (16, 8)
 
     metric_vals = bt_pred_df.groupby('split_key').apply(lambda x:
-                                                        metrics(~x[x['training_data']]['actuals'],
-                                                                ~x[x['training_data']]['prediction']))
+                                                        metrics(x[~x['training_data']]['actuals'],
+                                                                x[~x['training_data']]['prediction']))
 
     if split_key_list is None:
         split_key_list_ = bt_pred_df['split_key'].unique()
