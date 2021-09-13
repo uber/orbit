@@ -137,7 +137,7 @@ def stan_estimator_lgt_model_input():
 
 
 @pytest.fixture
-def synthetic_data():
+def make_weekly_data():
     n_obs = 52 * 4
     seed = 2020
     rw = make_trend(n_obs, rw_loc=1, rw_scale=0.1, seed=seed)
