@@ -41,7 +41,7 @@ def KTRLite(
         scale parameter for seasonal regressors initial coefficient knots; default to be 1
     seasonal_knot_scale : float
         scale parameter for seasonal regressors drift of coefficient knots; default to be 0.1.
-    degree of freedom : int
+    degree_of_freedom : int
         degree of freedom for error t-distribution
     date_freq : str
         date frequency; if not supplied, pd.infer_freq will be used to imply the date frequency.

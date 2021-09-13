@@ -572,18 +572,19 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
         row_idx = idx // ncol
         col_idx = idx % ncol
         tmp = bt_pred_df[bt_pred_df['split_key'] == split_key].copy()
-        axes[row_idx, col_idx].plot(tmp['date'], tmp['prediction'], linewidth=4, color='#12939A', alpha=.8)
-        axes[row_idx, col_idx].scatter(tmp['date'], tmp['actuals'], label='actual', color='black', alpha=.6)
+        axes[row_idx, col_idx].plot(tmp['date'], tmp['prediction'], linewidth=4,
+                                    color=PredPal.prediction_line, alpha=.8)
+        axes[row_idx, col_idx].scatter(tmp['date'], tmp['actuals'], label='actual',
+                                       color=PredPal.ACTUAL_OBS, alpha=.6)
         axes[row_idx, col_idx].grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.4)
 
         axes[row_idx, col_idx].set_title(label='split {}; {} {:.3f}'. \
                                          format(split_key, metrics.__name__, metric_vals[split_key]))
         if include_vline:
-            cutoff_date = tmp[tmp['training_data'] == False]['date'].min()
-            axes[row_idx, col_idx].axvline(x=cutoff_date, linestyle='--', color='#1f77b4', linewidth=4, alpha=.8)
-            # axes[row_idx, col_idx].text(cutoff_date, axes[row_idx, col_idx].get_ylim()[1],
-            #         "split {}".format(split_key),
-            #         rotation=90, verticalalignment='center')
+            cutoff_date = tmp[tmp['training_data']]['date'].min()
+            axes[row_idx, col_idx].axvline(x=cutoff_date, linestyle='--',
+                                           color=PredPal.HOLDOUT_VERTICAL_LINE,
+                                           linewidth=4, alpha=.8)
 
     plt.suptitle(title, fontsize=fontsize)
     fig.tight_layout()
