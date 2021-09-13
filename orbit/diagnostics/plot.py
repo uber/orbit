@@ -249,6 +249,7 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
 
     return axes
 
+
 # TODO: update palatte
 
 @orbit_style_decorator
@@ -344,12 +345,6 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
             posterior_samples[regressor] = posterior_samples['beta'][:, i]
 
     params_plt = deepcopy(mod._model._regressor_col)
-
-    # if incl_trend_params:
-    #     # trend params in LGT or DLT
-    #     params_plt += ['gt_pow', 'lt_coef', 'gt_coef', 'gb', 'gl']
-    # if incl_smooth_params:
-    #     params_plt += ['lev_sm', 'slp_sm', 'sea_sm']
 
     if params is not None:
         for param in params:
@@ -459,13 +454,6 @@ def get_arviz_plot_dict(mod, params=None):
             posterior_samples[regressor] = posterior_samples['beta'][:, i]
     params_plt = deepcopy(mod._model._regressor_col)
 
-    # if incl_noise_params:
-    #     params_plt += ['obs_sigma']
-    # if incl_trend_params:
-    #     params_plt += ['gt_pow', 'lt_coef', 'gt_coef', 'gb', 'gl']
-    # if incl_smooth_params:
-    #     params_plt += ['lev_sm', 'slp_sm', 'sea_sm']
-
     if params is not None:
         for param in params:
             if param not in posterior_samples.keys():
@@ -553,8 +541,8 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
         figsize = (16, 8)
 
     metric_vals = bt_pred_df.groupby('split_key').apply(lambda x:
-                                                        metrics(x[x['training_data'] == False]['actuals'],
-                                                                x[x['training_data'] == False]['prediction']))
+                                                        metrics(x[~x['training_data']]['actuals'],
+                                                                x[~x['training_data']]['prediction']))
 
     if split_key_list is None:
         split_key_list_ = bt_pred_df['split_key'].unique()
@@ -569,18 +557,19 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
         row_idx = idx // ncol
         col_idx = idx % ncol
         tmp = bt_pred_df[bt_pred_df['split_key'] == split_key].copy()
-        axes[row_idx, col_idx].plot(tmp['date'], tmp['prediction'], linewidth=4, color='#12939A', alpha=.8)
-        axes[row_idx, col_idx].scatter(tmp['date'], tmp['actuals'], label='actual', color='black', alpha=.6)
+        axes[row_idx, col_idx].plot(tmp['date'], tmp['prediction'], linewidth=4,
+                                    color=PredPal.prediction_line, alpha=.8)
+        axes[row_idx, col_idx].scatter(tmp['date'], tmp['actuals'], label='actual',
+                                       color=PredPal.ACTUAL_OBS, alpha=.6)
         axes[row_idx, col_idx].grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.4)
 
         axes[row_idx, col_idx].set_title(label='split {}; {} {:.3f}'. \
                                          format(split_key, metrics.__name__, metric_vals[split_key]))
         if include_vline:
-            cutoff_date = tmp[tmp['training_data'] == False]['date'].min()
-            axes[row_idx, col_idx].axvline(x=cutoff_date, linestyle='--', color='#1f77b4', linewidth=4, alpha=.8)
-            # axes[row_idx, col_idx].text(cutoff_date, axes[row_idx, col_idx].get_ylim()[1],
-            #         "split {}".format(split_key),
-            #         rotation=90, verticalalignment='center')
+            cutoff_date = tmp[~tmp['training_data']]['date'].min()
+            axes[row_idx, col_idx].axvline(x=cutoff_date, linestyle='--',
+                                           color=PredPal.HOLDOUT_VERTICAL_LINE,
+                                           linewidth=4, alpha=.8)
 
     plt.suptitle(title, fontsize=fontsize)
     fig.tight_layout()
