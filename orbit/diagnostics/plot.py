@@ -249,6 +249,7 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
 
     return axes
 
+
 # TODO: update palatte
 
 @orbit_style_decorator
@@ -556,8 +557,8 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
         figsize = (16, 8)
 
     metric_vals = bt_pred_df.groupby('split_key').apply(lambda x:
-                                                        metrics(x[x['training_data']]['actuals'],
-                                                                x[x['training_data']]['prediction']))
+                                                        metrics(~x[x['training_data']]['actuals'],
+                                                                ~x[x['training_data']]['prediction']))
 
     if split_key_list is None:
         split_key_list_ = bt_pred_df['split_key'].unique()
@@ -581,7 +582,7 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
         axes[row_idx, col_idx].set_title(label='split {}; {} {:.3f}'. \
                                          format(split_key, metrics.__name__, metric_vals[split_key]))
         if include_vline:
-            cutoff_date = tmp[tmp['training_data']]['date'].min()
+            cutoff_date = tmp[~tmp['training_data']]['date'].min()
             axes[row_idx, col_idx].axvline(x=cutoff_date, linestyle='--',
                                            color=PredPal.HOLDOUT_VERTICAL_LINE,
                                            linewidth=4, alpha=.8)
