@@ -304,7 +304,7 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
 @orbit_style_decorator
 def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
                           pair_type='scatter', figsize=None, path=None, fontsize=None,
-                          incl_trend_params=False, incl_smooth_params=False, is_visible=True):
+                          params=None, is_visible=True):
     """ Data Viz for posterior samples
 
     Parameters
@@ -322,12 +322,10 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         figure size
     path : str; optional
         dir path to save the chart
-    fontsize: int; optional
+    fontsize : int; optional
         fontsize of the title
-    incl_trend_params : bool
-        if plot trend parameters; default False
-    incl_smooth_params : bool
-        if plot smoothing parameters; default False
+    params : list; optional
+        list of model parameter names to be plotted, on top of the regressors
     is_visible : boolean
         whether we want to show the plot. If called from unittest, is_visible might = False.
 
@@ -337,8 +335,6 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     """
     if 'orbit' not in str(mod.__class__):
         raise Exception("This plotting utility works for orbit model object only.")
-    # if mod.infer_method != 'mcmc':
-    #     raise Exception("This plotting utility works for mcmc inference only.")
     if kind not in ['density', 'trace', 'pair']:
         raise Exception("kind must be one of 'density', 'trace', or 'pair'.")
 
@@ -348,26 +344,32 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         for i, regressor in enumerate(mod._model._regressor_col):
             posterior_samples[regressor] = posterior_samples['beta'][:, i]
 
-    params_ = mod._model._regressor_col + ['obs_sigma']
+    params_plt = deepcopy(mod._model._regressor_col)
 
-    if incl_trend_params:
-        # trend params in LGT or DLT
-        params_ += ['gt_pow', 'lt_coef', 'gt_coef', 'gb', 'gl']
-    if incl_smooth_params:
-        params_ += ['lev_sm', 'slp_sm', 'sea_sm']
+    # if incl_trend_params:
+    #     # trend params in LGT or DLT
+    #     params_plt += ['gt_pow', 'lt_coef', 'gt_coef', 'gb', 'gl']
+    # if incl_smooth_params:
+    #     params_plt += ['lev_sm', 'slp_sm', 'sea_sm']
 
-    params_ = [x for x in params_ if x in posterior_samples.keys()]
+    if params is not None:
+        for param in params:
+            if param not in posterior_samples.keys():
+                raise Exception("{} is not in the model parameters".format(param))
+    else:
+        params = list()
+    params_plt += params
 
     if not figsize:
-        figsize = (8, 2 * len(params_))
+        figsize = (8, 2 * len(params_plt))
 
     if not fontsize:
         fontsize = 10
 
-    def _density_plot(posterior_samples, n_bins=20, ci_level=.95, figsize=None):
+    def _density_plot(posterior_samples, params_plt, n_bins=20, ci_level=.95, figsize=None):
 
-        fig, axes = plt.subplots(len(params_), 1, squeeze=True, figsize=figsize)
-        for i, param in enumerate(params_):
+        fig, axes = plt.subplots(len(params_plt), 1, squeeze=True, figsize=figsize)
+        for i, param in enumerate(params_plt):
             samples = posterior_samples[param]
             mean = np.mean(samples)
             median = np.median(samples)
@@ -392,10 +394,10 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
 
         return axes
 
-    def _trace_plot(posterior_samples, ci_level=.95, figsize=None):
+    def _trace_plot(posterior_samples, params_plt, ci_level=.95, figsize=None):
 
-        fig, axes = plt.subplots(len(params_), 1, squeeze=True, figsize=figsize)
-        for i, param in enumerate(params_):
+        fig, axes = plt.subplots(len(params_plt), 1, squeeze=True, figsize=figsize)
+        for i, param in enumerate(params_plt):
             samples = posterior_samples[param]
             # chain order is preserved in the posterior samples
             chained_samples = np.array_split(samples, mod.estimator.chains)
@@ -412,8 +414,8 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
 
         return axes
 
-    def _pair_plot(posterior_samples, pair_type='scatter', n_bins=20):
-        samples_df = pd.DataFrame({key: posterior_samples[key].flatten() for key in params_})
+    def _pair_plot(posterior_samples, params_plt, pair_type='scatter', n_bins=20):
+        samples_df = pd.DataFrame({key: posterior_samples[key].flatten() for key in params_plt})
 
         fig = sns.pairplot(samples_df, kind=pair_type, diag_kws=dict(bins=n_bins))
         fig.fig.suptitle("Pair Plot", fontsize=fontsize)
@@ -422,11 +424,12 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
         return fig
 
     if kind == 'density':
-        axes = _density_plot(posterior_samples, n_bins=n_bins, ci_level=ci_level, figsize=figsize)
+        axes = _density_plot(posterior_samples, params_plt,
+                             n_bins=n_bins, ci_level=ci_level, figsize=figsize)
     elif kind == 'trace':
-        axes = _trace_plot(posterior_samples, ci_level=ci_level, figsize=figsize)
+        axes = _trace_plot(posterior_samples, params_plt, ci_level=ci_level, figsize=figsize)
     elif kind == 'pair':
-        axes = _pair_plot(posterior_samples, pair_type=pair_type, n_bins=n_bins)
+        axes = _pair_plot(posterior_samples, params_plt, pair_type=pair_type, n_bins=n_bins)
 
     if path:
         plt.savefig(path)
@@ -439,11 +442,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     return axes
 
 
-@orbit_style_decorator
-def get_arviz_plot_dict(mod,
-                        incl_noise_params=False,
-                        incl_trend_params=False,
-                        incl_smooth_params=False):
+def get_arviz_plot_dict(mod, params=None):
     """ This is a utility to prepare the plotting dictionary data for package arviz.
     arviz will interpret each key as the name of a different random variable.
     Each array should have shape (chains, draws, *shape).
@@ -459,19 +458,25 @@ def get_arviz_plot_dict(mod,
     if len(mod._model._regressor_col) > 0:
         for i, regressor in enumerate(mod._model._regressor_col):
             posterior_samples[regressor] = posterior_samples['beta'][:, i]
-    params_ = mod._model._regressor_col
+    params_plt = deepcopy(mod._model._regressor_col)
 
-    if incl_noise_params:
-        params_ += ['obs_sigma']
-    if incl_trend_params:
-        params_ += ['gt_pow', 'lt_coef', 'gt_coef', 'gb', 'gl']
-    if incl_smooth_params:
-        params_ += ['lev_sm', 'slp_sm', 'sea_sm']
+    # if incl_noise_params:
+    #     params_plt += ['obs_sigma']
+    # if incl_trend_params:
+    #     params_plt += ['gt_pow', 'lt_coef', 'gt_coef', 'gb', 'gl']
+    # if incl_smooth_params:
+    #     params_plt += ['lev_sm', 'slp_sm', 'sea_sm']
 
-    params_ = [x for x in params_ if x in posterior_samples.keys()]
+    if params is not None:
+        for param in params:
+            if param not in posterior_samples.keys():
+                raise Exception("{} is not in the model parameters".format(param))
+    else:
+        params = list()
+    params_plt += params
 
     for key in posterior_samples.copy().keys():
-        if key not in params_: del posterior_samples[key]
+        if key not in params_plt: del posterior_samples[key]
 
     for key, val in posterior_samples.items():
         posterior_samples[key] = val.reshape((mod.estimator.chains,
@@ -482,19 +487,14 @@ def get_arviz_plot_dict(mod,
 
 
 @orbit_style_decorator
-def plot_param_diagnostics(mod, incl_noise_params=False, incl_trend_params=False, incl_smooth_params=False,
-                           which='trace', **kwargs):
+def plot_param_diagnostics(mod, params=None, which='trace', **kwargs):
     """
     Parameters
     -----------
     mod : orbit model object
+    params : list; optional
+        list of model parameter names to be plotted, on top of the regressors
     which : str, {'density', 'trace', 'pair', 'autocorr', 'posterior', 'forest'}
-    incl_noise_params : bool
-        if plot noise parameters; default False
-    incl_trend_params : bool
-        if plot trend parameters; default False
-    incl_smooth_params : bool
-        if plot smoothing parameters; default False
     **kwargs :
         other parameters passed to arviz functions
 
@@ -502,10 +502,7 @@ def plot_param_diagnostics(mod, incl_noise_params=False, incl_trend_params=False
     -------
         matplotlib axes object
     """
-    posterior_samples = get_arviz_plot_dict(mod,
-                                            incl_noise_params=incl_noise_params,
-                                            incl_trend_params=incl_trend_params,
-                                            incl_smooth_params=incl_smooth_params)
+    posterior_samples = get_arviz_plot_dict(mod, params)
 
     if which == "trace":
         axes = az.plot_trace(posterior_samples, **kwargs)
