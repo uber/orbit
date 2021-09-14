@@ -290,9 +290,7 @@ class KTRModel(ModelTemplate):
 
         # set some defaults for seasonality_fs_order
         if self._seasonality and self._seasonality_fs_order is None:
-            self._seasonality_fs_order = list()
-            for s in self._seasonality:
-                self._seasonality_fs_order.append(math.ceil(s / 4))
+            self._seasonality_fs_order = [2] * len(self._seasonality)
         elif not isinstance(self._seasonality_fs_order, list) and isinstance(self._seasonality_fs_order, (int, float)):
             self._seasonality_fs_order = [self.seasonality_fs_order]
 
