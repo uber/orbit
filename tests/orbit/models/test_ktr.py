@@ -37,10 +37,10 @@ def test_ktr_basic(make_daily_data):
     "make_daily_data, seasonality",
     [
         pytest.param(
-            ({"seasonality": 'single'}), [365], id="single_seasonality"
+            ({"seasonality": 'single'}), [365.25], id="single_seasonality"
         ),
         pytest.param(
-            ({"seasonality": 'dual'}), [7, 365], id="dual_seasonality"
+            ({"seasonality": 'dual'}), [7, 365.25], id="dual_seasonality"
         ),
      ],
     indirect=["make_daily_data"]
@@ -67,11 +67,11 @@ def test_ktr_seasonality(make_daily_data, seasonality):
     ]
 
     if len(seasonality) == 1:
-        expected_columns += ['seasonality_365_5', 'seasonality_365', 'seasonality_365_95']
+        expected_columns += ['seasonality_365.25_5', 'seasonality_365.25', 'seasonality_365.25_95']
     if len(seasonality) == 2:
         expected_columns += [
             'seasonality_7_5', 'seasonality_7', 'seasonality_7_95',
-            'seasonality_365_5', 'seasonality_365', 'seasonality_365_95',
+            'seasonality_365.25_5', 'seasonality_365.25', 'seasonality_365.25_95',
         ]
     expected_shape = (train_df.shape[0], len(expected_columns))
     assert predict_df.shape == expected_shape
@@ -182,7 +182,6 @@ def test_ktrx_coef_knot_distance(make_daily_data, regression_knot_distance):
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
     assert len(ktr._posterior_samples) == expected_num_parameters
-    assert smape(test_df['response'].values, predict_df['prediction'].values) <= SMAPE_TOLERANCE
 
 
 @pytest.mark.parametrize(
@@ -225,7 +224,6 @@ def test_ktrx_regressor_sign(make_daily_data, regressor_signs):
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
     assert len(ktr._posterior_samples) == expected_num_parameters
-    assert smape(test_df['response'].values, predict_df['prediction'].values) <= SMAPE_TOLERANCE
 
 
 @pytest.mark.parametrize(
