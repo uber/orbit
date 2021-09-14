@@ -15,7 +15,7 @@ SMAPE_TOLERANCE = 0.28
 )
 @pytest.mark.parametrize(
     "make_daily_data",
-    [({"with_dual_sea": False, "with_coef": False})],
+    [({"seasonality": "single", "with_coef": False})],
     indirect=True
 )
 def test_ktrlite_single_seas(make_daily_data, seasonality_fs_order):
@@ -119,7 +119,7 @@ def test_ktrlite_level_segments(make_daily_data, level_segments):
 )
 @pytest.mark.parametrize(
     "make_daily_data",
-    [({"with_dual_sea": False, "with_coef": False})],
+    [({"seasonality": "single", "with_coef": False})],
     indirect=True
 )
 def test_ktrlite_level_knot_dates(make_daily_data, level_knot_dates):
@@ -150,7 +150,7 @@ def test_ktrlite_level_knot_dates(make_daily_data, level_knot_dates):
 @pytest.mark.parametrize("level_knot_distance", [90, 120])
 @pytest.mark.parametrize(
     "make_daily_data",
-    [({"with_dual_sea": False, "with_coef": False})],
+    [({"seasonality": "single", "with_coef": False})],
     indirect=True
 )
 def test_ktrlite_level_knot_distance(make_daily_data, level_knot_distance):
@@ -179,7 +179,7 @@ def test_ktrlite_level_knot_distance(make_daily_data, level_knot_distance):
 @pytest.mark.parametrize("seas_segments", [2, 5])
 @pytest.mark.parametrize(
     "make_daily_data",
-    [({"with_dual_sea": False, "with_coef": False})],
+    [({"seasonality": "single", "with_coef": False})],
     indirect=True
 )
 def test_ktrlite_seas_segments(make_daily_data, seas_segments):
@@ -210,7 +210,7 @@ def test_ktrlite_seas_segments(make_daily_data, seas_segments):
 
 @pytest.mark.parametrize(
     "make_daily_data",
-    [({"with_dual_sea": False, "with_coef": False})],
+    [({"seasonality": "single", "with_coef": False})],
     indirect=True
 )
 def test_ktrlite_predict_decompose(make_daily_data):
@@ -242,7 +242,7 @@ def test_ktrlite_predict_decompose(make_daily_data):
 
 @pytest.mark.parametrize(
     "make_daily_data",
-    [({"with_dual_sea": False, "with_coef": False})],
+    [({"seasonality": "single", "with_coef": False})],
     indirect=True
 )
 def test_ktrlite_predict_decompose_point_estimate(make_daily_data):

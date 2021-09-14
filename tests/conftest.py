@@ -36,24 +36,29 @@ def m3_monthly_data():
 # see https://docs.pytest.org/en/latest/example/parametrize.html#apply-indirect-on-particular-arguments
 @pytest.fixture
 def make_daily_data(request):
+    # seasonality = ['dual', 'single', None]
+    # with_coef = bool
     defaults = {
-        "with_dual_sea": False,
+        "seasonality": None,
         "with_coef": False,
     }
     final_args_dict = deepcopy(defaults)
     final_args_dict.update(request.param)
-    with_dual_sea = final_args_dict["with_dual_sea"]
+    seasonality = final_args_dict["seasonality"]
     with_coef = final_args_dict["with_coef"]
 
     n_obs = 365 * 3
     seed = 2020
     rw = make_trend(n_obs, rw_loc=0.02, rw_scale=0.1, seed=seed)
-    if with_dual_sea:
+    if seasonality is None:
+        fs = 0.0
+    elif seasonality == 'single':
+        fs = make_seasonality(n_obs, seasonality=365.25, method='fourier', order=2, seed=seed)
+    elif seasonality == 'dual':
         fs1 = make_seasonality(n_obs, seasonality=365.25, method='fourier', order=3, seed=seed)
         fs2 = make_seasonality(n_obs, seasonality=7, method='fourier', order=2, seed=seed)
         fs = fs1 + fs2
-    else:
-        fs = make_seasonality(n_obs, seasonality=365.25, method='fourier', order=2, seed=seed)
+
     if with_coef:
         coef = [0.2, 0.1, 0.3]
         x, y, coef = make_regression(n_obs, coef, scale=2.0, seed=seed)
