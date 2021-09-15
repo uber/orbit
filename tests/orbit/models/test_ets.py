@@ -28,8 +28,8 @@ def test_base_ets_init(estimator):
     assert not init_values
 
 
-def test_ets_full_seasonal_fit(synthetic_data):
-    train_df, test_df, coef = synthetic_data
+def test_ets_full_seasonal_fit(make_weekly_data):
+    train_df, test_df, coef = make_weekly_data
 
     ets = ETS(
         response_col='response',
@@ -61,8 +61,8 @@ def test_ets_full_seasonal_fit(synthetic_data):
 
 
 @pytest.mark.parametrize("point_method", ['mean', 'median'])
-def test_ets_aggregated_seasonal_fit(synthetic_data, point_method):
-    train_df, test_df, coef = synthetic_data
+def test_ets_aggregated_seasonal_fit(make_weekly_data, point_method):
+    train_df, test_df, coef = make_weekly_data
 
     ets = ETS(
         response_col='response',
@@ -94,8 +94,8 @@ def test_ets_aggregated_seasonal_fit(synthetic_data, point_method):
 
 
 @pytest.mark.parametrize("n_bootstrap_draws", [None, -1, 1e4])
-def test_ets_map_seasonal_fit(synthetic_data, n_bootstrap_draws):
-    train_df, test_df, coef = synthetic_data
+def test_ets_map_seasonal_fit(make_weekly_data, n_bootstrap_draws):
+    train_df, test_df, coef = make_weekly_data
 
     ets = ETS(
         response_col='response',
@@ -131,8 +131,8 @@ def test_ets_map_seasonal_fit(synthetic_data, n_bootstrap_draws):
 
 
 @pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC])
-def test_ets_non_seasonal_fit(synthetic_data, estimator_type):
-    train_df, test_df, coef = synthetic_data
+def test_ets_non_seasonal_fit(make_weekly_data, estimator_type):
+    train_df, test_df, coef = make_weekly_data
 
     ets = ETS(
         response_col='response',
@@ -241,8 +241,8 @@ def test_map_prediction_percentiles(iclaims_training_data, n_bootstrap_draws, pr
 
 
 @pytest.mark.parametrize("seasonality", [1, 52])
-def test_ets_full_reproducibility(synthetic_data, seasonality):
-    train_df, test_df, coef = synthetic_data
+def test_ets_full_reproducibility(make_weekly_data, seasonality):
+    train_df, test_df, coef = make_weekly_data
 
     ets1 = ETS(
         response_col='response',
@@ -288,8 +288,8 @@ def test_ets_full_reproducibility(synthetic_data, seasonality):
 
 
 @pytest.mark.parametrize("seasonality", [1, 52])
-def test_ets_map_reproducibility(synthetic_data, seasonality):
-    train_df, test_df, coef = synthetic_data
+def test_ets_map_reproducibility(make_weekly_data, seasonality):
+    train_df, test_df, coef = make_weekly_data
 
     ets1 = ETS(
         response_col='response',

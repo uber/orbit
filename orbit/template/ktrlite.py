@@ -194,6 +194,7 @@ class KTRLiteModel(ModelTemplate):
         elif not isinstance(self._seasonality, list) and isinstance(self._seasonality, (int, float)):
             self._seasonality = [self.seasonality]
 
+        # set some defaults for seasonality_fs_order
         if self._seasonality and self._seasonality_fs_order is None:
             self._seasonality_fs_order = [2] * len(self._seasonality)
         elif not isinstance(self._seasonality_fs_order, list) and isinstance(self._seasonality_fs_order, (int, float)):

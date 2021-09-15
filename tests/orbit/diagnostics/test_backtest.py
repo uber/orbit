@@ -129,6 +129,11 @@ def test_backtester_test_metrics(iclaims_training_data, metrics):
     [False, True],
     ids=['full-values', 'missing-values']
 )
+@pytest.mark.parametrize(
+    "make_daily_data",
+    [({"seasonality": "single", "with_coef": False})],
+    indirect=True
+)
 def test_backtester_ktr_and_missing_val(make_daily_data, missing_flag):
     train_df, test_df, _ = make_daily_data
     df = pd.concat([train_df, test_df], axis=0, ignore_index=True)

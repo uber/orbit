@@ -30,8 +30,8 @@ def test_base_dlt_init(estimator):
 
 
 @pytest.mark.parametrize("estimator", ['stan-mcmc'])
-def test_dlt_full_univariate(synthetic_data, estimator):
-    train_df, test_df, coef = synthetic_data
+def test_dlt_full_univariate(make_weekly_data, estimator):
+    train_df, test_df, coef = make_weekly_data
 
     dlt = DLT(
         response_col='response',
@@ -64,8 +64,8 @@ def test_dlt_full_univariate(synthetic_data, estimator):
 
 @pytest.mark.parametrize("estimator", ['stan-mcmc'])
 @pytest.mark.parametrize("point_method", ['mean', 'median'])
-def test_dlt_aggregated_univariate(synthetic_data, estimator, point_method):
-    train_df, test_df, coef = synthetic_data
+def test_dlt_aggregated_univariate(make_weekly_data, estimator, point_method):
+    train_df, test_df, coef = make_weekly_data
 
     dlt = DLT(
         response_col='response',
@@ -95,8 +95,8 @@ def test_dlt_aggregated_univariate(synthetic_data, estimator, point_method):
     assert len(dlt._posterior_samples) == expected_num_parameters
 
 
-def test_dlt_map_univariate(synthetic_data):
-    train_df, test_df, coef = synthetic_data
+def test_dlt_map_univariate(make_weekly_data):
+    train_df, test_df, coef = make_weekly_data
 
     dlt = DLT(
         response_col='response',
@@ -127,8 +127,8 @@ def test_dlt_map_univariate(synthetic_data):
 
 
 @pytest.mark.parametrize("estimator", ['stan-mcmc'])
-def test_dlt_non_seasonal_fit(synthetic_data, estimator):
-    train_df, test_df, coef = synthetic_data
+def test_dlt_non_seasonal_fit(make_weekly_data, estimator):
+    train_df, test_df, coef = make_weekly_data
 
     dlt = DLT(
         response_col='response',
@@ -164,8 +164,8 @@ def test_dlt_non_seasonal_fit(synthetic_data, estimator):
     ],
     ids=['nan', 'infinite', 'neg-infinite']
 )
-def test_invalid_regressor(synthetic_data, regressor_signs, invalid_input):
-    train_df, test_df, coef = synthetic_data
+def test_invalid_regressor(make_weekly_data, regressor_signs, invalid_input):
+    train_df, test_df, coef = make_weekly_data
     regressor_col = train_df.columns.tolist()[2:]
     # make invalid values
     train_df[regressor_col[0]][36] = invalid_input
@@ -195,8 +195,8 @@ def test_invalid_regressor(synthetic_data, regressor_signs, invalid_input):
     ],
     ids=['nan', 'infinite', 'neg-infinite']
 )
-def test_invalid_predict_regressor(synthetic_data, invalid_input):
-    train_df, test_df, coef = synthetic_data
+def test_invalid_predict_regressor(make_weekly_data, invalid_input):
+    train_df, test_df, coef = make_weekly_data
     regressor_col = train_df.columns.tolist()[2:]
     # make invalid values
     test_df[regressor_col[0]][3] = invalid_input
@@ -230,8 +230,8 @@ def test_invalid_predict_regressor(synthetic_data, invalid_input):
     ],
     ids=['positive_only', 'negative_only', 'regular_only', 'mixed_signs']
 )
-def test_dlt_full_with_regression(synthetic_data, regressor_signs):
-    train_df, test_df, coef = synthetic_data
+def test_dlt_full_with_regression(make_weekly_data, regressor_signs):
+    train_df, test_df, coef = make_weekly_data
 
     dlt = DLT(
         response_col='response',
@@ -290,8 +290,8 @@ def test_dlt_full_with_regression(synthetic_data, regressor_signs):
     ids=['positive_only', 'negative_only', 'regular_only', 'mixed_signs']
 )
 @pytest.mark.parametrize("point_method", ['mean', 'median'])
-def test_dlt_aggregated_with_regression(synthetic_data, estimator, regressor_signs, point_method):
-    train_df, test_df, coef = synthetic_data
+def test_dlt_aggregated_with_regression(make_weekly_data, estimator, regressor_signs, point_method):
+    train_df, test_df, coef = make_weekly_data
 
     dlt = DLT(
         response_col='response',
@@ -324,8 +324,8 @@ def test_dlt_aggregated_with_regression(synthetic_data, estimator, regressor_sig
 
 
 @pytest.mark.parametrize("global_trend_option", ["linear", "loglinear", "logistic", "flat"])
-def test_dlt_map_global_trend(synthetic_data, global_trend_option):
-    train_df, test_df, coef = synthetic_data
+def test_dlt_map_global_trend(make_weekly_data, global_trend_option):
+    train_df, test_df, coef = make_weekly_data
 
     dlt = DLT(
         response_col='response',
@@ -457,8 +457,8 @@ def test_dlt_prediction_percentiles(iclaims_training_data, prediction_percentile
          'positive_mixed', 'negative_mixed', 'mixed_signs']
 )
 @pytest.mark.parametrize("seasonality", [1, 52])
-def test_dlt_full_reproducibility(synthetic_data, estimator, regressor_signs, seasonality):
-    train_df, test_df, coef = synthetic_data
+def test_dlt_full_reproducibility(make_weekly_data, estimator, regressor_signs, seasonality):
+    train_df, test_df, coef = make_weekly_data
 
     dlt_first = DLT(
         response_col='response',
@@ -515,8 +515,8 @@ def test_dlt_full_reproducibility(synthetic_data, estimator, regressor_signs, se
 
 
 @pytest.mark.parametrize("seasonality", [1, 52])
-def test_dlt_map_reproducibility(synthetic_data, seasonality):
-    train_df, test_df, coef = synthetic_data
+def test_dlt_map_reproducibility(make_weekly_data, seasonality):
+    train_df, test_df, coef = make_weekly_data
 
     dlt1 = DLT(
         response_col='response',
@@ -558,8 +558,8 @@ def test_dlt_map_reproducibility(synthetic_data, seasonality):
 
 
 @pytest.mark.parametrize("regression_penalty", ['fixed_ridge', 'lasso', 'auto_ridge'])
-def test_dlt_regression_penalty(synthetic_data, regression_penalty):
-    train_df, test_df, coef = synthetic_data
+def test_dlt_regression_penalty(make_weekly_data, regression_penalty):
+    train_df, test_df, coef = make_weekly_data
 
     dlt = DLT(
         response_col='response',
@@ -591,8 +591,8 @@ def test_dlt_regression_penalty(synthetic_data, regression_penalty):
 @pytest.mark.parametrize("level_sm_input", [0.0001, 0.5, 1.0])
 @pytest.mark.parametrize("seasonality_sm_input", [0.0, 0.5, 1.0])
 @pytest.mark.parametrize("slope_sm_input", [0.0, 0.5, 1.0])
-def test_dlt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input, slope_sm_input):
-    train_df, test_df, coef = synthetic_data
+def test_dlt_fixed_sm_input(make_weekly_data, level_sm_input, seasonality_sm_input, slope_sm_input):
+    train_df, test_df, coef = make_weekly_data
 
     dlt = DLT(
         response_col='response',
@@ -633,8 +633,8 @@ def test_dlt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input
         'slope_sm_input': [0.3, 0.5, 0.8],
     }
 ])
-def test_dlt_grid_tuning(synthetic_data, param_grid):
-    train_df, test_df, coef = synthetic_data
+def test_dlt_grid_tuning(make_weekly_data, param_grid):
+    train_df, test_df, coef = make_weekly_data
     args = {
         'response_col': 'response',
         'date_col': 'week',

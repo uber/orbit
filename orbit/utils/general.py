@@ -22,7 +22,7 @@ def is_empty_dataframe(df):
     A simple function to tell whether the passed in df is an empty dataframe or not.
     Parameters
     ----------
-    df: pd.DataFrame
+    df : pd.DataFrame
         given input dataframe
 
     Returns
@@ -37,13 +37,12 @@ def get_parent_path(current_file_path):
     """
     Parameters
     ----------
-    current_file_path: str
+    current_file_path : str
         The given file path, should be an absolute path
 
     Returns:
     -------
-        str
-        The parent path of give file path
+        str : The parent path of give file path
     """
 
     return os.path.abspath(os.path.join(current_file_path, os.pardir))

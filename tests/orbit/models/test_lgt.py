@@ -30,8 +30,8 @@ def test_base_lgt_init(estimator):
 
 @pytest.mark.parametrize("seasonality", [None, 52])
 @pytest.mark.parametrize("estimator", ['stan-mcmc', 'pyro-svi'])
-def test_lgt_full_fit(synthetic_data, seasonality, estimator):
-    train_df, test_df, coef = synthetic_data
+def test_lgt_full_fit(make_weekly_data, seasonality, estimator):
+    train_df, test_df, coef = make_weekly_data
     args = {
         'response_col': 'response',
         'date_col': 'week',
@@ -75,8 +75,8 @@ def test_lgt_full_fit(synthetic_data, seasonality, estimator):
 @pytest.mark.parametrize("seasonality", [None, 52])
 @pytest.mark.parametrize("estimator", ['stan-mcmc', 'pyro-svi'])
 @pytest.mark.parametrize("point_method", ['mean', 'median'])
-def test_lgt_aggregated_fit(synthetic_data, seasonality, estimator, point_method):
-    train_df, test_df, coef = synthetic_data
+def test_lgt_aggregated_fit(make_weekly_data, seasonality, estimator, point_method):
+    train_df, test_df, coef = make_weekly_data
     args = {
         'response_col': 'response',
         'date_col': 'week',
@@ -117,8 +117,8 @@ def test_lgt_aggregated_fit(synthetic_data, seasonality, estimator, point_method
 
 @pytest.mark.parametrize("seasonality", [None, 52])
 @pytest.mark.parametrize("estimator", ['stan-map'])
-def test_lgt_map_fit(synthetic_data, seasonality, estimator):
-    train_df, test_df, coef = synthetic_data
+def test_lgt_map_fit(make_weekly_data, seasonality, estimator):
+    train_df, test_df, coef = make_weekly_data
 
     lgt = LGT(
         response_col='response',
@@ -162,8 +162,8 @@ def test_lgt_map_fit(synthetic_data, seasonality, estimator):
     ],
     ids=['positive_only', 'negative_only', 'regular_only', 'mixed_signs']
 )
-def test_lgt_full_with_regression(synthetic_data, estimator, regressor_signs):
-    train_df, test_df, coef = synthetic_data
+def test_lgt_full_with_regression(make_weekly_data, estimator, regressor_signs):
+    train_df, test_df, coef = make_weekly_data
 
     if estimator == 'stan-mcmc':
         lgt = LGT(
@@ -221,8 +221,8 @@ def test_lgt_full_with_regression(synthetic_data, estimator, regressor_signs):
     ids=['positive_only', 'negative_only', 'regular_only', 'mixed_signs']
 )
 @pytest.mark.parametrize("point_method", ['mean', 'median'])
-def test_lgt_aggregated_with_regression(synthetic_data, estimator, regressor_signs, point_method):
-    train_df, test_df, coef = synthetic_data
+def test_lgt_aggregated_with_regression(make_weekly_data, estimator, regressor_signs, point_method):
+    train_df, test_df, coef = make_weekly_data
 
     if estimator == 'stan-mcmc':
         lgt = LGT(
@@ -372,8 +372,8 @@ def test_lgt_prediction_percentiles(iclaims_training_data, prediction_percentile
     ids=['positive_only', 'regular_only', 'mixed_signs']
 )
 @pytest.mark.parametrize("seasonality", [1, 52])
-def test_lgt_full_reproducibility(synthetic_data, estimator, regressor_signs, seasonality):
-    train_df, test_df, coef = synthetic_data
+def test_lgt_full_reproducibility(make_weekly_data, estimator, regressor_signs, seasonality):
+    train_df, test_df, coef = make_weekly_data
 
     lgt_first = LGT(
         response_col='response',
@@ -432,8 +432,8 @@ def test_lgt_full_reproducibility(synthetic_data, estimator, regressor_signs, se
 
 
 @pytest.mark.parametrize("seasonality", [1, 52])
-def test_lgt_map_reproducibility(synthetic_data, seasonality):
-    train_df, test_df, coef = synthetic_data
+def test_lgt_map_reproducibility(make_weekly_data, seasonality):
+    train_df, test_df, coef = make_weekly_data
 
     lgt1 = LGT(
         response_col='response',
@@ -477,8 +477,8 @@ def test_lgt_map_reproducibility(synthetic_data, seasonality):
 @pytest.mark.parametrize("level_sm_input", [0.0001, 0.5, 1.0])
 @pytest.mark.parametrize("seasonality_sm_input", [0.0, 0.5, 1.0])
 @pytest.mark.parametrize("slope_sm_input", [0.0, 0.5, 1.0])
-def test_lgt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input, slope_sm_input):
-    train_df, test_df, coef = synthetic_data
+def test_lgt_fixed_sm_input(make_weekly_data, level_sm_input, seasonality_sm_input, slope_sm_input):
+    train_df, test_df, coef = make_weekly_data
 
     lgt = LGT(
         response_col='response',
@@ -518,8 +518,8 @@ def test_lgt_fixed_sm_input(synthetic_data, level_sm_input, seasonality_sm_input
                                                 'slope_sm_input': [0.3, 0.5, 0.8],
                                             }
                                        ])
-def test_lgt_grid_tuning(synthetic_data, param_grid):
-    train_df, test_df, coef = synthetic_data
+def test_lgt_grid_tuning(make_weekly_data, param_grid):
+    train_df, test_df, coef = make_weekly_data
     args = {
         'response_col': 'response',
         'date_col': 'week',

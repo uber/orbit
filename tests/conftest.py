@@ -2,6 +2,7 @@ import pytest
 import pandas as pd
 import numpy as np
 import pkg_resources
+from copy import deepcopy
 
 from orbit.utils.simulation import make_trend, make_seasonality, make_regression
 
@@ -31,20 +32,66 @@ def m3_monthly_data():
     )
     return df
 
-
+# request is a special keyword
+# see https://docs.pytest.org/en/latest/example/parametrize.html#apply-indirect-on-particular-arguments
 @pytest.fixture
-def make_daily_data():
+def make_daily_data(request):
+    # seasonality = ['dual', 'single', None]
+    # with_coef = bool
+    defaults = {
+        "seasonality": None,
+        "with_coef": False,
+    }
+    final_args_dict = deepcopy(defaults)
+    final_args_dict.update(request.param)
+    seasonality = final_args_dict["seasonality"]
+    with_coef = final_args_dict["with_coef"]
+
     n_obs = 365 * 3
     seed = 2020
     rw = make_trend(n_obs, rw_loc=0.02, rw_scale=0.1, seed=seed)
-    fs = make_seasonality(n_obs, seasonality=365, method='fourier', order=5, seed=seed)
-    coef = [0.2, 0.1, 0.3]
-    x, y, coef = make_regression(n_obs, coef, scale=2.0, seed=seed)
+    if seasonality is None:
+        fs = 0.0
+    elif seasonality == 'single':
+        fs = make_seasonality(n_obs, seasonality=365.25, method='fourier', order=2, seed=seed)
+    elif seasonality == 'dual':
+        fs1 = make_seasonality(n_obs, seasonality=365.25, method='fourier', order=3, seed=seed)
+        fs2 = make_seasonality(n_obs, seasonality=7, method='fourier', order=2, seed=seed)
+        fs = fs1 + fs2
 
-    df = pd.DataFrame(np.concatenate([(rw + fs + y).reshape(-1, 1), x], axis=1), columns=['response'] + list('abc'))
+    if with_coef:
+        coef = [0.2, 0.1, 0.3]
+        x, y, coef = make_regression(n_obs, coef, scale=2.0, seed=seed)
+        response = (rw + fs + y).reshape(-1, 1)
+        df = pd.DataFrame(np.concatenate([response, x], axis=1), columns=['response'] + list('abc'))
+    else:
+        response = rw + fs
+        coef = None
+        df = pd.DataFrame(response, columns=['response'])
+
     df['date'] = pd.date_range(start='2016-01-01', periods=n_obs)
     train_df = df[df['date'] < '2018-01-01']
     test_df = df[df['date'] >= '2018-01-01']
+
+    return train_df, test_df, coef
+
+
+@pytest.fixture
+def make_weekly_data():
+    n_obs = 52 * 4
+    seed = 2020
+    rw = make_trend(n_obs, rw_loc=1, rw_scale=0.1, seed=seed)
+    fs = make_seasonality(n_obs, seasonality=52, method='fourier', order=2, seed=seed)
+    coef = [0.2, 0.1, 0.3, 0.15, -0.2, -0.1]
+    x, y, coef = make_regression(n_obs, coef, scale=2.0, seed=seed)
+
+    df = pd.DataFrame(
+        np.concatenate([(rw + fs + y).reshape(-1, 1), x], axis=1), columns=['response'] + list('abcdef')
+    )
+    df['week'] = pd.date_range(start='2016-01-04', periods=n_obs, freq='7D')
+    df = df[['week', 'response'] + list('abcdef')]
+    train_df = df[df['week'] <= '2019-01-01'].reset_index(drop=True)
+    test_df = df[df['week'] > '2019-01-01'].reset_index(drop=True)
 
     return train_df, test_df, coef
 
@@ -137,25 +184,6 @@ def stan_estimator_lgt_model_input():
 
 
 @pytest.fixture
-def synthetic_data():
-    n_obs = 52 * 4
-    seed = 2020
-    rw = make_trend(n_obs, rw_loc=1, rw_scale=0.1, seed=seed)
-    fs = make_seasonality(n_obs, seasonality=52, method='fourier', order=2, seed=seed)
-    coef = [0.2, 0.1, 0.3, 0.15, -0.2, -0.1]
-    x, y, coef = make_regression(n_obs, coef, scale=2.0, seed=seed)
-
-    df = pd.DataFrame(
-        np.concatenate([(rw + fs + y).reshape(-1, 1), x], axis=1), columns=['response'] + list('abcdef')
-    )
-    df['week'] = pd.date_range(start='2016-01-04', periods=n_obs, freq='7D')
-    df = df[['week', 'response'] + list('abcdef')]
-    train_df = df[df['week'] <= '2019-01-01'].reset_index(drop=True)
-    test_df = df[df['week'] > '2019-01-01'].reset_index(drop=True)
-
-    return train_df, test_df, coef
-
-@pytest.fixture
 def ca_hourly_electricity_data():
     """This dataset contains energy consumption of the entire region in southern CA served by the SDGE
     (San Diego Gas and electric) utility in the year of 2018.
@@ -175,3 +203,4 @@ def ca_hourly_electricity_data():
     test_df = df[df['Date'] >= '2018-07-01']
 
     return train_df, test_df
+
