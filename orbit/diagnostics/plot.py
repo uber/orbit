@@ -211,22 +211,9 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
     if len(_pred_percentiles) != 2:
         raise ValueError("prediction_percentiles has to be None or a list with length=2.")
 
-    if nrows > 1:
-        fig, axes = plt.subplots(nrows=nrows, ncols=1, figsize=figsize)
-        axes = axes.flatten()
-        for ax, comp in zip(axes, plot_components):
-            y = predicted_df[comp].values
-            ax.plot(_predicted_df[date_col], y, marker=None, color=PredPal.PREDICTION_INTERVAL.value)
-            confid_cols = ["{}_{}".format(comp, _pred_percentiles[0]), "{}_{}".format(comp, _pred_percentiles[1])]
-            if set(confid_cols).issubset(predicted_df.columns):
-                ax.fill_between(_predicted_df[date_col].values,
-                                _predicted_df[confid_cols[0]],
-                                _predicted_df[confid_cols[1]],
-                                facecolor=PredPal.PREDICTION_INTERVAL.value, alpha=0.3)
-            ax.set_title(comp, fontsize=fontsize)
-    else:
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figsize)
-        comp = plot_components[0]
+    fig, axes = plt.subplots(nrows=nrows, ncols=1, figsize=figsize, squeeze=False)
+    axes = axes.flatten()
+    for ax, comp in zip(axes, plot_components):
         y = predicted_df[comp].values
         ax.plot(_predicted_df[date_col], y, marker=None, color=PredPal.PREDICTION_INTERVAL.value)
         confid_cols = ["{}_{}".format(comp, _pred_percentiles[0]), "{}_{}".format(comp, _pred_percentiles[1])]
