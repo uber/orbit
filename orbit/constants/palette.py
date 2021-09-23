@@ -4,7 +4,7 @@ import matplotlib.colors as clr
 
 class KTRPalette(Enum):
     KNOTS_SEGMENT = '#276ef1'
-    KNOTS_REGION = '#5b91f5ff'
+    KNOTS_REGION = '#05A357'
 
 
 class OrbitPalette(Enum):
@@ -35,18 +35,23 @@ class OrbitPalette(Enum):
 
 
 class PredictionPaletteClassic(Enum):
-    actual_obs = '#000000'
-    prediction_line = '#12939A'
-    prediction_interval = '#42999E'
-    prediction_range = '#42999E'
-    holdout_vertical_line = '#1f77b4'
-    test_obs = '#FF8C00'
+    # actual_obs = '#000000'
+    # prediction_line = '#12939A'
+    # prediction_interval = '#42999E'
+    # prediction_range = '#42999E'
+    # holdout_vertical_line = '#1f77b4'
+    # test_obs = '#FF8C00'
 
+    #black
     ACTUAL_OBS = '#000000'
+    #blue
     PREDICTION_LINE = '#276EF1'
     PREDICTION_INTERVAL = '#276EF1'
+    #black
     HOLDOUT_VERTICAL_LINE = '#000000'
+    #yellow
     TEST_OBS = '#FFC043'
+
 
 
 

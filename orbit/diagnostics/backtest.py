@@ -192,7 +192,7 @@ class TimeSeriesSplitter(object):
         ax.set_yticks(yticks)
         ax.set_ylabel("Split #", fontsize=large)
         ax.invert_yaxis()
-        ax.grid(which="both", color='grey', alpha=0.5)
+        # ax.grid(which="both", color='grey', alpha=0.5)
         ax.tick_params(axis="x", which="major", labelsize=middle)
         ax.set_title("Train/Test Split Scheme", fontsize=large)
         return ax

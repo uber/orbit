@@ -1175,15 +1175,17 @@ class KTRModel(ModelTemplate):
             row_idx = idx // ncol
             col_idx = idx % ncol
             coef = coef_df[col]
-            axes[row_idx, col_idx].plot(coef, alpha=.8, label='coefficients')
+            axes[row_idx, col_idx].plot(coef, alpha=.8, label='coefficients', color=OrbitPalette.BLUE.value)
             if coef_df_lower is not None and coef_df_upper is not None:
                 coef_lower = coef_df_lower[col]
                 coef_upper = coef_df_upper[col]
-                axes[row_idx, col_idx].fill_between(np.arange(0, coef_df.shape[0]), coef_lower, coef_upper, alpha=.3)
+                axes[row_idx, col_idx].fill_between(np.arange(0, coef_df.shape[0]), coef_lower, coef_upper,
+                                                    alpha=.3, color=OrbitPalette.BLUE.value)
             if knot_df is not None:
                 step = knot_df['step']
                 knots = knot_df[col].values
-                axes[row_idx, col_idx].scatter(x=step, y=knots, marker='^', s=markersize, color='green', alpha=0.5)
+                axes[row_idx, col_idx].scatter(x=step, y=knots, marker='^', s=markersize,
+                                               color=OrbitPalette.GREEN.value, alpha=0.5)
             if ylim is not None:
                 axes[row_idx, col_idx].set_ylim(ylim)
             axes[row_idx, col_idx].set_title('{}'.format(col))
