@@ -357,15 +357,15 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
             cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level) / 2), \
                                  np.percentile(samples, 100 * (1 + ci_level) / 2)
 
-            sns.histplot(samples, bins=n_bins, kde_kws={'shade': True}, ax=axes[i])
+            sns.histplot(samples, bins=n_bins, kde_kws={'shade': True}, ax=axes[i], color=OrbitPalette.BLUE.value)
             # sns.kdeplot(samples, shade=True, ax=axes[i])
             axes[i].set_xlabel(param)
             axes[i].set_ylabel('density')
             # draw vertical lines
-            axes[i].axvline(mean, color=OrbitPalette['GREEN'].value, lw=4, alpha=.5, label='mean')
-            axes[i].axvline(median, color=OrbitPalette['ORANGE'].value, lw=4, alpha=.5, label='median')
-            axes[i].axvline(cred_min, linestyle='--', color='k', alpha=.5, label='95% CI')
-            axes[i].axvline(cred_max, linestyle='--', color='k', alpha=.5)
+            axes[i].axvline(mean, color=OrbitPalette.GREEN.value, lw=4, alpha=.5, label='mean')
+            axes[i].axvline(median, color=OrbitPalette.ORANGE.value, lw=4, alpha=.5, label='median')
+            axes[i].axvline(cred_min, linestyle='--', color=OrbitPalette.BLACK.value, alpha=.5, label='95% CI')
+            axes[i].axvline(cred_max, linestyle='--', color=OrbitPalette.BLACK.value, alpha=.5)
             # axes[i].legend()
 
         handles, labels = axes[0].get_legend_handles_labels()
@@ -544,19 +544,20 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
         row_idx = idx // ncol
         col_idx = idx % ncol
         tmp = bt_pred_df[bt_pred_df['split_key'] == split_key].copy()
-        axes[row_idx, col_idx].plot(tmp['date'], tmp['prediction'], linewidth=4,
-                                    color=PredPal.prediction_line, alpha=.8)
+        axes[row_idx, col_idx].plot(tmp['date'], tmp['prediction'], #linewidth=2,
+                                    color=PredPal.PREDICTION_LINE.value)
         axes[row_idx, col_idx].scatter(tmp['date'], tmp['actuals'], label='actual',
-                                       color=PredPal.ACTUAL_OBS, alpha=.6)
-        axes[row_idx, col_idx].grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.4)
+                                       color=PredPal.ACTUAL_OBS.value, alpha=.6, s=8)
+        # axes[row_idx, col_idx].grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.4)
 
         axes[row_idx, col_idx].set_title(label='split {}; {} {:.3f}'. \
                                          format(split_key, metrics.__name__, metric_vals[split_key]))
         if include_vline:
             cutoff_date = tmp[~tmp['training_data']]['date'].min()
             axes[row_idx, col_idx].axvline(x=cutoff_date, linestyle='--',
-                                           color=PredPal.HOLDOUT_VERTICAL_LINE,
-                                           linewidth=4, alpha=.8)
+                                           color=PredPal.HOLDOUT_VERTICAL_LINE.value,
+                                           # linewidth=4,
+                                           alpha=.8)
 
     plt.suptitle(title, fontsize=fontsize)
     fig.tight_layout()
