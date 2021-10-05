@@ -60,8 +60,7 @@ def ts_heatmap(df, date_col, value_col, fig_width=10, fig_height=6, normalizatio
 
 @orbit_style_decorator
 def correlation_heatmap(df, var_list, fig_width=10, fig_height=6,
-                        path=None, fmt='.1g', palette=palette.OrbitPalette.BLUE_GRADIENT.value,
-                        use_orbit_style=True):
+                        path=None, fmt='.1g', palette=palette.OrbitPalette.BLUE_GRADIENT.value):
     """This function takes a list of variables and return a heatmap of pairwise correlation. The columns with
     all zero values will not be plotted.
     Parameters
@@ -78,8 +77,6 @@ def correlation_heatmap(df, var_list, fig_width=10, fig_height=6,
         path to save the figure
     palette : str, optional
         color palette
-    use_orbit_style: boolean, optional
-        specify whether to use orbit style for plotting
 
     Returns
     -------
@@ -139,8 +136,7 @@ def dual_axis_ts_plot(df, var1, var2, date_col, fig_width=25, fig_height=6, path
         color for var1
     color2: str
         color for var2
-    use_orbit_style: boolean
-        specify whether to use orbit style for plotting
+
     Returns
     -------
     one time series plot with dual y axis
