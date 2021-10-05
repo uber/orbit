@@ -35,7 +35,7 @@ data {
   vector<lower=0>[NUM_OF_PR] PR_SIGMA_PRIOR;
   int<lower=0> NUM_OF_NR; // number of negative regressors
   matrix[NUM_OF_OBS, NUM_OF_NR] NR_MAT; // negative coef regressors, less volatile range
-  vector<lower=0>[NUM_OF_NR] NR_BETA_PRIOR;
+  vector<upper=0>[NUM_OF_NR] NR_BETA_PRIOR;
   vector<lower=0>[NUM_OF_NR] NR_SIGMA_PRIOR;
 
   // Regression Hyper Params
