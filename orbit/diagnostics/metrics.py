@@ -24,6 +24,14 @@ def wmape(actual, predicted):
     return np.sum(weights * np.abs((actual - predicted) / actual))
 
 
+def wsmape(actual, predicted):
+    filtered = np.abs(actual) > EPS
+    actual = actual[filtered]
+    predicted = predicted[filtered]
+    weights = np.abs(actual) / np.sum(np.abs(actual))
+    return 2 * np.sum(weights * np.abs(actual - predicted) / (np.abs(actual) + np.abs(predicted)))
+
+
 def mae(actual, predicted):
     filtered = ~np.isnan(actual)
     actual = actual[filtered]
