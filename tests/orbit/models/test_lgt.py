@@ -30,7 +30,7 @@ def test_base_lgt_init(estimator):
 
 @pytest.mark.parametrize("seasonality", [None, 52])
 @pytest.mark.parametrize("store_prediction_array", [True, False])
-@pytest.mark.parametrize("n_bootstrap_draws", [None, 100])
+@pytest.mark.parametrize("n_bootstrap_draws", [None, 50])
 @pytest.mark.parametrize("estimator", ['stan-mcmc', 'pyro-svi'])
 def test_lgt_full_fit(make_weekly_data, seasonality, estimator,
                       n_bootstrap_draws, store_prediction_array):
@@ -46,7 +46,7 @@ def test_lgt_full_fit(make_weekly_data, seasonality, estimator,
     }
 
     if estimator == 'stan-mcmc':
-        args.update({'num_warmup': 50, 'num_sample': 50})
+        args.update({'num_warmup': 50, 'num_sample': 100})
     elif estimator == 'pyro-svi':
         args.update({'num_steps': 10})
 
