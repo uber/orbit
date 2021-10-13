@@ -114,7 +114,7 @@ class KTRModel(ModelTemplate):
     regressor_col : array-like strings
         regressor columns
     regressor_sign : list
-        list of signs with '=' for regular regressor and '+' for positive regressor
+        list of signs with '=' for regular regressor, '+' for positive regressor, and '-' for negative regressor.
     regressor_init_knot_loc : list
         list of regressor knot pooling mean priors, default to be 0's
     regressor_init_knot_scale : list
