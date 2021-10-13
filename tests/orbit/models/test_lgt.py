@@ -73,8 +73,12 @@ def test_lgt_full_fit(make_weekly_data, seasonality, estimator,
     _ = lgt.get_prediction_meta()
     _ = lgt.get_training_metrics()
 
-    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
-    expected_shape = (51, len(expected_columns))
+    if not n_bootstrap_draws and point_method:
+        expected_columns = ['week', 'prediction']
+        expected_shape = (51, len(expected_columns))
+    else:
+        expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
+        expected_shape = (51, len(expected_columns))
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
