@@ -42,14 +42,19 @@ class DataInputMapper(Enum):
     _KERNEL_COEFFICIENTS = 'K_COEF'
     _NUM_OF_REGULAR_REGRESSORS = 'N_RR'
     _NUM_OF_POSITIVE_REGRESSORS = 'N_PR'
+    _NUM_OF_NEGATIVE_REGRESSORS = 'N_NR'
     _REGULAR_REGRESSOR_MATRIX = 'RR'
     _POSITIVE_REGRESSOR_MATRIX = 'PR'
+    _NEGATIVE_REGRESSOR_MATRIX = 'NR'
     _REGULAR_REGRESSOR_INIT_KNOT_LOC = 'RR_INIT_KNOT_LOC'
     _REGULAR_REGRESSOR_INIT_KNOT_SCALE = 'RR_INIT_KNOT_SCALE'
     _REGULAR_REGRESSOR_KNOT_SCALE = 'RR_KNOT_SCALE'
     _POSITIVE_REGRESSOR_INIT_KNOT_LOC = 'PR_INIT_KNOT_LOC'
     _POSITIVE_REGRESSOR_INIT_KNOT_SCALE = 'PR_INIT_KNOT_SCALE'
     _POSITIVE_REGRESSOR_KNOT_SCALE = 'PR_KNOT_SCALE'
+    _NEGATIVE_REGRESSOR_INIT_KNOT_LOC = 'NR_INIT_KNOT_LOC'
+    _NEGATIVE_REGRESSOR_INIT_KNOT_SCALE = 'NR_INIT_KNOT_SCALE'
+    _NEGATIVE_REGRESSOR_KNOT_SCALE = 'NR_KNOT_SCALE'
     # ----------  Prior Specification  ---------- #
     _COEF_PRIOR_LIST = 'COEF_PRIOR_LIST'
     _LEVEL_KNOTS = 'LEV_KNOT_LOC'
@@ -238,6 +243,13 @@ class KTRModel(ModelTemplate):
         self._positive_regressor_init_knot_scale = list()
         self._positive_regressor_knot_scale_1d = list()
         self._positive_regressor_knot_scale = list()
+        # negative regressors
+        self._num_of_negative_regressors = 0
+        self._negative_regressor_col = list()
+        self._negative_regressor_init_knot_loc = list()
+        self._negative_regressor_init_knot_scale = list()
+        self._negative_regressor_knot_scale_1d = list()
+        self._negative_regressor_knot_scale = list()
         # regular regressors
         self._num_of_regular_regressors = 0
         self._regular_regressor_col = list()
@@ -258,6 +270,7 @@ class KTRModel(ModelTemplate):
         # regression data
         self._knots_tp_coefficients = None
         self._positive_regressor_matrix = None
+        self._negative_regressor_matrix = None
         self._regular_regressor_matrix = None
 
         # other configurations
@@ -369,6 +382,14 @@ class KTRModel(ModelTemplate):
                 self._positive_regressor_init_knot_scale.append(self._regressor_init_knot_scale[index])
                 # used for 'pr_knot' sampling in pyro
                 self._positive_regressor_knot_scale_1d.append(self._regressor_knot_scale[index])
+            elif reg_sign == '-':
+                self._num_of_negative_regressors += 1
+                self._negative_regressor_col.append(self.regressor_col[index])
+                # used for 'nr_knot_loc' sampling in pyro
+                self._negative_regressor_init_knot_loc.append(self._regressor_init_knot_loc[index])
+                self._negative_regressor_init_knot_scale.append(self._regressor_init_knot_scale[index])
+                # used for 'nr_knot' sampling in pyro
+                self._negative_regressor_knot_scale_1d.append(self._regressor_knot_scale[index])
             else:
                 self._num_of_regular_regressors += 1
                 self._regular_regressor_col.append(self.regressor_col[index])
@@ -377,12 +398,15 @@ class KTRModel(ModelTemplate):
                 self._regular_regressor_init_knot_scale.append(self._regressor_init_knot_scale[index])
                 # used for 'rr_knot' sampling in pyro
                 self._regular_regressor_knot_scale_1d.append(self._regressor_knot_scale[index])
-        # regular first, then positive
-        self._regressor_col = self._regular_regressor_col + self._positive_regressor_col
+        # regular first, then positive, then negative
+        self._regressor_col = self._regular_regressor_col + self._positive_regressor_col + self._negative_regressor_col
         # numpy conversion
         self._positive_regressor_init_knot_loc = np.array(self._positive_regressor_init_knot_loc)
         self._positive_regressor_init_knot_scale = np.array(self._positive_regressor_init_knot_scale)
         self._positive_regressor_knot_scale_1d = np.array(self._positive_regressor_knot_scale_1d)
+        self._negative_regressor_init_knot_loc = np.array(self._negative_regressor_init_knot_loc)
+        self._negative_regressor_init_knot_scale = np.array(self._negative_regressor_init_knot_scale)
+        self._negative_regressor_knot_scale_1d = np.array(self._negative_regressor_knot_scale_1d)
         self._regular_regressor_init_knot_loc = np.array(self._regular_regressor_init_knot_loc)
         self._regular_regressor_init_knot_scale = np.array(self._regular_regressor_init_knot_scale)
         self._regular_regressor_knot_scale_1d = np.array(self._regular_regressor_knot_scale_1d)
@@ -468,12 +492,17 @@ class KTRModel(ModelTemplate):
 
         # init of regression matrix depends on length of response vector
         self._positive_regressor_matrix = np.zeros((num_of_observations, 0), dtype=np.double)
+        self._negative_regressor_matrix = np.zeros((num_of_observations, 0), dtype=np.double)
         self._regular_regressor_matrix = np.zeros((num_of_observations, 0), dtype=np.double)
 
         # update regression matrices
         if self._num_of_positive_regressors > 0:
             self._positive_regressor_matrix = df.filter(
                 items=self._positive_regressor_col, ).values
+
+        if self._num_of_negative_regressors > 0:
+            self._negative_regressor_matrix = df.filter(
+                items=self._negative_regressor_col, ).values
 
         if self._num_of_regular_regressors > 0:
             self._regular_regressor_matrix = df.filter(
@@ -546,6 +575,43 @@ class KTRModel(ModelTemplate):
             # TODO: we change the type here, maybe we should change it earlier?
             self._positive_regressor_init_knot_scale = np.array(self._positive_regressor_init_knot_scale)
             self._positive_regressor_init_knot_scale[self._positive_regressor_init_knot_scale < 1e-4] = 1e-4
+
+        if self._num_of_negative_regressors > 0:
+            # calculate average local absolute volume for each segment
+            local_val = np.ones((self._num_of_negative_regressors, self._num_knots_coefficients))
+            if self.flat_multiplier:
+                multiplier = np.ones(local_val.shape)
+            else:
+                multiplier = np.ones(local_val.shape)
+                # store local value for the range on the left side since last knot
+                for idx in range(len(self._regression_knots_idx)):
+                    if idx < len(self._regression_knots_idx) - 1:
+                        str_idx = self._regression_knots_idx[idx]
+                        end_idx = self._regression_knots_idx[idx + 1]
+                    else:
+                        str_idx = self._regression_knots_idx[idx]
+                        end_idx = num_of_observations
+
+                    local_val[:, idx] = np.mean(np.fabs(self._negative_regressor_matrix[str_idx:end_idx]), axis=0)
+
+                global_mean = np.expand_dims(np.mean(np.fabs(self._negative_regressor_matrix), axis=0), -1)
+                test_flag = local_val < 0.01 * global_mean
+
+                # adjust knot scale with the multiplier derive by the average value and shift by 0.001 to avoid zeros in
+                # scale parameters
+                multiplier[test_flag] = DEFAULT_LOWER_BOUND_SCALE_MULTIPLIER
+                # replace entire row of nan (when 0.1 * global_mean is equal to global_min) with upper bound
+                multiplier[np.isnan(multiplier).all(axis=-1)] = 1.0
+
+            # geometric drift i.e. 0.1 = 10% up-down in 1 s.d. prob.
+            self._negative_regressor_knot_scale = (
+                    multiplier * np.expand_dims(self._negative_regressor_knot_scale_1d, -1)
+            )
+            # keep a lower bound of scale parameters
+            self._negative_regressor_knot_scale[self._negative_regressor_knot_scale < 1e-4] = 1e-4
+            # TODO: we change the type here, maybe we should change it earlier?
+            self._negative_regressor_init_knot_scale = np.array(self._negative_regressor_init_knot_scale)
+            self._negative_regressor_init_knot_scale[self._negative_regressor_init_knot_scale < 1e-4] = 1e-4
 
         if self._num_of_regular_regressors > 0:
             # do the same for regular regressor
@@ -963,7 +1029,7 @@ class KTRModel(ModelTemplate):
         training_end = training_meta['training_end']
         train_date_array = training_meta['date_array']
 
-        if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
+        if self._num_of_regular_regressors + self._num_of_positive_regressors + self._num_of_negative_regressors == 0:
             return None
 
         if date_array is None:
@@ -1099,7 +1165,7 @@ class KTRModel(ModelTemplate):
         # init dataframe
         knots_df = pd.DataFrame()
         # end if no regressors
-        if self._num_of_regular_regressors + self._num_of_positive_regressors == 0:
+        if self._num_of_regular_regressors + self._num_of_positive_regressors + self._num_of_negative_regressors == 0:
             return knots_df
 
         knots_df[date_col] = self._regression_knot_dates

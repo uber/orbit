@@ -53,9 +53,11 @@ class Model:
         seas_term = self.seas_term
 
         pr = self.pr
+        nr = self.nr
         rr = self.rr
         n_pr = self.n_pr
         n_rr = self.n_rr
+        n_nr = self.n_nr
 
         k_lev = self.k_lev
         k_coef = self.k_coef
@@ -77,15 +79,20 @@ class Model:
         pr_init_knot_loc = self.pr_init_knot_loc
         pr_init_knot_scale = self.pr_init_knot_scale
         pr_knot_scale = self.pr_knot_scale
+        nr_init_knot_loc = self.nr_init_knot_loc
+        nr_init_knot_scale = self.nr_init_knot_scale
+        nr_knot_scale = self.nr_knot_scale
 
-        # transformation of data
-        regressors = torch.zeros(n_obs)
-        if n_pr > 0 and n_rr > 0:
-            regressors = torch.cat([rr, pr], dim=-1)
-        elif n_pr > 0:
-            regressors = pr
-        elif n_rr > 0:
-            regressors = rr
+        # prepare regressor matrix
+        if n_pr == 0:
+            pr = torch.zeros(0)
+        if n_nr == 0:
+            nr = torch.zeros(0)
+        if n_rr == 0:
+            rr = torch.zeros(0)
+        regressors = torch.cat([rr, pr, nr], dim=-1)
+        if n_pr == 0 and n_nr == 0 and n_rr == 0:
+            regressors = torch.zeros(n_obs)
 
         response_tran = response - meany - seas_term
 
@@ -135,23 +142,46 @@ class Model:
             )
             pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
 
-        # concatenating all latent variables
-        coef_init_knot = torch.zeros(n_rr + n_pr)
-        coef_knot = torch.zeros((n_rr + n_pr, n_knots_coef))
+        # negative regressor sampling
+        if n_nr > 0:
+            # pooling latent variables
+            nr_init_knot = -1.0 * pyro.sample(
+                "nr_knot_loc",
+                dist.FoldedDistribution(
+                    dist.Normal(nr_init_knot_loc,
+                                nr_init_knot_scale)
+                ).to_event(1)
+            )
 
-        coef = torch.zeros(n_obs)
-        if n_pr > 0 and n_rr > 0:
-            coef_knot = torch.cat([rr_knot, pr_knot], dim=-2)
-            coef_init_knot = torch.cat([rr_init_knot, pr_init_knot], dim=-1)
-            coef = torch.cat([rr_coef, pr_coef], dim=-1)
-        elif n_pr > 0:
-            coef_knot = pr_knot
-            coef_init_knot = pr_init_knot
-            coef = pr_coef
-        elif n_rr > 0:
-            coef_knot = rr_knot
-            coef_init_knot = rr_init_knot
-            coef = rr_coef
+            nr_knot = -1.0 * pyro.sample(
+                "nr_knot",
+                dist.FoldedDistribution(
+                    dist.Normal(
+                        nr_init_knot.unsqueeze(-1) * torch.ones(n_nr, n_knots_coef),
+                        nr_knot_scale)
+                ).to_event(2)
+            )
+            nr_coef = (nr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
+
+        if n_pr == 0:
+            pr_init_knot = torch.zeros(0)
+            pr_knot = torch.zeros(0, n_knots_coef)
+            pr_coef = torch.zeros(0)
+        if n_nr == 0:
+            nr_init_knot = torch.zeros(0)
+            nr_knot = torch.zeros(0, n_knots_coef)
+            nr_coef = torch.zeros(0)
+        if n_rr == 0:
+            rr_init_knot = torch.zeros(0)
+            rr_knot = torch.zeros(0, n_knots_coef)
+            rr_coef = torch.zeros(0)
+        coef_init_knot = torch.cat([rr_init_knot, pr_init_knot, nr_init_knot], dim=-1)
+        coef_knot = torch.cat([rr_knot, pr_knot, nr_knot], dim=-2)
+        coef = torch.cat([rr_coef, pr_coef, nr_coef], dim=-1)
+        if n_pr == 0 and n_nr == 0 and n_rr == 0:
+            # coef_init_knot = torch.zeros(n_rr + n_pr + n_nr)
+            # coef_knot = torch.zeros((n_rr + n_pr + n_nr, n_knots_coef))
+            coef = torch.zeros(n_obs)
 
         # coefficients likelihood/priors
         coef_prior_list = self.coef_prior_list
