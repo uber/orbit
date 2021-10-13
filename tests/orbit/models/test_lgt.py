@@ -31,9 +31,10 @@ def test_base_lgt_init(estimator):
 @pytest.mark.parametrize("seasonality", [None, 52])
 @pytest.mark.parametrize("store_prediction_array", [True, False])
 @pytest.mark.parametrize("n_bootstrap_draws", [None, 50])
+@pytest.mark.parametrize("point_method", [None, 'median'])
 @pytest.mark.parametrize("estimator", ['stan-mcmc', 'pyro-svi'])
 def test_lgt_full_fit(make_weekly_data, seasonality, estimator,
-                      n_bootstrap_draws, store_prediction_array):
+                      n_bootstrap_draws, store_prediction_array, point_method):
     train_df, test_df, coef = make_weekly_data
     args = {
         'response_col': 'response',
@@ -56,7 +57,7 @@ def test_lgt_full_fit(make_weekly_data, seasonality, estimator,
         expected_num_parameters += 2
 
     lgt = LGT(**args)
-    lgt.fit(train_df)
+    lgt.fit(train_df, point_method=point_method)
     init_call = lgt._model.get_init_values()
     if seasonality:
         assert isinstance(init_call, LGTInitializer)
