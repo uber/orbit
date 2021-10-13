@@ -165,15 +165,15 @@ class Model:
 
         if n_pr == 0:
             pr_init_knot = torch.zeros(0)
-            pr_knot = torch.zeros(0, n_knots_coef)
+            pr_knot = torch.zeros(0)
             pr_coef = torch.zeros(0)
         if n_nr == 0:
             nr_init_knot = torch.zeros(0)
-            nr_knot = torch.zeros(0, n_knots_coef)
+            nr_knot = torch.zeros(0)
             nr_coef = torch.zeros(0)
         if n_rr == 0:
             rr_init_knot = torch.zeros(0)
-            rr_knot = torch.zeros(0, n_knots_coef)
+            rr_knot = torch.zeros(0)
             rr_coef = torch.zeros(0)
         coef_init_knot = torch.cat([rr_init_knot, pr_init_knot, nr_init_knot], dim=-1)
         coef_knot = torch.cat([rr_knot, pr_knot, nr_knot], dim=-2)
