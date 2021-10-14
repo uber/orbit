@@ -83,10 +83,10 @@ class Model:
                 # case when it is not lasso
                 if self.reg_penalty_type != 1:
                     # weak prior for betas
-                    nr_beta = pyro.sample("nr_beta", dist.FoldedDistribution(
+                    nr_beta = -1.0 * pyro.sample("nr_beta", dist.FoldedDistribution(
                         dist.Normal(self.nr_beta_prior, nr_sigma)))
                 else:
-                    nr_beta = pyro.sample("nr_beta",
+                    nr_beta = -1.0 * pyro.sample("nr_beta",
                                           dist.FoldedDistribution(
                                               dist.Laplace(self.nr_beta_prior, self.lasso_scale)))
             nr = nr_beta @ self.nr_mat.transpose(-1, -2)
