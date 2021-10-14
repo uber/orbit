@@ -29,20 +29,25 @@ def test_base_lgt_init(estimator):
 
 
 @pytest.mark.parametrize("seasonality", [None, 52])
+@pytest.mark.parametrize("store_prediction_array", [True, False])
+@pytest.mark.parametrize("n_bootstrap_draws", [None, 50])
+@pytest.mark.parametrize("point_method", [None, 'median'])
 @pytest.mark.parametrize("estimator", ['stan-mcmc', 'pyro-svi'])
-def test_lgt_full_fit(make_weekly_data, seasonality, estimator):
+def test_lgt_full_fit(make_weekly_data, seasonality, estimator,
+                      n_bootstrap_draws, store_prediction_array, point_method):
     train_df, test_df, coef = make_weekly_data
     args = {
         'response_col': 'response',
         'date_col': 'week',
         'prediction_percentiles': [5, 95],
         'seasonality': seasonality,
+        'n_bootstrap_draws': n_bootstrap_draws,
         'verbose': False,
         'estimator': estimator,
     }
 
     if estimator == 'stan-mcmc':
-        args.update({'num_warmup': 50, 'num_sample': 50})
+        args.update({'num_warmup': 50, 'num_sample': 100})
     elif estimator == 'pyro-svi':
         args.update({'num_steps': 10})
 
@@ -52,7 +57,7 @@ def test_lgt_full_fit(make_weekly_data, seasonality, estimator):
         expected_num_parameters += 2
 
     lgt = LGT(**args)
-    lgt.fit(train_df)
+    lgt.fit(train_df, point_method=point_method)
     init_call = lgt._model.get_init_values()
     if seasonality:
         assert isinstance(init_call, LGTInitializer)
@@ -62,10 +67,18 @@ def test_lgt_full_fit(make_weekly_data, seasonality, estimator):
     else:
         assert not init_call
 
-    predict_df = lgt.predict(test_df)
+    predict_df = lgt.predict(test_df,
+                             store_prediction_array=store_prediction_array)
 
-    expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
-    expected_shape = (51, len(expected_columns))
+    _ = lgt.get_prediction_meta()
+    _ = lgt.get_training_metrics()
+
+    if not n_bootstrap_draws and point_method:
+        expected_columns = ['week', 'prediction']
+        expected_shape = (51, len(expected_columns))
+    else:
+        expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
+        expected_shape = (51, len(expected_columns))
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -493,7 +506,7 @@ def test_lgt_fixed_sm_input(make_weekly_data, level_sm_input, seasonality_sm_inp
     )
 
     lgt.fit(train_df)
-    predict_df = lgt.predict(test_df, n_bootstrap_draw=100)
+    predict_df = lgt.predict(test_df)
 
     regression_out = lgt.get_regression_coefs()
     num_regressors = regression_out.shape[0]
