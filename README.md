@@ -103,7 +103,7 @@ Forecasting / Nowcasting with Regression in DLT (based on v1.0.13):
 
 Backtest on M3 Data:
 
-[![Open All Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/edwinnglabs/ts_playground/blob/main/orbit_m3_backtest.ipynb)
+[![Open All Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/edwinnglabs/ts-playground/blob/master/orbit_m3_backtest.ipynb)
 
 More examples can be found under [tutorials](https://github.com/uber/orbit/tree/dev/docs/tutorials)
 and [examples](https://github.com/uber/orbit/tree/dev/examples).
