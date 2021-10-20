@@ -325,13 +325,15 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     if kind not in ['density', 'trace', 'pair']:
         raise Exception("kind must be one of 'density', 'trace', or 'pair'.")
 
-    posterior_samples = deepcopy(mod._posterior_samples)
+    posterior_samples = mod.get_posterior_samples()
 
-    if len(mod._model._regressor_col) > 0:
+    # TODO: put a unit test to test plotting with and without regressor
+    if hasattr(mod._model, '_regressor_col') and len(mod._model._regressor_col) > 0:
         for i, regressor in enumerate(mod._model._regressor_col):
             posterior_samples[regressor] = posterior_samples['beta'][:, i]
-
-    params_plt = deepcopy(mod._model._regressor_col)
+        params_plt = deepcopy(mod._model._regressor_col)
+    else:
+        params_plt = list()
 
     if params is not None:
         for param in params:
@@ -340,6 +342,9 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     else:
         params = list()
     params_plt += params
+
+    if len(params_plt) == 0:
+        raise Exception("Empty list of valid parameters to plot.")
 
     if not figsize:
         figsize = (8, 2 * len(params_plt))
@@ -436,9 +441,10 @@ def get_arviz_plot_dict(mod, params=None):
         raise Exception("This utility works for model object with MCMC or VI inference only.")
 
     posterior_samples = mod.get_posterior_samples()
-    if len(mod._model._regressor_col) > 0:
+    if hasattr(mod._model, '_regressor_col') and len(mod._model._regressor_col) > 0:
         for i, regressor in enumerate(mod._model._regressor_col):
             posterior_samples[regressor] = posterior_samples['beta'][:, i]
+
     params_plt = deepcopy(mod._model._regressor_col)
 
     if params is not None:
@@ -544,7 +550,7 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
         row_idx = idx // ncol
         col_idx = idx % ncol
         tmp = bt_pred_df[bt_pred_df['split_key'] == split_key].copy()
-        axes[row_idx, col_idx].plot(tmp['date'], tmp['prediction'], #linewidth=2,
+        axes[row_idx, col_idx].plot(tmp['date'], tmp['prediction'],  # linewidth=2,
                                     color=PredPal.PREDICTION_LINE.value)
         axes[row_idx, col_idx].scatter(tmp['date'], tmp['actuals'], label='actual',
                                        color=PredPal.ACTUAL_OBS.value, alpha=.6, s=8)
