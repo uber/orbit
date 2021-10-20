@@ -289,7 +289,7 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
 
 
 @orbit_style_decorator
-def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
+def plot_posterior_params(mod, kind='hist', n_bins=20, ci_level=.95,
                           pair_type='scatter', figsize=None, path=None, fontsize=None,
                           params=None, is_visible=True):
     """ Data Viz for posterior samples
@@ -297,7 +297,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     Parameters
     ----------
     mod : orbit model object
-    kind : str, {'density', 'trace', 'pair'}
+    kind : str, {'hist', 'trace', 'pair'}
         which kind of plot to be made.
     n_bins : int; default 20
         number of bin, used in the histogram plotting
@@ -322,8 +322,8 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     """
     if 'orbit' not in str(mod.__class__):
         raise Exception("This plotting utility works for orbit model object only.")
-    if kind not in ['density', 'trace', 'pair']:
-        raise Exception("kind must be one of 'density', 'trace', or 'pair'.")
+    if kind not in ['hist', 'trace', 'pair']:
+        raise Exception("kind must be one of 'hist', 'trace', or 'pair'.")
 
     posterior_samples = mod.get_posterior_samples()
 
@@ -352,7 +352,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
     if not fontsize:
         fontsize = 10
 
-    def _density_plot(posterior_samples, params_plt, n_bins=20, ci_level=.95, figsize=None):
+    def _histogram(posterior_samples, params_plt, n_bins=20, ci_level=.95, figsize=None):
 
         fig, axes = plt.subplots(len(params_plt), 1, squeeze=True, figsize=figsize)
         for i, param in enumerate(params_plt):
@@ -365,7 +365,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
             sns.histplot(samples, bins=n_bins, kde_kws={'shade': True}, ax=axes[i], color=OrbitPalette.BLUE.value)
             # sns.kdeplot(samples, shade=True, ax=axes[i])
             axes[i].set_xlabel(param)
-            axes[i].set_ylabel('density')
+            axes[i].set_ylabel('frequency')
             # draw vertical lines
             axes[i].axvline(mean, color=OrbitPalette.GREEN.value, lw=4, alpha=.5, label='mean')
             axes[i].axvline(median, color=OrbitPalette.ORANGE.value, lw=4, alpha=.5, label='median')
@@ -375,7 +375,7 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
 
         handles, labels = axes[0].get_legend_handles_labels()
         fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.15, 0.9))
-        plt.suptitle('Histogram and Density of Posterior Samples', fontsize=fontsize)
+        plt.suptitle('Histogram of Posterior Samples', fontsize=fontsize)
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
         return axes
@@ -409,8 +409,8 @@ def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
 
         return fig
 
-    if kind == 'density':
-        axes = _density_plot(posterior_samples, params_plt,
+    if kind == 'hist':
+        axes = _histogram(posterior_samples, params_plt,
                              n_bins=n_bins, ci_level=ci_level, figsize=figsize)
     elif kind == 'trace':
         axes = _trace_plot(posterior_samples, params_plt, ci_level=ci_level, figsize=figsize)
@@ -444,8 +444,9 @@ def get_arviz_plot_dict(mod, params=None):
     if hasattr(mod._model, '_regressor_col') and len(mod._model._regressor_col) > 0:
         for i, regressor in enumerate(mod._model._regressor_col):
             posterior_samples[regressor] = posterior_samples['beta'][:, i]
-
-    params_plt = deepcopy(mod._model._regressor_col)
+        params_plt = deepcopy(mod._model._regressor_col)
+    else:
+        params_plt = list()
 
     if params is not None:
         for param in params:
