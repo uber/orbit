@@ -105,36 +105,36 @@ def test_plot_predicted_data(iclaims_training_data):
     # test plotting
     _ = plot_bt_predictions(predicted_df, metrics=smape, ncol=2, include_vline=True)
 
-
-def test_plot_posterior_params(iclaims_training_data):
-    df = iclaims_training_data
-    date_col = 'week'
-    response_col = 'claims'
-    regressor_col = ['trend.unemploy', 'trend.filling', 'trend.job']
-
-    df[response_col] = np.log(df[response_col])
-
-    # without regressor
-    ets = ETS(
-        response_col=response_col,
-        date_col=date_col,
-        seasonality=52,
-        seed=8888,
-    )
-    ets.fit(df=iclaims_training_data)
-    # check get_posterior_samples function
-    posterior_samples = ets.get_posterior_samples()
-    _ = plot_posterior_params(ets, kind='pair', params=['lev_sm', 'sea_sm', 'obs_sigma'], n_bins=10)
-
-    # with regressor
-    dlt = DLT(
-        response_col=response_col,
-        date_col=date_col,
-        regressor_col=regressor_col,
-        seasonality=52,
-        seed=8888,
-    )
-    dlt.fit(df=iclaims_training_data)
-    # check get_posterior_samples function
-    posterior_samples = ets.get_posterior_samples()
-    _ = plot_posterior_params(ets, kind='pair', params=['lev_sm', 'sea_sm', 'obs_sigma'], n_bins=10)
+# TODO: not using in-house plotting anymore can change this to testing arviz integration
+# def test_plot_posterior_params(iclaims_training_data):
+#     df = iclaims_training_data
+#     date_col = 'week'
+#     response_col = 'claims'
+#     regressor_col = ['trend.unemploy', 'trend.filling', 'trend.job']
+#
+#     df[response_col] = np.log(df[response_col])
+#
+#     # without regressor
+#     ets = ETS(
+#         response_col=response_col,
+#         date_col=date_col,
+#         seasonality=52,
+#         seed=8888,
+#     )
+#     ets.fit(df=iclaims_training_data)
+#     # check get_posterior_samples function
+#     posterior_samples = ets.get_posterior_samples()
+#     _ = plot_posterior_params(ets, kind='pair', params=['lev_sm', 'sea_sm', 'obs_sigma'], n_bins=10)
+#
+#     # with regressor
+#     dlt = DLT(
+#         response_col=response_col,
+#         date_col=date_col,
+#         regressor_col=regressor_col,
+#         seasonality=52,
+#         seed=8888,
+#     )
+#     dlt.fit(df=iclaims_training_data)
+#     # check get_posterior_samples function
+#     posterior_samples = ets.get_posterior_samples()
+#     _ = plot_posterior_params(ets, kind='pair', params=['lev_sm', 'sea_sm', 'obs_sigma'], n_bins=10)
