@@ -9,8 +9,8 @@ from orbit.diagnostics.plot import (
     plot_predicted_data,
     plot_predicted_components,
     plot_bt_predictions,
-    plot_posterior_params,
-    plot_param_diagnostics
+    # plot_posterior_params,
+    # plot_param_diagnostics
 )
 
 
@@ -53,35 +53,34 @@ def test_plot_predicted_data(iclaims_training_data, plot_components):
                                   plot_components=plot_components)
 
 
-@pytest.mark.parametrize(
-    "plot_kind", ['density', 'trace', 'pair']
-)
-@pytest.mark.parametrize(
-    "plot_which", ['density', 'trace', 'pair', 'forest', 'posterior', 'autocorr']
-)
-def test_plot_predicted_data(iclaims_training_data, plot_kind, plot_which):
-    df = iclaims_training_data
-    df['claims'] = np.log(df['claims'])
-
-    regressor_col = ['trend.unemploy', 'trend.filling', 'trend.job']
-    test_size = 52
-    train_df = df[:-test_size]
-    test_df = df[-test_size:]
-
-    dlt = DLT(response_col='claims',
-              date_col='week',
-              regressor_col=regressor_col,
-              seasonality=52,
-              num_warmup=100,
-              num_sample=100,
-              chains=4)
-    dlt.fit(train_df)
-    predicted_df = dlt.predict(df=test_df, decompose=True)
+# @pytest.mark.parametrize(
+#     "plot_kind", ['density', 'trace', 'pair']
+# )
+# @pytest.mark.parametrize(
+#     "plot_which", ['density', 'trace', 'pair', 'forest', 'posterior', 'autocorr']
+# )
+# def test_plot_predicted_data(iclaims_training_data, plot_kind, plot_which):
+#     df = iclaims_training_data
+#     df['claims'] = np.log(df['claims'])
+#
+#     regressor_col = ['trend.unemploy', 'trend.filling', 'trend.job']
+#     test_size = 52
+#     train_df = df[:-test_size]
+#     test_df = df[-test_size:]
+#
+#     dlt = DLT(response_col='claims',
+#               date_col='week',
+#               regressor_col=regressor_col,
+#               seasonality=52,
+#               num_warmup=100,
+#               num_sample=100,
+#               chains=4)
+#     dlt.fit(train_df)
+#     predicted_df = dlt.predict(df=test_df, decompose=True)
 
     # test plotting
-    _ = plot_posterior_params(dlt, kind=plot_kind)
-    _ = plot_param_diagnostics(dlt, which=plot_which)
-
+    # _ = plot_posterior_params(dlt, kind=plot_kind)
+    # _ = plot_param_diagnostics(dlt, which=plot_which)
 
 def test_plot_predicted_data(iclaims_training_data):
     df = iclaims_training_data

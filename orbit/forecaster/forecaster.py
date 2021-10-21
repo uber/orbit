@@ -326,6 +326,7 @@ class Forecaster(object):
                     posterior_samples[regressor] = posterior_samples['beta'][:, i]
                 del posterior_samples['beta']
 
+        # FIXME: VI may not work in this block
         if not permute:
             for key, val in posterior_samples.items():
                 posterior_samples[key] = val.reshape((self.estimator.chains,

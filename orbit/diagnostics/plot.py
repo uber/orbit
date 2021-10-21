@@ -285,6 +285,7 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
     else:
         plt.close()
 
+
 #
 # @orbit_style_decorator
 # def plot_posterior_params(mod, kind='hist', n_bins=20, ci_level=.95,
@@ -426,40 +427,40 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
 #     return axes
 
 
-@orbit_style_decorator
-def plot_param_diagnostics(mod, params=None, which='trace', **kwargs):
-    """
-    Parameters
-    -----------
-    mod : orbit model object
-    params : list; optional
-        list of model parameter names to be plotted, on top of the regressors
-    which : str, {'density', 'trace', 'pair', 'autocorr', 'posterior', 'forest'}
-    **kwargs :
-        other parameters passed to arviz functions
-
-    Returns
-    -------
-        matplotlib axes object
-    """
-    posterior_samples = get_arviz_plot_dict(mod, params)
-
-    if which == "trace":
-        axes = az.plot_trace(posterior_samples, **kwargs)
-    elif which == "density":
-        axes = az.plot_density(posterior_samples, **kwargs)
-    elif which == "posterior":
-        axes = az.plot_posterior(posterior_samples, **kwargs)
-    elif which == "pair":
-        axes = az.plot_pair(posterior_samples, **kwargs)
-    elif which == "autocorr":
-        axes = az.plot_autocorr(posterior_samples, **kwargs)
-    elif which == "forest":
-        axes = az.plot_forest(posterior_samples, **kwargs)
-    else:
-        raise Exception("please use one of 'trace', 'density', 'posterior', 'pair', 'autocorr', 'forest' for kind.")
-
-    return axes
+# @orbit_style_decorator
+# def plot_param_diagnostics(mod, params=None, which='trace', **kwargs):
+#     """
+#     Parameters
+#     -----------
+#     mod : orbit model object
+#     params : list; optional
+#         list of model parameter names to be plotted, on top of the regressors
+#     which : str, {'density', 'trace', 'pair', 'autocorr', 'posterior', 'forest'}
+#     **kwargs :
+#         other parameters passed to arviz functions
+#
+#     Returns
+#     -------
+#         matplotlib axes object
+#     """
+#     posterior_samples = get_arviz_plot_dict(mod, params)
+#
+#     if which == "trace":
+#         axes = az.plot_trace(posterior_samples, **kwargs)
+#     elif which == "density":
+#         axes = az.plot_density(posterior_samples, **kwargs)
+#     elif which == "posterior":
+#         axes = az.plot_posterior(posterior_samples, **kwargs)
+#     elif which == "pair":
+#         axes = az.plot_pair(posterior_samples, **kwargs)
+#     elif which == "autocorr":
+#         axes = az.plot_autocorr(posterior_samples, **kwargs)
+#     elif which == "forest":
+#         axes = az.plot_forest(posterior_samples, **kwargs)
+#     else:
+#         raise Exception("please use one of 'trace', 'density', 'posterior', 'pair', 'autocorr', 'forest' for kind.")
+#
+#     return axes
 
 
 @orbit_style_decorator
