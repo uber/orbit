@@ -5,13 +5,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from copy import deepcopy
 import arviz as az
 import math
 
 from ..constants.constants import PredictionKeys
 from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
-from ..constants.palette import OrbitPalette
 from ..constants.palette import PredictionPaletteClassic as PredPal
 from orbit.diagnostics.metrics import smape
 from orbit.utils.plot import orbit_style_decorator
@@ -288,212 +286,181 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
         plt.close()
 
 
-@orbit_style_decorator
-def plot_posterior_params(mod, kind='density', n_bins=20, ci_level=.95,
-                          pair_type='scatter', figsize=None, path=None, fontsize=None,
-                          params=None, is_visible=True):
-    """ Data Viz for posterior samples
-
-    Parameters
-    ----------
-    mod : orbit model object
-    kind : str, {'density', 'trace', 'pair'}
-        which kind of plot to be made.
-    n_bins : int; default 20
-        number of bin, used in the histogram plotting
-    ci_level : float, between 0 and 1
-        confidence interval level
-    pair_type : str, {'scatter', 'reg'}
-        dot plotting type for off-diagonal plots in pair plot
-    figsize : tuple; optional
-        figure size
-    path : str; optional
-        dir path to save the chart
-    fontsize : int; optional
-        fontsize of the title
-    params : list; optional
-        list of model parameter names to be plotted, on top of the regressors
-    is_visible : boolean
-        whether we want to show the plot. If called from unittest, is_visible might = False.
-
-    Returns
-    -------
-        matplotlib axes object
-    """
-    if 'orbit' not in str(mod.__class__):
-        raise Exception("This plotting utility works for orbit model object only.")
-    if kind not in ['density', 'trace', 'pair']:
-        raise Exception("kind must be one of 'density', 'trace', or 'pair'.")
-
-    posterior_samples = deepcopy(mod._posterior_samples)
-
-    if len(mod._model._regressor_col) > 0:
-        for i, regressor in enumerate(mod._model._regressor_col):
-            posterior_samples[regressor] = posterior_samples['beta'][:, i]
-
-    params_plt = deepcopy(mod._model._regressor_col)
-
-    if params is not None:
-        for param in params:
-            if param not in posterior_samples.keys():
-                raise Exception("{} is not in the model parameters".format(param))
-    else:
-        params = list()
-    params_plt += params
-
-    if not figsize:
-        figsize = (8, 2 * len(params_plt))
-
-    if not fontsize:
-        fontsize = 10
-
-    def _density_plot(posterior_samples, params_plt, n_bins=20, ci_level=.95, figsize=None):
-
-        fig, axes = plt.subplots(len(params_plt), 1, squeeze=True, figsize=figsize)
-        for i, param in enumerate(params_plt):
-            samples = posterior_samples[param]
-            mean = np.mean(samples)
-            median = np.median(samples)
-            cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level) / 2), \
-                                 np.percentile(samples, 100 * (1 + ci_level) / 2)
-
-            sns.histplot(samples, bins=n_bins, kde_kws={'shade': True}, ax=axes[i], color=OrbitPalette.BLUE.value)
-            # sns.kdeplot(samples, shade=True, ax=axes[i])
-            axes[i].set_xlabel(param)
-            axes[i].set_ylabel('density')
-            # draw vertical lines
-            axes[i].axvline(mean, color=OrbitPalette.GREEN.value, lw=4, alpha=.5, label='mean')
-            axes[i].axvline(median, color=OrbitPalette.ORANGE.value, lw=4, alpha=.5, label='median')
-            axes[i].axvline(cred_min, linestyle='--', color=OrbitPalette.BLACK.value, alpha=.5, label='95% CI')
-            axes[i].axvline(cred_max, linestyle='--', color=OrbitPalette.BLACK.value, alpha=.5)
-            # axes[i].legend()
-
-        handles, labels = axes[0].get_legend_handles_labels()
-        fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.15, 0.9))
-        plt.suptitle('Histogram and Density of Posterior Samples', fontsize=fontsize)
-        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-
-        return axes
-
-    def _trace_plot(posterior_samples, params_plt, ci_level=.95, figsize=None):
-
-        fig, axes = plt.subplots(len(params_plt), 1, squeeze=True, figsize=figsize)
-        for i, param in enumerate(params_plt):
-            samples = posterior_samples[param]
-            # chain order is preserved in the posterior samples
-            chained_samples = np.array_split(samples, mod.estimator.chains)
-
-            for k in range(mod.estimator.chains):
-                axes[i].plot(chained_samples[k], lw=1, alpha=.5, label=f'chain {k + 1}')
-            axes[i].set_ylabel(param)
-
-        handles, labels = axes[0].get_legend_handles_labels()
-        fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.15, 0.9))
-        plt.suptitle('Trace of Posterior Samples', fontsize=fontsize)
-        plt.xlabel('draw')
-        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-
-        return axes
-
-    def _pair_plot(posterior_samples, params_plt, pair_type='scatter', n_bins=20):
-        samples_df = pd.DataFrame({key: posterior_samples[key].flatten() for key in params_plt})
-
-        fig = sns.pairplot(samples_df, kind=pair_type, diag_kws=dict(bins=n_bins))
-        fig.fig.suptitle("Pair Plot", fontsize=fontsize)
-        fig.fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-
-        return fig
-
-    if kind == 'density':
-        axes = _density_plot(posterior_samples, params_plt,
-                             n_bins=n_bins, ci_level=ci_level, figsize=figsize)
-    elif kind == 'trace':
-        axes = _trace_plot(posterior_samples, params_plt, ci_level=ci_level, figsize=figsize)
-    elif kind == 'pair':
-        axes = _pair_plot(posterior_samples, params_plt, pair_type=pair_type, n_bins=n_bins)
-
-    if path:
-        plt.savefig(path)
-
-    if is_visible:
-        plt.show()
-    else:
-        plt.close()
-
-    return axes
-
-
-def get_arviz_plot_dict(mod, params=None):
-    """ This is a utility to prepare the plotting dictionary data for package arviz.
-    arviz will interpret each key as the name of a different random variable.
-    Each array should have shape (chains, draws, *shape).
-
-    See Also
-    --------
-    https://arviz-devs.github.io/arviz/index.html
-    """
-    if not ('MCMC' in str(mod.estimator) or 'VI' in str(mod.estimator)):
-        raise Exception("This utility works for model object with MCMC or VI inference only.")
-
-    posterior_samples = mod.get_posterior_samples()
-    if len(mod._model._regressor_col) > 0:
-        for i, regressor in enumerate(mod._model._regressor_col):
-            posterior_samples[regressor] = posterior_samples['beta'][:, i]
-    params_plt = deepcopy(mod._model._regressor_col)
-
-    if params is not None:
-        for param in params:
-            if param not in posterior_samples.keys():
-                raise Exception("{} is not in the model parameters".format(param))
-    else:
-        params = list()
-    params_plt += params
-
-    for key in posterior_samples.copy().keys():
-        if key not in params_plt: del posterior_samples[key]
-
-    for key, val in posterior_samples.items():
-        posterior_samples[key] = val.reshape((mod.estimator.chains,
-                                              mod.estimator._num_sample_per_chain,
-                                              *val.shape[1:]))
-
-    return posterior_samples
+#
+# @orbit_style_decorator
+# def plot_posterior_params(mod, kind='hist', n_bins=20, ci_level=.95,
+#                           pair_type='scatter', figsize=None, path=None, fontsize=None,
+#                           params=None, is_visible=True):
+#     """ Data Viz for posterior samples
+#
+#     Parameters
+#     ----------
+#     mod : orbit model object
+#     kind : str, {'hist', 'trace', 'pair'}
+#         which kind of plot to be made.
+#     n_bins : int; default 20
+#         number of bin, used in the histogram plotting
+#     ci_level : float, between 0 and 1
+#         confidence interval level
+#     pair_type : str, {'scatter', 'reg'}
+#         dot plotting type for off-diagonal plots in pair plot
+#     figsize : tuple; optional
+#         figure size
+#     path : str; optional
+#         dir path to save the chart
+#     fontsize : int; optional
+#         fontsize of the title
+#     params : list; optional
+#         list of model parameter names to be plotted, on top of the regressors
+#     is_visible : boolean
+#         whether we want to show the plot. If called from unittest, is_visible might = False.
+#
+#     Returns
+#     -------
+#         matplotlib axes object
+#     """
+#     if 'orbit' not in str(mod.__class__):
+#         raise Exception("This plotting utility works for orbit model object only.")
+#     if kind not in ['hist', 'trace', 'pair']:
+#         raise Exception("kind must be one of 'hist', 'trace', or 'pair'.")
+#
+#     posterior_samples = mod.get_posterior_samples()
+#
+#     # TODO: put a unit test to test plotting with and without regressor
+#     if hasattr(mod._model, '_regressor_col') and len(mod._model._regressor_col) > 0:
+#         for i, regressor in enumerate(mod._model._regressor_col):
+#             posterior_samples[regressor] = posterior_samples['beta'][:, i]
+#         params_plt = deepcopy(mod._model._regressor_col)
+#     else:
+#         params_plt = list()
+#
+#     if params is not None:
+#         for param in params:
+#             if param not in posterior_samples.keys():
+#                 raise Exception("{} is not in the model parameters".format(param))
+#     else:
+#         params = list()
+#     params_plt += params
+#
+#     if len(params_plt) == 0:
+#         raise Exception("Empty list of valid parameters to plot.")
+#
+#     if not figsize:
+#         figsize = (8, 2 * len(params_plt))
+#
+#     if not fontsize:
+#         fontsize = 10
+#
+#     def _histogram(posterior_samples, params_plt, n_bins=20, ci_level=.95, figsize=None):
+#
+#         fig, axes = plt.subplots(len(params_plt), 1, squeeze=True, figsize=figsize)
+#         for i, param in enumerate(params_plt):
+#             samples = posterior_samples[param]
+#             mean = np.mean(samples)
+#             median = np.median(samples)
+#             cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level) / 2), \
+#                                  np.percentile(samples, 100 * (1 + ci_level) / 2)
+#
+#             sns.histplot(samples, bins=n_bins, kde_kws={'shade': True}, ax=axes[i], color=OrbitPalette.BLUE.value)
+#             # sns.kdeplot(samples, shade=True, ax=axes[i])
+#             axes[i].set_xlabel(param)
+#             axes[i].set_ylabel('frequency')
+#             # draw vertical lines
+#             axes[i].axvline(mean, color=OrbitPalette.GREEN.value, lw=4, alpha=.5, label='mean')
+#             axes[i].axvline(median, color=OrbitPalette.ORANGE.value, lw=4, alpha=.5, label='median')
+#             axes[i].axvline(cred_min, linestyle='--', color=OrbitPalette.BLACK.value, alpha=.5, label='95% CI')
+#             axes[i].axvline(cred_max, linestyle='--', color=OrbitPalette.BLACK.value, alpha=.5)
+#             # axes[i].legend()
+#
+#         handles, labels = axes[0].get_legend_handles_labels()
+#         fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.15, 0.9))
+#         plt.suptitle('Histogram of Posterior Samples', fontsize=fontsize)
+#         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+#
+#         return axes
+#
+#     def _trace_plot(posterior_samples, params_plt, ci_level=.95, figsize=None):
+#
+#         fig, axes = plt.subplots(len(params_plt), 1, squeeze=True, figsize=figsize)
+#         for i, param in enumerate(params_plt):
+#             samples = posterior_samples[param]
+#             # chain order is preserved in the posterior samples
+#             chained_samples = np.array_split(samples, mod.estimator.chains)
+#
+#             for k in range(mod.estimator.chains):
+#                 axes[i].plot(chained_samples[k], lw=1, alpha=.5, label=f'chain {k + 1}')
+#             axes[i].set_ylabel(param)
+#
+#         handles, labels = axes[0].get_legend_handles_labels()
+#         fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.15, 0.9))
+#         plt.suptitle('Trace of Posterior Samples', fontsize=fontsize)
+#         plt.xlabel('draw')
+#         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+#
+#         return axes
+#
+#     def _pair_plot(posterior_samples, params_plt, pair_type='scatter', n_bins=20):
+#         samples_df = pd.DataFrame({key: posterior_samples[key].flatten() for key in params_plt})
+#
+#         fig = sns.pairplot(samples_df, kind=pair_type, diag_kws=dict(bins=n_bins))
+#         fig.fig.suptitle("Pair Plot", fontsize=fontsize)
+#         fig.fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+#
+#         return fig
+#
+#     if kind == 'hist':
+#         axes = _histogram(posterior_samples, params_plt,
+#                           n_bins=n_bins, ci_level=ci_level, figsize=figsize)
+#     elif kind == 'trace':
+#         axes = _trace_plot(posterior_samples, params_plt, ci_level=ci_level, figsize=figsize)
+#     elif kind == 'pair':
+#         axes = _pair_plot(posterior_samples, params_plt, pair_type=pair_type, n_bins=n_bins)
+#
+#     if path:
+#         plt.savefig(path)
+#
+#     if is_visible:
+#         plt.show()
+#     else:
+#         plt.close()
+#
+#     return axes
 
 
-@orbit_style_decorator
-def plot_param_diagnostics(mod, params=None, which='trace', **kwargs):
-    """
-    Parameters
-    -----------
-    mod : orbit model object
-    params : list; optional
-        list of model parameter names to be plotted, on top of the regressors
-    which : str, {'density', 'trace', 'pair', 'autocorr', 'posterior', 'forest'}
-    **kwargs :
-        other parameters passed to arviz functions
-
-    Returns
-    -------
-        matplotlib axes object
-    """
-    posterior_samples = get_arviz_plot_dict(mod, params)
-
-    if which == "trace":
-        axes = az.plot_trace(posterior_samples, **kwargs)
-    elif which == "density":
-        axes = az.plot_density(posterior_samples, **kwargs)
-    elif which == "posterior":
-        axes = az.plot_posterior(posterior_samples, **kwargs)
-    elif which == "pair":
-        axes = az.plot_pair(posterior_samples, **kwargs)
-    elif which == "autocorr":
-        axes = az.plot_autocorr(posterior_samples, **kwargs)
-    elif which == "forest":
-        axes = az.plot_forest(posterior_samples, **kwargs)
-    else:
-        raise Exception("please use one of 'trace', 'density', 'posterior', 'pair', 'autocorr', 'forest' for kind.")
-
-    return axes
+# @orbit_style_decorator
+# def plot_param_diagnostics(mod, params=None, which='trace', **kwargs):
+#     """
+#     Parameters
+#     -----------
+#     mod : orbit model object
+#     params : list; optional
+#         list of model parameter names to be plotted, on top of the regressors
+#     which : str, {'density', 'trace', 'pair', 'autocorr', 'posterior', 'forest'}
+#     **kwargs :
+#         other parameters passed to arviz functions
+#
+#     Returns
+#     -------
+#         matplotlib axes object
+#     """
+#     posterior_samples = get_arviz_plot_dict(mod, params)
+#
+#     if which == "trace":
+#         axes = az.plot_trace(posterior_samples, **kwargs)
+#     elif which == "density":
+#         axes = az.plot_density(posterior_samples, **kwargs)
+#     elif which == "posterior":
+#         axes = az.plot_posterior(posterior_samples, **kwargs)
+#     elif which == "pair":
+#         axes = az.plot_pair(posterior_samples, **kwargs)
+#     elif which == "autocorr":
+#         axes = az.plot_autocorr(posterior_samples, **kwargs)
+#     elif which == "forest":
+#         axes = az.plot_forest(posterior_samples, **kwargs)
+#     else:
+#         raise Exception("please use one of 'trace', 'density', 'posterior', 'pair', 'autocorr', 'forest' for kind.")
+#
+#     return axes
 
 
 @orbit_style_decorator
@@ -544,7 +511,7 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
         row_idx = idx // ncol
         col_idx = idx % ncol
         tmp = bt_pred_df[bt_pred_df['split_key'] == split_key].copy()
-        axes[row_idx, col_idx].plot(tmp['date'], tmp['prediction'], #linewidth=2,
+        axes[row_idx, col_idx].plot(tmp['date'], tmp['prediction'],  # linewidth=2,
                                     color=PredPal.PREDICTION_LINE.value)
         axes[row_idx, col_idx].scatter(tmp['date'], tmp['actuals'], label='actual',
                                        color=PredPal.ACTUAL_OBS.value, alpha=.6, s=8)

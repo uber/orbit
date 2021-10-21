@@ -7,7 +7,6 @@ from ..exceptions import ForecasterException, AbstractMethodException
 from ..utils.general import is_ordered_datetime
 from ..template.model_template import ModelTemplate
 
-
 COMMON_MODEL_CALLABLES = ['get_data_input_mapper', 'get_fitter', 'get_init_values', 'get_model_name',
                           'get_model_param_names', 'get_supported_estimator_types', 'predict',
                           'set_dynamic_attributes', 'set_init_values']
@@ -304,11 +303,45 @@ class Forecaster(object):
     def get_training_metrics(self):
         return deepcopy(self._training_metrics)
 
-    def get_posterior_samples(self):
-        return deepcopy(self._posterior_samples)
+    def get_posterior_samples(self, relabel=False, permute=True):
+        """
+        Parameters
+        ----------
+        relabel : bool
+            whether returns posteriors after relabeling some of the parameters label such as regressors etc.
+        permute : bool
+            default as true where chain information will be masked and the chain dimension will be collapsed; when
+            it is set to false, additional chain dimension will be introduce at front before batch / sample dimension
+            this is useful for arviz plotting
+        Returns
+        -------
+        OrderedDict
+            dictionary where each item represents the posterior samples of a specific parameter.
+        """
+        posterior_samples = deepcopy(self._posterior_samples)
+        if relabel:
+            regressors = self.get_regressors()
+            if len(regressors) > 0:
+                for i, regressor in enumerate(regressors):
+                    posterior_samples[regressor] = posterior_samples['beta'][:, i]
+                del posterior_samples['beta']
+
+        # FIXME: SVI may not work in this block
+        if not permute:
+            for key, val in posterior_samples.items():
+                posterior_samples[key] = val.reshape((self.estimator.chains,
+                                                      self.estimator._num_sample_per_chain,
+                                                      *val.shape[1:]))
+        return posterior_samples
 
     def get_point_posteriors(self):
         return deepcopy(self._point_posteriors)
 
     def load_extra_methods(self):
         pass
+
+    def get_regressors(self):
+        if hasattr(self._model, '_regressor_col'):
+            return deepcopy(self._model._regressor_col)
+        else:
+            return list()
