@@ -188,10 +188,11 @@ def test_ktrx_coef_knot_distance(make_daily_data, regression_knot_distance):
     "regressor_signs",
     [
         ["+", "+", "+"],
+        ["-", "-", "-"],
         ["=", "=", "="],
-        ["+", "=", "+"]
+        ["+", "=", "-"]
     ],
-    ids=['positive_only', 'regular_only', 'mixed_signs']
+    ids=['positive_only', 'negative_only', 'regular_only', 'mixed_signs']
 )
 @pytest.mark.parametrize(
     "make_daily_data",
@@ -224,6 +225,13 @@ def test_ktrx_regressor_sign(make_daily_data, regressor_signs):
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
     assert len(ktr._posterior_samples) == expected_num_parameters
+
+    coef_df = ktr.get_regression_coefs()
+    for i, sign in enumerate(regressor_signs):
+        if sign == '+':
+            assert all(np.sign(coef_df.iloc[:, 1 + i]) == 1)
+        elif sign == '-':
+            assert all(np.sign(coef_df.iloc[:, 1 + i]) == -1)
 
 
 @pytest.mark.parametrize(
