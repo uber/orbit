@@ -1,6 +1,5 @@
 from collections import namedtuple
 from enum import Enum
-import os
 
 
 class PredictMethod(Enum):
@@ -13,33 +12,9 @@ class PredictMethod(Enum):
     FULL_SAMPLING = 'full'
 
 
-class InferMethod(Enum):
-    """
-    The predict method for all of the stan template. Often used are mean and median.
-    """
-    VARIATIONAL_INFERENCE = 'vi'
-    MARKOV_CHAIN_MONTE_CARLO = 'mcmc'
-    MAP = 'map'
-
-
-class EstimatorOptionsMapper(Enum):
-    """
-    Mapper for available options of a downstream input given an input upstream (within some other
-    set of options)
-    """
-    ENGINE_TO_SAMPLE = {
-        'stan': ['map', 'vi', 'mcmc'],
-        'pyro': ['map', 'vi']
-    }
-    SAMPLE_TO_PREDICT = {
-        'map': ['map'],
-        'vi': ['mean', 'median', 'full'],
-        'mcmc': ['mean', 'median', 'full']
-    }
-
-
 class PredictionKeys(Enum):
-    """ column names for the data frame of predicted result with decomposed components
+    """
+    column names for the data frame of predicted result with decomposed components
     """
     TREND = 'trend'
     SEASONALITY = 'seasonality'
@@ -49,35 +24,13 @@ class PredictionKeys(Enum):
 
 
 class PlotLabels(Enum):
+    """
+    used in multiple prediction plots
+    """
     # Also used in training_actual_response column name.
     TRAINING_ACTUAL_RESPONSE = 'training_actual_response'
     PREDICTED_RESPONSE = 'predicted_response'
     ACTUAL_RESPONSE = 'actual_response'
-
-
-class StanModelKeys(Enum):
-    """
-    All of the keys in the trained stan model from uTS. For example, for LGT/SLGT,
-    the model is the output of SLGT.fit() and input of SLGTModel.
-    """
-    STAN_INPUTS = "stan_inputs"
-    MODELS = "template"
-    REGRESSOR_COLUMNS = "regressor_columns"
-    RESPONSE_COLUMN = "response_column"
-    DATE_INFO = "date_info"
-
-
-class DateInfo(Enum):
-    """
-    date_column: the data column name of the training/prediction data frame;
-    starting_date: the date of first day of training data; format: yyyy-mm-dd
-    date_interval: 'day', 'week', 'month'
-    """
-    DATE_COLUMN_NAME = 'date_column_name'
-    DATE_COLUMN = 'date_column'
-    START_DATE = 'start_date'
-    END_DATE = 'end_date'
-    DATE_INTERVAL = 'date_interval'
 
 
 class TimeSeriesSplitSchemeNames(Enum):
@@ -97,8 +50,8 @@ class BacktestFitColumnNames(Enum):
     TRAIN_END_DATE = 'train_end_date'
     FORECAST_DATES = 'forecast_dates'
     ACTUAL = 'actual'
-    PRED = 'pred'
-    PRED_HORIZON = 'pred_horizon'
+    PREDICTED = 'pred'
+    PREDICT_HORIZON = 'pred_horizon'
 
 
 class BacktestAnalyzeKeys(Enum):
@@ -120,8 +73,6 @@ class CoefPriorDictKeys(Enum):
     PRIOR_SD = 'prior_sd'
     PRIOR_REGRESSOR_COL = 'prior_regressor_col'
 
-# Misc constants
-THIS_FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 
 # Defaults Values
 DEFAULT_REGRESSOR_SIGN = '='
