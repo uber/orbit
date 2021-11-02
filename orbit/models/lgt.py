@@ -4,6 +4,7 @@ from ..forecaster import MAPForecaster, FullBayesianForecaster, SVIForecaster
 from ..exceptions import IllegalArgument
 from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
 from ..estimators.pyro_estimator import PyroEstimatorVI
+from ..constants.constants import SupportedEstimators
 
 
 def LGT(seasonality=None,
@@ -77,7 +78,9 @@ def LGT(seasonality=None,
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
     """
-    _supported_estimators = ['stan-map', 'stan-mcmc', 'pyro-svi']
+    _supported_estimators = [
+        SupportedEstimators.StanMAP.value, SupportedEstimators.StanMCMC.value, SupportedEstimators.PyroSVI.value
+    ]
 
     lgt = LGTModel(
         seasonality=seasonality,
@@ -92,19 +95,19 @@ def LGT(seasonality=None,
         auto_ridge_scale=auto_ridge_scale,
         slope_sm_input=slope_sm_input,
     )
-    if estimator == 'stan-map':
+    if estimator ==  SupportedEstimators.StanMAP.value:
         lgt_forecaster = MAPForecaster(
             model=lgt,
             estimator_type=StanEstimatorMAP,
             **kwargs
         )
-    elif estimator == 'stan-mcmc':
+    elif estimator == SupportedEstimators.StanMCMC.value:
         lgt_forecaster = FullBayesianForecaster(
             model=lgt,
             estimator_type=StanEstimatorMCMC,
             **kwargs
         )
-    elif estimator == 'pyro-svi':
+    elif estimator == SupportedEstimators.PyroSVI.value:
         lgt_forecaster = SVIForecaster(
             model=lgt,
             estimator_type=PyroEstimatorVI,

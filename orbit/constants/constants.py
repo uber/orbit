@@ -23,6 +23,12 @@ class PredictionKeys(Enum):
     PREDICTION = 'prediction'
 
 
+class SupportedEstimators(Enum):
+    PyroSVI = 'pyro-svi'
+    StanMAP = 'stan-map'
+    StanMCMC = 'stan-mcmc'
+
+
 class PlotLabels(Enum):
     """
     used in multiple prediction plots

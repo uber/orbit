@@ -3,6 +3,7 @@ from ..template.dlt import DLTModel
 from ..forecaster import MAPForecaster, FullBayesianForecaster
 from ..exceptions import IllegalArgument
 from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
+from ..constants.constants import SupportedEstimators
 
 
 def DLT(seasonality=None,
@@ -87,7 +88,7 @@ def DLT(seasonality=None,
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator
     """
-    _supported_estimators = ['stan-map', 'stan-mcmc']
+    _supported_estimators = [SupportedEstimators.StanMAP.value, SupportedEstimators.StanMCMC.value]
 
     dlt = DLTModel(
         seasonality=seasonality,
@@ -105,13 +106,13 @@ def DLT(seasonality=None,
         damped_factor=damped_factor,
         global_trend_option=global_trend_option,
     )
-    if estimator == 'stan-map':
+    if estimator == SupportedEstimators.StanMAP.value:
         dlt_forecaster = MAPForecaster(
             model=dlt,
             estimator_type=StanEstimatorMAP,
             **kwargs
         )
-    elif estimator == 'stan-mcmc':
+    elif estimator == SupportedEstimators.StanMCMC.value:
         dlt_forecaster = FullBayesianForecaster(
             model=dlt,
             estimator_type=StanEstimatorMCMC,
