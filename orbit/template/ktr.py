@@ -8,13 +8,13 @@ import torch
 import matplotlib.pyplot as plt
 from copy import deepcopy
 
-from ..constants.constants import CoefPriorDictKeys, PredictMethod
+from ..constants.constants import KTRTimePointPriorKeys, PredictMethod
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel, sandwich_kernel
 from ..utils.features import make_seasonal_regressors
 from .model_template import ModelTemplate
-from ..estimators.pyro_estimator import PyroEstimatorVI
+from ..estimators.pyro_estimator import PyroEstimatorSVI
 from ..models import KTRLite
 from orbit.constants.palette import OrbitPalette
 from ..utils.knots import get_knot_idx, get_knot_dates
@@ -148,7 +148,7 @@ class KTRModel(ModelTemplate):
     _data_input_mapper = DataInputMapper
     # stan or pyro model name (e.g. name of `*.stan` file in package)
     _model_name = 'ktr'
-    _supported_estimator_types = [PyroEstimatorVI]
+    _supported_estimator_types = [PyroEstimatorSVI]
 
     def __init__(self,
                  # level
@@ -415,20 +415,20 @@ class KTRModel(ModelTemplate):
     def _validate_coef_prior(coef_prior_list):
         for test_dict in coef_prior_list:
             if set(test_dict.keys()) != set([
-                CoefPriorDictKeys.NAME.value,
-                CoefPriorDictKeys.PRIOR_START_TP_IDX.value,
-                CoefPriorDictKeys.PRIOR_END_TP_IDX.value,
-                CoefPriorDictKeys.PRIOR_MEAN.value,
-                CoefPriorDictKeys.PRIOR_SD.value,
-                CoefPriorDictKeys.PRIOR_REGRESSOR_COL.value
+                KTRTimePointPriorKeys.NAME.value,
+                KTRTimePointPriorKeys.PRIOR_START_TP_IDX.value,
+                KTRTimePointPriorKeys.PRIOR_END_TP_IDX.value,
+                KTRTimePointPriorKeys.PRIOR_MEAN.value,
+                KTRTimePointPriorKeys.PRIOR_SD.value,
+                KTRTimePointPriorKeys.PRIOR_REGRESSOR_COL.value
             ]):
                 raise IllegalArgument('wrong key name in inserted prior dict')
             len_insert_prior = list()
             for key, val in test_dict.items():
                 if key in [
-                    CoefPriorDictKeys.PRIOR_MEAN.value,
-                    CoefPriorDictKeys.PRIOR_SD.value,
-                    CoefPriorDictKeys.PRIOR_REGRESSOR_COL.value,
+                    KTRTimePointPriorKeys.PRIOR_MEAN.value,
+                    KTRTimePointPriorKeys.PRIOR_SD.value,
+                    KTRTimePointPriorKeys.PRIOR_REGRESSOR_COL.value,
                 ]:
                     len_insert_prior.append(len(val))
             if not all(len_insert == len_insert_prior[0] for len_insert in len_insert_prior):

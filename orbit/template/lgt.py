@@ -18,7 +18,7 @@ from ..exceptions import IllegalArgument, ModelException
 # from .model_template import ModelTemplate
 from .ets import ETSModel
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
-from ..estimators.pyro_estimator import PyroEstimatorVI
+from ..estimators.pyro_estimator import PyroEstimatorSVI
 
 
 class DataInputMapper(Enum):
@@ -161,7 +161,7 @@ class LGTModel(ETSModel):
     _data_input_mapper = DataInputMapper
     # used to match name of `*.stan` or `*.pyro` file to look for the model
     _model_name = 'lgt'
-    _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC, PyroEstimatorVI]
+    _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC, PyroEstimatorSVI]
 
     def __init__(self, regressor_col=None, regressor_sign=None,
                  regressor_beta_prior=None, regressor_sigma_prior=None,

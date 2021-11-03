@@ -1,8 +1,8 @@
 from ..template.ktr import KTRModel
 from ..forecaster import SVIForecaster
 from ..exceptions import IllegalArgument
-from ..estimators.pyro_estimator import PyroEstimatorVI
-from ..constants.constants import SupportedEstimators
+from ..estimators.pyro_estimator import PyroEstimatorSVI
+from ..constants.constants import EstimatorsKeys
 
 
 def KTR(
@@ -113,7 +113,7 @@ def KTR(
     **kwargs:
         additional arguments passed into orbit.estimators.pyro_estimator
     """
-    _supported_estimators = [SupportedEstimators.PyroSVI.value]
+    _supported_estimators = [EstimatorsKeys.PyroSVI.value]
 
     ktr = KTRModel(
             level_knot_scale=level_knot_scale,
@@ -141,10 +141,10 @@ def KTR(
             residuals_scale_upper=residuals_scale_upper,
             ktrlite_optim_args=ktrlite_optim_args
     )
-    if estimator == 'SupportedEstimators.PyroSVI.value':
+    if estimator == EstimatorsKeys.PyroSVI.value:
         ktr_forecaster = SVIForecaster(
             model=ktr,
-            estimator_type=PyroEstimatorVI,
+            estimator_type=PyroEstimatorSVI,
             **kwargs
         )
     else:

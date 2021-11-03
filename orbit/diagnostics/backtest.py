@@ -6,7 +6,7 @@ import inspect
 
 from .metrics import smape, wmape, mape, mse, mae, rmsse
 from ..exceptions import BacktestException
-from ..constants.constants import TimeSeriesSplitSchemeNames
+from ..constants.constants import TimeSeriesSplitSchemeKeys, BacktestFitKeys
 from ..constants.palette import OrbitPalette as OrbitPal
 from orbit.utils.plot import orbit_style_decorator
 
@@ -105,9 +105,9 @@ class TimeSeriesSplitter(object):
             split_scheme[i] = {}
             train_start_idx = train_end_idx - self.min_train_len + 1 \
                 if self.window_type == 'rolling' else 0
-            split_scheme[i][TimeSeriesSplitSchemeNames.TRAIN_IDX.value] = range(
+            split_scheme[i][TimeSeriesSplitSchemeKeys.TRAIN_IDX.value] = range(
                 train_start_idx, train_end_idx + 1)
-            split_scheme[i][TimeSeriesSplitSchemeNames.TEST_IDX.value] = range(
+            split_scheme[i][TimeSeriesSplitSchemeKeys.TEST_IDX.value] = range(
                 train_end_idx + 1, train_end_idx + self.forecast_len + 1)
 
         self._split_scheme = split_scheme
@@ -132,9 +132,9 @@ class TimeSeriesSplitter(object):
              index of the iteration
         """
         for split_key, scheme in self._split_scheme.items():
-            train_df = self.df.iloc[scheme[TimeSeriesSplitSchemeNames.TRAIN_IDX.value], :] \
+            train_df = self.df.iloc[scheme[TimeSeriesSplitSchemeKeys.TRAIN_IDX.value], :] \
                 .reset_index(drop=True)
-            test_df = self.df.iloc[scheme[TimeSeriesSplitSchemeNames.TEST_IDX.value], :] \
+            test_df = self.df.iloc[scheme[TimeSeriesSplitSchemeKeys.TEST_IDX.value], :] \
                 .reset_index(drop=True)
 
             yield train_df, test_df, scheme, split_key
@@ -143,10 +143,10 @@ class TimeSeriesSplitter(object):
         message = ""
         for idx, scheme in self._split_scheme.items():
             # print train/test start/end indices
-            tr_start = list(scheme[TimeSeriesSplitSchemeNames.TRAIN_IDX.value])[0]
-            tr_end = list(scheme[TimeSeriesSplitSchemeNames.TRAIN_IDX.value])[-1]
-            tt_start = list(scheme[TimeSeriesSplitSchemeNames.TEST_IDX.value])[0]
-            tt_end = list(scheme[TimeSeriesSplitSchemeNames.TEST_IDX.value])[-1]
+            tr_start = list(scheme[TimeSeriesSplitSchemeKeys.TRAIN_IDX.value])[0]
+            tr_end = list(scheme[TimeSeriesSplitSchemeKeys.TRAIN_IDX.value])[-1]
+            tt_start = list(scheme[TimeSeriesSplitSchemeKeys.TEST_IDX.value])[0]
+            tt_end = list(scheme[TimeSeriesSplitSchemeKeys.TEST_IDX.value])[-1]
             message += f"\n------------ Fold: ({idx + 1} / {self.n_splits})------------\n"
             message += f"Train start index: {tr_start} Train end index: {tr_end}\n"
             message += f"Test start index: {tt_start} Test end index: {tt_end}\n"
@@ -171,10 +171,10 @@ class TimeSeriesSplitter(object):
         for idx, scheme in self._split_scheme.items():
             # fill in indices with the training/test groups
             tr_start.append(
-                list(scheme[TimeSeriesSplitSchemeNames.TRAIN_IDX.value])[0]
+                list(scheme[TimeSeriesSplitSchemeKeys.TRAIN_IDX.value])[0]
             )
             tr_len.append(len(
-                list(scheme[TimeSeriesSplitSchemeNames.TRAIN_IDX.value]))
+                list(scheme[TimeSeriesSplitSchemeKeys.TRAIN_IDX.value]))
             )
             tt_len.append(self.forecast_len)
 
@@ -220,9 +220,9 @@ class BackTester(object):
         self._train_actual = []
         self._train_predicted = []
 
-        # init df for actuals and predictions
+        # init df for actual and predictions
         self._predicted_df = pd.DataFrame(
-            {}, columns=['date', 'split_key', 'training_data', 'actuals', 'prediction']
+            {}, columns=['date', 'split_key', 'training_data', BacktestFitKeys.ACTUAL.value, 'prediction']
         )
 
         # score df
@@ -281,12 +281,12 @@ class BackTester(object):
             # set df attribute
             # join train
             train_dates = train_df[date_col].rename('date', axis='columns')
-            train_response = train_df[response_col].rename('actuals', axis='columns')
+            train_response = train_df[response_col].rename(BacktestFitKeys.ACTUAL.value, axis='columns')
             train_values = pd.concat((train_dates, train_response, train_predictions['prediction']), axis=1)
             train_values['training_data'] = True
             # join test
             test_dates = test_df[date_col].rename('date', axis='columns')
-            test_response = test_df[response_col].rename('actuals', axis='columns')
+            test_response = test_df[response_col].rename(BacktestFitKeys.ACTUAL.value, axis='columns')
             test_values = pd.concat((test_dates, test_response, test_predictions['prediction']), axis=1)
             test_values['training_data'] = False
             # union train/test
@@ -316,7 +316,7 @@ class BackTester(object):
     def _validate_metric_callables(self, metrics):
         for metric in metrics:
             metric_signature = self._get_metric_callable_signature(metric)
-            if metric_signature == {'actual', 'predicted'}:
+            if metric_signature == {BacktestFitKeys.ACTUAL.value, BacktestFitKeys.PREDICTED.value}:
                 continue
             elif metric_signature.issubset({'test_actual', 'test_predicted', 'train_actual', 'train_predicted'}):
                 continue
@@ -327,7 +327,7 @@ class BackTester(object):
         # signature already validated in `self._validate_metric_callable()` so the following
         # values for metric_signature already are only for valid signatures
         metric_signature = self._get_metric_callable_signature(metric)
-        if metric_signature == {'actual', 'predicted'}:
+        if metric_signature == {BacktestFitKeys.ACTUAL.value, BacktestFitKeys.PREDICTED.value}:
             eval_out = metric(actual=self._test_actual, predicted=self._test_predicted)
         else:
             # get signature and match with the private attributes respectively
@@ -385,7 +385,10 @@ class BackTester(object):
         # for metric evaluation with combined train and test
         if include_training_metrics:
             # only supports simple metrics function signature
-            metrics = list(filter(lambda x: self._get_metric_callable_signature(x) == {'actual', 'predicted'}, metrics))
+            metrics = list(filter(
+                lambda x: self._get_metric_callable_signature(x) == {BacktestFitKeys.ACTUAL.value, BacktestFitKeys.PREDICTED.value},
+                metrics
+            ))
             train_eval_out_list = list()
             for metric in metrics:
                 eval_out = metric(actual=self._train_actual, predicted=self._train_predicted)

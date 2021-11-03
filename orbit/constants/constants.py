@@ -23,10 +23,27 @@ class PredictionKeys(Enum):
     PREDICTION = 'prediction'
 
 
-class SupportedEstimators(Enum):
+class EstimatorsKeys(Enum):
+    """
+    alias for all available estimator types when they are called under model wrapper functions
+    """
     PyroSVI = 'pyro-svi'
     StanMAP = 'stan-map'
     StanMCMC = 'stan-mcmc'
+
+
+class TrainingMetaKeys(Enum):
+    """
+    training meta data dictionary stored under `Forecaster`
+    """
+    RESPONSE = 'response'
+    DATE_ARRAY = 'date_array'
+    NUM_OF_OBSERVATIONS = 'num_of_obs'
+    RESPONSE_SD = 'response_sd'
+    TRAINING_START = 'training_start'
+    TRAINING_END = 'training_end'
+    RESPONSE_COL = 'response_col'
+    DATE_COL = 'date_col'
 
 
 class PlotLabels(Enum):
@@ -39,7 +56,7 @@ class PlotLabels(Enum):
     ACTUAL_RESPONSE = 'actual_response'
 
 
-class TimeSeriesSplitSchemeNames(Enum):
+class TimeSeriesSplitSchemeKeys(Enum):
     """ hash table keys for the dictionary of back-test meta data
     """
     MODEL = 'model'
@@ -49,27 +66,14 @@ class TimeSeriesSplitSchemeNames(Enum):
     TEST_IDX = 'test_idx'
 
 
-class BacktestFitColumnNames(Enum):
+class BacktestFitKeys(Enum):
     """ column names for the data frame of back-test fitting result
     """
-    TRAIN_START_DATE = 'train_start_date'
-    TRAIN_END_DATE = 'train_end_date'
-    FORECAST_DATES = 'forecast_dates'
     ACTUAL = 'actual'
-    PREDICTED = 'pred'
-    PREDICT_HORIZON = 'pred_horizon'
+    PREDICTED = 'predicted'
 
 
-class BacktestAnalyzeKeys(Enum):
-    """ hash table keys for the dictionary of back-test aggregation analysis result
-    """
-    METRIC_NAME = 'metric_name'
-    METRIC_PER_BTMOD = 'metric_per_btmod'
-    METRIC_GEO = 'metric_geo'
-    METRIC_PER_HORIZON = 'metric_per_horizon'
-
-
-class CoefPriorDictKeys(Enum):
+class KTRTimePointPriorKeys(Enum):
     """ hash table keys for the dictionary of back-test aggregation analysis result
     """
     NAME = 'name'
