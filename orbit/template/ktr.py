@@ -8,7 +8,12 @@ import torch
 import matplotlib.pyplot as plt
 from copy import deepcopy
 
-from ..constants.constants import KTRTimePointPriorKeys, PredictMethod
+from ..constants.constants import (
+    KTRTimePointPriorKeys,
+    PredictMethod,
+    TrainingMetaKeys,
+    PredictionMetaKeys
+)
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel, sandwich_kernel
@@ -460,8 +465,8 @@ class KTRModel(ModelTemplate):
             self._set_coef_prior_idx()
 
     def _set_valid_response_attributes(self, training_meta):
-        num_of_observations = training_meta['num_of_observations']
-        response = training_meta['response']
+        num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
+        response = training_meta[TrainingMetaKeys.RESPONSE.value]
 
         if self._seasonality:
             max_seasonality = np.round(np.max(self._seasonality)).astype(int)
@@ -482,7 +487,7 @@ class KTRModel(ModelTemplate):
         self.num_of_valid_response = len(self.which_valid_response)
 
     def _set_regressor_matrix(self, df, training_meta):
-        num_of_observations = training_meta['num_of_observations']
+        num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         # validate regression columns
         if self.regressor_col is not None and \
                 not set(self.regressor_col).issubset(df.columns):
@@ -510,7 +515,7 @@ class KTRModel(ModelTemplate):
 
     def _set_coefficients_kernel_matrix(self, df, training_meta):
         """Derive knots position and kernel matrix and other related meta data"""
-        num_of_observations = training_meta['num_of_observations']
+        num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         date_array = training_meta['date_array']
         # date_col = training_meta['date_col']
 
@@ -537,7 +542,7 @@ class KTRModel(ModelTemplate):
             self._regression_knot_dates = get_knot_dates(date_array[0], self._regression_knots_idx, self.date_freq)
 
     def _set_knots_scale_matrix(self, df, training_meta):
-        num_of_observations = training_meta['num_of_observations']
+        num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         if self._num_of_positive_regressors > 0:
             # calculate average local absolute volume for each segment
             local_val = np.ones((self._num_of_positive_regressors, self._num_knots_coefficients))
@@ -654,7 +659,7 @@ class KTRModel(ModelTemplate):
     def _generate_tp(self, training_meta, prediction_date_array):
         """Used in _generate_seas"""
         training_end = training_meta['training_end']
-        num_of_observations = training_meta['num_of_observations']
+        num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         date_array = training_meta['date_array']
         prediction_start = prediction_date_array[0]
         output_len = len(prediction_date_array)
@@ -669,7 +674,7 @@ class KTRModel(ModelTemplate):
     def _generate_insample_tp(self, training_meta, date_array):
         """Used in _generate_seas"""
         train_date_array = training_meta['date_array']
-        num_of_observations = training_meta['num_of_observations']
+        num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         idx = np.nonzero(np.in1d(train_date_array, date_array))[0]
         tp = (idx + 1) / num_of_observations
         return tp
@@ -713,7 +718,7 @@ class KTRModel(ModelTemplate):
             date_col = training_meta['date_col']
             date_array = training_meta['date_array']
             training_end = training_meta['training_end']
-            num_of_observations = training_meta['num_of_observations']
+            num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
 
             prediction_date_array = df[date_col].values
             prediction_start = prediction_date_array[0]
@@ -757,7 +762,7 @@ class KTRModel(ModelTemplate):
     def _set_levs_and_seas(self, df, training_meta):
         response_col = training_meta['response_col']
         date_col = training_meta['date_col']
-        num_of_observations = training_meta['num_of_observations']
+        num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         date_array = training_meta['date_array']
 
         # use ktrlite to derive levs and seas
@@ -922,7 +927,7 @@ class KTRModel(ModelTemplate):
         output_len = prediction_meta['df_length']
         prediction_start = prediction_meta['prediction_start']
         date_array = training_meta['date_array']
-        num_of_observations = training_meta['num_of_observations']
+        num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         training_end = training_meta['training_end']
 
         # Here assume dates are ordered and consecutive
@@ -1024,7 +1029,7 @@ class KTRModel(ModelTemplate):
             then beta.
             this mainly impacts the aggregated estimation method; full bayesian should not be impacted.
         """
-        num_of_observations = training_meta['num_of_observations']
+        num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         training_start = training_meta['training_start']
         training_end = training_meta['training_end']
         train_date_array = training_meta['date_array']
@@ -1320,7 +1325,7 @@ class KTRModel(ModelTemplate):
         """
         date_col = training_meta['date_col']
         date_array = training_meta['date_array']
-        response = training_meta['response']
+        response = training_meta[TrainingMetaKeys.RESPONSE.value]
 
         levels_df = self.get_levels(training_meta, point_method, point_posteriors, posterior_samples)
         knots_df = self.get_level_knots(training_meta, point_method, point_posteriors, posterior_samples)

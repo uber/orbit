@@ -38,10 +38,10 @@ class TrainingMetaKeys(Enum):
     """
     RESPONSE = 'response'
     DATE_ARRAY = 'date_array'
-    NUM_OF_OBSERVATIONS = 'num_of_obs'
+    NUM_OF_OBS = 'num_of_obs'
     RESPONSE_SD = 'response_sd'
-    TRAINING_START = 'training_start'
-    TRAINING_END = 'training_end'
+    START = 'training_start'
+    END = 'training_end'
     RESPONSE_COL = 'response_col'
     DATE_COL = 'date_col'
 
@@ -50,8 +50,12 @@ class PredictionMetaKeys(Enum):
     """
     prediction input meta data dictionary processed under `Forecaster.predict()`
     """
-    NUM_OF_FORECAST_STEPS = 'n_forecast_steps'
-    FORECAST_START = 'start'
+    DATE_ARRAY = 'date_array'
+    FUTURE_STEPS = 'n_forecast_steps'
+    START = 'prediction_start'
+    END = 'prediction_end'
+    START_INDEX = 'start'
+    PREDICTION_DF_LEN = 'df_length'
 
 
 class PlotLabels(Enum):

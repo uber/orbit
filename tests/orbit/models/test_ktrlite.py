@@ -109,7 +109,7 @@ def test_ktrlite_level_segments(make_daily_data, level_segments):
     knots_df = ktrlite.get_level_knots()
     levels_df = ktrlite.get_levels()
     assert knots_df.shape[0] in [level_segments + 1, level_segments + 2]
-    assert levels_df.shape[0] == ktrlite.get_training_meta()['num_of_observations']
+    assert levels_df.shape[0] == ktrlite.get_training_meta()['num_of_obs']
 
 
 @pytest.mark.parametrize(
