@@ -34,7 +34,7 @@ class EstimatorsKeys(Enum):
 
 class TrainingMetaKeys(Enum):
     """
-    training meta data dictionary stored under `Forecaster`
+    training meta data dictionary processed under `Forecaster.fit()`
     """
     RESPONSE = 'response'
     DATE_ARRAY = 'date_array'
@@ -44,6 +44,14 @@ class TrainingMetaKeys(Enum):
     TRAINING_END = 'training_end'
     RESPONSE_COL = 'response_col'
     DATE_COL = 'date_col'
+
+
+class PredictionMetaKeys(Enum):
+    """
+    prediction input meta data dictionary processed under `Forecaster.predict()`
+    """
+    NUM_OF_FORECAST_STEPS = 'n_forecast_steps'
+    FORECAST_START = 'start'
 
 
 class PlotLabels(Enum):
