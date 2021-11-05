@@ -79,10 +79,23 @@ class TimeSeriesSplitSchemeKeys(Enum):
 
 
 class BacktestFitKeys(Enum):
-    """ column names for the data frame of back-test fitting result
+    """ column names of the dataframe used in the output from the backtest.BackTester.fit_predict() or any labels of
+    the intermediate variables to generate such outcome dataframe
     """
+    # labels for fitting process
     ACTUAL = 'actual'
-    PREDICTED = 'predicted'
+    PREDICTED = 'prediction'
+    DATE = 'date'
+    SPLIT_KEY = 'split_key'
+    TRAIN_FLAG = 'training_data'
+    TRAIN_ACTUAL = 'train_actual'
+    TRAIN_PREDICTION = 'train_predicted'
+    TEST_ACTUAL = 'test_actual'
+    TEST_PREDICTION = 'test_predicted'
+    # labels for scoring process
+    METRIC_VALUES = 'metric_values'
+    METRIC_NAME = 'metric_name'
+    TRAIN_METRIC_FLAG = 'is_training_metric'
 
 
 class KTRTimePointPriorKeys(Enum):

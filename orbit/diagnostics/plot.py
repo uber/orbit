@@ -6,6 +6,7 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import math
+import os
 
 from ..constants.constants import PredictionKeys
 from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
@@ -14,6 +15,7 @@ from ..constants.palette import PredictionPaletteClassic as PredPal
 from orbit.diagnostics.metrics import smape
 from orbit.utils.plot import orbit_style_decorator
 
+from ..exceptions import PlotException
 
 @orbit_style_decorator
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
@@ -235,60 +237,9 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
     return axes
 
 
-# TODO: update palatte
-
-@orbit_style_decorator
-def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon',
-                           metric_col='smape', bar_width=0.1, path=None,
-                           figsize=None, fontsize=None, is_visible=False):
-    if not figsize:
-        figsize = [20, 6]
-
-    if not fontsize:
-        fontsize = 10
-
-    plt.rcParams['figure.figsize'] = figsize
-    models = df[model_col].unique()
-    metric_horizons = df[pred_horizon_col].unique()
-    n_models = len(models)
-    palette = sns.color_palette("colorblind", n_models)
-
-    # set height of bar
-    bars = list()
-    for m in models:
-        bars.append(list(df[df[model_col] == m][metric_col]))
-
-    # set position of bar on X axis
-    r = list()
-    r.append(np.arange(len(bars[0])))
-    for idx in range(n_models - 1):
-        r.append([x + bar_width for x in r[idx]])
-
-    # make the plot
-    for idx in range(n_models):
-        plt.bar(r[idx], bars[idx], color=palette[idx], width=bar_width, edgecolor='white',
-                label=models[idx])
-
-    # add xticks on the middle of the group bars
-    plt.xlabel('predict-horizon', fontweight='bold')
-    plt.xticks([x + bar_width for x in range(len(bars[0]))], metric_horizons)
-
-    # create legend & show graphic
-    plt.legend()
-    plt.title("Model Comparison with {}".format(metric_col), fontsize=fontsize)
-
-    if path:
-        plt.savefig(path)
-
-    if is_visible:
-        plt.show()
-    else:
-        plt.close()
-
-
 @orbit_style_decorator
 def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
-                        ncol=2, figsize=None, include_vline=False,
+                        ncol=2, figsize=None, include_vline=True,
                         title="", fontsize=20, path=None, is_visible=True):
     """function to plot and visualize the prediction results from back testing.
 
@@ -359,3 +310,133 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
         plt.close()
 
     return axes
+
+
+@orbit_style_decorator
+def plot_bt_predictions2(bt_pred_df, metrics=smape, split_key_list=None, figsize=None, include_vline=True,
+                         title="", fontsize=20, markersize=50, lw=2, fig_dir=None, is_visible=True, fix_xylim=True,
+                         export_gif=False, imageio_args=None):
+    """ a different style backtest plot compare to `plot_bt_prediction` where it writes separate plot for each split;
+    this is also used to produce an animation to summarize every split
+    """
+    if figsize is None:
+        figsize = (16, 8)
+
+    if fig_dir:
+        if not os.path.isdir(fig_dir) or not os.path.exists(fig_dir):
+            raise PlotException('Invalid or non-existing directory use specified: {}.'.format(
+                os.path.abspath(fig_dir)
+            ))
+        fig_paths = list()
+
+    metric_vals = bt_pred_df.groupby('split_key').apply(lambda x:
+                                                        metrics(x[~x['training_data']][BacktestFitKeys.ACTUAL.value],
+                                                                x[~x['training_data']]['prediction']))
+
+    if split_key_list is None:
+        split_key_list_ = bt_pred_df['split_key'].unique()
+    else:
+        split_key_list_ = split_key_list
+
+    if fix_xylim:
+        all_values = np.concatenate((bt_pred_df['actual'].values, bt_pred_df['prediction'].values))
+        ylim = (np.min(all_values) * 0.99, np.max(all_values) * 1.01)
+        xlim = (bt_pred_df['date'].values[0], bt_pred_df['date'].values[-1])
+
+    for idx, split_key in enumerate(split_key_list_):
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        tmp = bt_pred_df[bt_pred_df['split_key'] == split_key].copy()
+        ax.plot(tmp['date'], tmp['prediction'],
+                color=PredPal.PREDICTION_LINE.value, lw=lw)
+
+        train_df = tmp.loc[tmp['training_data'], :]
+        ax.scatter(train_df['date'],
+                   train_df[BacktestFitKeys.ACTUAL.value],
+                   marker='.', color=PredPal.ACTUAL_OBS.value, alpha=0.8, s=markersize,
+                   label='train response')
+
+        test_df = tmp.loc[~tmp['training_data'], :]
+        ax.scatter(test_df['date'],
+                   test_df[BacktestFitKeys.ACTUAL.value],
+                   marker='.', color=PredPal.TEST_OBS.value, alpha=0.8, s=markersize,
+                   label='test response')
+
+        ax.set_title(label='split {}; {} {:.3f}'. \
+                     format(split_key, metrics.__name__, metric_vals[split_key]))
+        if include_vline:
+            cutoff_date = tmp[~tmp['training_data']]['date'].min()
+            ax.axvline(x=cutoff_date, linestyle='--',
+                       color=PredPal.HOLDOUT_VERTICAL_LINE.value,
+                       alpha=.8)
+        if fix_xylim:
+            ax.set_xlim(xlim)
+            ax.set_ylim(ylim)
+
+        ax.legend()
+        plt.suptitle(title, fontsize=fontsize)
+        fig.tight_layout()
+
+        if fig_dir:
+            fig_path = '{}/splits_{}.png'.format(fig_dir, idx)
+            fig_paths.append(fig_path)
+            fig.savefig(fig_path)
+        if is_visible:
+            plt.show()
+        else:
+            plt.close()
+
+    if fig_paths and export_gif:
+        import imageio
+        with imageio.get_writer('{}/orbit-backtest.gif'.format(fig_dir), mode='I', **imageio_args) as writer:
+            for fig_path in fig_paths:
+                image = imageio.imread(fig_path)
+                writer.append_data(image)
+
+# TODO: update palatte
+@orbit_style_decorator
+def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon',
+                           metric_col='smape', bar_width=0.1, path=None,
+                           figsize=None, fontsize=None, is_visible=False):
+    if not figsize:
+        figsize = [20, 6]
+
+    if not fontsize:
+        fontsize = 10
+
+    plt.rcParams['figure.figsize'] = figsize
+    models = df[model_col].unique()
+    metric_horizons = df[pred_horizon_col].unique()
+    n_models = len(models)
+    palette = sns.color_palette("colorblind", n_models)
+
+    # set height of bar
+    bars = list()
+    for m in models:
+        bars.append(list(df[df[model_col] == m][metric_col]))
+
+    # set position of bar on X axis
+    r = list()
+    r.append(np.arange(len(bars[0])))
+    for idx in range(n_models - 1):
+        r.append([x + bar_width for x in r[idx]])
+
+    # make the plot
+    for idx in range(n_models):
+        plt.bar(r[idx], bars[idx], color=palette[idx], width=bar_width, edgecolor='white',
+                label=models[idx])
+
+    # add xticks on the middle of the group bars
+    plt.xlabel('predict-horizon', fontweight='bold')
+    plt.xticks([x + bar_width for x in range(len(bars[0]))], metric_horizons)
+
+    # create legend & show graphic
+    plt.legend()
+    plt.title("Model Comparison with {}".format(metric_col), fontsize=fontsize)
+
+    if path:
+        plt.savefig(path)
+
+    if is_visible:
+        plt.show()
+    else:
+        plt.close()
