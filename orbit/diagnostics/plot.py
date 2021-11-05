@@ -17,6 +17,7 @@ from orbit.utils.plot import orbit_style_decorator
 
 from ..exceptions import PlotException
 
+
 @orbit_style_decorator
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
                         pred_col=PredictionKeys.PREDICTION.value, prediction_percentiles=None,
@@ -268,12 +269,15 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
     if figsize is None:
         figsize = (16, 8)
 
-    metric_vals = bt_pred_df.groupby('split_key').apply(lambda x:
-                                                        metrics(x[~x['training_data']][BacktestFitKeys.ACTUAL.value],
-                                                                x[~x['training_data']]['prediction']))
+    metric_vals = bt_pred_df.groupby(BacktestFitKeys.SPLIT_KEY.value).apply(lambda x:
+                                                                            metrics(
+                                                                                x[~x[BacktestFitKeys.TRAIN_FLAG.value]][
+                                                                                    BacktestFitKeys.ACTUAL.value],
+                                                                                x[~x[BacktestFitKeys.TRAIN_FLAG.value]][
+                                                                                    BacktestFitKeys.PREDICTED.value]))
 
     if split_key_list is None:
-        split_key_list_ = bt_pred_df['split_key'].unique()
+        split_key_list_ = bt_pred_df[BacktestFitKeys.SPLIT_KEY.value].unique()
     else:
         split_key_list_ = split_key_list
 
@@ -284,17 +288,19 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
     for idx, split_key in enumerate(split_key_list_):
         row_idx = idx // ncol
         col_idx = idx % ncol
-        tmp = bt_pred_df[bt_pred_df['split_key'] == split_key].copy()
-        axes[row_idx, col_idx].plot(tmp['date'], tmp['prediction'],  # linewidth=2,
+        tmp = bt_pred_df[bt_pred_df[BacktestFitKeys.SPLIT_KEY.value] == split_key].copy()
+        axes[row_idx, col_idx].plot(tmp[BacktestFitKeys.DATE.value], tmp[BacktestFitKeys.PREDICTED.value],
+                                    # linewidth=2,
                                     color=PredPal.PREDICTION_LINE.value)
-        axes[row_idx, col_idx].scatter(tmp['date'], tmp[BacktestFitKeys.ACTUAL.value], label='actual',
+        axes[row_idx, col_idx].scatter(tmp[BacktestFitKeys.DATE.value], tmp[BacktestFitKeys.ACTUAL.value],
+                                       label=BacktestFitKeys.ACTUAL.value,
                                        color=PredPal.ACTUAL_OBS.value, alpha=.6, s=8)
         # axes[row_idx, col_idx].grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.4)
 
         axes[row_idx, col_idx].set_title(label='split {}; {} {:.3f}'. \
                                          format(split_key, metrics.__name__, metric_vals[split_key]))
         if include_vline:
-            cutoff_date = tmp[~tmp['training_data']]['date'].min()
+            cutoff_date = tmp[~tmp[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.DATE.value].min()
             axes[row_idx, col_idx].axvline(x=cutoff_date, linestyle='--',
                                            color=PredPal.HOLDOUT_VERTICAL_LINE.value,
                                            # linewidth=4,
@@ -329,34 +335,37 @@ def plot_bt_predictions2(bt_pred_df, metrics=smape, split_key_list=None, figsize
             ))
         fig_paths = list()
 
-    metric_vals = bt_pred_df.groupby('split_key').apply(lambda x:
-                                                        metrics(x[~x['training_data']][BacktestFitKeys.ACTUAL.value],
-                                                                x[~x['training_data']]['prediction']))
+    metric_vals = bt_pred_df.groupby(BacktestFitKeys.SPLIT_KEY.value).apply(
+        lambda x:
+        metrics(x[~x[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.ACTUAL.value],
+                x[~x[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.PREDICTED.value]))
 
     if split_key_list is None:
-        split_key_list_ = bt_pred_df['split_key'].unique()
+        split_key_list_ = bt_pred_df[BacktestFitKeys.SPLIT_KEY.value].unique()
     else:
         split_key_list_ = split_key_list
 
     if fix_xylim:
-        all_values = np.concatenate((bt_pred_df['actual'].values, bt_pred_df['prediction'].values))
+        all_values = np.concatenate((
+            bt_pred_df[BacktestFitKeys.ACTUAL.value].values, bt_pred_df[BacktestFitKeys.PREDICTED.value].values
+        ))
         ylim = (np.min(all_values) * 0.99, np.max(all_values) * 1.01)
-        xlim = (bt_pred_df['date'].values[0], bt_pred_df['date'].values[-1])
+        xlim = (bt_pred_df[BacktestFitKeys.DATE.value].values[0], bt_pred_df[BacktestFitKeys.DATE.value].values[-1])
 
     for idx, split_key in enumerate(split_key_list_):
         fig, ax = plt.subplots(1, 1, figsize=figsize)
-        tmp = bt_pred_df[bt_pred_df['split_key'] == split_key].copy()
-        ax.plot(tmp['date'], tmp['prediction'],
+        tmp = bt_pred_df[bt_pred_df[BacktestFitKeys.SPLIT_KEY.value] == split_key].copy()
+        ax.plot(tmp[BacktestFitKeys.DATE.value], tmp[BacktestFitKeys.PREDICTED.value],
                 color=PredPal.PREDICTION_LINE.value, lw=lw)
 
-        train_df = tmp.loc[tmp['training_data'], :]
-        ax.scatter(train_df['date'],
+        train_df = tmp.loc[tmp[BacktestFitKeys.TRAIN_FLAG.value], :]
+        ax.scatter(train_df[BacktestFitKeys.DATE.value],
                    train_df[BacktestFitKeys.ACTUAL.value],
                    marker='.', color=PredPal.ACTUAL_OBS.value, alpha=0.8, s=markersize,
                    label='train response')
 
-        test_df = tmp.loc[~tmp['training_data'], :]
-        ax.scatter(test_df['date'],
+        test_df = tmp.loc[~tmp[BacktestFitKeys.TRAIN_FLAG.value], :]
+        ax.scatter(test_df[BacktestFitKeys.DATE.value],
                    test_df[BacktestFitKeys.ACTUAL.value],
                    marker='.', color=PredPal.TEST_OBS.value, alpha=0.8, s=markersize,
                    label='test response')
@@ -364,7 +373,7 @@ def plot_bt_predictions2(bt_pred_df, metrics=smape, split_key_list=None, figsize
         ax.set_title(label='split {}; {} {:.3f}'. \
                      format(split_key, metrics.__name__, metric_vals[split_key]))
         if include_vline:
-            cutoff_date = tmp[~tmp['training_data']]['date'].min()
+            cutoff_date = tmp[~tmp[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.DATE.value].min()
             ax.axvline(x=cutoff_date, linestyle='--',
                        color=PredPal.HOLDOUT_VERTICAL_LINE.value,
                        alpha=.8)
@@ -386,11 +395,13 @@ def plot_bt_predictions2(bt_pred_df, metrics=smape, split_key_list=None, figsize
             plt.close()
 
     if fig_paths and export_gif:
+        # TODO: provide a message if user did not install imageio
         import imageio
         with imageio.get_writer('{}/orbit-backtest.gif'.format(fig_dir), mode='I', **imageio_args) as writer:
             for fig_path in fig_paths:
                 image = imageio.imread(fig_path)
                 writer.append_data(image)
+
 
 # TODO: update palatte
 @orbit_style_decorator

@@ -77,7 +77,10 @@ class TimeSeriesSplitter(object):
         if self.min_train_len is None and self.n_splits is None:
             raise BacktestException('min_train_len and n_splits cannot both be None...')
 
-        if self.window_type not in ['expanding', 'rolling']:
+        if self.window_type not in [
+            TimeSeriesSplitSchemeKeys.SPLIT_TYPE_EXPANDING.value,
+            TimeSeriesSplitSchemeKeys.SPLIT_TYPE_ROLLING.value
+        ]:
             raise BacktestException('unknown window type...')
 
         # forecast length invalid
@@ -106,7 +109,7 @@ class TimeSeriesSplitter(object):
         for i, train_end_idx in enumerate(test_seq):
             split_scheme[i] = {}
             train_start_idx = train_end_idx - self.min_train_len + 1 \
-                if self.window_type == 'rolling' else 0
+                if self.window_type == TimeSeriesSplitSchemeKeys.SPLIT_TYPE_ROLLING.value else 0
             split_scheme[i][TimeSeriesSplitSchemeKeys.TRAIN_IDX.value] = range(
                 train_start_idx, train_end_idx + 1)
             split_scheme[i][TimeSeriesSplitSchemeKeys.TEST_IDX.value] = range(

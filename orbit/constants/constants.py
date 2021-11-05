@@ -76,6 +76,9 @@ class TimeSeriesSplitSchemeKeys(Enum):
     TRAIN_END_DATE = 'train_end_date'
     TRAIN_IDX = 'train_idx'
     TEST_IDX = 'test_idx'
+    # split scheme type
+    SPLIT_TYPE_EXPANDING = 'expanding'
+    SPLIT_TYPE_ROLLING = 'rolling'
 
 
 class BacktestFitKeys(Enum):
