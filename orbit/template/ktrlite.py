@@ -249,7 +249,7 @@ class KTRLiteModel(ModelTemplate):
     # fit and predict related modules
     def _set_validate_ktr_params(self, training_meta):
         # avoid lengthy code
-        response = training_meta['response']
+        response = training_meta[TrainingMetaKeys.RESPONSE.value]
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
 
         if self._seasonality:
@@ -449,7 +449,7 @@ class KTRLiteModel(ModelTemplate):
     # TODO: need a unit test of this function
     def get_level_knots(self, training_meta, point_method, point_posteriors, posterior_samples):
         """Given posteriors, return knots and correspondent date"""
-        date_col = training_meta['date_col']
+        date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
         # since KTRLite only supports MAP estimator, point_method is guaranteed to be MAP
         lev_knots = point_posteriors \
                     .get(point_method) \
@@ -463,7 +463,7 @@ class KTRLiteModel(ModelTemplate):
         return pd.DataFrame(out)
 
     def get_levels(self, training_meta, point_method, point_posteriors, posterior_samples):
-        date_col = training_meta['date_col']
+        date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
         date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
         # since KTRLite only supports MAP estimator, point_method is guaranteed to be MAP
         levs = point_posteriors \
@@ -500,9 +500,9 @@ class KTRLiteModel(ModelTemplate):
         -------
             matplotlib axes object
         """
-        date_col = training_meta['date_col']
+        date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
         date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
-        response = training_meta['response']
+        response = training_meta[TrainingMetaKeys.RESPONSE.value]
 
         levels_df = self.get_levels(training_meta, point_method, point_posteriors, posterior_samples)
         knots_df = self.get_level_knots(training_meta, point_method, point_posteriors, posterior_samples)

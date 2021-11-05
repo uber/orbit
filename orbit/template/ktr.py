@@ -141,8 +141,8 @@ class KTRModel(ModelTemplate):
         date frequency; if not supplied, the minimum timestamp difference in the date would be used.
     coef_prior_list : list of dicts
         each dict in the list should have keys as
-        'name', prior_start_tp_idx' (inclusive), 'prior_end_tp_idx' (not inclusive),
-        'prior_mean', 'prior_sd', and 'prior_regressor_col'
+        'name', prior_start_tp_idx' (inclusive), KTRTimePointPriorKeys.PRIOR_END_TP_IDX.value (not inclusive),
+        KTRTimePointPriorKeys.PRIOR_MEAN.value, KTRTimePointPriorKeys.PRIOR_SD.value, and KTRTimePointPriorKeys.PRIOR_REGRESSOR_COL.value
     residuals_scale_upper : float
     flat_multiplier : bool
         Default set as True. If False, we will adjust knot scale with a multiplier based on regressor volume
@@ -449,7 +449,7 @@ class KTRModel(ModelTemplate):
             for x in self._coef_prior_list:
                 prior_regressor_col_idx = [
                     np.where(np.array(self._regressor_col) == col)[0][0]
-                    for col in x['prior_regressor_col']
+                    for col in x[KTRTimePointPriorKeys.PRIOR_REGRESSOR_COL.value]
                 ]
                 x.update({'prior_regressor_col_idx': prior_regressor_col_idx})
 
@@ -516,8 +516,8 @@ class KTRModel(ModelTemplate):
     def _set_coefficients_kernel_matrix(self, df, training_meta):
         """Derive knots position and kernel matrix and other related meta data"""
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
-        date_array = training_meta['date_array']
-        # date_col = training_meta['date_col']
+        date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
+        # date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
 
         # placeholder
         self._kernel_coefficients = np.zeros((num_of_observations, 0), dtype=np.double)
@@ -658,9 +658,9 @@ class KTRModel(ModelTemplate):
 
     def _generate_tp(self, training_meta, prediction_date_array):
         """Used in _generate_seas"""
-        training_end = training_meta['training_end']
+        training_end = training_meta[TrainingMetaKeys.END.value]
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
-        date_array = training_meta['date_array']
+        date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
         prediction_start = prediction_date_array[0]
         output_len = len(prediction_date_array)
         if prediction_start > training_end:
@@ -673,7 +673,7 @@ class KTRModel(ModelTemplate):
 
     def _generate_insample_tp(self, training_meta, date_array):
         """Used in _generate_seas"""
-        train_date_array = training_meta['date_array']
+        train_date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         idx = np.nonzero(np.in1d(train_date_array, date_array))[0]
         tp = (idx + 1) / num_of_observations
@@ -715,9 +715,9 @@ class KTRModel(ModelTemplate):
 
         if seasonality is not None and len(seasonality) > 0:
 
-            date_col = training_meta['date_col']
-            date_array = training_meta['date_array']
-            training_end = training_meta['training_end']
+            date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
+            date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
+            training_end = training_meta[TrainingMetaKeys.END.value]
             num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
 
             prediction_date_array = df[date_col].values
@@ -761,9 +761,9 @@ class KTRModel(ModelTemplate):
 
     def _set_levs_and_seas(self, df, training_meta):
         response_col = training_meta['response_col']
-        date_col = training_meta['date_col']
+        date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
-        date_array = training_meta['date_array']
+        date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
 
         # use ktrlite to derive levs and seas
         ktrlite = KTRLite(
@@ -844,18 +844,18 @@ class KTRModel(ModelTemplate):
         if self._coef_prior_list and len(self._regressor_col) > 0:
             # iterate over a copy due to the removal operation
             for test_dict in self._coef_prior_list[:]:
-                prior_regressor_col = test_dict['prior_regressor_col']
-                m = test_dict['prior_mean']
-                sd = test_dict['prior_sd']
-                end_tp_idx = min(test_dict['prior_end_tp_idx'], df.shape[0])
-                start_tp_idx = min(test_dict['prior_start_tp_idx'], df.shape[0])
+                prior_regressor_col = test_dict[KTRTimePointPriorKeys.PRIOR_REGRESSOR_COL.value]
+                m = test_dict[KTRTimePointPriorKeys.PRIOR_MEAN.value]
+                sd = test_dict[KTRTimePointPriorKeys.PRIOR_SD.value]
+                end_tp_idx = min(test_dict[KTRTimePointPriorKeys.PRIOR_END_TP_IDX.value], df.shape[0])
+                start_tp_idx = min(test_dict[KTRTimePointPriorKeys.PRIOR_START_TP_IDX.value], df.shape[0])
                 if start_tp_idx < end_tp_idx:
                     expected_shape = (end_tp_idx - start_tp_idx, len(prior_regressor_col))
-                    test_dict.update({'prior_end_tp_idx': end_tp_idx})
-                    test_dict.update({'prior_start_tp_idx': start_tp_idx})
+                    test_dict.update({KTRTimePointPriorKeys.PRIOR_END_TP_IDX.value: end_tp_idx})
+                    test_dict.update({KTRTimePointPriorKeys.PRIOR_START_TP_IDX.value: start_tp_idx})
                     # mean/sd expanding
-                    test_dict.update({'prior_mean': np.full(expected_shape, m)})
-                    test_dict.update({'prior_sd': np.full(expected_shape, sd)})
+                    test_dict.update({KTRTimePointPriorKeys.PRIOR_MEAN.value: np.full(expected_shape, m)})
+                    test_dict.update({KTRTimePointPriorKeys.PRIOR_SD.value: np.full(expected_shape, sd)})
                 else:
                     # removing invalid prior
                     self._coef_prior_list.remove(test_dict)
@@ -924,14 +924,14 @@ class KTRModel(ModelTemplate):
         ################################################################
         # Prediction Attributes
         ################################################################
-        output_len = prediction_meta['df_length']
-        prediction_start = prediction_meta['prediction_start']
-        date_array = training_meta['date_array']
+        output_len = prediction_meta[PredictionMetaKeys.PREDICTION_DF_LEN.value]
+        prediction_start = prediction_meta[PredictionMetaKeys.START.value]
+        date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
-        training_end = training_meta['training_end']
+        training_end = training_meta[TrainingMetaKeys.END.value]
 
         # Here assume dates are ordered and consecutive
-        # if prediction_meta['prediction_start'] > self.training_end,
+        # if prediction_meta[PredictionMetaKeys.START.value] > self.training_end,
         # assume prediction starts right after train end
         if prediction_start > training_end:
             # time index for prediction start
@@ -987,7 +987,7 @@ class KTRModel(ModelTemplate):
                 training_meta,
                 posterior_estimates,
                 coefficient_method,
-                date_array=prediction_meta['date_array']
+                date_array=prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]
             )
             regression = np.sum(regressor_betas * regressor_matrix, axis=-1)
 
@@ -1030,9 +1030,9 @@ class KTRModel(ModelTemplate):
             this mainly impacts the aggregated estimation method; full bayesian should not be impacted.
         """
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
-        training_start = training_meta['training_start']
-        training_end = training_meta['training_end']
-        train_date_array = training_meta['date_array']
+        training_start = training_meta[TrainingMetaKeys.START.value]
+        training_end = training_meta[TrainingMetaKeys.END.value]
+        train_date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
 
         if self._num_of_regular_regressors + self._num_of_positive_regressors + self._num_of_negative_regressors == 0:
             return None
@@ -1118,7 +1118,7 @@ class KTRModel(ModelTemplate):
         -------
         Pandas data frame holding the dynamic regression coefficients
         """
-        date_col = training_meta['date_col']
+        date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
         reg_df = pd.DataFrame()
         if self._num_of_regressors == 0:
             return reg_df
@@ -1138,7 +1138,7 @@ class KTRModel(ModelTemplate):
         if date_array is not None:
             reg_df[date_col] = date_array
         else:
-            reg_df[date_col] = training_meta['date_array']
+            reg_df[date_col] = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
         # re-arrange columns
         reg_df = reg_df[[date_col] + self._regressor_col]
 
@@ -1162,7 +1162,7 @@ class KTRModel(ModelTemplate):
     def get_regression_coef_knots(self, training_meta, point_method, point_posteriors, posterior_samples):
         """Return DataFrame regression coefficient knots
         """
-        date_col = training_meta['date_col']
+        date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
         _point_method = point_method
         if point_method is None:
             _point_method = PredictMethod.MEDIAN.value
@@ -1268,7 +1268,7 @@ class KTRModel(ModelTemplate):
     # TODO: need a unit test of this function
     def get_level_knots(self, training_meta, point_method, point_posteriors, posterior_samples):
         """Given posteriors, return knots and correspondent date"""
-        date_col = training_meta['date_col']
+        date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
         _point_method = point_method
         if point_method is None:
             _point_method = PredictMethod.MEDIAN.value
@@ -1284,8 +1284,8 @@ class KTRModel(ModelTemplate):
         return pd.DataFrame(out)
 
     def get_levels(self, training_meta, point_method, point_posteriors, posterior_samples):
-        date_col = training_meta['date_col']
-        date_array = training_meta['date_array']
+        date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
+        date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
         _point_method = point_method
         if point_method is None:
             _point_method = PredictMethod.MEDIAN.value
@@ -1323,8 +1323,8 @@ class KTRModel(ModelTemplate):
         -------
             matplotlib axes object
         """
-        date_col = training_meta['date_col']
-        date_array = training_meta['date_array']
+        date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
+        date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
         response = training_meta[TrainingMetaKeys.RESPONSE.value]
 
         levels_df = self.get_levels(training_meta, point_method, point_posteriors, posterior_samples)
