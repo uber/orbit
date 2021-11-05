@@ -218,9 +218,9 @@ class BackTester(object):
         self._n_splits = 0
         self._set_n_splits()
         self._test_actual = []
-        self._test_predicted = []
+        self._test_prediction = []
         self._train_actual = []
-        self._train_predicted = []
+        self._train_prediction = []
 
         # init df for actual and predictions
         self._predicted_df = pd.DataFrame(
@@ -282,12 +282,12 @@ class BackTester(object):
             self._fitted_models.append(model_copy)
             self._splitter_scheme.append(scheme)
             self._test_actual = np.concatenate((self._test_actual, test_df[response_col].to_numpy()))
-            self._test_predicted = np.concatenate(
-                (self._test_predicted, test_predictions[BacktestFitKeys.PREDICTED.value].to_numpy()))
+            self._test_prediction = np.concatenate(
+                (self._test_prediction, test_predictions[BacktestFitKeys.PREDICTED.value].to_numpy()))
             self._train_actual = np.concatenate(
                 (self._train_actual, train_df[response_col].to_numpy()))
-            self._train_predicted = np.concatenate(
-                (self._train_predicted, train_predictions[BacktestFitKeys.PREDICTED.value].to_numpy()))
+            self._train_prediction = np.concatenate(
+                (self._train_prediction, train_predictions[BacktestFitKeys.PREDICTED.value].to_numpy()))
 
             # set df attribute
             # join train
@@ -335,9 +335,9 @@ class BackTester(object):
                 continue
             elif metric_signature.issubset({
                 BacktestFitKeys.TEST_ACTUAL.value, 
-                BacktestFitKeys.TEST_PREDICTION.value, 
+                BacktestFitKeys.TEST_PREDICTED.value,
                 BacktestFitKeys.TRAIN_ACTUAL.value, 
-                BacktestFitKeys.TRAIN_PREDICTION.value
+                BacktestFitKeys.TRAIN_PREDICTED.value
             }):
                 continue
             else:
@@ -348,7 +348,7 @@ class BackTester(object):
         # values for metric_signature already are only for valid signatures
         metric_signature = self._get_metric_callable_signature(metric)
         if metric_signature == {BacktestFitKeys.ACTUAL.value, BacktestFitKeys.PREDICTED.value}:
-            eval_out = metric(actual=self._test_actual, predicted=self._test_predicted)
+            eval_out = metric(actual=self._test_actual, prediction=self._test_prediction)
         else:
             # get signature and match with the private attributes respectively
             # mainly used for cases we need training data into test metrics
@@ -406,12 +406,13 @@ class BackTester(object):
         if include_training_metrics:
             # only supports simple metrics function signature
             metrics = list(filter(
-                lambda x: self._get_metric_callable_signature(x) == {BacktestFitKeys.ACTUAL.value, BacktestFitKeys.PREDICTED.value},
+                lambda x: self._get_metric_callable_signature(x) == {
+                    BacktestFitKeys.ACTUAL.value, BacktestFitKeys.PREDICTED.value},
                 metrics
             ))
             train_eval_out_list = list()
             for metric in metrics:
-                eval_out = metric(actual=self._train_actual, predicted=self._train_predicted)
+                eval_out = metric(actual=self._train_actual, prediction=self._train_prediction)
                 train_eval_out_list.append(eval_out)
 
             metrics_str = [x.__name__ for x in metrics]  # metric names string

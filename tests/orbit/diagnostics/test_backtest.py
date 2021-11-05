@@ -208,7 +208,7 @@ def test_backtester_with_training_data(iclaims_training_data):
     expected_test_metrics = [x.__name__ for x in backtester._default_metrics]
 
     expected_train_metrics = list(filter(
-        lambda x: backtester._get_metric_callable_signature(x) == {'actual', 'predicted'}, backtester._default_metrics)
+        lambda x: backtester._get_metric_callable_signature(x) == {'actual', 'prediction'}, backtester._default_metrics)
     )
     expected_train_metrics = [x.__name__ for x in expected_train_metrics]
 

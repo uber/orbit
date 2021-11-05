@@ -83,15 +83,17 @@ class BacktestFitKeys(Enum):
     the intermediate variables to generate such outcome dataframe
     """
     # labels for fitting process
+    # note that the convention "_prediction" cannot be changed since it is also assumed in
+    # all metric functions signature
     ACTUAL = 'actual'
     PREDICTED = 'prediction'
     DATE = 'date'
     SPLIT_KEY = 'split_key'
     TRAIN_FLAG = 'training_data'
     TRAIN_ACTUAL = 'train_actual'
-    TRAIN_PREDICTION = 'train_predicted'
+    TRAIN_PREDICTED = 'train_prediction'
     TEST_ACTUAL = 'test_actual'
-    TEST_PREDICTION = 'test_predicted'
+    TEST_PREDICTED = 'test_prediction'
     # labels for scoring process
     METRIC_VALUES = 'metric_values'
     METRIC_NAME = 'metric_name'

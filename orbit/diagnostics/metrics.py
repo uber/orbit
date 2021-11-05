@@ -2,51 +2,51 @@ import numpy as np
 EPS = 1e-5
 
 
-def smape(actual, predicted):
+def smape(actual, prediction):
     filtered = np.abs(actual) > EPS
     actual = actual[filtered]
-    predicted = predicted[filtered]
-    return 2 * np.mean(np.abs(actual - predicted) / (np.abs(actual) + np.abs(predicted)))
+    prediction = prediction[filtered]
+    return 2 * np.mean(np.abs(actual - prediction) / (np.abs(actual) + np.abs(prediction)))
 
 
-def mape(actual, predicted):
+def mape(actual, prediction):
     filtered = np.abs(actual) > EPS
     actual = actual[filtered]
-    predicted = predicted[filtered]
-    return np.mean(np.abs((actual - predicted) / actual))
+    prediction = prediction[filtered]
+    return np.mean(np.abs((actual - prediction) / actual))
 
 
-def wmape(actual, predicted):
+def wmape(actual, prediction):
     filtered = np.abs(actual) > EPS
     actual = actual[filtered]
-    predicted = predicted[filtered]
+    prediction = prediction[filtered]
     weights = np.abs(actual) / np.sum(np.abs(actual))
-    return np.sum(weights * np.abs((actual - predicted) / actual))
+    return np.sum(weights * np.abs((actual - prediction) / actual))
 
 
-def wsmape(actual, predicted):
+def wsmape(actual, prediction):
     filtered = np.abs(actual) > EPS
     actual = actual[filtered]
-    predicted = predicted[filtered]
+    prediction = prediction[filtered]
     weights = np.abs(actual) / np.sum(np.abs(actual))
-    return 2 * np.sum(weights * np.abs(actual - predicted) / (np.abs(actual) + np.abs(predicted)))
+    return 2 * np.sum(weights * np.abs(actual - prediction) / (np.abs(actual) + np.abs(prediction)))
 
 
-def mae(actual, predicted):
+def mae(actual, prediction):
     filtered = ~np.isnan(actual)
     actual = actual[filtered]
-    predicted = predicted[filtered]
-    return np.mean(np.abs(actual - predicted))
+    prediction = prediction[filtered]
+    return np.mean(np.abs(actual - prediction))
 
 
-def mse(actual, predicted):
+def mse(actual, prediction):
     filtered = ~np.isnan(actual)
     actual = actual[filtered]
-    predicted = predicted[filtered]
-    return np.mean(np.square(actual - predicted))
+    prediction = prediction[filtered]
+    return np.mean(np.square(actual - prediction))
 
 
-def rmsse(test_actual, test_predicted, train_actual):
+def rmsse(test_actual, test_prediction, train_actual):
     """Computes Root Mean Squared Scaled Error (RMSSE)
 
     A variant of the well-known Mean Absolute Scaled Error (MASE) proposed by Hyndman and Koehler (2006)
@@ -69,6 +69,6 @@ def rmsse(test_actual, test_predicted, train_actual):
 
     lag1_mse = mse(train_actual[1:], train_actual[:-1])
 
-    forecast_mse = mse(test_actual, test_predicted)
+    forecast_mse = mse(test_actual, test_prediction)
 
     return np.sqrt(forecast_mse / lag1_mse)
