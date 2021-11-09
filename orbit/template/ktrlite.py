@@ -7,7 +7,12 @@ import math
 from scipy.stats import nct
 import matplotlib.pyplot as plt
 
-from ..constants.constants import PredictionKeys, PredictMethod
+from ..constants.constants import (
+    PredictionKeys,
+    PredictMethod,
+    TrainingMetaKeys,
+    PredictionMetaKeys,
+)
 from ..exceptions import IllegalArgument, ModelException
 from .model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMAP
@@ -244,8 +249,8 @@ class KTRLiteModel(ModelTemplate):
     # fit and predict related modules
     def _set_validate_ktr_params(self, training_meta):
         # avoid lengthy code
-        response = training_meta['response']
-        num_of_observations = training_meta['num_of_observations']
+        response = training_meta[TrainingMetaKeys.RESPONSE.value]
+        num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
 
         if self._seasonality:
             max_seasonality = np.round(np.max(self._seasonality)).astype(int)
@@ -283,15 +288,15 @@ class KTRLiteModel(ModelTemplate):
         return df
 
     def _set_regressor_matrix(self, df, training_meta):
-        num_of_observations = training_meta['num_of_observations']
+        num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         # init of regression matrix depends on length of response vector
         self.regressor_matrix = np.zeros((num_of_observations, 0), dtype=np.double)
         if self.num_of_regressors > 0:
             self.regressor_matrix = df.filter(items=self.regressor_col, ).values
 
     def _set_kernel_matrix(self, df, training_meta):
-        num_of_observations = training_meta['num_of_observations']
-        date_array = training_meta['date_array']
+        num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
+        date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
 
         self._level_knots_idx = get_knot_idx(
             date_array=date_array,
@@ -353,7 +358,7 @@ class KTRLiteModel(ModelTemplate):
         # Prediction Attributes
         ################################################################
         start = prediction_meta['start']
-        trained_len = training_meta['num_of_observations']
+        trained_len = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         output_len = prediction_meta['df_length']
 
         ################################################################
@@ -444,7 +449,7 @@ class KTRLiteModel(ModelTemplate):
     # TODO: need a unit test of this function
     def get_level_knots(self, training_meta, point_method, point_posteriors, posterior_samples):
         """Given posteriors, return knots and correspondent date"""
-        date_col = training_meta['date_col']
+        date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
         # since KTRLite only supports MAP estimator, point_method is guaranteed to be MAP
         lev_knots = point_posteriors \
                     .get(point_method) \
@@ -458,8 +463,8 @@ class KTRLiteModel(ModelTemplate):
         return pd.DataFrame(out)
 
     def get_levels(self, training_meta, point_method, point_posteriors, posterior_samples):
-        date_col = training_meta['date_col']
-        date_array = training_meta['date_array']
+        date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
+        date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
         # since KTRLite only supports MAP estimator, point_method is guaranteed to be MAP
         levs = point_posteriors \
                  .get(point_method) \
@@ -495,9 +500,9 @@ class KTRLiteModel(ModelTemplate):
         -------
             matplotlib axes object
         """
-        date_col = training_meta['date_col']
-        date_array = training_meta['date_array']
-        response = training_meta['response']
+        date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
+        date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
+        response = training_meta[TrainingMetaKeys.RESPONSE.value]
 
         levels_df = self.get_levels(training_meta, point_method, point_posteriors, posterior_samples)
         knots_df = self.get_level_knots(training_meta, point_method, point_posteriors, posterior_samples)

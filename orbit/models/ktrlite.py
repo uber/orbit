@@ -2,6 +2,7 @@ from ..template.ktrlite import KTRLiteModel
 from ..forecaster import MAPForecaster
 from ..exceptions import IllegalArgument
 from ..estimators.stan_estimator import StanEstimatorMAP
+from ..constants.constants import EstimatorsKeys
 
 
 def KTRLite(
@@ -66,7 +67,7 @@ def KTRLite(
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator
     """
-    _supported_estimators = ['stan-map']
+    _supported_estimators = [EstimatorsKeys.StanMAP.value]
 
     ktrlite = KTRLiteModel(
         level_knot_scale=level_knot_scale,
@@ -82,7 +83,7 @@ def KTRLite(
         degree_of_freedom=degree_of_freedom,
         date_freq=date_freq,
     )
-    if estimator == 'stan-map':
+    if estimator == EstimatorsKeys.StanMAP.value:
         ktrlite_forecaster = MAPForecaster(
             model=ktrlite,
             estimator_type=StanEstimatorMAP,

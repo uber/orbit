@@ -116,6 +116,7 @@ tutorial/_build/
 build/
 classes/
 
+# development
 log/
 tmp/
 /out/
@@ -129,3 +130,4 @@ examples/debug.ipynb
 examples/debug_stan_data.txt
 examples/debug_stan_data.json
 examples/internal_data_test.ipynb
+examples/temp/

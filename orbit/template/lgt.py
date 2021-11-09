@@ -11,14 +11,16 @@ from ..constants.constants import (
     DEFAULT_REGRESSOR_BETA,
     DEFAULT_REGRESSOR_SIGMA,
     COEFFICIENT_DF_COLS,
+    PredictMethod,
     PredictionKeys,
-    PredictMethod
+    TrainingMetaKeys,
+    PredictionMetaKeys
 )
 from ..exceptions import IllegalArgument, ModelException
 # from .model_template import ModelTemplate
 from .ets import ETSModel
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
-from ..estimators.pyro_estimator import PyroEstimatorVI
+from ..estimators.pyro_estimator import PyroEstimatorSVI
 
 
 class DataInputMapper(Enum):
@@ -161,7 +163,7 @@ class LGTModel(ETSModel):
     _data_input_mapper = DataInputMapper
     # used to match name of `*.stan` or `*.pyro` file to look for the model
     _model_name = 'lgt'
-    _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC, PyroEstimatorVI]
+    _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC, PyroEstimatorSVI]
 
     def __init__(self, regressor_col=None, regressor_sign=None,
                  regressor_beta_prior=None, regressor_sigma_prior=None,
@@ -387,17 +389,17 @@ class LGTModel(ETSModel):
 
         # extra validation and settings for regression
         self._validate_training_df_with_regression(df)
-        self._set_regressor_matrix(df, training_meta['num_of_observations'])  # depends on num_of_observations
+        self._set_regressor_matrix(df, training_meta[TrainingMetaKeys.NUM_OF_OBS.value])  # depends on num_of_observations
 
     def predict(self, posterior_estimates, df, training_meta, prediction_meta, include_error=False, **kwargs):
         """Vectorized version of prediction math"""
         ################################################################
         # Prediction Attributes
         ################################################################
-        n_forecast_steps = prediction_meta['n_forecast_steps']
-        start = prediction_meta['start']
-        trained_len = training_meta['num_of_observations']
-        output_len = prediction_meta['df_length']
+        n_forecast_steps = prediction_meta[PredictionMetaKeys.FUTURE_STEPS.value]
+        start = prediction_meta[PredictionMetaKeys.START_INDEX.value]
+        trained_len = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
+        output_len = prediction_meta[PredictionMetaKeys.PREDICTION_DF_LEN.value]
         full_len = trained_len + n_forecast_steps
 
         ################################################################

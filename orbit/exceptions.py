@@ -27,3 +27,7 @@ class BacktestException(Exception):
 
 class AbstractMethodException(Exception):
     pass
+
+
+class PlotException(Exception):
+    pass

@@ -47,7 +47,7 @@ class PyroEstimator(BaseEstimator):
 
 
 # make the name consistent across VI
-class PyroEstimatorVI(PyroEstimator):
+class PyroEstimatorSVI(PyroEstimator):
     """Pyro Estimator for VI Sampling
 
     Parameters

@@ -7,6 +7,7 @@ from ..exceptions import ForecasterException, AbstractMethodException
 from ..utils.general import is_ordered_datetime
 from ..template.model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMCMC
+from ..constants.constants import TrainingMetaKeys, PredictionMetaKeys
 
 COMMON_MODEL_CALLABLES = ['get_data_input_mapper', 'get_fitter', 'get_init_values', 'get_model_name',
                           'get_model_param_names', 'get_supported_estimator_types', 'predict',
@@ -155,15 +156,15 @@ class Forecaster(object):
         """A default pre-processing and information gathering from training input dataframe"""
         training_meta = dict()
         response = df[self.response_col].values
-        training_meta['response'] = response
-        training_meta['date_array'] = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
-        training_meta['num_of_observations'] = len(response)
-        training_meta['response_sd'] = np.nanstd(response)
-        training_meta['training_start'] = df[self.date_col].iloc[0]
-        training_meta['training_end'] = df[self.date_col].iloc[-1]
+        training_meta[TrainingMetaKeys.RESPONSE.value] = response
+        training_meta[TrainingMetaKeys.DATE_ARRAY.value] = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
+        training_meta[TrainingMetaKeys.NUM_OF_OBS.value] = len(response)
+        training_meta[TrainingMetaKeys.RESPONSE_SD.value] = np.nanstd(response)
+        training_meta[TrainingMetaKeys.START.value] = df[self.date_col].iloc[0]
+        training_meta[TrainingMetaKeys.END.value] = df[self.date_col].iloc[-1]
         # TODO: a little overhead here; there is room for further improvement
-        training_meta['date_col'] = self.date_col
-        training_meta['response_col'] = self.response_col
+        training_meta[TrainingMetaKeys.DATE_COL.value] = self.date_col
+        training_meta[TrainingMetaKeys.RESPONSE_COL.value] = self.response_col
         self._training_meta = training_meta
 
     def get_training_meta(self):
@@ -180,10 +181,10 @@ class Forecaster(object):
         # always get standard input from training
         training_meta = self.get_training_meta()
         training_data_input = {
-            'RESPONSE': training_meta['response'],
+            TrainingMetaKeys.RESPONSE.value.upper(): training_meta[TrainingMetaKeys.RESPONSE.value],
             # response_sd not used in lgt/dlt
-            'RESPONSE_SD': training_meta['response_sd'],
-            'NUM_OF_OBS': training_meta['num_of_observations'],
+            TrainingMetaKeys.RESPONSE_SD.value.upper(): training_meta[TrainingMetaKeys.RESPONSE_SD.value],
+            TrainingMetaKeys.NUM_OF_OBS.value.upper(): training_meta[TrainingMetaKeys.NUM_OF_OBS.value],
             'WITH_MCMC': 1,
         }
 
@@ -255,45 +256,47 @@ class Forecaster(object):
 
         # get prediction df meta
         prediction_meta = {
-            'date_array': pd.to_datetime(df[self.date_col]).reset_index(drop=True),
-            'df_length': len(df.index),
-            'prediction_start': df[self.date_col].iloc[0],
-            'prediction_end': df[self.date_col].iloc[-1],
+            PredictionMetaKeys.DATE_ARRAY.value: pd.to_datetime(df[self.date_col]).reset_index(drop=True),
+            PredictionMetaKeys.PREDICTION_DF_LEN.value: len(df.index),
+            PredictionMetaKeys.START.value: df[self.date_col].iloc[0],
+            PredictionMetaKeys.END.value: df[self.date_col].iloc[-1],
         }
 
-        if not is_ordered_datetime(prediction_meta['date_array']):
+        if not is_ordered_datetime(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]):
             raise ForecasterException('Datetime index must be ordered and not repeat')
 
         # TODO: validate that all regressor columns are present, if any
 
-        if prediction_meta['prediction_start'] < self._training_meta['training_start']:
+        if prediction_meta[PredictionMetaKeys.START.value] < self._training_meta[TrainingMetaKeys.START.value]:
             raise ForecasterException('Prediction start must be after training start.')
 
-        trained_len = self._training_meta['num_of_observations']
+        trained_len = self._training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
 
         # If we cannot find a match of prediction range, assume prediction starts right after train
         # end
-        if prediction_meta['prediction_start'] > self._training_meta['training_end']:
-            forecast_dates = set(prediction_meta['date_array'])
+        if prediction_meta[PredictionMetaKeys.START.value] > self._training_meta[TrainingMetaKeys.END.value]:
+            forecast_dates = set(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value])
             n_forecast_steps = len(forecast_dates)
             # time index for prediction start
             start = trained_len
         else:
             # compute how many steps to forecast
             forecast_dates = \
-                set(prediction_meta['date_array']) - set(self._training_meta['date_array'])
+                set(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]) - \
+                set(self._training_meta[TrainingMetaKeys.DATE_ARRAY.value])
             # check if prediction df is a subset of training df
             # e.g. "negative" forecast steps
             n_forecast_steps = len(forecast_dates) or - (
-                len(set(self._training_meta['date_array']) - set(prediction_meta['date_array']))
+                len(set(self._training_meta[TrainingMetaKeys.DATE_ARRAY.value]) -
+                    set(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]))
             )
             # time index for prediction start
             start = pd.Index(
-                self._training_meta['date_array']).get_loc(prediction_meta['prediction_start'])
+                self._training_meta[TrainingMetaKeys.DATE_ARRAY.value]).get_loc(prediction_meta[PredictionMetaKeys.START.value])
 
         prediction_meta.update({
-            'start': start,
-            'n_forecast_steps': n_forecast_steps,
+            PredictionMetaKeys.START_INDEX.value: start,
+            PredictionMetaKeys.FUTURE_STEPS.value: n_forecast_steps,
         })
 
         self._prediction_meta = prediction_meta

@@ -1,7 +1,8 @@
 from ..template.ktr import KTRModel
 from ..forecaster import SVIForecaster
 from ..exceptions import IllegalArgument
-from ..estimators.pyro_estimator import PyroEstimatorVI
+from ..estimators.pyro_estimator import PyroEstimatorSVI
+from ..constants.constants import EstimatorsKeys
 
 
 def KTR(
@@ -112,38 +113,38 @@ def KTR(
     **kwargs:
         additional arguments passed into orbit.estimators.pyro_estimator
     """
-    _supported_estimators = ['pyro-svi']
+    _supported_estimators = [EstimatorsKeys.PyroSVI.value]
 
     ktr = KTRModel(
-            level_knot_scale=level_knot_scale,
-            level_segments=level_segments,
-            level_knot_distance=level_knot_distance,
-            level_knot_dates=level_knot_dates,
-            seasonality=seasonality,
-            seasonality_fs_order=seasonality_fs_order,
-            seasonality_segments=seasonality_segments,
-            seasonal_initial_knot_scale=seasonal_initial_knot_scale,
-            seasonal_knot_scale=seasonal_knot_scale,
-            regressor_col=regressor_col,
-            regressor_sign=regressor_sign,
-            regressor_init_knot_loc=regressor_init_knot_loc,
-            regressor_init_knot_scale=regressor_init_knot_scale,
-            regressor_knot_scale=regressor_knot_scale,
-            regression_segments=regression_segments,
-            regression_knot_distance=regression_knot_distance,
-            regression_knot_dates=regression_knot_dates,
-            regression_rho=regression_rho,
-            degree_of_freedom=degree_of_freedom,
-            coef_prior_list=coef_prior_list,
-            date_freq=date_freq,
-            flat_multiplier=flat_multiplier,
-            residuals_scale_upper=residuals_scale_upper,
-            ktrlite_optim_args=ktrlite_optim_args
+        level_knot_scale=level_knot_scale,
+        level_segments=level_segments,
+        level_knot_distance=level_knot_distance,
+        level_knot_dates=level_knot_dates,
+        seasonality=seasonality,
+        seasonality_fs_order=seasonality_fs_order,
+        seasonality_segments=seasonality_segments,
+        seasonal_initial_knot_scale=seasonal_initial_knot_scale,
+        seasonal_knot_scale=seasonal_knot_scale,
+        regressor_col=regressor_col,
+        regressor_sign=regressor_sign,
+        regressor_init_knot_loc=regressor_init_knot_loc,
+        regressor_init_knot_scale=regressor_init_knot_scale,
+        regressor_knot_scale=regressor_knot_scale,
+        regression_segments=regression_segments,
+        regression_knot_distance=regression_knot_distance,
+        regression_knot_dates=regression_knot_dates,
+        regression_rho=regression_rho,
+        degree_of_freedom=degree_of_freedom,
+        coef_prior_list=coef_prior_list,
+        date_freq=date_freq,
+        flat_multiplier=flat_multiplier,
+        residuals_scale_upper=residuals_scale_upper,
+        ktrlite_optim_args=ktrlite_optim_args
     )
-    if estimator == 'pyro-svi':
+    if estimator == EstimatorsKeys.PyroSVI.value:
         ktr_forecaster = SVIForecaster(
             model=ktr,
-            estimator_type=PyroEstimatorVI,
+            estimator_type=PyroEstimatorSVI,
             **kwargs
         )
     else:

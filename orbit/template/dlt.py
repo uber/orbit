@@ -11,7 +11,9 @@ from ..constants.constants import (
     DEFAULT_REGRESSOR_SIGMA,
     COEFFICIENT_DF_COLS,
     PredictMethod,
-    PredictionKeys
+    PredictionKeys,
+    TrainingMetaKeys,
+    PredictionMetaKeys
 )
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .ets import ETSModel
@@ -436,20 +438,21 @@ class DLTModel(ETSModel):
     def set_dynamic_attributes(self, df, training_meta):
         """Overriding: func: `~orbit.models.BaseETS._set_dynamic_attributes"""
         # scalar value is suggested by the author of Rlgt
-        self.cauchy_sd = max(np.abs(training_meta['response'])) / 30.0
+        self.cauchy_sd = max(np.abs(training_meta[TrainingMetaKeys.RESPONSE.value])) / 30.0
         # extra validation and settings for regression
         self._validate_training_df_with_regression(df)
-        self._set_regressor_matrix(df, training_meta['num_of_observations'])  # depends on num_of_observations
+        # depends on num_of_observations
+        self._set_regressor_matrix(df, training_meta[TrainingMetaKeys.NUM_OF_OBS.value])
 
     def predict(self, posterior_estimates, df, training_meta, prediction_meta, include_error=False, **kwargs):
         """Vectorized version of prediction math"""
         ################################################################
         # Prediction Attributes
         ################################################################
-        n_forecast_steps = prediction_meta['n_forecast_steps']
-        start = prediction_meta['start']
-        trained_len = training_meta['num_of_observations']
-        output_len = prediction_meta['df_length']
+        n_forecast_steps = prediction_meta[PredictionMetaKeys.FUTURE_STEPS.value]
+        start = prediction_meta[PredictionMetaKeys.START_INDEX.value]
+        trained_len = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
+        output_len = prediction_meta[PredictionMetaKeys.PREDICTION_DF_LEN.value]
         full_len = trained_len + n_forecast_steps
 
         ################################################################

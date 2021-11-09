@@ -3,7 +3,11 @@ from copy import deepcopy
 import torch
 from enum import Enum
 
-from ..constants.constants import PredictionKeys
+from ..constants.constants import (
+    PredictionKeys,
+    TrainingMetaKeys,
+    PredictionMetaKeys
+)
 from ..exceptions import IllegalArgument
 from .model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
@@ -144,9 +148,9 @@ class ETSModel(ModelTemplate):
         ################################################################
         # Prediction Attributes
         ################################################################
-        n_forecast_steps = prediction_meta['n_forecast_steps']
-        start = prediction_meta['start']
-        trained_len = training_meta['num_of_observations']
+        n_forecast_steps = prediction_meta[PredictionMetaKeys.FUTURE_STEPS.value]
+        start = prediction_meta[PredictionMetaKeys.START_INDEX.value]
+        trained_len = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         full_len = trained_len + n_forecast_steps
 
         ################################################################

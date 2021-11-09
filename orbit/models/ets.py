@@ -3,6 +3,7 @@ from ..template.ets import ETSModel
 from ..forecaster import MAPForecaster, FullBayesianForecaster
 from ..exceptions import IllegalArgument
 from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
+from ..constants.constants import EstimatorsKeys
 
 
 def ETS(seasonality=None,
@@ -44,20 +45,20 @@ def ETS(seasonality=None,
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator
     """
-    _supported_estimators = ['stan-map', 'stan-mcmc']
+    _supported_estimators = [EstimatorsKeys.StanMAP.value, EstimatorsKeys.StanMCMC.value]
 
     ets = ETSModel(
         seasonality=seasonality,
         seasonality_sm_input=seasonality_sm_input,
         level_sm_input=level_sm_input
     )
-    if estimator == 'stan-map':
+    if estimator == EstimatorsKeys.StanMAP.value:
         ets_forecaster = MAPForecaster(
             model=ets,
             estimator_type=StanEstimatorMAP,
             **kwargs
         )
-    elif estimator == 'stan-mcmc':
+    elif estimator == EstimatorsKeys.StanMCMC.value:
         ets_forecaster = FullBayesianForecaster(
             model=ets,
             estimator_type=StanEstimatorMCMC,

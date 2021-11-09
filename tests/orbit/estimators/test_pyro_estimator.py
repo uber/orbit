@@ -1,11 +1,11 @@
-from orbit.estimators.pyro_estimator import PyroEstimatorVI
+from orbit.estimators.pyro_estimator import PyroEstimatorSVI
 
 
 def test_pyro_estimator_vi(stan_estimator_lgt_model_input):
     stan_model_name, model_param_names, data_input = stan_estimator_lgt_model_input
 
     # create estimator
-    vi_estimator = PyroEstimatorVI(num_steps=50)
+    vi_estimator = PyroEstimatorSVI(num_steps=50)
 
     # extract posterior samples
     posteriors, training_metrics = vi_estimator.fit(

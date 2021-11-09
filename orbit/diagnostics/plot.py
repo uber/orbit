@@ -5,14 +5,17 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
-import arviz as az
 import math
+import os
 
 from ..constants.constants import PredictionKeys
 from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
+from ..constants.constants import BacktestFitKeys
 from ..constants.palette import PredictionPaletteClassic as PredPal
 from orbit.diagnostics.metrics import smape
 from orbit.utils.plot import orbit_style_decorator
+
+from ..exceptions import PlotException
 
 
 @orbit_style_decorator
@@ -235,8 +238,172 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
     return axes
 
 
-# TODO: update palatte
+@orbit_style_decorator
+def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
+                        ncol=2, figsize=None, include_vline=True,
+                        title="", fontsize=20, path=None, is_visible=True):
+    """function to plot and visualize the prediction results from back testing.
 
+    bt_pred_df : data frame
+        the output of `orbit.diagnostics.backtest.BackTester.fit_predict()`, which includes the actuals/predictions
+        for all the splits
+    metrics : callable
+        the metric function
+    split_key_list: list; default None
+        with given model, which split keys to plot. If None, all the splits will be plotted
+    ncol : int
+        number of columns of the panel; number of rows will be decided accordingly
+    figsize : tuple
+        figure size
+    include_vline : bool
+        if plotting the vertical line to cut the in-sample and out-of-sample predictions for each split
+    title : str
+        title of the plot
+    fontsize: int; optional
+        fontsize of the title
+    path : string
+        path to save the figure
+    is_visible : bool
+        if displaying the figure
+    """
+    if figsize is None:
+        figsize = (16, 8)
+
+    metric_vals = bt_pred_df.groupby(BacktestFitKeys.SPLIT_KEY.value).apply(lambda x:
+                                                                            metrics(
+                                                                                x[~x[BacktestFitKeys.TRAIN_FLAG.value]][
+                                                                                    BacktestFitKeys.ACTUAL.value],
+                                                                                x[~x[BacktestFitKeys.TRAIN_FLAG.value]][
+                                                                                    BacktestFitKeys.PREDICTED.value]))
+
+    if split_key_list is None:
+        split_key_list_ = bt_pred_df[BacktestFitKeys.SPLIT_KEY.value].unique()
+    else:
+        split_key_list_ = split_key_list
+
+    num_splits = len(split_key_list_)
+    nrow = math.ceil(num_splits / ncol)
+    fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False, facecolor='w', constrained_layout=False)
+
+    for idx, split_key in enumerate(split_key_list_):
+        row_idx = idx // ncol
+        col_idx = idx % ncol
+        tmp = bt_pred_df[bt_pred_df[BacktestFitKeys.SPLIT_KEY.value] == split_key].copy()
+        axes[row_idx, col_idx].plot(tmp[BacktestFitKeys.DATE.value], tmp[BacktestFitKeys.PREDICTED.value],
+                                    # linewidth=2,
+                                    color=PredPal.PREDICTION_LINE.value)
+        axes[row_idx, col_idx].scatter(tmp[BacktestFitKeys.DATE.value], tmp[BacktestFitKeys.ACTUAL.value],
+                                       label=BacktestFitKeys.ACTUAL.value,
+                                       color=PredPal.ACTUAL_OBS.value, alpha=.6, s=8)
+        # axes[row_idx, col_idx].grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.4)
+
+        axes[row_idx, col_idx].set_title(label='split {}; {} {:.3f}'. \
+                                         format(split_key, metrics.__name__, metric_vals[split_key]))
+        if include_vline:
+            cutoff_date = tmp[~tmp[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.DATE.value].min()
+            axes[row_idx, col_idx].axvline(x=cutoff_date, linestyle='--',
+                                           color=PredPal.HOLDOUT_VERTICAL_LINE.value,
+                                           # linewidth=4,
+                                           alpha=.8)
+
+    plt.suptitle(title, fontsize=fontsize)
+    fig.tight_layout()
+    if path:
+        fig.savefig(path)
+    if is_visible:
+        plt.show()
+    else:
+        plt.close()
+
+    return axes
+
+
+@orbit_style_decorator
+def plot_bt_predictions2(bt_pred_df, metrics=smape, split_key_list=None, figsize=None, include_vline=True,
+                         title="", fontsize=20, markersize=50, lw=2, fig_dir=None, is_visible=True, fix_xylim=True,
+                         export_gif=False, imageio_args=None):
+    """ a different style backtest plot compare to `plot_bt_prediction` where it writes separate plot for each split;
+    this is also used to produce an animation to summarize every split
+    """
+    if figsize is None:
+        figsize = (16, 8)
+
+    if fig_dir:
+        if not os.path.isdir(fig_dir) or not os.path.exists(fig_dir):
+            raise PlotException('Invalid or non-existing directory use specified: {}.'.format(
+                os.path.abspath(fig_dir)
+            ))
+        fig_paths = list()
+
+    metric_vals = bt_pred_df.groupby(BacktestFitKeys.SPLIT_KEY.value).apply(
+        lambda x:
+        metrics(x[~x[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.ACTUAL.value],
+                x[~x[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.PREDICTED.value]))
+
+    if split_key_list is None:
+        split_key_list_ = bt_pred_df[BacktestFitKeys.SPLIT_KEY.value].unique()
+    else:
+        split_key_list_ = split_key_list
+
+    if fix_xylim:
+        all_values = np.concatenate((
+            bt_pred_df[BacktestFitKeys.ACTUAL.value].values, bt_pred_df[BacktestFitKeys.PREDICTED.value].values
+        ))
+        ylim = (np.min(all_values) * 0.99, np.max(all_values) * 1.01)
+        xlim = (bt_pred_df[BacktestFitKeys.DATE.value].values[0], bt_pred_df[BacktestFitKeys.DATE.value].values[-1])
+
+    for idx, split_key in enumerate(split_key_list_):
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        tmp = bt_pred_df[bt_pred_df[BacktestFitKeys.SPLIT_KEY.value] == split_key].copy()
+        ax.plot(tmp[BacktestFitKeys.DATE.value], tmp[BacktestFitKeys.PREDICTED.value],
+                color=PredPal.PREDICTION_LINE.value, lw=lw)
+
+        train_df = tmp.loc[tmp[BacktestFitKeys.TRAIN_FLAG.value], :]
+        ax.scatter(train_df[BacktestFitKeys.DATE.value],
+                   train_df[BacktestFitKeys.ACTUAL.value],
+                   marker='.', color=PredPal.ACTUAL_OBS.value, alpha=0.8, s=markersize,
+                   label='train response')
+
+        test_df = tmp.loc[~tmp[BacktestFitKeys.TRAIN_FLAG.value], :]
+        ax.scatter(test_df[BacktestFitKeys.DATE.value],
+                   test_df[BacktestFitKeys.ACTUAL.value],
+                   marker='.', color=PredPal.TEST_OBS.value, alpha=0.8, s=markersize,
+                   label='test response')
+
+        ax.set_title(label='split {}; {} {:.3f}'. \
+                     format(split_key, metrics.__name__, metric_vals[split_key]))
+        if include_vline:
+            cutoff_date = tmp[~tmp[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.DATE.value].min()
+            ax.axvline(x=cutoff_date, linestyle='--',
+                       color=PredPal.HOLDOUT_VERTICAL_LINE.value,
+                       alpha=.8)
+        if fix_xylim:
+            ax.set_xlim(xlim)
+            ax.set_ylim(ylim)
+
+        ax.legend()
+        plt.suptitle(title, fontsize=fontsize)
+        fig.tight_layout()
+
+        if fig_dir:
+            fig_path = '{}/splits_{}.png'.format(fig_dir, idx)
+            fig_paths.append(fig_path)
+            fig.savefig(fig_path)
+        if is_visible:
+            plt.show()
+        else:
+            plt.close()
+
+    if fig_paths and export_gif:
+        # TODO: provide a message if user did not install imageio
+        import imageio
+        with imageio.get_writer('{}/orbit-backtest.gif'.format(fig_dir), mode='I', **imageio_args) as writer:
+            for fig_path in fig_paths:
+                image = imageio.imread(fig_path)
+                writer.append_data(image)
+
+
+# TODO: update palatte
 @orbit_style_decorator
 def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon',
                            metric_col='smape', bar_width=0.1, path=None,
@@ -284,255 +451,3 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
         plt.show()
     else:
         plt.close()
-
-
-#
-# @orbit_style_decorator
-# def plot_posterior_params(mod, kind='hist', n_bins=20, ci_level=.95,
-#                           pair_type='scatter', figsize=None, path=None, fontsize=None,
-#                           params=None, is_visible=True):
-#     """ Data Viz for posterior samples
-#
-#     Parameters
-#     ----------
-#     mod : orbit model object
-#     kind : str, {'hist', 'trace', 'pair'}
-#         which kind of plot to be made.
-#     n_bins : int; default 20
-#         number of bin, used in the histogram plotting
-#     ci_level : float, between 0 and 1
-#         confidence interval level
-#     pair_type : str, {'scatter', 'reg'}
-#         dot plotting type for off-diagonal plots in pair plot
-#     figsize : tuple; optional
-#         figure size
-#     path : str; optional
-#         dir path to save the chart
-#     fontsize : int; optional
-#         fontsize of the title
-#     params : list; optional
-#         list of model parameter names to be plotted, on top of the regressors
-#     is_visible : boolean
-#         whether we want to show the plot. If called from unittest, is_visible might = False.
-#
-#     Returns
-#     -------
-#         matplotlib axes object
-#     """
-#     if 'orbit' not in str(mod.__class__):
-#         raise Exception("This plotting utility works for orbit model object only.")
-#     if kind not in ['hist', 'trace', 'pair']:
-#         raise Exception("kind must be one of 'hist', 'trace', or 'pair'.")
-#
-#     posterior_samples = mod.get_posterior_samples()
-#
-#     # TODO: put a unit test to test plotting with and without regressor
-#     if hasattr(mod._model, '_regressor_col') and len(mod._model._regressor_col) > 0:
-#         for i, regressor in enumerate(mod._model._regressor_col):
-#             posterior_samples[regressor] = posterior_samples['beta'][:, i]
-#         params_plt = deepcopy(mod._model._regressor_col)
-#     else:
-#         params_plt = list()
-#
-#     if params is not None:
-#         for param in params:
-#             if param not in posterior_samples.keys():
-#                 raise Exception("{} is not in the model parameters".format(param))
-#     else:
-#         params = list()
-#     params_plt += params
-#
-#     if len(params_plt) == 0:
-#         raise Exception("Empty list of valid parameters to plot.")
-#
-#     if not figsize:
-#         figsize = (8, 2 * len(params_plt))
-#
-#     if not fontsize:
-#         fontsize = 10
-#
-#     def _histogram(posterior_samples, params_plt, n_bins=20, ci_level=.95, figsize=None):
-#
-#         fig, axes = plt.subplots(len(params_plt), 1, squeeze=True, figsize=figsize)
-#         for i, param in enumerate(params_plt):
-#             samples = posterior_samples[param]
-#             mean = np.mean(samples)
-#             median = np.median(samples)
-#             cred_min, cred_max = np.percentile(samples, 100 * (1 - ci_level) / 2), \
-#                                  np.percentile(samples, 100 * (1 + ci_level) / 2)
-#
-#             sns.histplot(samples, bins=n_bins, kde_kws={'shade': True}, ax=axes[i], color=OrbitPalette.BLUE.value)
-#             # sns.kdeplot(samples, shade=True, ax=axes[i])
-#             axes[i].set_xlabel(param)
-#             axes[i].set_ylabel('frequency')
-#             # draw vertical lines
-#             axes[i].axvline(mean, color=OrbitPalette.GREEN.value, lw=4, alpha=.5, label='mean')
-#             axes[i].axvline(median, color=OrbitPalette.ORANGE.value, lw=4, alpha=.5, label='median')
-#             axes[i].axvline(cred_min, linestyle='--', color=OrbitPalette.BLACK.value, alpha=.5, label='95% CI')
-#             axes[i].axvline(cred_max, linestyle='--', color=OrbitPalette.BLACK.value, alpha=.5)
-#             # axes[i].legend()
-#
-#         handles, labels = axes[0].get_legend_handles_labels()
-#         fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.15, 0.9))
-#         plt.suptitle('Histogram of Posterior Samples', fontsize=fontsize)
-#         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-#
-#         return axes
-#
-#     def _trace_plot(posterior_samples, params_plt, ci_level=.95, figsize=None):
-#
-#         fig, axes = plt.subplots(len(params_plt), 1, squeeze=True, figsize=figsize)
-#         for i, param in enumerate(params_plt):
-#             samples = posterior_samples[param]
-#             # chain order is preserved in the posterior samples
-#             chained_samples = np.array_split(samples, mod.estimator.chains)
-#
-#             for k in range(mod.estimator.chains):
-#                 axes[i].plot(chained_samples[k], lw=1, alpha=.5, label=f'chain {k + 1}')
-#             axes[i].set_ylabel(param)
-#
-#         handles, labels = axes[0].get_legend_handles_labels()
-#         fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.15, 0.9))
-#         plt.suptitle('Trace of Posterior Samples', fontsize=fontsize)
-#         plt.xlabel('draw')
-#         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-#
-#         return axes
-#
-#     def _pair_plot(posterior_samples, params_plt, pair_type='scatter', n_bins=20):
-#         samples_df = pd.DataFrame({key: posterior_samples[key].flatten() for key in params_plt})
-#
-#         fig = sns.pairplot(samples_df, kind=pair_type, diag_kws=dict(bins=n_bins))
-#         fig.fig.suptitle("Pair Plot", fontsize=fontsize)
-#         fig.fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-#
-#         return fig
-#
-#     if kind == 'hist':
-#         axes = _histogram(posterior_samples, params_plt,
-#                           n_bins=n_bins, ci_level=ci_level, figsize=figsize)
-#     elif kind == 'trace':
-#         axes = _trace_plot(posterior_samples, params_plt, ci_level=ci_level, figsize=figsize)
-#     elif kind == 'pair':
-#         axes = _pair_plot(posterior_samples, params_plt, pair_type=pair_type, n_bins=n_bins)
-#
-#     if path:
-#         plt.savefig(path)
-#
-#     if is_visible:
-#         plt.show()
-#     else:
-#         plt.close()
-#
-#     return axes
-
-
-# @orbit_style_decorator
-# def plot_param_diagnostics(mod, params=None, which='trace', **kwargs):
-#     """
-#     Parameters
-#     -----------
-#     mod : orbit model object
-#     params : list; optional
-#         list of model parameter names to be plotted, on top of the regressors
-#     which : str, {'density', 'trace', 'pair', 'autocorr', 'posterior', 'forest'}
-#     **kwargs :
-#         other parameters passed to arviz functions
-#
-#     Returns
-#     -------
-#         matplotlib axes object
-#     """
-#     posterior_samples = get_arviz_plot_dict(mod, params)
-#
-#     if which == "trace":
-#         axes = az.plot_trace(posterior_samples, **kwargs)
-#     elif which == "density":
-#         axes = az.plot_density(posterior_samples, **kwargs)
-#     elif which == "posterior":
-#         axes = az.plot_posterior(posterior_samples, **kwargs)
-#     elif which == "pair":
-#         axes = az.plot_pair(posterior_samples, **kwargs)
-#     elif which == "autocorr":
-#         axes = az.plot_autocorr(posterior_samples, **kwargs)
-#     elif which == "forest":
-#         axes = az.plot_forest(posterior_samples, **kwargs)
-#     else:
-#         raise Exception("please use one of 'trace', 'density', 'posterior', 'pair', 'autocorr', 'forest' for kind.")
-#
-#     return axes
-
-
-@orbit_style_decorator
-def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
-                        ncol=2, figsize=None, include_vline=False,
-                        title="", fontsize=20, path=None, is_visible=True):
-    """function to plot and visualize the prediction results from back testing.
-
-    bt_pred_df : data frame
-        the output of `orbit.diagnostics.backtest.BackTester.fit_predict()`, which includes the actuals/predictions
-        for all the splits
-    metrics : callable
-        the metric function
-    split_key_list: list; default None
-        with given model, which split keys to plot. If None, all the splits will be plotted
-    ncol : int
-        number of columns of the panel; number of rows will be decided accordingly
-    figsize : tuple
-        figure size
-    include_vline : bool
-        if plotting the vertical line to cut the in-sample and out-of-sample predictions for each split
-    title : str
-        title of the plot
-    fontsize: int; optional
-        fontsize of the title
-    path : string
-        path to save the figure
-    is_visible : bool
-        if displaying the figure
-    """
-    if figsize is None:
-        figsize = (16, 8)
-
-    metric_vals = bt_pred_df.groupby('split_key').apply(lambda x:
-                                                        metrics(x[~x['training_data']]['actuals'],
-                                                                x[~x['training_data']]['prediction']))
-
-    if split_key_list is None:
-        split_key_list_ = bt_pred_df['split_key'].unique()
-    else:
-        split_key_list_ = split_key_list
-
-    num_splits = len(split_key_list_)
-    nrow = math.ceil(num_splits / ncol)
-    fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False, facecolor='w', constrained_layout=False)
-
-    for idx, split_key in enumerate(split_key_list_):
-        row_idx = idx // ncol
-        col_idx = idx % ncol
-        tmp = bt_pred_df[bt_pred_df['split_key'] == split_key].copy()
-        axes[row_idx, col_idx].plot(tmp['date'], tmp['prediction'],  # linewidth=2,
-                                    color=PredPal.PREDICTION_LINE.value)
-        axes[row_idx, col_idx].scatter(tmp['date'], tmp['actuals'], label='actual',
-                                       color=PredPal.ACTUAL_OBS.value, alpha=.6, s=8)
-        # axes[row_idx, col_idx].grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.4)
-
-        axes[row_idx, col_idx].set_title(label='split {}; {} {:.3f}'. \
-                                         format(split_key, metrics.__name__, metric_vals[split_key]))
-        if include_vline:
-            cutoff_date = tmp[~tmp['training_data']]['date'].min()
-            axes[row_idx, col_idx].axvline(x=cutoff_date, linestyle='--',
-                                           color=PredPal.HOLDOUT_VERTICAL_LINE.value,
-                                           # linewidth=4,
-                                           alpha=.8)
-
-    plt.suptitle(title, fontsize=fontsize)
-    fig.tight_layout()
-    if path:
-        fig.savefig(path)
-    if is_visible:
-        plt.show()
-    else:
-        plt.close()
-
-    return axes
