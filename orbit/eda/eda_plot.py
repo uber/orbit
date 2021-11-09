@@ -1,6 +1,7 @@
 import seaborn as sns
 from matplotlib import pyplot as plt
 import pandas as pd
+import math
 
 from orbit.constants import palette
 from orbit.utils.plot import orbit_style_decorator
@@ -9,7 +10,7 @@ pd.options.mode.chained_assignment = None
 
 
 @orbit_style_decorator
-def ts_heatmap(df, date_col, value_col, fig_width=10, fig_height=6, normalization=False,
+def ts_heatmap(df, date_col, value_col, seasonal_interval, fig_width=8, fig_height=8, normalization=False,
                path=None, palette=palette.OrbitPalette.BLUE_GRADIENT.value):
     """this function takes a time series dataframe and plot a time series heatmap with month on the y axis and
     year on the x axis
@@ -21,6 +22,8 @@ def ts_heatmap(df, date_col, value_col, fig_width=10, fig_height=6, normalizatio
         the name of the date column
     value_col : str
         the name of the value
+    seasonal_interval: int
+        the desired seasonal_interval, this is used for the y axis
     fig_width : int, optional
         adjust width of the chart
     fig_height : int, optional,
@@ -34,18 +37,26 @@ def ts_heatmap(df, date_col, value_col, fig_width=10, fig_height=6, normalizatio
 
     Returns
     -------
-        one time series heatmap chart
+        a time series heatmap chart, with year as x axis, and desired seasonal interval as y axis
     """
     df = df[[date_col, value_col]]
     df[date_col] = pd.to_datetime(df[date_col])
-    df['year'] = df[date_col].dt.year
-    df['month'] = df[date_col].dt.month
-    df_pivot = df.pivot_table(index='month', columns='year', values=value_col).sort_index(ascending=False)
+    df = df.sort_values([date_col]).reset_index()
+    length = df.shape[0]
+    ses_interval = []
+    for i in range(math.ceil(length/seasonal_interval)):
+        ses_interval += ([i]*seasonal_interval)
+    df['seasonal_interval'] = ses_interval[0:length]
+    df['y_axis_interval'] = df['index'] % seasonal_interval
+
+    # df['month'] = df[date_col].dt.month
+    df_pivot = df.pivot_table(index='y_axis_interval',
+                              columns='seasonal_interval', values=value_col).sort_index(ascending=False)
     if normalization:
         df_pivot = (df_pivot - df_pivot.mean()) / df_pivot.std()
 
     fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-    ax = sns.heatmap(df_pivot, cmap=palette)
+    ax = sns.heatmap(df_pivot, cmap=palette, linewidths=.8)
 
     if normalization:
         ax.set_title(f'{value_col} Time Series Heatmap Normalized Index')
@@ -55,11 +66,12 @@ def ts_heatmap(df, date_col, value_col, fig_width=10, fig_height=6, normalizatio
     if path:
         fig.savefig(path)
 
-    return ax
+    plt.tight_layout()
+    return ax, df, df_pivot
 
 
 @orbit_style_decorator
-def correlation_heatmap(df, var_list, fig_width=10, fig_height=6,
+def correlation_heatmap(df, var_list, fig_width=8, fig_height=8,
                         path=None, fmt='.1g', palette=palette.OrbitPalette.BLUE_GRADIENT.value):
     """This function takes a list of variables and return a heatmap of pairwise correlation. The columns with
     all zero values will not be plotted.
@@ -87,7 +99,7 @@ def correlation_heatmap(df, var_list, fig_width=10, fig_height=6,
     df = df[non_zero_varlist].corr()
 
     fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-    ax = sns.heatmap(df, cmap=palette, annot=True, fmt=fmt)
+    ax = sns.heatmap(df, cmap=palette, annot=True, fmt=fmt, linewidths=.8)
     ax.set_xticklabels(
         ax.get_xticklabels(),
         rotation=45,

@@ -28,9 +28,9 @@ class OrbitPalette(Enum):
     RED_GRADIENT = clr.LinearSegmentedColormap.from_list('custom', [WHITE, RED, BLACK], N=300)
     PURPLE_GRADIENT = clr.LinearSegmentedColormap.from_list('custom', [WHITE, PURPLE, BLACK], N=300)
 
-    # Diverging Palette
+    # Diverging Palette -  blue green yellow orange red
     RAINBOW = clr.LinearSegmentedColormap.from_list(
-        'custom', ['#FFFFFF', '#FFC043', '#3AA76D', '#276EF1', '#7356BF'],
+        'custom', ['#276EF1', '#05A357', '#FFC043',  '#ED6E33', '#E11900'],
         N=300)
 
 
