@@ -9,7 +9,7 @@ def test_eda_plot(iclaims_training_data):
     df['claims'] = np.log(df['claims'])
 
     # test plotting
-    _ = eda_plot.ts_heatmap(df=df, date_col='week', value_col='claims', normalization=True)
+    _ = eda_plot.ts_heatmap(df=df, date_col='week', sesonal_interval=52, value_col='claims', normalization=True)
 
     var_list = ['trend.unemploy', 'trend.filling', 'trend.job']
     _ = eda_plot.correlation_heatmap(df, var_list=var_list)
