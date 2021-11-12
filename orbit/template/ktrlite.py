@@ -357,9 +357,9 @@ class KTRLiteModel(ModelTemplate):
         ################################################################
         # Prediction Attributes
         ################################################################
-        start = prediction_meta['start']
+        start = prediction_meta[PredictionMetaKeys.START.value]
         trained_len = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
-        output_len = prediction_meta['df_length']
+        output_len = prediction_meta[PredictionMetaKeys.PREDICTION_DF_LEN.value]
 
         ################################################################
         # Model Attributes
