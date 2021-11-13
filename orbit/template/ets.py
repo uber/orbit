@@ -125,9 +125,9 @@ class ETSModel(ModelTemplate):
     def set_dynamic_attributes(self, df, training_meta):
         """Set attributes which are dependent on data"""
         # compute data-driven prior for seasonality
-        if self._seasonality:
+        if self._seasonality > 1:
             response = training_meta[TrainingMetaKeys.RESPONSE.value]
-            response_ma = moving_average(response, self._seasonality, mode='same')
+            response_ma = moving_average(response, window=self._seasonality, mode='same')
             adjusted_response = response - response_ma
             # to estimate the "across-group" s.d. as a seasonality prior
             ss = np.zeros(self._seasonality)
