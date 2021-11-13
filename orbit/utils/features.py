@@ -141,3 +141,21 @@ def make_seasonal_regressors(n, periods, orders, labels, shift=0):
         fs = make_fourier_series(n=n, period=period, order=order, shift=shift)
         out[label] = fs
     return out
+
+
+def moving_average(x, window=1, mode='same'):
+    """ Compute moving average of a 1-D numpy array
+
+    Parameters
+    ----------
+    x : array_like
+        1D-like array required to compute moving average
+    window : int
+        window size to compute moving average of the array
+    mode : str
+        one of the ['full', 'same', valid']. See `numpy.convolve` for details.
+    Returns
+    -------
+        moving average of a 1-D array
+    """
+    return np.convolve(x, np.ones(window), mode=mode) / window

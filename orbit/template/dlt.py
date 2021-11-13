@@ -26,6 +26,7 @@ class DataInputMapper(Enum):
     """
     # ---------- Seasonality ---------- #
     _SEASONALITY = 'SEASONALITY'
+    SEASONALITY_SD = 'SEASONALITY_SD'
     _SEASONALITY_SM_INPUT = 'SEA_SM_INPUT'
     # ---------- Common Local Trend ---------- #
     _LEVEL_SM_INPUT = 'LEV_SM_INPUT'
@@ -363,7 +364,7 @@ class DLTModel(ETSModel):
                               self.regular_regressor_col
 
     def _set_static_attributes(self):
-        """Cast data to the proper type mostly to match Stan required static data types
+        """Set attributes which are independent from data
         Notes
         -----
         Overriding :func: `~orbit.models.BaseETS._set_static_attributes`
@@ -437,6 +438,7 @@ class DLTModel(ETSModel):
 
     def set_dynamic_attributes(self, df, training_meta):
         """Overriding: func: `~orbit.models.BaseETS._set_dynamic_attributes"""
+        super().set_dynamic_attributes(df, training_meta)
         # scalar value is suggested by the author of Rlgt
         self.cauchy_sd = max(np.abs(training_meta[TrainingMetaKeys.RESPONSE.value])) / 30.0
         # extra validation and settings for regression

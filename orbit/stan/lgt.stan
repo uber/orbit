@@ -58,6 +58,8 @@ data {
 
   // Seasonality Hyper-Params
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
+  real<lower=0> SEASONALITY_SD;
+
 }
 transformed data {
   int<lower=0,upper=1>  IS_SEASONAL;
@@ -228,7 +230,7 @@ model {
 
   // prior for seasonality
   for (i in 1:(SEASONALITY - 1))
-    init_sea[i] ~ normal(0, 0.33); // 33% lift is with 1 sd prob.
+    init_sea[i] ~ normal(0, SEASONALITY_SD); // 33% lift is with 1 sd prob.
 
   // regression prior
   // see these references for details

@@ -384,8 +384,9 @@ class LGTModel(ETSModel):
     def set_dynamic_attributes(self, df, training_meta):
         """Set required input based on input DataFrame, rather than at object instantiation.  It also set
         additional required attributes for LGT"""
+        super().set_dynamic_attributes(df, training_meta)
         # scalar value is suggested by the author of Rlgt
-        self.cauchy_sd = max(training_meta['response']) / 30.0
+        self.cauchy_sd = max(training_meta[TrainingMetaKeys.RESPONSE.value]) / 30.0
 
         # extra validation and settings for regression
         self._validate_training_df_with_regression(df)

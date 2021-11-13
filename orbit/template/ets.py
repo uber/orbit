@@ -11,6 +11,7 @@ from ..constants.constants import (
 from ..exceptions import IllegalArgument
 from .model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
+from ..utils.features import moving_average
 
 
 # constants for attributes, params and I/Os
@@ -20,6 +21,7 @@ class DataInputMapper(Enum):
     """
     # ---------- Seasonality ---------- #
     _SEASONALITY = 'SEASONALITY'
+    SEASONALITY_SD = 'SEASONALITY_SD'
     _SEASONALITY_SM_INPUT = 'SEA_SM_INPUT'
     # ---------- Common Local Trend ---------- #
     _LEVEL_SM_INPUT = 'LEV_SM_INPUT'
@@ -93,6 +95,7 @@ class ETSModel(ModelTemplate):
         # estimator is created in base class
         super().__init__(**kwargs)
         self.seasonality = seasonality
+        self.seasonality_sd = None
 
         # fixed smoothing parameters config
         self.seasonality_sm_input = seasonality_sm_input
@@ -107,7 +110,7 @@ class ETSModel(ModelTemplate):
         self._set_model_param_names()
 
     def _set_static_attributes(self):
-        """Override function from Base Template"""
+        """Set attributes which are independent from data"""
         # setting defaults and proper data type
         if self.seasonality_sm_input is None:
             self._seasonality_sm_input = -1
@@ -118,6 +121,22 @@ class ETSModel(ModelTemplate):
                                   'to build a model with meaningful trend.')
         if self.seasonality is None:
             self._seasonality = -1
+
+    def set_dynamic_attributes(self, df, training_meta):
+        """Set attributes which are dependent on data"""
+        # compute data-driven prior for seasonality
+        if self._seasonality:
+            response = training_meta[TrainingMetaKeys.RESPONSE.value]
+            response_ma = moving_average(response, self._seasonality, mode='same')
+            adjusted_response = response - response_ma
+            # to estimate the "across-group" s.d. as a seasonality prior
+            ss = np.zeros(self._seasonality)
+            for idx in range(self._seasonality):
+                ss[idx] = np.mean(adjusted_response[idx::self._seasonality])
+            self.seasonality_sd = np.std(ss)
+        else:
+            # should not be used anyway; just a placeholder
+            self.seasonality_sd = training_meta[TrainingMetaKeys.RESPONSE_SD.value]
 
     # TODO: this could be static function by accepting a callable object?
     def set_init_values(self):
