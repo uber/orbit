@@ -29,6 +29,7 @@ class DataInputMapper(Enum):
     """
     # ---------- Seasonality ---------- #
     _SEASONALITY = 'SEASONALITY'
+    SEASONALITY_SD = 'SEASONALITY_SD'
     _SEASONALITY_SM_INPUT = 'SEA_SM_INPUT'
     # ---------- Common Local Trend ---------- #
     _LEVEL_SM_INPUT = 'LEV_SM_INPUT'
