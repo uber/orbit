@@ -158,6 +158,7 @@ def stan_estimator_lgt_model_input():
                               7.32056103, 7.32163764, 7.40627366, 7.34321953, 7.26235866,
                               7.62360629, 7.61622702]),
         'SEASONALITY': 52,
+        'SEASONALITY_SD': 0.33,
         'SEA_SM_INPUT': -1,
         'LEV_SM_INPUT': -1,
         'SLP_SM_INPUT': -1,
