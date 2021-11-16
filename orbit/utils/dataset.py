@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 
-def load_iclaims(end_date='2018-06-24'):
+def load_iclaims(end_date='2018-06-24', transform=True):
     """Load iclaims dataset
 
     Returns
@@ -34,10 +34,11 @@ def load_iclaims(end_date='2018-06-24'):
     for col in regressors:
         df[col] = df[col].astype(float)
 
-    # log transfer
-    df[['claims'] + regressors] = df[['claims'] + regressors].apply(np.log)
-    # de-mean
-    df[regressors] = df[regressors] - df[regressors].apply(np.mean)
+    if transform:
+        # log transfer
+        df[['claims'] + regressors] = df[['claims'] + regressors].apply(np.log)
+        # de-mean
+        df[regressors] = df[regressors] - df[regressors].apply(np.mean)
 
     return df
 

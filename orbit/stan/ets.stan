@@ -10,6 +10,7 @@ data {
   real<upper=1> SEA_SM_INPUT;
   // Seasonality Hyper-Params
   int SEASONALITY;
+  real<lower=0> SEASONALITY_SD;
   real<lower=0> RESPONSE_SD;
 }
 transformed data {
@@ -112,5 +113,5 @@ model {
   }
   // prior for seasonality
   for (i in 1:(SEASONALITY - 1))
-    init_sea[i] ~ normal(0, 0.33); // 33% lift is with 1 sd prob.
+    init_sea[i] ~ normal(0, SEASONALITY_SD);
 }

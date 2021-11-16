@@ -29,6 +29,7 @@ class DataInputMapper(Enum):
     """
     # ---------- Seasonality ---------- #
     _SEASONALITY = 'SEASONALITY'
+    SEASONALITY_SD = 'SEASONALITY_SD'
     _SEASONALITY_SM_INPUT = 'SEA_SM_INPUT'
     # ---------- Common Local Trend ---------- #
     _LEVEL_SM_INPUT = 'LEV_SM_INPUT'
@@ -384,12 +385,14 @@ class LGTModel(ETSModel):
     def set_dynamic_attributes(self, df, training_meta):
         """Set required input based on input DataFrame, rather than at object instantiation.  It also set
         additional required attributes for LGT"""
+        super().set_dynamic_attributes(df, training_meta)
         # scalar value is suggested by the author of Rlgt
-        self.cauchy_sd = max(training_meta['response']) / 30.0
+        self.cauchy_sd = max(training_meta[TrainingMetaKeys.RESPONSE.value]) / 30.0
 
         # extra validation and settings for regression
         self._validate_training_df_with_regression(df)
-        self._set_regressor_matrix(df, training_meta[TrainingMetaKeys.NUM_OF_OBS.value])  # depends on num_of_observations
+        # depends on num_of_observations
+        self._set_regressor_matrix(df, training_meta[TrainingMetaKeys.NUM_OF_OBS.value])
 
     def predict(self, posterior_estimates, df, training_meta, prediction_meta, include_error=False, **kwargs):
         """Vectorized version of prediction math"""

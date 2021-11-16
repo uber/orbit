@@ -16,5 +16,5 @@ def test_eda_plot(iclaims_training_data):
 
     _ = eda_plot.dual_axis_ts_plot(df=df, var1='trend.unemploy', var2='claims', date_col='week')
 
-    df[['week'] + var_list].melt(id_vars = ['week'])
+    df[['week'] + var_list].melt(id_vars=['week'])
     _ = eda_plot.wrap_plot_ts(df, 'week', ['week'] + var_list)

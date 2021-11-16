@@ -59,6 +59,7 @@ data {
 
   // Seasonality Hyper-Params
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
+  real<lower=0> SEASONALITY_SD;
 
   // 0 As linear, 1 As log-linear, 2 As logistic, 3 As flat
   int <lower=0,upper=3> GLOBAL_TREND_OPTION;
@@ -284,7 +285,7 @@ model {
 
   // prior for seasonality
   for (i in 1:(SEASONALITY - 1))
-    init_sea[i] ~ normal(0, 0.33); // 33% lift is with 1 sd prob.
+    init_sea[i] ~ normal(0, SEASONALITY_SD); // 33% lift is with 1 sd prob.
 
   // global trend prior
   if (GLOBAL_TREND_OPTION == 0) {
