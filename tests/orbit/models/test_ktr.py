@@ -34,6 +34,20 @@ def test_ktr_basic(make_daily_data):
     assert np.all(np.isfinite(predict_df['prediction'].values))
 
 @pytest.mark.parametrize(
+    "seas_segments",
+    [
+        pytest.param(
+            0, id="0-seas_segement"
+        ),
+        pytest.param(
+            2, id="2-seas_segement"
+        ),
+        pytest.param(
+            5, id="5-seas_segement"
+        ),
+     ]
+)
+@pytest.mark.parametrize(
     "make_daily_data, seasonality",
     [
         pytest.param(
@@ -45,7 +59,7 @@ def test_ktr_basic(make_daily_data):
      ],
     indirect=["make_daily_data"]
 )
-def test_ktr_seasonality(make_daily_data, seasonality):
+def test_ktr_seasonality(make_daily_data, seasonality, seas_segments):
     train_df, _, _ = make_daily_data
 
     ktr = KTR(
@@ -53,6 +67,7 @@ def test_ktr_seasonality(make_daily_data, seasonality):
         date_col='date',
         estimator='pyro-svi',
         seasonality=seasonality,
+        seasonality_segments=seas_segments,
         num_steps=100,
         num_sample=100,
         n_bootstrap_draws=-1,

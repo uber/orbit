@@ -96,7 +96,8 @@ class KTRLiteModel(ModelTemplate):
     seasonality_fs_order : int, or list of int
         fourier series order for seasonality
     seasonality_segments : int
-        the number of segments partitioned by the knots of seasonality
+        the number of segments partitioned by the knots of seasonality; when it is 0, returns to a static coefficients
+        of regression used in the seasonality estimation
     seasonal_initial_knot_scale : float
         scale parameter for seasonal regressors initial coefficient knots; default to be 1
     seasonal_knot_scale : float
@@ -120,7 +121,7 @@ class KTRLiteModel(ModelTemplate):
             # seasonality
             seasonality=None,
             seasonality_fs_order=None,
-            seasonality_segments=2,
+            seasonality_segments=0,
             seasonal_initial_knot_scale=1.0,
             seasonal_knot_scale=0.1,
             degree_of_freedom=30,
@@ -295,15 +296,27 @@ class KTRLiteModel(ModelTemplate):
             self.regressor_matrix = df.filter(items=self.regressor_col, ).values
 
     def _set_kernel_matrix(self, df, training_meta):
+        """ set all kernel related metrics
+        1. knot index (knot_idx)
+        2. knot time point (knot_tp)
+        3. kernel matrix (kernel)
+        4. knot dates (knot_dates) based on frequency implied from df
+        5. do the same on regression (seasonality regression) if regressors are available
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+        training_meta : dict
+        """
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
 
         self._level_knots_idx = get_knot_idx(
-            date_array=date_array,
             num_of_obs=num_of_observations,
-            knot_dates=self.level_knot_dates,
             knot_distance=self.level_knot_distance,
             num_of_segments=self.level_segments,
+            date_array=date_array,
+            knot_dates=self.level_knot_dates,
             date_freq=self.date_freq,
         )
         # kernel of coefficients calculations
@@ -322,7 +335,7 @@ class KTRLiteModel(ModelTemplate):
             )
 
         tp = np.arange(1, num_of_observations + 1) / num_of_observations
-        self.knots_tp_level =  (1 + self._level_knots_idx) / num_of_observations
+        self.knots_tp_level = (1 + self._level_knots_idx) / num_of_observations
         self.kernel_level = sandwich_kernel(tp, self.knots_tp_level)
         self.num_knots_level = len(self.knots_tp_level)
         if self.date_freq is None:
@@ -452,8 +465,8 @@ class KTRLiteModel(ModelTemplate):
         date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
         # since KTRLite only supports MAP estimator, point_method is guaranteed to be MAP
         lev_knots = point_posteriors \
-                    .get(point_method) \
-                    .get(BaseSamplingParameters.LEVEL_KNOT.value)
+            .get(point_method) \
+            .get(BaseSamplingParameters.LEVEL_KNOT.value)
         lev_knots = np.squeeze(lev_knots, 0)
         out = {
             date_col: self._level_knot_dates,
@@ -467,8 +480,8 @@ class KTRLiteModel(ModelTemplate):
         date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
         # since KTRLite only supports MAP estimator, point_method is guaranteed to be MAP
         levs = point_posteriors \
-                 .get(point_method) \
-                 .get(BaseSamplingParameters.LEVEL.value)
+            .get(point_method) \
+            .get(BaseSamplingParameters.LEVEL.value)
         levs = np.squeeze(levs, 0)
         out = {
             date_col: date_array,
