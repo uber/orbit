@@ -40,7 +40,7 @@ def test_ktr_basic(make_daily_data):
             0, id="0-seas_segement"
         ),
         pytest.param(
-            2, id="2-seas_segement"
+            1, id="2-seas_segement"
         ),
         pytest.param(
             5, id="5-seas_segement"
@@ -296,11 +296,35 @@ def test_ktrx_prior_ingestion(make_daily_data, coef_prior_list):
     assert predict_df.columns.tolist() == expected_columns
     assert len(ktr._posterior_samples) == expected_num_parameters
 
-
-def test_ktr_single_regressor(iclaims_training_data):
+@pytest.mark.parametrize(
+    "regression_segments",
+    [
+        pytest.param(
+            0, id="0-regression_segments"
+        ),
+        pytest.param(
+            1, id="1-regression_segments"
+        ),
+        pytest.param(
+            5, id="5-regression_segments"
+        ),
+     ]
+)
+@pytest.mark.parametrize(
+    "regressor_col",
+    [
+        pytest.param(
+            ['trend.unemploy'], id="single-regressor"
+        ),
+        pytest.param(
+            ['trend.unemploy', 'trend.filling', 'trend.job'], id="multiple-regressor"
+        ),
+     ]
+)
+def test_ktr_regressor_sizes(iclaims_training_data, regression_segments, regressor_col):
+    # this iclaims dataset is raw; the one under load_data is log-transformed
     df = iclaims_training_data
     df['claims'] = np.log(df['claims'])
-    regressor_col = ['trend.unemploy']
 
     ktr = KTR(
         date_col='week',
@@ -310,8 +334,7 @@ def test_ktr_single_regressor(iclaims_training_data):
         seasonality_fs_order=[3],
         level_knot_scale=.1,
         level_segments=10,
-        seasonality_segments=3,
-        regression_segments=5,
+        regression_segments=regression_segments,
         regression_rho=0.15,
         # pyro optimization parameters
         seed=8888,
@@ -322,8 +345,10 @@ def test_ktr_single_regressor(iclaims_training_data):
     coef_df = ktr.get_regression_coefs()
     knot_df = ktr.get_regression_coef_knots()
 
-    expected_columns_coef = ['week', 'trend.unemploy']
-    expected_columns_knot = ['week', 'step', 'trend.unemploy']
+    expected_columns_coef = ['week'] + regressor_col
+    expected_columns_knot = ['week', 'step'] + regressor_col
 
     assert coef_df.columns.tolist() == expected_columns_coef
     assert knot_df.columns.tolist() == expected_columns_knot
+    assert coef_df.shape[0] == df.shape[0]
+    assert knot_df.shape[0] == regression_segments + 1

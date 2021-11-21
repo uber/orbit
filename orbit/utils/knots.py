@@ -42,6 +42,7 @@ def get_knot_idx_by_dist(num_of_obs, knot_distance):
     # starts with the the ending point
     # use negative values or simply append 0 to the sequence?
     knot_idx = np.sort(np.arange(num_of_obs - 1, -1, -knot_distance))
+    knot_idx = np.round(knot_idx).astype('int')
     if 0 not in knot_idx:
         # knot_idx = np.sort(np.arange(num_of_obs - 1, -1 - knot_distance, -knot_distance))
         knot_idx = np.sort(np.append(knot_idx, 0))
@@ -118,7 +119,7 @@ def get_knot_idx(
 
     elif num_of_segments is not None:
         if num_of_segments >= 1:
-            knot_distance = np.round((num_of_obs - 1) / num_of_segments).astype(int)
+            knot_distance = (num_of_obs - 1) / num_of_segments
             knot_idx = get_knot_idx_by_dist(num_of_obs, knot_distance)
         else:
             # one single knot at the beginning

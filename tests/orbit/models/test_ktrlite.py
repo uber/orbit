@@ -183,7 +183,7 @@ def test_ktrlite_level_knot_distance(make_daily_data, level_knot_distance):
             0, id="0-seas_segement"
         ),
         pytest.param(
-            2, id="2-seas_segement"
+            1, id="1-seas_segement"
         ),
         pytest.param(
             5, id="5-seas_segement"
