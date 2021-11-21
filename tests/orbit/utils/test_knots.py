@@ -39,9 +39,6 @@ def test_distance_args(iclaims_training_data, knot_distance):
 )
 def test_dates_args(iclaims_training_data, knot_dates):
     df = iclaims_training_data
-    # print(df['week'][228])
-    # print(df['week'][356])
-    # print(knot_dates)
     date_array = df['week']
     knot_idx = get_knot_idx(date_array=date_array, knot_dates=knot_dates)
     expected_dates = get_knot_dates(date_array[0], knot_idx, date_array[1] - date_array[0])
