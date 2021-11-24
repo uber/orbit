@@ -1037,14 +1037,22 @@ class KTRModel(ModelTemplate):
         if self._num_of_regular_regressors + self._num_of_positive_regressors + self._num_of_negative_regressors == 0:
             return None
 
+        # if date_array not specified, coefficients in the training period will be retrieved
         if date_array is None:
             if coefficient_method == 'smooth':
-                # if date_array not specified, dynamic coefficients in the training perior will be retrieved
+
                 coef_knots = posteriors.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+                # only 1 knot for 0 segments
+                if self.regression_segments == 0:
+                    coef_knots = np.expand_dims(coef_knots, -1)
+                if len(self._regressor_col) == 1:
+                    coef_knots = np.expand_dims(coef_knots, 1)
+
+                # result in batch x time step x regressor size shape
                 regressor_betas = np.matmul(coef_knots, self._kernel_coefficients.transpose((1, 0)))
-                # back to batch x time step x regressor columns shape
-                if len(regressor_betas.shape) == 2:
-                    regressor_betas = np.expand_dims(regressor_betas, 0)
+
+                # if len(self._regressor_col) == 1:
+                #     regressor_betas = np.expand_dims(regressor_betas, 0)
                 regressor_betas = regressor_betas.transpose((0, 2, 1))
             elif coefficient_method == 'empirical':
                 regressor_betas = posteriors.get(RegressionSamplingParameters.COEFFICIENTS.value)
@@ -1078,8 +1086,14 @@ class KTRModel(ModelTemplate):
 
             if coefficient_method == 'smooth':
                 kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.regression_rho)
-                # kernel_coefficients = parabolic_kernel(new_tp, self._knots_tp_coefficients)
+
                 coef_knots = posteriors.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+                if len(self._regressor_col) == 1:
+                    coef_knots = np.expand_dims(coef_knots, -1)
+                # only 1 knot for 0 segments
+                if self.regression_segments == 0:
+                    coef_knots = np.expand_dims(coef_knots, -1)
+
                 regressor_betas = np.matmul(coef_knots, kernel_coefficients.transpose((1, 0)))
                 if len(regressor_betas.shape) == 2:
                     regressor_betas = np.expand_dims(regressor_betas, 0)
@@ -1134,6 +1148,8 @@ class KTRModel(ModelTemplate):
                                                              date_array=date_array))
         if len(coefs.shape) == 1:
             coefs = np.expand_dims(coefs, -1)
+
+
         reg_df = pd.DataFrame(data=coefs, columns=self._regressor_col)
         if date_array is not None:
             reg_df[date_col] = date_array
@@ -1176,12 +1192,17 @@ class KTRModel(ModelTemplate):
         knots_df[date_col] = self._regression_knot_dates
         # TODO: make the label as a constant
         knots_df['step'] = self._regression_knots_idx
+        # batch size x regressor size x knot size
         coef_knots = point_posteriors \
             .get(_point_method) \
             .get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
 
-        if len(coef_knots.shape) == 2:
-            coef_knots = np.expand_dims(coef_knots, 0)
+        # only 1 knot for 0 segments
+        if self.regression_segments == 0:
+            coef_knots = np.expand_dims(coef_knots, -1)
+        if len(self._regressor_col) == 1:
+            coef_knots = np.expand_dims(coef_knots, 1)
+
         for idx, col in enumerate(self._regressor_col):
             knots_df[col] = np.transpose(coef_knots[:, idx])
 
@@ -1191,7 +1212,8 @@ class KTRModel(ModelTemplate):
     def plot_regression_coefs(self, training_meta, point_method, point_posteriors, posterior_samples,
                               coefficient_method='smooth', date_array=None,
                               include_ci=False, lower=0.05, upper=0.95,
-                              with_knot=False, ncol=2, figsize=None, ylim=None, markersize=200):
+                              with_knot=False, is_visible=True,
+                              ncol=2, ylim=None, markersize=200, figsize=(16, 8)):
         """Plot regression coefficients.
 
         Parameters
@@ -1213,6 +1235,10 @@ class KTRModel(ModelTemplate):
             if plotting the regression knots in the graph
         ncol : int
             number of columns of the panel grid
+                is_visible : boolean
+            whether we want to show the plot. If called from unittest, is_visible might = False.
+        is_visible : bool
+            whether we want to show the plot. If called from unittest, is_visible might = False.
         markersize : int; optional
             knot marker size
         figsize : tuple; optional
@@ -1263,6 +1289,12 @@ class KTRModel(ModelTemplate):
             axes[row_idx, col_idx].ticklabel_format(useOffset=False)
 
         plt.tight_layout()
+
+        if is_visible:
+            plt.show()
+        else:
+            plt.close()
+
         return axes
 
     # TODO: need a unit test of this function

@@ -4,6 +4,19 @@ from ..exceptions import IllegalArgument
 
 
 def get_knot_dates(start_date, knot_idx, freq):
+    """
+    Parameters
+    ----------
+    start_date : datetime array
+    knot_idx : ndarray
+        1D array containing index with `int` type.
+    freq : datetime delta
+
+    Returns
+    -------
+    list :
+        list of knot dates with provided start date time and indices
+    """
     knot_dates = knot_idx * freq + start_date
 
     return knot_dates
@@ -29,6 +42,7 @@ def get_knot_idx_by_dist(num_of_obs, knot_distance):
     # starts with the the ending point
     # use negative values or simply append 0 to the sequence?
     knot_idx = np.sort(np.arange(num_of_obs - 1, -1, -knot_distance))
+    knot_idx = np.round(knot_idx).astype('int')
     if 0 not in knot_idx:
         # knot_idx = np.sort(np.arange(num_of_obs - 1, -1 - knot_distance, -knot_distance))
         knot_idx = np.sort(np.append(knot_idx, 0))
@@ -37,26 +51,35 @@ def get_knot_idx_by_dist(num_of_obs, knot_distance):
 
 
 def get_knot_idx(
-        date_array=None,
         num_of_obs=None,
-        knot_dates=None,
-        knot_distance=None,
         num_of_segments=None,
+        knot_distance=None,
+        date_array=None,
+        knot_dates=None,
         date_freq=None):
-    """ function to get the knot locations. This function will be used in KTRLite and KTRX model.
+    """ function to calculate and return the knot locations as indices based on
+    This function will be used in KTRLite and KTRX model.
+
+    There are three ways to get the knot index:
+    1. With number of observations supplied, calculate knot location and indices based on
+    number of segments specified and knot indices will be evenly distributed
+    2. With number of observations supplied, calculate knot location and indices based on
+    knot distance specified such that there will be additional knots in the first and end provided
+    3. With observations date array and knot dates provided, derive knots location directly based on the
+    implied observations frequency provided.
 
     Parameters
     ----------
     num_of_obs : int
         number of observations to derive segments and knots; will be ignored if knot_dates is not None
-    date_array : datetime array
-        only used when knot_dates is not None
-    knot_dates : list or numpy datetime array
-        list of dates in string format (%Y-%m-%d) or numpy datetime array which will be used as the knot locations
-    knot_distance : int
-        distance between every two knots
     num_of_segments : int
         number of segments, which will be used to calculate the knot distance
+    knot_distance : int
+        distance between every two knots
+    date_array : datetime array
+        only used when knot_dates is not None
+    knot_dates : list or array of numpy datetime
+        list of dates in string format (%Y-%m-%d) or numpy datetime array which will be used as the knot locations
     date_freq : str
         the date frequency of the input data; only used when knot_dates is not None
 
@@ -66,7 +89,7 @@ def get_knot_idx(
 
     """
     if knot_dates is None and num_of_obs is None:
-        raise IllegalArgument('Either date_array or num_of_obs need to be provided.')
+        raise IllegalArgument('Either knot_dates or num_of_obs needs to be provided.')
 
     if knot_dates is not None:
         if date_array is None:
@@ -95,8 +118,12 @@ def get_knot_idx(
         knot_idx = get_knot_idx_by_dist(num_of_obs, knot_distance)
 
     elif num_of_segments is not None:
-        knot_distance = np.round((num_of_obs - 1) / num_of_segments).astype(int)
-        knot_idx = get_knot_idx_by_dist(num_of_obs, knot_distance)
+        if num_of_segments >= 1:
+            knot_distance = (num_of_obs - 1) / num_of_segments
+            knot_idx = get_knot_idx_by_dist(num_of_obs, knot_distance)
+        else:
+            # one single knot at the beginning
+            knot_idx = np.array([0])
     else:
         raise Exception("please specify at least one of the followings to determine the knot locations: "
                         "knot_dates, knot_distance, or num_of_segments.")
