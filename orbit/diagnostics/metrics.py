@@ -72,3 +72,15 @@ def rmsse(test_actual, test_prediction, train_actual):
     forecast_mse = mse(test_actual, test_prediction)
 
     return np.sqrt(forecast_mse / lag1_mse)
+
+
+def wbic():
+    # TODO:
+    # 1. convert all likelihood to target += syntax by reading stan manual
+    # https://mc-stan.org/docs/2_28/stan-users-guide/index.html
+    # 2. implement the watanabe wbic temperature sampling formula
+    # 3. create a toy model with 3 regressors and 2 useless regressor
+    # 4. create DLTs one with 1-5 regressor
+    # 5. create the WBIC function and compute the stats on those DLT models
+    # 6.[bonus] after all, think of a way to automate / generalize the way to add watanabe wbic
+    # temperature logic in a functional way
