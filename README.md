@@ -8,6 +8,10 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/orbit-ml)
 [![Downloads](https://pepy.tech/badge/orbit-ml)](https://pepy.tech/project/orbit-ml)
 
+# Users Notice
+
+The default page of the repo is on `dev` branch. If you are looking for a **stable version**, please refer to the `master` branch [here](https://github.com/uber/orbit/tree/master).
+
 
 # Disclaimer
 
