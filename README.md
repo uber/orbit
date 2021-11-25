@@ -10,7 +10,7 @@
 
 # Users Notice
 
-The default page of the repo is on `dev` branch. If you are looking for a **stable version**, please refer to the `master` branch [here](https://github.com/uber/orbit/tree/master).
+The default page of the repo is on `dev` branch. To install the version, please check the `Installing from Dev Branch` section. If you are looking for a **stable version**, please refer to the `master` branch [here](https://github.com/uber/orbit/tree/master).
 
 
 # Disclaimer
