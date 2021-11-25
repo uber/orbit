@@ -75,6 +75,7 @@ def rmsse(test_actual, test_prediction, train_actual):
 
 
 def wbic():
+    pass
     # TODO:
     # 1. convert all likelihood to target += syntax by reading stan manual
     # https://mc-stan.org/docs/2_28/stan-users-guide/index.html
