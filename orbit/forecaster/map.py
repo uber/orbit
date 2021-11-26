@@ -14,6 +14,11 @@ class MAPForecaster(Forecaster):
         self._point_posteriors[PredictMethod.MAP.value] = dict()
         self._point_method = PredictMethod.MAP.value
 
+    def set_forecaster_training_meta(self, data_input):
+        # MCMC flag to be true
+        data_input.update({'WITH_MCMC': 0})
+        return data_input
+
     def fit(self, df):
         super().fit(df)
         posterior_samples = self._posterior_samples

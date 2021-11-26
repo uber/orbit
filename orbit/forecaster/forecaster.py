@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from enum import Enum
 
-from ..exceptions import ForecasterException, AbstractMethodException
+from ..exceptions import ForecasterException, AbstractMethodException, EstimatorException
 from ..utils.general import is_ordered_datetime
 from ..template.model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMCMC
@@ -15,6 +15,7 @@ COMMON_MODEL_CALLABLES = ['get_data_input_mapper', 'get_fitter', 'get_init_value
 
 
 class Forecaster(object):
+
     def __init__(self,
                  model,
                  estimator_type,
@@ -139,6 +140,7 @@ class Forecaster(object):
 
         # note that estimator will search for the .stan, .pyro model file based on the
         # estimator type and model_name provided
+
         _posterior_samples, training_metrics = estimator.fit(
             model_name=model_name,
             model_param_names=model_param_names,
@@ -162,13 +164,26 @@ class Forecaster(object):
         training_meta[TrainingMetaKeys.RESPONSE_SD.value] = np.nanstd(response)
         training_meta[TrainingMetaKeys.START.value] = df[self.date_col].iloc[0]
         training_meta[TrainingMetaKeys.END.value] = df[self.date_col].iloc[-1]
-        # TODO: a little overhead here; there is room for further improvement
         training_meta[TrainingMetaKeys.DATE_COL.value] = self.date_col
         training_meta[TrainingMetaKeys.RESPONSE_COL.value] = self.response_col
         self._training_meta = training_meta
 
     def get_training_meta(self):
         return deepcopy(self._training_meta)
+
+    def set_forecaster_training_meta(self, data_input):
+        """A empty function to be derived from child to set forecaster specfic meta in training
+
+        Parameters
+        ----------
+        data_input : dict
+            training data input / meta
+        Returns
+        -------
+        dict : updated training data input / meta
+        """
+
+        return data_input
 
     def set_training_data_input(self):
         """Collects data attributes into a dict for sampling/optimization api"""
@@ -177,16 +192,15 @@ class Forecaster(object):
         if not data_input_mapper:
             raise ForecasterException('Empty or invalid data_input_mapper')
 
-        # TODO: if we make a base class, this can be refactored
         # always get standard input from training
         training_meta = self.get_training_meta()
         training_data_input = {
             TrainingMetaKeys.RESPONSE.value.upper(): training_meta[TrainingMetaKeys.RESPONSE.value],
-            # response_sd not used in lgt/dlt
             TrainingMetaKeys.RESPONSE_SD.value.upper(): training_meta[TrainingMetaKeys.RESPONSE_SD.value],
             TrainingMetaKeys.NUM_OF_OBS.value.upper(): training_meta[TrainingMetaKeys.NUM_OF_OBS.value],
-            'WITH_MCMC': 1,
         }
+
+        training_data_input = self.set_forecaster_training_meta(data_input=training_data_input)
 
         if isinstance(data_input_mapper, list):
             # if a list is provided, we assume an upper case in the mapper and reuse as the input value

@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from copy import copy
 import logging
+import numpy as np
 import multiprocessing
 from sys import platform, version_info
 if platform == 'darwin' and version_info[0] == 3 and version_info[1] == 9:
@@ -79,7 +80,7 @@ class StanEstimatorMCMC(StanEstimator):
     # is_mcmc boolean indicator -- some template are parameterized slightly different for
     # MCMC estimator vs other estimators for convergence. Indicator let's model and estimator
     # to remain independent
-    _is_mcmc_estimator = True
+    # _is_mcmc_estimator = True
 
     def __init__(self, stan_mcmc_control=None, stan_mcmc_args=None, **kwargs):
         super().__init__(**kwargs)
@@ -106,9 +107,36 @@ class StanEstimatorMCMC(StanEstimator):
         #   https://pystan2.readthedocs.io/en/latest/api.html
         #   if None, use default as defined in class variable
         init_values = init_values or self.stan_init
+
+        # run once to calculate WBIC
+        data_input.update({'CALC_WBIC': 1})
         # with suppress_stdout_stderr():
         # with suppress_stdout_stderr():
         # with io.capture_output() as captured:
+        stan_mcmc_fit = compiled_stan_file.sampling(
+            data=data_input,
+            pars=model_param_names + ['ll'],
+            iter=self._num_iter_per_chain,
+            warmup=self._num_warmup_per_chain,
+            chains=self.chains,
+            n_jobs=self.cores,
+            # fall back to default if not provided by model payload
+            init=init_values,
+            seed=self.seed,
+            algorithm=self.algorithm,
+            control=self.stan_mcmc_control,
+            **self._stan_mcmc_args
+        )
+
+        log_p = stan_mcmc_fit.extract(pars=['ll'], permuted=True)['ll']
+
+        def calculate_wbic(log_p):  # note that log P must he sampled at temp log(n)
+            return -2 * np.nanmean(log_p)
+
+        training_metrics = {'WBIC': calculate_wbic(log_p)}
+
+        # run once to calculate WBIC
+        data_input.update({'CALC_WBIC': 0})
         stan_mcmc_fit = compiled_stan_file.sampling(
             data=data_input,
             pars=model_param_names,
@@ -142,7 +170,7 @@ class StanEstimatorMCMC(StanEstimator):
             else:
                 posteriors[key] = val.reshape((-1, *val.shape[2:]), order='F')
         # log-posterior including warm up
-        training_metrics = {'log_posterior': stan_mcmc_fit.get_logposterior(inc_warmup=True)}
+        training_metrics.update({'log_posterior': stan_mcmc_fit.get_logposterior(inc_warmup=True)})
 
         return posteriors, training_metrics
 
@@ -156,7 +184,6 @@ class StanEstimatorMAP(StanEstimator):
         Supplemental stan vi args to pass to PyStan.optimizing()
 
     """
-
     def __init__(self, stan_map_args=None, **kwargs):
         super().__init__(**kwargs)
         self.stan_map_args = stan_map_args
@@ -181,6 +208,7 @@ class StanEstimatorMAP(StanEstimator):
 
     def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         compiled_stan_file = get_compiled_stan_model(model_name)
+        data_input.update({'CALC_WBIC': 0})
 
         # passing callable from the model as seen in `initfun1()`
         init_values = init_values or self.stan_init

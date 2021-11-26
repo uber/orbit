@@ -17,6 +17,8 @@
 data {
   // indicator of which method stan using
   int<lower=0,upper=1> WITH_MCMC;
+  // indicator to get the WBIC;
+  int<lower=0, upper=1> CALC_WBIC;
 
   // Data Input
   // Response Data
@@ -172,6 +174,12 @@ transformed parameters {
   real<lower=0,upper=1> slp_sm;
   real<lower=0,upper=1> sea_sm;
 
+  // WBIC stuff
+  real watanabe_beta;
+  vector[NUM_OF_OBS] ll;
+
+  ll = rep_vector(0, NUM_OF_OBS);
+
   if (LEV_SM_SIZE > 0) {
     lev_sm = lev_sm_dummy[1];
   } else {
@@ -263,7 +271,7 @@ transformed parameters {
     // we can safely use "l[t]" instead of "l[t-1] + damped_factor_dummy * b[t-1]" where 0 < sea_sm < 1
     // otherwise with original one, use 0 < sea_sm < 1 - lev_sm
     if (IS_SEASONAL)
-        s[t + SEASONALITY] = sea_sm * (RESPONSE[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm) * s_t;
+      s[t + SEASONALITY] = sea_sm * (RESPONSE[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm) * s_t;
   }
 
   if (WITH_MCMC) {
@@ -272,27 +280,37 @@ transformed parameters {
   } else {
     obs_sigma = obs_sigma_dummy[1];
   }
+
+  // WBIC
+  watanabe_beta = 1.0/log(NUM_OF_OBS); // the sampling temp
+  for (t in 2:NUM_OF_OBS) {
+    ll[t] = student_t_lpdf(RESPONSE[t] | nu, yhat[t], obs_sigma);
+  }
 }
-model {
-  //prior for residuals variance
+model {  
+  //prior for residuals
   if (WITH_MCMC == 0) {
     // reparameterize for MAP only to set finite boundary
     obs_sigma_dummy[1] ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, 5 * CAUCHY_SD];
   }
   // likelihood
   for (t in 2:NUM_OF_OBS) {
-    target += student_t_lpdf(RESPONSE[t] | nu, yhat[t], obs_sigma);
+    // target += watanabe_beta * ll[t]；
+    if (CALC_WBIC == 1) {
+      target += watanabe_beta * ll[t];
+    } else {
+      target += ll[t];
+    }
   }
 
   // prior for seasonality
   for (i in 1:(SEASONALITY - 1))
-    // 33% lift is with 1 sd prob.
-    target += normal_lpdf(init_sea[i] | 0, SEASONALITY_SD);
+    init_sea[i] ~ normal(0, SEASONALITY_SD); // 33% lift is with 1 sd prob.
 
   // global trend prior
   if (GLOBAL_TREND_OPTION == 0) {
-    target += normal_lpdf(gl[1] | 0, 10);
-    target += normal_lpdf(gb[1] | 0, 1);
+    gl[1] ~ normal(0, 10);
+    gb[1] ~ normal(0, 1);
   } else if (GLOBAL_TREND_OPTION == 1) {
     gl[1] ~ lognormal(0, 2.303);
     gb[1] ~ normal(0, 1)T[-1.0 / (NUM_OF_OBS + 10), ];
@@ -307,49 +325,49 @@ model {
   // 2. https://betanalpha.github.io/assets/case_studies/bayes_sparse_regression.html#33_wide_weakly_informative_prior
   if (NUM_OF_PR > 0) {
     if (REG_PENALTY_TYPE== 0) {
-      target += normal_lpdf(pr_beta | PR_BETA_PRIOR, PR_SIGMA_PRIOR);
+      pr_beta ~ normal(PR_BETA_PRIOR, PR_SIGMA_PRIOR);
     } else if (REG_PENALTY_TYPE == 1) {
       // lasso penalty
-      target += double_exponential_lpdf(pr_beta | PR_BETA_PRIOR, LASSO_SCALE);
+      pr_beta ~ double_exponential(PR_BETA_PRIOR, LASSO_SCALE);
     } else if (REG_PENALTY_TYPE == 2) {
       // data-driven penalty for ridge
       for(i in 1:NUM_OF_PR) {
         //weak prior for sigma
-        pr_sigma[i]  ~ cauchy(0, AUTO_RIDGE_SCALE) T[0,];
+        pr_sigma[i] ~ cauchy(0, AUTO_RIDGE_SCALE) T[0,];
       }
       //weak prior for betas
-      target += normal_lpdf(pr_beta | PR_BETA_PRIOR, pr_sigma);
+      pr_beta ~ normal(PR_BETA_PRIOR, pr_sigma);
     }
   }
   if (NUM_OF_NR > 0) {
     if (REG_PENALTY_TYPE == 0) {
-       target += normal_lpdf(nr_beta | NR_BETA_PRIOR, NR_SIGMA_PRIOR);
+      nr_beta ~ normal(NR_BETA_PRIOR, NR_SIGMA_PRIOR);
     } else if (REG_PENALTY_TYPE == 1) {
       // lasso penalty
-      target += double_exponential_lpdf(nr_beta | NR_BETA_PRIOR, LASSO_SCALE);
+      nr_beta ~ double_exponential(NR_BETA_PRIOR, LASSO_SCALE);
     } else if (REG_PENALTY_TYPE == 2) {
       // data-driven penalty for ridge
       for(i in 1:NUM_OF_NR) {
         nr_sigma[i] ~ cauchy(0, AUTO_RIDGE_SCALE) T[0,];
       }
       //weak prior for betas
-      target += normal_lpdf(nr_beta | NR_BETA_PRIOR, nr_sigma);
+      nr_beta ~ normal(NR_BETA_PRIOR, nr_sigma);
     }
   }
   if (NUM_OF_RR > 0) {
     if (REG_PENALTY_TYPE == 0) {
       // fixed penalty ridge
-      target +=  normal_lpdf(rr_beta | RR_BETA_PRIOR, RR_SIGMA_PRIOR);
+      rr_beta ~ normal(RR_BETA_PRIOR, RR_SIGMA_PRIOR);
     } else if (REG_PENALTY_TYPE == 1) {
       // lasso penalty
-      target +=  double_exponential_lpdf(rr_beta | RR_BETA_PRIOR, LASSO_SCALE);
+      rr_beta ~ double_exponential(RR_BETA_PRIOR, LASSO_SCALE);
     } else if (REG_PENALTY_TYPE == 2) {
       // data-driven penalty for ridge
       for(i in 1:NUM_OF_RR) {
         rr_sigma[i] ~ cauchy(0, AUTO_RIDGE_SCALE) T[0,];
       }
       //weak prior for betas
-      target +=  normal_lpdf(rr_beta | RR_BETA_PRIOR, rr_sigma);
+      rr_beta ~ normal(RR_BETA_PRIOR, rr_sigma);
     }
   }
 }

@@ -20,6 +20,13 @@ class FullBayesianForecaster(Forecaster):
             PredictMethod.MEDIAN.value: dict(),
         }
 
+    def set_forecaster_training_meta(self, data_input):
+        # MCMC flag to be true
+        data_input.update(
+            {'WITH_MCMC': 1}
+        )
+        return data_input
+
     def fit(self, df, point_method=None, keep_samples=True):
         super().fit(df)
         self._point_method = point_method
