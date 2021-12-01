@@ -947,7 +947,8 @@ class KTRModel(ModelTemplate):
                                                       self._seasonality_coef_knot_dates,
                                                       self._seasonality_coef_knots,
                                                       self._seasonality,
-                                                      self._seasonality_fs_order)
+                                                      self._seasonality_fs_order,
+                                                      self._seasonality_labels)
 
         #     # seas is 1-d array, add the batch size back
         #     seas = np.expand_dims(seas, 0)
