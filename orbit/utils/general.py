@@ -18,7 +18,9 @@ def is_ordered_datetime(array):
 
 def is_even_gap_datetime(array):
     """Returns True if array is evenly distributed"""
-    return isinstance(pd.infer_freq(array), str)
+    if len(array) >= 3:
+        return isinstance(pd.infer_freq(array), str)
+    return True
 
 
 def is_empty_dataframe(df):
