@@ -654,7 +654,8 @@ class KTRModel(ModelTemplate):
     #     coefs = np.squeeze(np.matmul(coef_knot, kernel_coef.transpose(1, 0)), axis=0).transpose(1, 0)
     #     return coefs
 
-    def _generate_seas(self, df, training_meta, coef_knot_dates, coef_knots, seasonality, seasonality_fs_order):
+    def _generate_seas(self, df, training_meta, coef_knot_dates, coef_knots,
+                        seasonality, seasonality_fs_order, seasonality_labels):
         """To calculate the seasonality term based on the _seasonal_knots_input.
         Parameters
         ----------
@@ -702,7 +703,7 @@ class KTRModel(ModelTemplate):
                 n=df.shape[0],
                 periods=seasonality,
                 orders=seasonality_fs_order,
-                labels=self._seasonality_labels,
+                labels=seasonality_labels,
                 shift=start,
             )
 
@@ -713,7 +714,7 @@ class KTRModel(ModelTemplate):
             # init of regression matrix depends on length of response vector
             total_seas_regression = np.zeros((1, df.shape[0]), dtype=np.double)
 
-            for k in self._seasonality_labels:
+            for k in seasonality_labels:
                 seas_regresor_matrix = seas_regressors[k]
                 coef_knot = coef_knots[k]
                 # time-step x coefficients
@@ -758,10 +759,8 @@ class KTRModel(ModelTemplate):
         # load _seasonality and _seasonality_fs_order
         self._seasonality = ktrlite._model._seasonality
         self._seasonality_fs_order = ktrlite._model._seasonality_fs_order
-        seasonality_labels = list()
         for seas in self._seasonality:
-            seasonality_labels.append('seasonality_{}'.format(seas))
-        self._seasonality_labels = seasonality_labels
+            self._seasonality_labels.append('seasonality_{}'.format(seas))
 
         # if input None for upper bound of residuals scale, use data-driven input
         if self.residuals_scale_upper is None:
@@ -812,7 +811,8 @@ class KTRModel(ModelTemplate):
                 self._seasonality_coef_knot_dates,
                 self._seasonality_coef_knots,
                 self._seasonality,
-                self._seasonality_fs_order)
+                self._seasonality_fs_order,
+                self._seasonality_labels)
             # remove batch size as an input for models
             self._seas_term = np.squeeze(self._seas_term, 0)
 
