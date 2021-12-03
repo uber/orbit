@@ -133,3 +133,23 @@ def load_air_passengers():
     df = pd.read_csv(url, parse_dates=['ds'])
 
     return df
+
+
+def load_energy_hourly():
+    """ Load Historical hourly load data from EMS for September 2021
+    Returns
+    -------
+        pandas DataFrame
+
+    Notes
+    -----
+    http://www.caiso.com/Documents/HistoricalEMSHourlyLoadforSeptember2021.xlsx
+    :return:
+    """
+
+    url = 'https://raw.githubusercontent.com/uber/orbit/dev/examples/data/energy_data_hourly.csv'
+    df = pd.read_csv(url)
+    df['hour'] = pd.to_datetime(df['Date'] + ' ' + df['hour'])
+    df.drop(['Date', 'HR'], axis=1, inplace=True)
+
+    return df
