@@ -1,10 +1,12 @@
 from copy import deepcopy
 import numpy as np
 import pandas as pd
+import warnings
 from enum import Enum
 
-from ..exceptions import ForecasterException, AbstractMethodException, EstimatorException
-from ..utils.general import is_ordered_datetime
+
+from ..exceptions import ForecasterException, AbstractMethodException
+from ..utils.general import is_ordered_datetime, is_even_gap_datetime
 from ..template.model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMCMC
 from ..constants.constants import TrainingMetaKeys, PredictionMetaKeys
@@ -245,6 +247,9 @@ class Forecaster(object):
         if not is_ordered_datetime(date_array):
             raise ForecasterException('Datetime index must be ordered and not repeat')
 
+        if not is_even_gap_datetime(date_array):
+            warnings.warn('Datetime index is not evenly distributed')
+
         # validate response variable is in df
         if self.response_col not in df_columns:
             raise ForecasterException("DataFrame does not contain `response_col`: {}".format(self.response_col))
@@ -278,6 +283,9 @@ class Forecaster(object):
 
         if not is_ordered_datetime(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]):
             raise ForecasterException('Datetime index must be ordered and not repeat')
+
+        if not is_even_gap_datetime(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]):
+            warnings.warn('Datetime index is not evenly distributed')
 
         # TODO: validate that all regressor columns are present, if any
 
