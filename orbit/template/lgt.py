@@ -16,7 +16,7 @@ from ..constants.constants import (
     TrainingMetaKeys,
     PredictionMetaKeys
 )
-from ..exceptions import IllegalArgument, ModelException
+from ..exceptions import IllegalArgument, ModelException, DataInputException
 # from .model_template import ModelTemplate
 from .ets import ETSModel
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
@@ -54,6 +54,8 @@ class DataInputMapper(Enum):
     _REGRESSION_PENALTY = 'REG_PENALTY_TYPE'
     AUTO_RIDGE_SCALE = 'AUTO_RIDGE_SCALE'
     LASSO_SCALE = 'LASSO_SCALE'
+    # handle missing values
+    IS_VALID_RESPONSE = 'IS_VALID_RES'
 
 
 class BaseSamplingParameters(Enum):
@@ -388,6 +390,8 @@ class LGTModel(ETSModel):
         super().set_dynamic_attributes(df, training_meta)
         # scalar value is suggested by the author of Rlgt
         self.cauchy_sd = max(training_meta[TrainingMetaKeys.RESPONSE.value]) / 30.0
+        if any(training_meta[TrainingMetaKeys.RESPONSE.value][self.is_valid_response] < 0):
+            raise DataInputException('LGT model does not allow negative response values..')
 
         # extra validation and settings for regression
         self._validate_training_df_with_regression(df)
