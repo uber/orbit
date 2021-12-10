@@ -2,7 +2,6 @@ import pytest
 import numpy as np
 from copy import copy
 
-from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
 from orbit.models import ETS
 from orbit.template.ets import ETSInitializer
 from orbit.constants.constants import PredictionKeys
@@ -101,8 +100,6 @@ def test_ets_map_seasonal_fit(make_weekly_data, n_bootstrap_draws):
         response_col='response',
         date_col='week',
         seasonality=52,
-        num_warmup=50,
-        num_sample=50,
         verbose=False,
         estimator='stan-map',
         n_bootstrap_draws=n_bootstrap_draws,
@@ -130,8 +127,7 @@ def test_ets_map_seasonal_fit(make_weekly_data, n_bootstrap_draws):
     assert len(ets._posterior_samples) == expected_num_parameters
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC])
-def test_ets_non_seasonal_fit(make_weekly_data, estimator_type):
+def test_ets_non_seasonal_fit(make_weekly_data):
     train_df, test_df, coef = make_weekly_data
 
     ets = ETS(
@@ -327,3 +323,22 @@ def test_ets_map_reproducibility(make_weekly_data, seasonality):
 
     # assert prediction is reproducible
     assert np.allclose(prediction1['prediction'].values, prediction2['prediction'].values)
+
+
+def test_ets_missing(iclaims_training_data_missing):
+    df = iclaims_training_data_missing
+
+    ets = ETS(
+        response_col='claims',
+        date_col='week',
+        seasonality=52,
+        verbose=False,
+        estimator='stan-map',
+    )
+
+    ets.fit(df)
+    predicted_df = ets.predict(df)
+    expected_columns = ['week', 'prediction']
+
+    assert predicted_df.columns.tolist() == expected_columns
+    assert predicted_df.shape[0] == df.shape[0]

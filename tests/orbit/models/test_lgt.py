@@ -614,3 +614,22 @@ def test_lgt_is_fitted(iclaims_training_data, estimator, keep_samples, point_met
 
     # still True when keep_samples is False
     assert is_fitted
+
+
+def test_lgt_missing(iclaims_training_data_missing):
+    df = iclaims_training_data_missing
+
+    lgt = LGT(
+        response_col='claims',
+        date_col='week',
+        seasonality=52,
+        verbose=False,
+        estimator='stan-map'
+    )
+
+    lgt.fit(df)
+    predicted_df = lgt.predict(df)
+    expected_columns = ['week', 'prediction']
+
+    assert predicted_df.columns.tolist() == expected_columns
+    assert predicted_df.shape[0] == df.shape[0]
