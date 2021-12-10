@@ -8,7 +8,7 @@ from ..constants.constants import (
     TrainingMetaKeys,
     PredictionMetaKeys
 )
-from ..exceptions import IllegalArgument
+from ..exceptions import IllegalArgument, DataInputException
 from .model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
 from ..utils.features import moving_average
@@ -25,6 +25,8 @@ class DataInputMapper(Enum):
     _SEASONALITY_SM_INPUT = 'SEA_SM_INPUT'
     # ---------- Common Local Trend ---------- #
     _LEVEL_SM_INPUT = 'LEV_SM_INPUT'
+    # handle missing values
+    IS_VALID_RESPONSE = 'IS_VALID_RES'
 
 
 class BaseSamplingParameters(Enum):
@@ -106,6 +108,9 @@ class ETSModel(ModelTemplate):
         self._seasonality = self.seasonality
         self._seasonality_sm_input = self.seasonality_sm_input
         self._level_sm_input = self.level_sm_input
+        # handle missing values
+        self.is_valid_response = None
+
         self._set_static_attributes()
         self._set_model_param_names()
 
@@ -132,11 +137,21 @@ class ETSModel(ModelTemplate):
             # to estimate the "across-group" s.d. as a seasonality prior
             ss = np.zeros(self._seasonality)
             for idx in range(self._seasonality):
-                ss[idx] = np.mean(adjusted_response[idx::self._seasonality])
-            self.seasonality_sd = np.std(ss)
+                ss[idx] = np.nanmean(adjusted_response[idx::self._seasonality])
+            self.seasonality_sd = np.nanstd(ss)
         else:
             # should not be used anyway; just a placeholder
             self.seasonality_sd = training_meta[TrainingMetaKeys.RESPONSE_SD.value]
+
+        self._set_valid_response(training_meta)
+
+    def _set_valid_response(self, training_meta):
+        response = training_meta[TrainingMetaKeys.RESPONSE.value]
+        self.is_valid_response = (~np.isnan(response)).astype(int)
+        # raise exception if the first response value is missing
+        if self.is_valid_response[0] == 0:
+            raise DataInputException('The first value of response column {} cannot be missing..'.\
+                format(training_meta[TrainingMetaKeys.RESPONSE_COL.value]))
 
     # TODO: this could be static function by accepting a callable object?
     def set_init_values(self):

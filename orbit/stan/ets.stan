@@ -5,6 +5,7 @@ data {
   // Response Data
   int<lower=1> NUM_OF_OBS; // number of observations
   vector[NUM_OF_OBS] RESPONSE;
+  int IS_VALID_RES[NUM_OF_OBS];
   // Smoothing Hyper-Params
   real<upper=1> LEV_SM_INPUT;
   real<upper=1> SEA_SM_INPUT;
@@ -96,20 +97,30 @@ transformed parameters {
     yhat[t] = l[t-1] + s_t;
 
     // update process
-    l[t] = lev_sm * (RESPONSE[t] - s_t) + (1 - lev_sm) * l[t-1];
+    if (IS_VALID_RES[t]) {
+      l[t] = lev_sm * (RESPONSE[t] - s_t) + (1 - lev_sm) * l[t-1];
+    } else {
+      l[t] = lev_sm * (yhat[t] - s_t) + (1 - lev_sm) * l[t-1];
+    }
     // with parameterization as mentioned in 7.3 "Forecasting: Principles and Practice"
     // we can safely use "l[t]" instead of "l[t-1] + damped_factor_dummy * b[t-1]" where 0 < sea_sm < 1
     // otherwise with original one, use 0 < sea_sm < 1 - lev_sm
-    if (IS_SEASONAL)
+    if (IS_SEASONAL) {
+      if (IS_VALID_RES[t]) {
         s[t + SEASONALITY] = sea_sm * (RESPONSE[t] - l[t]) + (1 - sea_sm) * s_t;
+      } else {
+        s[t + SEASONALITY] = sea_sm * (yhat[t] - l[t]) + (1 - sea_sm) * s_t;
+      }
+    }
   }
-
 }
 model {
   //prior for residuals
   obs_sigma ~ cauchy(0, RESPONSE_SD);
   for (t in 2:NUM_OF_OBS) {
-    RESPONSE[t] ~ normal(yhat[t], obs_sigma);
+    if (IS_VALID_RES[t]){
+       RESPONSE[t] ~ normal(yhat[t], obs_sigma);
+    }
   }
   // prior for seasonality
   for (i in 1:(SEASONALITY - 1))
