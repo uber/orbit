@@ -126,7 +126,7 @@ We document versions and changes in our [changelog](https://github.com/uber/orbi
 
 ## Presentations
 
-Check out the ongoing [deck](https://docs.google.com/presentation/d/1pzpMubCWfjtoiyTug1yLu6ILfFsBdaQJQC8qTj99ZyM/edit?usp=sharing) for scope and roadmap of the project. An older deck used in the [meet-up](https://www.meetup.com/UberEvents/events/279446143/) during July 2021 can also be found [here](https://docs.google.com/presentation/d/1R0Ol8xahIE6XlrAjAi0ewu4nRxo-wQn8w6U7z-uiOzI/edit?usp=sharing).
+Check out the ongoing [deck](https://docs.google.com/presentation/d/1WfTtXAW3rud4TX9HtB3NkE6buDE8tWk6BKZ2hRNXjCI/edit?usp=sharing) for scope and roadmap of the project. An older deck used in the [meet-up](https://www.meetup.com/UberEvents/events/279446143/) during July 2021 can also be found [here](https://docs.google.com/presentation/d/1R0Ol8xahIE6XlrAjAi0ewu4nRxo-wQn8w6U7z-uiOzI/edit?usp=sharing).
 
 
 ## Citation
