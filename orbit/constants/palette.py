@@ -2,6 +2,7 @@ from enum import Enum
 import seaborn as sns
 import matplotlib.colors as clr
 
+
 class KTRPalette(Enum):
     KNOTS_SEGMENT = '#276ef1'
     KNOTS_REGION = '#05A357'
@@ -12,8 +13,11 @@ class OrbitPalette(Enum):
     # single brand colors
     BLACK = '#000000'
     BLUE = '#276EF1'
+    BLUE600 = '#174291'
     GREEN = '#05A357'
+    GREEN600 = '#03582F'
     YELLOW = '#FFC043'
+    YELLOW400 = '#FFC043'
     RED = '#E11900'
     BROWN = '#99644C'
     ORANGE = '#ED6E33'
@@ -31,7 +35,8 @@ class OrbitPalette(Enum):
     # Diverging Palette -  blue green yellow orange red
     RAINBOW = clr.LinearSegmentedColormap.from_list(
         'custom', ['#276EF1', '#05A357', '#FFC043',  '#ED6E33', '#E11900'],
-        N=300)
+        N=300
+    )
 
 
 class PredictionPaletteClassic(Enum):
@@ -42,14 +47,14 @@ class PredictionPaletteClassic(Enum):
     # holdout_vertical_line = '#1f77b4'
     # test_obs = '#FF8C00'
 
-    #black
+    # black
     ACTUAL_OBS = '#000000'
-    #blue
+    # blue
     PREDICTION_LINE = '#276EF1'
     PREDICTION_INTERVAL = '#276EF1'
-    #black
+    # black
     HOLDOUT_VERTICAL_LINE = '#000000'
-    #yellow
+    # yellow
     TEST_OBS = '#FFC043'
 
 

@@ -153,7 +153,6 @@ class ETSModel(ModelTemplate):
             raise DataInputException('The first value of response column {} cannot be missing..'.\
                 format(training_meta[TrainingMetaKeys.RESPONSE_COL.value]))
 
-    # TODO: this could be static function by accepting a callable object?
     def set_init_values(self):
         """Override function from Base Template
         """
