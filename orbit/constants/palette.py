@@ -2,12 +2,19 @@ from enum import Enum
 import seaborn as sns
 import matplotlib.colors as clr
 
+
 class KTRPalette(Enum):
+    """
+    str
+    """
     KNOTS_SEGMENT = '#276ef1'
     KNOTS_REGION = '#05A357'
 
 
 class OrbitPalette(Enum):
+    """
+    str
+    """
     # Qualitative Palette
     # single brand colors
     BLACK = '#000000'
@@ -20,42 +27,46 @@ class OrbitPalette(Enum):
     PURPLE = '#7356BF'
     WHITE = '#FFFFFF'
 
+
+class OrbitColorMap(Enum):
+    """
+    matplotlib ColorMap
+    """
     # Sequential Palette
-    BLACK_GRADIENT = clr.LinearSegmentedColormap.from_list('custom', [WHITE, BLACK], N=300)
-    BLUE_GRADIENT = clr.LinearSegmentedColormap.from_list('custom', [WHITE, BLUE, BLACK], N=300)
-    GREEN_GRADIENT = clr.LinearSegmentedColormap.from_list('custom', [WHITE, GREEN, BLACK], N=300)
-    YELLOW_GRADIENT = clr.LinearSegmentedColormap.from_list('custom', [WHITE, YELLOW, BLACK], N=300)
-    RED_GRADIENT = clr.LinearSegmentedColormap.from_list('custom', [WHITE, RED, BLACK], N=300)
-    PURPLE_GRADIENT = clr.LinearSegmentedColormap.from_list('custom', [WHITE, PURPLE, BLACK], N=300)
+    BLACK_GRADIENT = clr.LinearSegmentedColormap.from_list('custom', [OrbitPalette.WHITE.value,
+                                                                      OrbitPalette.BLACK.value], N=300)
+    BLUE_GRADIENT = clr.LinearSegmentedColormap.from_list('custom', [OrbitPalette.WHITE.value,
+                                                                     OrbitPalette.BLUE.value,
+                                                                     OrbitPalette.BLACK.value], N=300)
+    GREEN_GRADIENT = clr.LinearSegmentedColormap.from_list('custom', [OrbitPalette.WHITE.value,
+                                                                      OrbitPalette.GREEN.value,
+                                                                      OrbitPalette.BLACK.value], N=300)
+    YELLOW_GRADIENT = clr.LinearSegmentedColormap.from_list('custom', [OrbitPalette.WHITE.value,
+                                                                       OrbitPalette.YELLOW.value,
+                                                                       OrbitPalette.BLACK.value], N=300)
+    RED_GRADIENT = clr.LinearSegmentedColormap.from_list('custom', [OrbitPalette.WHITE.value,
+                                                                    OrbitPalette.RED.value,
+                                                                    OrbitPalette.BLACK.value], N=300)
+    PURPLE_GRADIENT = clr.LinearSegmentedColormap.from_list('custom', [OrbitPalette.WHITE.value,
+                                                                       OrbitPalette.PURPLE.value,
+                                                                       OrbitPalette.BLACK.value], N=300)
 
     # Diverging Palette -  blue green yellow orange red
     RAINBOW = clr.LinearSegmentedColormap.from_list(
-        'custom', ['#276EF1', '#05A357', '#FFC043',  '#ED6E33', '#E11900'],
+        'custom', ['#276EF1', '#05A357', '#FFC043', '#ED6E33', '#E11900'],
         N=300)
 
 
 class PredictionPaletteClassic(Enum):
-    # actual_obs = '#000000'
-    # prediction_line = '#12939A'
-    # prediction_interval = '#42999E'
-    # prediction_range = '#42999E'
-    # holdout_vertical_line = '#1f77b4'
-    # test_obs = '#FF8C00'
-
-    #black
+    """
+    str
+    """
+    # black
     ACTUAL_OBS = '#000000'
-    #blue
+    # blue
     PREDICTION_LINE = '#276EF1'
     PREDICTION_INTERVAL = '#276EF1'
-    #black
+    # black
     HOLDOUT_VERTICAL_LINE = '#000000'
-    #yellow
+    # yellow
     TEST_OBS = '#FFC043'
-
-
-
-
-
-
-
-
