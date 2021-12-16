@@ -329,7 +329,7 @@ def test_ets_map_reproducibility(make_weekly_data, seasonality):
     assert np.allclose(prediction1['prediction'].values, prediction2['prediction'].values)
 
 
-@pytest.mark.parametrize("estimator", ['stan-mcmc', 'stan-map', 'pyro-svi'])
+@pytest.mark.parametrize("estimator", ['stan-mcmc', 'stan-map'])
 @pytest.mark.parametrize("random_seed", [10, 100])
 def test_ets_predict_seed(make_weekly_data, estimator, random_seed):
     train_df, test_df, coef = make_weekly_data

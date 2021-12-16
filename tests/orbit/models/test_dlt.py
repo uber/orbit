@@ -706,7 +706,7 @@ def test_dlt_is_fitted(iclaims_training_data, estimator, keep_samples, point_met
     assert is_fitted
 
 
-@pytest.mark.parametrize("estimator", ['stan-mcmc', 'stan-map', 'pyro-svi'])
+@pytest.mark.parametrize("estimator", ['stan-mcmc', 'stan-map'])
 @pytest.mark.parametrize("random_seed", [10, 100])
 def test_dlt_predict_seed(make_weekly_data, estimator, random_seed):
     train_df, test_df, coef = make_weekly_data
