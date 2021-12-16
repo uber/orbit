@@ -35,8 +35,7 @@ class OrbitPalette(Enum):
     # Diverging Palette -  blue green yellow orange red
     RAINBOW = clr.LinearSegmentedColormap.from_list(
         'custom', ['#276EF1', '#05A357', '#FFC043',  '#ED6E33', '#E11900'],
-        N=300
-    )
+        N=300)
 
 
 class PredictionPaletteClassic(Enum):
