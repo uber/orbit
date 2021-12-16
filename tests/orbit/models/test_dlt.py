@@ -655,6 +655,32 @@ def test_dlt_grid_tuning(make_weekly_data, param_grid):
     assert tuned_df.shape == (9, 3)
 
 
+@pytest.mark.parametrize("estimator", ['stan-mcmc', 'stan-map'])
+def test_dlt_missing(iclaims_training_data, estimator):
+    df = iclaims_training_data
+    missing_idx = np.array([10, 20, 30, 40, 41, 42, 43, 44, df.shape[0] - 1])
+    df.loc[missing_idx, 'claims'] = np.nan
+
+    dlt = DLT(
+        response_col='claims',
+        date_col='week',
+        seasonality=52,
+        verbose=False,
+        estimator=estimator
+    )
+
+    dlt.fit(df)
+    predicted_df = dlt.predict(df)
+    if estimator == 'stan-map':
+        expected_columns = ['week', 'prediction']
+    elif estimator == 'stan-mcmc':
+        expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
+
+    assert all(~np.isnan(predicted_df['prediction']))
+    assert predicted_df.columns.tolist() == expected_columns
+    assert predicted_df.shape[0] == df.shape[0]
+
+
 def test_dlt_map_single_regressor(iclaims_training_data):
     df = iclaims_training_data
     df['claims'] = np.log(df['claims'])
@@ -704,22 +730,3 @@ def test_dlt_is_fitted(iclaims_training_data, estimator, keep_samples, point_met
 
     # still True when keep_samples is False
     assert is_fitted
-
-
-def test_dlt_missing(iclaims_training_data_missing):
-    df = iclaims_training_data_missing
-
-    dlt = DLT(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        verbose=False,
-        estimator='stan-map'
-    )
-
-    dlt.fit(df)
-    predicted_df = dlt.predict(df)
-    expected_columns = ['week', 'prediction']
-
-    assert predicted_df.columns.tolist() == expected_columns
-    assert predicted_df.shape[0] == df.shape[0]

@@ -21,21 +21,6 @@ def iclaims_training_data():
 
 
 @pytest.fixture
-def iclaims_training_data_missing():
-    test_file = pkg_resources.resource_filename(
-        'tests',
-        'resources/iclaims.example.csv'
-    )
-    df = pd.read_csv(
-        test_file,
-        parse_dates=['week']
-    )
-    df.loc[[10, 20, 30, 40, 50], 'claims'] = np.nan
-
-    return df
-
-
-@pytest.fixture
 def m3_monthly_data():
     test_file = pkg_resources.resource_filename(
         'tests',

@@ -236,6 +236,32 @@ def test_map_prediction_percentiles(iclaims_training_data, n_bootstrap_draws, pr
     assert predicted_df.shape[0] == df.shape[0]
 
 
+@pytest.mark.parametrize("estimator", ['stan-mcmc', 'stan-map'])
+def test_ets_missing(iclaims_training_data, estimator):
+    df = iclaims_training_data
+    missing_idx = np.array([10, 20, 30, 40, 41, 42, 43, 44, df.shape[0] - 1])
+    df.loc[missing_idx, 'claims'] = np.nan
+
+    dlt = ETS(
+        response_col='claims',
+        date_col='week',
+        seasonality=52,
+        verbose=False,
+        estimator=estimator
+    )
+
+    dlt.fit(df)
+    predicted_df = dlt.predict(df)
+    if estimator == 'stan-map':
+        expected_columns = ['week', 'prediction']
+    elif estimator == 'stan-mcmc':
+        expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
+
+    assert all(~np.isnan(predicted_df['prediction']))
+    assert predicted_df.columns.tolist() == expected_columns
+    assert predicted_df.shape[0] == df.shape[0]
+
+
 @pytest.mark.parametrize("seasonality", [1, 52])
 def test_ets_full_reproducibility(make_weekly_data, seasonality):
     train_df, test_df, coef = make_weekly_data
@@ -323,22 +349,3 @@ def test_ets_map_reproducibility(make_weekly_data, seasonality):
 
     # assert prediction is reproducible
     assert np.allclose(prediction1['prediction'].values, prediction2['prediction'].values)
-
-
-def test_ets_missing(iclaims_training_data_missing):
-    df = iclaims_training_data_missing
-
-    ets = ETS(
-        response_col='claims',
-        date_col='week',
-        seasonality=52,
-        verbose=False,
-        estimator='stan-map',
-    )
-
-    ets.fit(df)
-    predicted_df = ets.predict(df)
-    expected_columns = ['week', 'prediction']
-
-    assert predicted_df.columns.tolist() == expected_columns
-    assert predicted_df.shape[0] == df.shape[0]
