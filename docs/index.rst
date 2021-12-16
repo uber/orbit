@@ -26,6 +26,7 @@ Welcome to Orbit's Documentation!
    tutorials/dlt
    tutorials/lgt
    tutorials/regression
+   tutorials/ets_lgt_dlt_missing_response
 
 .. toctree::
    :maxdepth: 1
