@@ -19,8 +19,11 @@ class OrbitPalette(Enum):
     # single brand colors
     BLACK = '#000000'
     BLUE = '#276EF1'
+    BLUE600 = '#174291'
     GREEN = '#05A357'
+    GREEN600 = '#03582F'
     YELLOW = '#FFC043'
+    YELLOW400 = '#FFC043'
     RED = '#E11900'
     BROWN = '#99644C'
     ORANGE = '#ED6E33'
