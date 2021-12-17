@@ -349,3 +349,29 @@ def test_ets_map_reproducibility(make_weekly_data, seasonality):
 
     # assert prediction is reproducible
     assert np.allclose(prediction1['prediction'].values, prediction2['prediction'].values)
+
+
+@pytest.mark.parametrize("estimator", ['stan-mcmc', 'stan-map'])
+@pytest.mark.parametrize("random_seed", [10, 100])
+def test_ets_predict_seed(make_weekly_data, estimator, random_seed):
+    train_df, test_df, coef = make_weekly_data
+    args = {
+        'response_col': 'response',
+        'date_col': 'week',
+        'seasonality': 52,
+        'n_bootstrap_draws': 100,
+        'verbose': False,
+        'estimator': estimator,
+    }
+
+    if estimator == 'stan-mcmc':
+        args.update({'num_warmup': 50, 'num_sample': 100})
+    elif estimator == 'pyro-svi':
+        args.update({'num_steps': 10})
+
+    lgt = ETS(**args)
+    lgt.fit(train_df)
+    predict_df1 = lgt.predict(test_df, seed=random_seed)
+    predict_df2 = lgt.predict(test_df, seed=random_seed)
+
+    assert all(predict_df1['prediction'].values == predict_df2['prediction'].values)

@@ -604,6 +604,7 @@ def test_lgt_map_single_regressor(iclaims_training_data):
     assert predicted_df.columns.tolist() == expected_columns
     assert len(lgt._posterior_samples) == expected_num_parameters
 
+
 @pytest.mark.parametrize("estimator", ['stan-mcmc', 'pyro-svi'])
 @pytest.mark.parametrize("keep_samples", [True, False])
 @pytest.mark.parametrize("point_method", ['mean', 'median'])
@@ -640,3 +641,29 @@ def test_lgt_is_fitted(iclaims_training_data, estimator, keep_samples, point_met
 
     # still True when keep_samples is False
     assert is_fitted
+
+
+@pytest.mark.parametrize("estimator", ['stan-mcmc', 'stan-map', 'pyro-svi'])
+@pytest.mark.parametrize("random_seed", [10, 100])
+def test_lgt_predict_seed(make_weekly_data, estimator, random_seed):
+    train_df, test_df, coef = make_weekly_data
+    args = {
+        'response_col': 'response',
+        'date_col': 'week',
+        'seasonality': 52,
+        'n_bootstrap_draws': 100,
+        'verbose': False,
+        'estimator': estimator,
+    }
+
+    if estimator == 'stan-mcmc':
+        args.update({'num_warmup': 50, 'num_sample': 100})
+    elif estimator == 'pyro-svi':
+        args.update({'num_steps': 10})
+
+    lgt = LGT(**args)
+    lgt.fit(train_df)
+    predict_df1 = lgt.predict(test_df, seed=random_seed)
+    predict_df2 = lgt.predict(test_df, seed=random_seed)
+
+    assert all(predict_df1['prediction'].values == predict_df2['prediction'].values)
