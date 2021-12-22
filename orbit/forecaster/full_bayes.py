@@ -76,7 +76,7 @@ class FullBayesianForecaster(Forecaster):
 
         return bootstrap_samples_dict
 
-    def predict(self, df, decompose=False, store_prediction_array=False, **kwargs):
+    def predict(self, df, decompose=False, store_prediction_array=False, seed=None, **kwargs):
         # raise if model is not fitted
         if not self.is_fitted():
             raise ForecasterException("Model is not fitted yet.")
@@ -84,6 +84,9 @@ class FullBayesianForecaster(Forecaster):
         self._set_prediction_meta(df)
         prediction_meta = self.get_prediction_meta()
         training_meta = self.get_training_meta()
+
+        if seed is not None:
+            np.random.seed(seed)
 
         if self._point_method is None:
             # full posteriors prediction

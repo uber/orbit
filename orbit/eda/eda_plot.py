@@ -11,7 +11,7 @@ pd.options.mode.chained_assignment = None
 
 @orbit_style_decorator
 def ts_heatmap(df, date_col, value_col, seasonal_interval, fig_width=8, fig_height=8, normalization=False,
-               path=None, palette=palette.OrbitPalette.BLUE_GRADIENT.value):
+               path=None, palette=palette.OrbitColorMap.BLUE_GRADIENT.value):
     """this function takes a time series dataframe and plot a time series heatmap with month on the y axis and
     year on the x axis
     Parameters
@@ -72,7 +72,7 @@ def ts_heatmap(df, date_col, value_col, seasonal_interval, fig_width=8, fig_heig
 
 @orbit_style_decorator
 def correlation_heatmap(df, var_list, fig_width=8, fig_height=8,
-                        path=None, fmt='.1g', palette=palette.OrbitPalette.BLUE_GRADIENT.value):
+                        path=None, fmt='.1g', palette=palette.OrbitColorMap.BLUE_GRADIENT.value):
     """This function takes a list of variables and return a heatmap of pairwise correlation. The columns with
     all zero values will not be plotted.
     Parameters

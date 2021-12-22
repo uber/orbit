@@ -2,7 +2,6 @@ import pytest
 import numpy as np
 from copy import copy
 
-from orbit.estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
 from orbit.models import ETS
 from orbit.template.ets import ETSInitializer
 from orbit.constants.constants import PredictionKeys
@@ -101,8 +100,6 @@ def test_ets_map_seasonal_fit(make_weekly_data, n_bootstrap_draws):
         response_col='response',
         date_col='week',
         seasonality=52,
-        num_warmup=50,
-        num_sample=50,
         verbose=False,
         estimator='stan-map',
         n_bootstrap_draws=n_bootstrap_draws,
@@ -130,8 +127,7 @@ def test_ets_map_seasonal_fit(make_weekly_data, n_bootstrap_draws):
     assert len(ets._posterior_samples) == expected_num_parameters
 
 
-@pytest.mark.parametrize("estimator_type", [StanEstimatorMCMC])
-def test_ets_non_seasonal_fit(make_weekly_data, estimator_type):
+def test_ets_non_seasonal_fit(make_weekly_data):
     train_df, test_df, coef = make_weekly_data
 
     ets = ETS(
@@ -240,6 +236,32 @@ def test_map_prediction_percentiles(iclaims_training_data, n_bootstrap_draws, pr
     assert predicted_df.shape[0] == df.shape[0]
 
 
+@pytest.mark.parametrize("estimator", ['stan-mcmc', 'stan-map'])
+def test_ets_missing(iclaims_training_data, estimator):
+    df = iclaims_training_data
+    missing_idx = np.array([10, 20, 30, 40, 41, 42, 43, 44, df.shape[0] - 1])
+    df.loc[missing_idx, 'claims'] = np.nan
+
+    dlt = ETS(
+        response_col='claims',
+        date_col='week',
+        seasonality=52,
+        verbose=False,
+        estimator=estimator
+    )
+
+    dlt.fit(df)
+    predicted_df = dlt.predict(df)
+    if estimator == 'stan-map':
+        expected_columns = ['week', 'prediction']
+    elif estimator == 'stan-mcmc':
+        expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
+
+    assert all(~np.isnan(predicted_df['prediction']))
+    assert predicted_df.columns.tolist() == expected_columns
+    assert predicted_df.shape[0] == df.shape[0]
+
+
 @pytest.mark.parametrize("seasonality", [1, 52])
 def test_ets_full_reproducibility(make_weekly_data, seasonality):
     train_df, test_df, coef = make_weekly_data
@@ -327,3 +349,29 @@ def test_ets_map_reproducibility(make_weekly_data, seasonality):
 
     # assert prediction is reproducible
     assert np.allclose(prediction1['prediction'].values, prediction2['prediction'].values)
+
+
+@pytest.mark.parametrize("estimator", ['stan-mcmc', 'stan-map'])
+@pytest.mark.parametrize("random_seed", [10, 100])
+def test_ets_predict_seed(make_weekly_data, estimator, random_seed):
+    train_df, test_df, coef = make_weekly_data
+    args = {
+        'response_col': 'response',
+        'date_col': 'week',
+        'seasonality': 52,
+        'n_bootstrap_draws': 100,
+        'verbose': False,
+        'estimator': estimator,
+    }
+
+    if estimator == 'stan-mcmc':
+        args.update({'num_warmup': 50, 'num_sample': 100})
+    elif estimator == 'pyro-svi':
+        args.update({'num_steps': 10})
+
+    lgt = ETS(**args)
+    lgt.fit(train_df)
+    predict_df1 = lgt.predict(test_df, seed=random_seed)
+    predict_df2 = lgt.predict(test_df, seed=random_seed)
+
+    assert all(predict_df1['prediction'].values == predict_df2['prediction'].values)

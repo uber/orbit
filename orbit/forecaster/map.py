@@ -36,7 +36,7 @@ class MAPForecaster(Forecaster):
 
         return self
 
-    def predict(self, df, decompose=False, **kwargs):
+    def predict(self, df, decompose=False, seed=None, **kwargs):
         # raise if model is not fitted
         if not self.is_fitted():
             raise ForecasterException("Model is not fitted yet.")
@@ -44,6 +44,9 @@ class MAPForecaster(Forecaster):
         self._set_prediction_meta(df)
         prediction_meta = self.get_prediction_meta()
         training_meta = self.get_training_meta()
+
+        if seed is not None:
+            np.random.seed(seed)
 
         # perform point prediction
         point_posteriors = self._point_posteriors.get(PredictMethod.MAP.value)

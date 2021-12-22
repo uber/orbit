@@ -555,6 +555,32 @@ def test_lgt_grid_tuning(make_weekly_data, param_grid):
     assert tuned_df.shape == (9, 3)
 
 
+@pytest.mark.parametrize("estimator", ['stan-mcmc', 'stan-map'])
+def test_lgt_missing(iclaims_training_data, estimator):
+    df = iclaims_training_data
+    missing_idx = np.array([10, 20, 30, 40, 41, 42, 43, 44, df.shape[0] - 1])
+    df.loc[missing_idx, 'claims'] = np.nan
+
+    dlt = LGT(
+        response_col='claims',
+        date_col='week',
+        seasonality=52,
+        verbose=False,
+        estimator=estimator
+    )
+
+    dlt.fit(df)
+    predicted_df = dlt.predict(df)
+    if estimator == 'stan-map':
+        expected_columns = ['week', 'prediction']
+    elif estimator == 'stan-mcmc':
+        expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
+
+    assert all(~np.isnan(predicted_df['prediction']))
+    assert predicted_df.columns.tolist() == expected_columns
+    assert predicted_df.shape[0] == df.shape[0]
+
+
 def test_lgt_map_single_regressor(iclaims_training_data):
     df = iclaims_training_data
     df['claims'] = np.log(df['claims'])
@@ -577,6 +603,7 @@ def test_lgt_map_single_regressor(iclaims_training_data):
     assert predicted_df.shape[0] == df.shape[0]
     assert predicted_df.columns.tolist() == expected_columns
     assert len(lgt._posterior_samples) == expected_num_parameters
+
 
 @pytest.mark.parametrize("estimator", ['stan-mcmc', 'pyro-svi'])
 @pytest.mark.parametrize("keep_samples", [True, False])
@@ -614,3 +641,29 @@ def test_lgt_is_fitted(iclaims_training_data, estimator, keep_samples, point_met
 
     # still True when keep_samples is False
     assert is_fitted
+
+
+@pytest.mark.parametrize("estimator", ['stan-mcmc', 'stan-map', 'pyro-svi'])
+@pytest.mark.parametrize("random_seed", [10, 100])
+def test_lgt_predict_seed(make_weekly_data, estimator, random_seed):
+    train_df, test_df, coef = make_weekly_data
+    args = {
+        'response_col': 'response',
+        'date_col': 'week',
+        'seasonality': 52,
+        'n_bootstrap_draws': 100,
+        'verbose': False,
+        'estimator': estimator,
+    }
+
+    if estimator == 'stan-mcmc':
+        args.update({'num_warmup': 50, 'num_sample': 100})
+    elif estimator == 'pyro-svi':
+        args.update({'num_steps': 10})
+
+    lgt = LGT(**args)
+    lgt.fit(train_df)
+    predict_df1 = lgt.predict(test_df, seed=random_seed)
+    predict_df2 = lgt.predict(test_df, seed=random_seed)
+
+    assert all(predict_df1['prediction'].values == predict_df2['prediction'].values)

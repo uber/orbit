@@ -29,6 +29,7 @@ data {
   // Response Data
   int<lower=1> NUM_OF_OBS; // number of observations
   vector[NUM_OF_OBS] RESPONSE;
+  int IS_VALID_RES[NUM_OF_OBS];
   // Regression Data
   int<lower=0> NUM_OF_RR; // number of regular regressors
   matrix[NUM_OF_OBS, NUM_OF_RR] RR_MAT; // regular coef regressors, more volatile range
@@ -272,13 +273,24 @@ transformed parameters {
     yhat[t] = gt_sum[t] + lt_sum[t] + s_t + r[t];
 
     // update process
-    l[t] = lev_sm * (RESPONSE[t] - gt_sum[t] - s_t - r[t]) + (1 - lev_sm) * lt_sum[t];
+    if (IS_VALID_RES[t]) {
+      l[t] = lev_sm * (RESPONSE[t] - gt_sum[t] - s_t - r[t]) + (1 - lev_sm) * lt_sum[t];
+    } else {
+      l[t] = lev_sm * (yhat[t] - gt_sum[t] - s_t - r[t]) + (1 - lev_sm) * lt_sum[t];
+    }
     b[t] = slp_sm * (l[t] - l[t-1]) + (1 - slp_sm) * DAMPED_FACTOR * b[t-1];
     // with parameterization as mentioned in 7.3 "Forecasting: Principles and Practice"
     // we can safely use "l[t]" instead of "l[t-1] + damped_factor_dummy * b[t-1]" where 0 < sea_sm < 1
     // otherwise with original one, use 0 < sea_sm < 1 - lev_sm
-    if (IS_SEASONAL)
-      s[t + SEASONALITY] = sea_sm * (RESPONSE[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm) * s_t;
+
+    if (IS_SEASONAL) {
+      if (IS_VALID_RES[t]) {
+        s[t + SEASONALITY] = sea_sm * (RESPONSE[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm) * s_t;
+      } else {
+        s[t + SEASONALITY] = sea_sm * (yhat[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm) * s_t;
+      }
+    }
+
   }
 
   if (WITH_MCMC) {
@@ -303,6 +315,7 @@ model {
   for (t in 2:NUM_OF_OBS) {
     // target += t_star_inv*log_prob[t]；
     target += t_star_inv * log_prob[t]; 
+
   }
 
   // prior for seasonality
