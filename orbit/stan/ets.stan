@@ -1,6 +1,8 @@
 data {
   // indicator of which method stan using
   int<lower=0,upper=1> WITH_MCMC;
+  // The sampling tempature t_star; this is currently not used.
+  real<lower=0> T_STAR;
   // Data Input
   // Response Data
   int<lower=1> NUM_OF_OBS; // number of observations

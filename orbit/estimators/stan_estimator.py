@@ -100,7 +100,7 @@ class StanEstimatorMCMC(StanEstimator):
                 self.chains, self.cores, self._num_warmup_per_chain, self._num_sample_per_chain)
             logging.info(msg)
 
-    def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
+    def fit(self, model_name, model_param_names, sampling_temperature, data_input, fitter=None, init_values=None):
         compiled_stan_file = get_compiled_stan_model(model_name)
 
         #   passing callable from the model as seen in `initfun1()`
@@ -108,14 +108,14 @@ class StanEstimatorMCMC(StanEstimator):
         #   if None, use default as defined in class variable
         init_values = init_values or self.stan_init
 
-        # run once to calculate WBIC
-        data_input.update({'CALC_WBIC': 1})
+        # set sampling temp 
+        data_input.update({'T_STAR': sampling_temperature })
         # with suppress_stdout_stderr():
         # with suppress_stdout_stderr():
         # with io.capture_output() as captured:
         stan_mcmc_fit = compiled_stan_file.sampling(
             data=data_input,
-            pars=model_param_names + ['ll'],
+            pars=model_param_names + ['log_prob'],
             iter=self._num_iter_per_chain,
             warmup=self._num_warmup_per_chain,
             chains=self.chains,
@@ -128,31 +128,10 @@ class StanEstimatorMCMC(StanEstimator):
             **self._stan_mcmc_args
         )
 
-        log_p = stan_mcmc_fit.extract(pars=['ll'], permuted=True)['ll']
+        log_p = stan_mcmc_fit.extract(pars=['log_prob'], permuted=True)['log_prob']
+        training_metrics = {'log_probability': log_p}
 
-        def calculate_wbic(log_p):  # note that log P must he sampled at temp log(n)
-            return -2 * np.nanmean(log_p)
-
-        training_metrics = {'WBIC': calculate_wbic(log_p)}
-
-        # run once to calculate WBIC
-        data_input.update({'CALC_WBIC': 0})
-        stan_mcmc_fit = compiled_stan_file.sampling(
-            data=data_input,
-            pars=model_param_names,
-            iter=self._num_iter_per_chain,
-            warmup=self._num_warmup_per_chain,
-            chains=self.chains,
-            n_jobs=self.cores,
-            # fall back to default if not provided by model payload
-            init=init_values,
-            seed=self.seed,
-            algorithm=self.algorithm,
-            control=self.stan_mcmc_control,
-            **self._stan_mcmc_args
-        )
-
-        # extract `lp__` in addition to defined model params
+        # extract `log_prob` in addition to defined model params
         # to make naming consistent across api; we move lp along with warm up lp to `training_metrics`
         # model_param_names_with_lp = model_param_names[:] + ['lp__']
 
@@ -171,7 +150,8 @@ class StanEstimatorMCMC(StanEstimator):
                 posteriors[key] = val.reshape((-1, *val.shape[2:]), order='F')
         # log-posterior including warm up
         training_metrics.update({'log_posterior': stan_mcmc_fit.get_logposterior(inc_warmup=True)})
-
+        training_metrics.update({'sampling_temperature': sampling_temperature })
+        
         return posteriors, training_metrics
 
 

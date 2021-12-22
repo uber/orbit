@@ -9,9 +9,9 @@ from .forecaster import Forecaster
 
 
 class FullBayesianForecaster(Forecaster):
-    def __init__(self,
-                 **kwargs):
+    def __init__(self,**kwargs):
         super().__init__(**kwargs)
+
         # method we used to define posteriors and prediction parameters
         self._point_method = None
         # init aggregate posteriors
@@ -27,8 +27,8 @@ class FullBayesianForecaster(Forecaster):
         )
         return data_input
 
-    def fit(self, df, point_method=None, keep_samples=True):
-        super().fit(df)
+    def fit(self, df, point_method=None, keep_samples=True, sampling_temperature=1.0):
+        super().fit(df,  sampling_temperature = sampling_temperature)
         self._point_method = point_method
 
         if point_method is not None:

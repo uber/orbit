@@ -56,8 +56,8 @@ class DataInputMapper(Enum):
     _REGRESSION_PENALTY = 'REG_PENALTY_TYPE'
     AUTO_RIDGE_SCALE = 'AUTO_RIDGE_SCALE'
     LASSO_SCALE = 'LASSO_SCALE'
-
-
+  
+   
 class GlobalTrendOption(Enum):
     linear = 0
     loglinear = 1

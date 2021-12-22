@@ -14,11 +14,16 @@
 // Upper case for Input
 // lower case for intermediate variables and variables we are interested
 
+// --- WBIC related work ---
+// Conduct MCMC sampling at temperature t_star; pi(m)L(m)^{1/t_star}
+// return the log probability (log_prob) of each observation 
+// this will be done in the .stan code 
+
 data {
   // indicator of which method stan using
   int<lower=0,upper=1> WITH_MCMC;
-  // indicator to get the WBIC;
-  int<lower=0, upper=1> CALC_WBIC;
+  // The sampling tempature t_star;
+  real<lower=0> T_STAR;
 
   // Data Input
   // Response Data
@@ -174,11 +179,13 @@ transformed parameters {
   real<lower=0,upper=1> slp_sm;
   real<lower=0,upper=1> sea_sm;
 
-  // WBIC stuff
-  real watanabe_beta;
-  vector[NUM_OF_OBS] ll;
-
-  ll = rep_vector(0, NUM_OF_OBS);
+  // Tempature based sampling 
+  // real T_STAR;
+  real t_star_inv;
+  // log probability of each observation
+  vector[NUM_OF_OBS] log_prob;
+  t_star_inv = 1.0/T_STAR;
+  log_prob = rep_vector(0, NUM_OF_OBS);
 
   if (LEV_SM_SIZE > 0) {
     lev_sm = lev_sm_dummy[1];
@@ -281,10 +288,9 @@ transformed parameters {
     obs_sigma = obs_sigma_dummy[1];
   }
 
-  // WBIC
-  watanabe_beta = 1.0/log(NUM_OF_OBS); // the sampling temp
+  // tempature based sampling and log probs used for WBIC
   for (t in 2:NUM_OF_OBS) {
-    ll[t] = student_t_lpdf(RESPONSE[t] | nu, yhat[t], obs_sigma);
+    log_prob[t] = student_t_lpdf(RESPONSE[t] | nu, yhat[t], obs_sigma);
   }
 }
 model {  
@@ -295,12 +301,8 @@ model {
   }
   // likelihood
   for (t in 2:NUM_OF_OBS) {
-    // target += watanabe_beta * ll[t]；
-    if (CALC_WBIC == 1) {
-      target += watanabe_beta * ll[t];
-    } else {
-      target += ll[t];
-    }
+    // target += t_star_inv*log_prob[t]；
+    target += t_star_inv * log_prob[t]; 
   }
 
   // prior for seasonality

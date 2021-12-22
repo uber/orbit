@@ -118,7 +118,7 @@ class Forecaster(object):
                 msg_template.format(model_class, estimator_type, str(supported_estimator_types))
             )
 
-    def fit(self, df):
+    def fit(self, df, **kwargs): 
         """Core process for fitting a model within a forecaster"""
         estimator = self.estimator
         model_name = self._model.get_model_name()
@@ -148,7 +148,8 @@ class Forecaster(object):
             model_param_names=model_param_names,
             data_input=data_input,
             fitter=self._model.get_fitter(),
-            init_values=init_values
+            init_values=init_values,
+            **kwargs
         )
 
         self._posterior_samples = _posterior_samples
@@ -329,6 +330,16 @@ class Forecaster(object):
     def get_training_metrics(self):
         return deepcopy(self._training_metrics)
 
+    def get_WBIC(self):
+        training_metrics=self.get_training_metrics() # get the training metrics 
+        training_meta=self.get_training_meta() # get the meta data 
+        sampling_temp=training_metrics['sampling_temperature'] # get the sampling temperature
+        nobs=training_meta['num_of_obs'] # the number of observations 
+        if sampling_temp != np.log(nobs):
+            raise ForecasterException('Sampling temperature is not log(n); WBIC calculation is not valid!')
+        return np.nanmean(training_metrics['log_probability'])*nobs   
+    
+    
     def get_posterior_samples(self, relabel=False, permute=True):
         """
         Parameters

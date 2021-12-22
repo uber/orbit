@@ -1,4 +1,6 @@
 data {
+  // The sampling tempature t_star; this is currently not used.
+  real<lower=0> T_STAR;
   // response related
   int<lower=0> NUM_OF_OBS;
   int<lower=0> N_VALID_RES;
