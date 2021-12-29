@@ -184,3 +184,26 @@ class FullBayesianForecaster(Forecaster):
                         self.get_point_posteriors(),
                         self.get_posterior_samples()
                     ))
+            
+    def get_WBIC_value(self):
+        #This function calculates the WBIC given that MCMC sampling happened with sampling_temperature = log(n) 
+        training_metrics=self.get_training_metrics() # get the training metrics 
+        training_meta=self.get_training_meta() # get the meta data 
+        sampling_temp=training_metrics['sampling_temperature'] # get the sampling temperature
+        nobs=training_meta['num_of_obs'] # the number of observations 
+        if sampling_temp != np.log(nobs):
+            raise ForecasterException('Sampling temperature is not log(n); WBIC calculation is not valid!')
+        return np.nanmean(training_metrics['log_probability'])*nobs  
+    
+    def fit_WBIC(self, df):
+        """This function calculates the WBIC for a Orbit model
+        Note that if sampling has not been done ith sampling_temperature = log(n) then 
+        the MCMC sampling is redone to get the WBIC
+        """
+        nobs = df.shape[0]
+        self.fit(df, sampling_temperature=np.log(nobs))
+        return self.get_WBIC_value()
+        
+    
+    
+    

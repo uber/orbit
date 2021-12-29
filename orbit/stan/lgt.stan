@@ -72,6 +72,9 @@ transformed data {
   int<lower=0,upper=1> LEV_SM_SIZE;
   int<lower=0,upper=1> SLP_SM_SIZE;
   int<lower=0,upper=1> SEA_SM_SIZE;
+  // for WBIC 
+  real t_star_inv;
+  t_star_inv = 1.0/T_STAR;
 
   USE_VARY_SIGMA = 0;
   SIGMA_EPS = 1e-5;
@@ -138,6 +141,11 @@ transformed parameters {
   real<lower=0,upper=1> slp_sm;
   real<lower=0,upper=1> sea_sm;
 
+  // Tempature based sampling 
+  // log probability of each observation
+  vector[NUM_OF_OBS] log_prob;
+  log_prob = rep_vector(0, NUM_OF_OBS);
+
   if (LEV_SM_SIZE > 0) {
     lev_sm = lev_sm_dummy[1];
   } else {
@@ -201,6 +209,7 @@ transformed parameters {
     lgt_sum[t] = l[t-1] + gt_coef * fabs(l[t-1]) ^ gt_pow + lt_coef * b[t-1];
     yhat[t] = lgt_sum[t] + s_t + r[t];
 
+
     // update process
     // l[t] update equation with l[t-1] ONLY by excluding b[t-1];
     // It is intentionally different from the Holt-Winter form
@@ -229,6 +238,11 @@ transformed parameters {
   } else {
     obs_sigma = obs_sigma_dummy[1];
   }
+  
+  // the log probs of each overservation for WBIC
+  for (t in 2:NUM_OF_OBS) {
+      log_prob[t] = student_t_lpdf(RESPONSE[t]|nu, yhat[t], obs_sigma);
+  }
 }
 model {
   // prior for residuals
@@ -237,9 +251,11 @@ model {
     obs_sigma_dummy[1] ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, 5 * CAUCHY_SD];
   }
   for (t in 2:NUM_OF_OBS) {
-    if (IS_VALID_RES[t]){
-      RESPONSE[t] ~ student_t(nu, yhat[t], obs_sigma);
-    }
+
+    // old way 
+    // RESPONSE[t] ~ student_t(nu, yhat[t], obs_sigma);
+    // new way 
+    target += t_star_inv*log_prob[t];
   }
 
   // prior for seasonality

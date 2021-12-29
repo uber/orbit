@@ -86,6 +86,9 @@ transformed data {
   int<lower=0,upper=1> SLP_SM_SIZE;
   int<lower=0,upper=1> SEA_SM_SIZE;
 
+  real t_star_inv;
+  t_star_inv = 1.0/T_STAR;
+
   LEV_SM_SIZE = 0;
   SLP_SM_SIZE = 0;
   SEA_SM_SIZE = 0;
@@ -181,11 +184,8 @@ transformed parameters {
   real<lower=0,upper=1> sea_sm;
 
   // Tempature based sampling 
-  // real T_STAR;
-  real t_star_inv;
   // log probability of each observation
   vector[NUM_OF_OBS] log_prob;
-  t_star_inv = 1.0/T_STAR;
   log_prob = rep_vector(0, NUM_OF_OBS);
 
   if (LEV_SM_SIZE > 0) {

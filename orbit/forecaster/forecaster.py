@@ -329,15 +329,6 @@ class Forecaster(object):
 
     def get_training_metrics(self):
         return deepcopy(self._training_metrics)
-
-    def get_WBIC(self):
-        training_metrics=self.get_training_metrics() # get the training metrics 
-        training_meta=self.get_training_meta() # get the meta data 
-        sampling_temp=training_metrics['sampling_temperature'] # get the sampling temperature
-        nobs=training_meta['num_of_obs'] # the number of observations 
-        if sampling_temp != np.log(nobs):
-            raise ForecasterException('Sampling temperature is not log(n); WBIC calculation is not valid!')
-        return np.nanmean(training_metrics['log_probability'])*nobs   
     
     
     def get_posterior_samples(self, relabel=False, permute=True):

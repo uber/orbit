@@ -188,8 +188,8 @@ class StanEstimatorMAP(StanEstimator):
 
     def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         compiled_stan_file = get_compiled_stan_model(model_name)
-        data_input.update({'CALC_WBIC': 0})
-
+        data_input.update({'T_STAR': 1.0 })
+      
         # passing callable from the model as seen in `initfun1()`
         init_values = init_values or self.stan_init
         # with suppress_stdout_stderr():

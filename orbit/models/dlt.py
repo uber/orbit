@@ -21,7 +21,6 @@ def DLT(seasonality=None,
         damped_factor=0.8,
         global_trend_option='linear',
         estimator='stan-mcmc',
-        #sampling_temperature=2.0
         **kwargs):
     """
     Args

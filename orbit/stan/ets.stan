@@ -20,6 +20,8 @@ transformed data {
   int IS_SEASONAL;
   int<lower=0,upper=1> LEV_SM_SIZE;
   int<lower=0,upper=1> SEA_SM_SIZE;
+  real t_star_inv;
+  t_star_inv = 1.0/T_STAR;
 
   LEV_SM_SIZE = 0;
   SEA_SM_SIZE = 0;
@@ -52,6 +54,12 @@ transformed parameters {
   // smoothing parameters
   real<lower=0,upper=1> lev_sm;
   real<lower=0,upper=1> sea_sm;
+
+  // Tempature based sampling 
+  // log probability of each observation
+  vector[NUM_OF_OBS] log_prob;
+  log_prob = rep_vector(0, NUM_OF_OBS);
+
 
   if (LEV_SM_SIZE > 0) {
     lev_sm = lev_sm_dummy[1];
@@ -97,6 +105,8 @@ transformed parameters {
     }
     // forecast process
     yhat[t] = l[t-1] + s_t;
+    // the log probs of each overservation for WBIC
+    log_prob[t] = normal_lpdf(RESPONSE[t]|yhat[t], obs_sigma);
 
     // update process
     if (IS_VALID_RES[t]) {
@@ -116,15 +126,16 @@ transformed parameters {
     }
   }
 }
+
 model {
   //prior for residuals
   obs_sigma ~ cauchy(0, RESPONSE_SD);
-  for (t in 2:NUM_OF_OBS) {
-    if (IS_VALID_RES[t]){
-       RESPONSE[t] ~ normal(yhat[t], obs_sigma);
-    }
-  }
   // prior for seasonality
   for (i in 1:(SEASONALITY - 1))
     init_sea[i] ~ normal(0, SEASONALITY_SD);
+  // Likelihood   
+  for (t in 2:NUM_OF_OBS) {
+    target += t_star_inv*log_prob[t];
+  }  
+    
 }
