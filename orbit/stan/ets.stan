@@ -135,7 +135,10 @@ model {
     init_sea[i] ~ normal(0, SEASONALITY_SD);
   // Likelihood   
   for (t in 2:NUM_OF_OBS) {
-    target += t_star_inv*log_prob[t];
+  //target += t_star_inv*log_prob[t];
+      if (IS_VALID_RES[t]) {
+        target += t_star_inv * log_prob[t]; 
+        }
   }  
     
 }

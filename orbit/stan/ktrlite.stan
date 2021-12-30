@@ -109,7 +109,10 @@ model {
   //RESPONSE_TRAN[WHICH_VALID_RES2] ~ student_t(DOF, yhat[WHICH_VALID_RES2], obs_scale);
   // new way
   for  (t in WHICH_VALID_RES2) {
-      target +=  t_star_inv*log_prob[t];
+      //target +=  t_star_inv*log_prob[t];
+      if (IS_VALID_RES[t]) {
+        target += t_star_inv * log_prob[t]; 
+      }
   }
 }
 

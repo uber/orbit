@@ -255,7 +255,10 @@ model {
     // old way 
     // RESPONSE[t] ~ student_t(nu, yhat[t], obs_sigma);
     // new way 
-    target += t_star_inv*log_prob[t];
+    //target += t_star_inv*log_prob[t];
+    if (IS_VALID_RES[t]) {
+        target += t_star_inv * log_prob[t]; 
+        }
   }
 
   // prior for seasonality

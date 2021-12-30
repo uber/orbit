@@ -314,7 +314,10 @@ model {
   // likelihood
   for (t in 2:NUM_OF_OBS) {
     // target += t_star_inv*log_prob[t]；
-    target += t_star_inv * log_prob[t]; 
+    // the gate here is to see if this fixes a unit test issue. this might make the code slower 
+    if (IS_VALID_RES[t]) {
+        target += t_star_inv * log_prob[t]; 
+        }
 
   }
 
