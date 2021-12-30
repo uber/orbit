@@ -106,7 +106,9 @@ transformed parameters {
     // forecast process
     yhat[t] = l[t-1] + s_t;
     // the log probs of each overservation for WBIC
-    log_prob[t] = normal_lpdf(RESPONSE[t]|yhat[t], obs_sigma);
+    if (IS_VALID_RES[t]) {
+        log_prob[t] = normal_lpdf(RESPONSE[t]|yhat[t], obs_sigma);
+    }    
 
     // update process
     if (IS_VALID_RES[t]) {

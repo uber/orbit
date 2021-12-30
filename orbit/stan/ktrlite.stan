@@ -85,7 +85,9 @@ transformed parameters {
   
   for (t in WHICH_VALID_RES2) {
   // the log probs of each overservation for WBIC
-  log_prob[t] = student_t_lpdf(RESPONSE[t]|DOF, yhat[t], obs_scale);
+      if (IS_VALID_RES[t]) {
+          log_prob[t] = student_t_lpdf(RESPONSE[t]|DOF, yhat[t], obs_scale);
+      }    
   }
   
 }

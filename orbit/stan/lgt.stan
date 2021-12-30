@@ -241,7 +241,9 @@ transformed parameters {
   
   // the log probs of each overservation for WBIC
   for (t in 2:NUM_OF_OBS) {
-      log_prob[t] = student_t_lpdf(RESPONSE[t]|nu, yhat[t], obs_sigma);
+      if (IS_VALID_RES[t]) {
+          log_prob[t] = student_t_lpdf(RESPONSE[t]|nu, yhat[t], obs_sigma);
+      }    
   }
 }
 model {

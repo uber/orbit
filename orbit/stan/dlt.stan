@@ -302,7 +302,9 @@ transformed parameters {
 
   // tempature based sampling and log probs used for WBIC
   for (t in 2:NUM_OF_OBS) {
-    log_prob[t] = student_t_lpdf(RESPONSE[t] | nu, yhat[t], obs_sigma);
+    if (IS_VALID_RES[t]) {
+      log_prob[t] = student_t_lpdf(RESPONSE[t] | nu, yhat[t], obs_sigma);
+    }
   }
 }
 model {  
@@ -315,7 +317,7 @@ model {
   for (t in 2:NUM_OF_OBS) {
     // target += t_star_inv*log_prob[t]；
     // the gate here is to see if this fixes a unit test issue. this might make the code slower 
-    if (IS_VALID_RES[t] && (log_prob[t] == log_prob[t]) ) {
+    if (IS_VALID_RES[t]) {
         target += t_star_inv * log_prob[t]; 
         }
 
