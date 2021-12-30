@@ -106,11 +106,11 @@ model {
 
   obs_scale ~ cauchy(0, RESPONSE_SD)T[0, RESPONSE_SD];
   // old way 
-  //RESPONSE_TRAN[WHICH_VALID_RES2] ~ student_t(DOF, yhat[WHICH_VALID_RES2], obs_scale);
-  // new way
-  for  (t in WHICH_VALID_RES2) {
-      target +=  t_star_inv*log_prob[t];
-  }
+  RESPONSE_TRAN[WHICH_VALID_RES2] ~ student_t(DOF, yhat[WHICH_VALID_RES2], obs_scale);
+  // new way, with unit test issue 
+  //for  (t in WHICH_VALID_RES2) {
+  //    target +=  t_star_inv*log_prob[t];
+  //}
 }
 
 generated quantities {
