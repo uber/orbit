@@ -139,6 +139,8 @@ class StanEstimatorMCMC(StanEstimator):
             pars=model_param_names,
             permuted=False
         )
+        print(model_param_names)
+        print(posteriors.keys())
 
         # todo: move dimension cleaning function to the model directly
         # flatten the first two dims by preserving the chain order

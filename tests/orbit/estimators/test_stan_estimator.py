@@ -9,7 +9,11 @@ def test_stan_estimator_mcmc(stan_estimator_lgt_model_input):
 
     # extract posterior samples
     posteriors, training_metrics = mcmc_estimator.fit(
-        model_name=stan_model_name, model_param_names=model_param_names, data_input=data_input)
+        model_name=stan_model_name, 
+        model_param_names=model_param_names, 
+        data_input=data_input,
+        sampling_temperature = 1.0
+    )
 
     assert set(model_param_names) == set(posteriors.keys())
 
