@@ -5,7 +5,7 @@ import multiprocessing
 from sys import platform, version_info
 if platform == 'darwin' and version_info[0] == 3 and version_info[1] == 9:
     # fix issue in Python 3.9
-    multiprocessing.set_start_method("fork")
+    multiprocessing.set_start_method("fork", force=True)
 from .base_estimator import BaseEstimator
 from ..exceptions import EstimatorException
 from ..utils.stan import get_compiled_stan_model
