@@ -4,7 +4,6 @@ import pandas as pd
 import warnings
 from enum import Enum
 
-
 from ..exceptions import ForecasterException, AbstractMethodException
 from ..utils.general import is_ordered_datetime, is_even_gap_datetime
 from ..template.model_template import ModelTemplate
@@ -118,7 +117,7 @@ class Forecaster(object):
                 msg_template.format(model_class, estimator_type, str(supported_estimator_types))
             )
 
-    def fit(self, df, **kwargs): 
+    def fit(self, df, **kwargs):
         """Core process for fitting a model within a forecaster"""
         estimator = self.estimator
         model_name = self._model.get_model_name()
@@ -329,8 +328,8 @@ class Forecaster(object):
 
     def get_training_metrics(self):
         return deepcopy(self._training_metrics)
-    
-    
+
+
     def get_posterior_samples(self, relabel=False, permute=True):
         """
         Parameters

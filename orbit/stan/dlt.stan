@@ -16,8 +16,8 @@
 
 // --- WBIC related work ---
 // Conduct MCMC sampling at temperature t_star; pi(m)L(m)^{1/t_star}
-// return the log probability (log_prob) of each observation 
-// this will be done in the .stan code 
+// return the log probability (log_prob) of each observation
+// this will be done in the .stan code
 
 data {
   // indicator of which method stan using
@@ -183,7 +183,7 @@ transformed parameters {
   real<lower=0,upper=1> slp_sm;
   real<lower=0,upper=1> sea_sm;
 
-  // Tempature based sampling 
+  // Tempature based sampling
   // log probability of each observation
   vector[NUM_OF_OBS] log_prob;
   log_prob = rep_vector(0, NUM_OF_OBS);
@@ -307,7 +307,7 @@ transformed parameters {
     }
   }
 }
-model {  
+model {
   //prior for residuals
   if (WITH_MCMC == 0) {
     // reparameterize for MAP only to set finite boundary
@@ -316,10 +316,10 @@ model {
   // likelihood
   for (t in 2:NUM_OF_OBS) {
     // target += t_star_inv*log_prob[t]；
-    // the gate here is to see if this fixes a unit test issue. this might make the code slower 
+    // the gate here is to see if this fixes a unit test issue. this might make the code slower
     if (IS_VALID_RES[t]) {
-        target += t_star_inv * log_prob[t]; 
-        }
+        target += t_star_inv * log_prob[t];
+    }
 
   }
 

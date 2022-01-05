@@ -9,7 +9,7 @@ from .forecaster import Forecaster
 
 
 class FullBayesianForecaster(Forecaster):
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         # method we used to define posteriors and prediction parameters
@@ -28,7 +28,7 @@ class FullBayesianForecaster(Forecaster):
         return data_input
 
     def fit(self, df, point_method=None, keep_samples=True, sampling_temperature=1.0):
-        super().fit(df,  sampling_temperature = sampling_temperature)
+        super().fit(df,  sampling_temperature=sampling_temperature)
         self._point_method = point_method
 
         if point_method is not None:
@@ -184,26 +184,22 @@ class FullBayesianForecaster(Forecaster):
                         self.get_point_posteriors(),
                         self.get_posterior_samples()
                     ))
-            
-    def get_WBIC_value(self):
-        #This function calculates the WBIC given that MCMC sampling happened with sampling_temperature = log(n) 
-        training_metrics=self.get_training_metrics() # get the training metrics 
-        training_meta=self.get_training_meta() # get the meta data 
-        sampling_temp=training_metrics['sampling_temperature'] # get the sampling temperature
-        nobs=training_meta['num_of_obs'] # the number of observations 
+
+    def get_wbic_value(self):
+        # This function calculates the WBIC given that MCMC sampling happened with sampling_temperature = log(n)
+        training_metrics = self.get_training_metrics() # get the training metrics
+        training_meta = self.get_training_meta() # get the meta data
+        sampling_temp = training_metrics['sampling_temperature'] # get the sampling temperature
+        nobs = training_meta['num_of_obs'] # the number of observations
         if sampling_temp != np.log(nobs):
             raise ForecasterException('Sampling temperature is not log(n); WBIC calculation is not valid!')
-        return np.nanmean(training_metrics['log_probability'])*nobs  
-    
-    def fit_WBIC(self, df):
+        return -2 * np.nanmean(training_metrics['log_probability']) * nobs
+
+    def fit_wbic(self, df):
         """This function calculates the WBIC for a Orbit model
-        Note that if sampling has not been done ith sampling_temperature = log(n) then 
+        Note that if sampling has not been done ith sampling_temperature = log(n) then
         the MCMC sampling is redone to get the WBIC
         """
         nobs = df.shape[0]
         self.fit(df, sampling_temperature=np.log(nobs))
-        return self.get_WBIC_value()
-        
-    
-    
-    
+        return self.get_wbic_value()

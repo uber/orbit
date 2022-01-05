@@ -108,8 +108,8 @@ class StanEstimatorMCMC(StanEstimator):
         #   if None, use default as defined in class variable
         init_values = init_values or self.stan_init
 
-        # set sampling temp 
-        data_input.update({'T_STAR': sampling_temperature })
+        # set sampling temp
+        data_input.update({'T_STAR': sampling_temperature})
         # with suppress_stdout_stderr():
         # with suppress_stdout_stderr():
         # with io.capture_output() as captured:
@@ -139,8 +139,6 @@ class StanEstimatorMCMC(StanEstimator):
             pars=model_param_names,
             permuted=False
         )
-        print(model_param_names)
-        print(posteriors.keys())
 
         # todo: move dimension cleaning function to the model directly
         # flatten the first two dims by preserving the chain order
@@ -152,8 +150,8 @@ class StanEstimatorMCMC(StanEstimator):
                 posteriors[key] = val.reshape((-1, *val.shape[2:]), order='F')
         # log-posterior including warm up
         training_metrics.update({'log_posterior': stan_mcmc_fit.get_logposterior(inc_warmup=True)})
-        training_metrics.update({'sampling_temperature': sampling_temperature })
-        
+        training_metrics.update({'sampling_temperature': sampling_temperature})
+
         return posteriors, training_metrics
 
 
@@ -190,8 +188,8 @@ class StanEstimatorMAP(StanEstimator):
 
     def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         compiled_stan_file = get_compiled_stan_model(model_name)
-        data_input.update({'T_STAR': 1.0 })
-      
+        data_input.update({'T_STAR': 1.0})
+
         # passing callable from the model as seen in `initfun1()`
         init_values = init_values or self.stan_init
         # with suppress_stdout_stderr():

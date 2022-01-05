@@ -72,7 +72,7 @@ transformed data {
   int<lower=0,upper=1> LEV_SM_SIZE;
   int<lower=0,upper=1> SLP_SM_SIZE;
   int<lower=0,upper=1> SEA_SM_SIZE;
-  // for WBIC 
+  // for WBIC
   real t_star_inv;
   t_star_inv = 1.0/T_STAR;
 
@@ -141,7 +141,7 @@ transformed parameters {
   real<lower=0,upper=1> slp_sm;
   real<lower=0,upper=1> sea_sm;
 
-  // Tempature based sampling 
+  // Tempature based sampling
   // log probability of each observation
   vector[NUM_OF_OBS] log_prob;
   log_prob = rep_vector(0, NUM_OF_OBS);
@@ -238,12 +238,12 @@ transformed parameters {
   } else {
     obs_sigma = obs_sigma_dummy[1];
   }
-  
+
   // the log probs of each overservation for WBIC
   for (t in 2:NUM_OF_OBS) {
       if (IS_VALID_RES[t]) {
           log_prob[t] = student_t_lpdf(RESPONSE[t]|nu, yhat[t], obs_sigma);
-      }    
+      }
   }
 }
 model {
@@ -253,14 +253,13 @@ model {
     obs_sigma_dummy[1] ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, 5 * CAUCHY_SD];
   }
   for (t in 2:NUM_OF_OBS) {
-
-    // old way 
+    // old way
     // RESPONSE[t] ~ student_t(nu, yhat[t], obs_sigma);
-    // new way 
-    //target += t_star_inv*log_prob[t];
+    // new way
+    // target += t_star_inv * log_prob[t];
     if (IS_VALID_RES[t]) {
-        target += t_star_inv * log_prob[t]; 
-        }
+      target += t_star_inv * log_prob[t];
+    }
   }
 
   // prior for seasonality
