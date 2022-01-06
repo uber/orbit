@@ -14,9 +14,16 @@
 // Upper case for Input
 // lower case for intermediate variables and variables we are interested
 
+// --- WBIC related work ---
+// Conduct MCMC sampling at temperature t_star; pi(m)L(m)^{1/t_star}
+// return the log probability (log_prob) of each observation
+// this will be done in the .stan code
+
 data {
   // indicator of which method stan using
   int<lower=0,upper=1> WITH_MCMC;
+  // The sampling tempature t_star;
+  real<lower=0> T_STAR;
 
   // Data Input
   // Response Data
@@ -78,6 +85,9 @@ transformed data {
   int<lower=0,upper=1> LEV_SM_SIZE;
   int<lower=0,upper=1> SLP_SM_SIZE;
   int<lower=0,upper=1> SEA_SM_SIZE;
+
+  real t_star_inv;
+  t_star_inv = 1.0/T_STAR;
 
   LEV_SM_SIZE = 0;
   SLP_SM_SIZE = 0;
@@ -173,6 +183,11 @@ transformed parameters {
   real<lower=0,upper=1> slp_sm;
   real<lower=0,upper=1> sea_sm;
 
+  // Tempature based sampling
+  // log probability of each observation
+  vector[NUM_OF_OBS] log_prob;
+  log_prob = rep_vector(0, NUM_OF_OBS);
+
   if (LEV_SM_SIZE > 0) {
     lev_sm = lev_sm_dummy[1];
   } else {
@@ -267,6 +282,7 @@ transformed parameters {
     // with parameterization as mentioned in 7.3 "Forecasting: Principles and Practice"
     // we can safely use "l[t]" instead of "l[t-1] + damped_factor_dummy * b[t-1]" where 0 < sea_sm < 1
     // otherwise with original one, use 0 < sea_sm < 1 - lev_sm
+
     if (IS_SEASONAL) {
       if (IS_VALID_RES[t]) {
         s[t + SEASONALITY] = sea_sm * (RESPONSE[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm) * s_t;
@@ -283,17 +299,28 @@ transformed parameters {
   } else {
     obs_sigma = obs_sigma_dummy[1];
   }
+
+  // tempature based sampling and log probs used for WBIC
+  for (t in 2:NUM_OF_OBS) {
+    if (IS_VALID_RES[t]) {
+      log_prob[t] = student_t_lpdf(RESPONSE[t] | nu, yhat[t], obs_sigma);
+    }
+  }
 }
 model {
   //prior for residuals
   if (WITH_MCMC == 0) {
-    // for MAP, set finite boundary
+    // reparameterize for MAP only to set finite boundary
     obs_sigma_dummy[1] ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, 5 * CAUCHY_SD];
   }
+  // likelihood
   for (t in 2:NUM_OF_OBS) {
-    if (IS_VALID_RES[t]){
-      RESPONSE[t] ~ student_t(nu, yhat[t], obs_sigma);
+    // target += t_star_inv*log_prob[t]；
+    // the gate here is to see if this fixes a unit test issue. this might make the code slower
+    if (IS_VALID_RES[t]) {
+        target += t_star_inv * log_prob[t];
     }
+
   }
 
   // prior for seasonality

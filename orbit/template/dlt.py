@@ -59,7 +59,6 @@ class DataInputMapper(Enum):
     # handle missing values
     IS_VALID_RESPONSE = 'IS_VALID_RES'
 
-
 class GlobalTrendOption(Enum):
     linear = 0
     loglinear = 1

@@ -1,4 +1,6 @@
 data {
+  // The sampling tempature t_star; this is currently not used.
+  real<lower=0> T_STAR;
   // response related
   int<lower=0> NUM_OF_OBS;
   int<lower=0> N_VALID_RES;
@@ -25,10 +27,12 @@ transformed data {
   vector[NUM_OF_OBS] RESPONSE_TRAN;
   // convert numpy index to stan
   int WHICH_VALID_RES2[N_VALID_RES];
+  real t_star_inv;
   for (n in 1:N_VALID_RES) {
     WHICH_VALID_RES2[n] = WHICH_VALID_RES[n] + 1;
   }
   RESPONSE_TRAN = RESPONSE - MEAN_Y;
+  t_star_inv = 1.0/T_STAR;
 }
 
 parameters {
@@ -45,7 +49,12 @@ transformed parameters {
   vector[NUM_OF_OBS] regression;
   vector[NUM_OF_OBS] yhat;
 
-  // levels 
+  // Tempature based sampling
+  // log probability of each observation
+  vector[NUM_OF_OBS] log_prob;
+  log_prob = rep_vector(0, NUM_OF_OBS);
+
+  // levels
   if (N_KNOTS_LEV > 1) {
     lev_knot_tran = cumulative_sum(lev_knot_drift);
   } else {
@@ -73,6 +82,12 @@ transformed parameters {
   }
 
   yhat = lev_tran + regression;
+
+  for (t in WHICH_VALID_RES2) {
+    // the log probs of each overservation for WBIC
+    log_prob[t] = student_t_lpdf(RESPONSE[t]|DOF, yhat[t], obs_scale);
+  }
+
 }
 
 
@@ -90,7 +105,12 @@ model {
   }
 
   obs_scale ~ cauchy(0, RESPONSE_SD)T[0, RESPONSE_SD];
+  // old way
   RESPONSE_TRAN[WHICH_VALID_RES2] ~ student_t(DOF, yhat[WHICH_VALID_RES2], obs_scale);
+  // new way, with unit test issue
+  //for  (t in WHICH_VALID_RES2) {
+  //    target +=  t_star_inv*log_prob[t];
+  //}
 }
 
 generated quantities {

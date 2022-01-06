@@ -17,6 +17,7 @@ class BaseEstimator(object):
         If True (default), output all diagnostics messages from estimators
 
     """
+
     def __init__(self, seed=8888, verbose=False):
         self.seed = seed
         self.verbose = verbose
@@ -50,3 +51,5 @@ class BaseEstimator(object):
             metrics and meta data related to the training process
         """
         raise NotImplementedError('Concrete fit() method must be implemented')
+
+
