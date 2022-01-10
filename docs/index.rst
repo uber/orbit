@@ -46,6 +46,7 @@ Welcome to Orbit's Documentation!
    tutorials/decompose_prediction
    tutorials/model_diagnostics
    tutorials/backtest
+   tutorials/wbic
 
 .. toctree::
    :maxdepth: 1
