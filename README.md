@@ -1,3 +1,13 @@
+<p align="center">
+  &emsp;
+  <a href="https://app.slack.com/client/T01BMFW7VG9/C01AU51F11V">Join&nbsp;Slack</a>
+  &emsp; | &emsp;
+  <a href="https://orbit-ml.readthedocs.io/en/stable/">Documentation</a>
+  &emsp; | &emsp;
+  <a href="https://eng.uber.com/orbit/">Blog</a>
+  &emsp;
+</p>
+
 ![Orbit banner](https://raw.githubusercontent.com/uber/orbit/dev/docs/img/orbit-banner.png)
 
 -------------------------------------------------------------------------------------------------------------------------------------
@@ -8,9 +18,9 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/orbit-ml)
 [![Downloads](https://pepy.tech/badge/orbit-ml)](https://pepy.tech/project/orbit-ml)
 
-# Users Notice
+# User Notice
 
-The default page of the repo is on `dev` branch. To install the version, please check the `Installing from Dev Branch` section. If you are looking for a **stable version**, please refer to the `master` branch [here](https://github.com/uber/orbit/tree/master).
+The default page of the repo is on `dev` branch. To install the dev version, please check the section `Installing from Dev Branch`. If you are looking for a **stable version**, please refer to the `master` branch [here](https://github.com/uber/orbit/tree/master).
 
 
 # Disclaimer
@@ -99,7 +109,7 @@ plot_predicted_data(
 
 ![full-pred](docs/img/dlt-mcmc-pred.png)
 
-## Demo 
+## Demo
 
 Forecasting / Nowcasting with Regression in DLT (based on v1.0.13):
 

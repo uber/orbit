@@ -2,6 +2,27 @@
 
 Changelog
 =========
+1.1.0 (2022-01-11) (`release notes <https://github.com/uber/orbit/releases/tag/v1.1.0>`__)
+-------------------------------------------------------------------------------------------------
+:Core changes:
+  - Redesign the model class structure with three core components: model template, estimator, and forecaster
+    (#506, #507, #508, #513)
+  - Introduce the Kernel-based Time-varying Regression (KTR) model (#515)
+  - Implement the negative coefficient for LGT and KTR (#600, #601, #609)
+  - Allow to handle missing values in response for LGT and DLT (#645)
+  - Implement WBIC value for model candidate selection (#654)
+
+:Documentation:
+  - A new series of tutorials for KTR (#558, #559)
+  - Migrate the CI from TravisCI to Github Actions (#556)
+  - Missing value handle tutorial (#645)
+  - WBIC tutorial (#663)
+
+:Utilities:
+  - New Plotting Palette (#571, #589)
+  - Redesign the diagnostic plotting (#581, #607)
+  - Raise a warning when date index is not evenly distributed (#639)
+
 1.0.17 (2021-08-30) (`release notes <https://github.com/uber/orbit/releases/tag/v1.0.17>`__)
 -------------------------------------------------------------------------------------------------
 :Core changes:
