@@ -113,7 +113,7 @@ plot_predicted_data(
 
 Forecasting / Nowcasting with Regression in DLT (based on v1.0.13):
 
-[![Open All Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1kStoPB_Xo3yDy_n_qqh5_jRpHt_RcDkV?usp=sharing)
+[![Open All Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/edwinnglabs/ts-playground/blob/master/Orbit_Tutorial.ipynb)
 
 Backtest on M3 Data:
 
