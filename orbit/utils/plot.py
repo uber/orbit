@@ -14,7 +14,6 @@ def get_orbit_style():
 
 
 def orbit_style_decorator(func):
-    orbit_style = get_orbit_style()
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         if "use_orbit_style" in kwargs.keys():
@@ -23,15 +22,13 @@ def orbit_style_decorator(func):
         else:
             # default to be True if arg is not specified
             use_orbit_style = True
-        # try:
         if use_orbit_style:
-            with plt.style.context(orbit_style):
+            try:
+                orbit_style = get_orbit_style()
+                with plt.style.context(orbit_style):
+                    return func(*args, **kwargs)
+            except:
                 return func(*args, **kwargs)
         else:
             return func(*args, **kwargs)
-        # except:
-        #     kwargs['use_orbit_style'] = True
-        #     with plt.style.context(orbit_style):
-        #         return func(*args, **kwargs)
-
     return wrapper
