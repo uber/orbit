@@ -111,7 +111,7 @@ plot_predicted_data(
 
 ## Demo
 
-Forecasting / Nowcasting with Regression in DLT (based on v1.0.13):
+Forecasting / Nowcasting with Regression in DLT:
 
 [![Open All Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/edwinnglabs/ts-playground/blob/master/Orbit_Tutorial.ipynb)
 
