@@ -119,17 +119,17 @@ Backtest on M3 Data:
 
 [![Open All Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/edwinnglabs/ts-playground/blob/master/orbit_m3_backtest.ipynb)
 
-More examples can be found under [tutorials](https://github.com/uber/orbit/tree/dev/docs/tutorials)
-and [examples](https://github.com/uber/orbit/tree/dev/examples).
+More examples can be found under [tutorials](./docs/tutorials)
+and [examples](./examples).
 
 # Contributing
 We welcome community contributors to the project. Before you start, please read our
-[code of conduct](https://github.com/uber/orbit/blob/dev/CODE_OF_CONDUCT.md) and check out
-[contributing guidelines](https://github.com/uber/orbit/blob/dev/CONTRIBUTING.md) first.
+[code of conduct](CODE_OF_CONDUCT.md) and check out
+[contributing guidelines](CONTRIBUTING.md) first.
 
 
 # Versioning
-We document versions and changes in our [changelog](https://github.com/uber/orbit/blob/dev/docs/changelog.rst).
+We document versions and changes in our [changelog](./docs/changelog.rst).
 
 
 # References
