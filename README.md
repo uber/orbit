@@ -1,6 +1,6 @@
 <p align="center">
   &emsp;
-  <a href="https://app.slack.com/client/T01BMFW7VG9/C01AU51F11V">Join&nbsp;Slack</a>
+  <a href="https://join.slack.com/t/orbit-support/shared_invite/zt-1207qlxjl-fhiX_8vTu1Fsa1ao1vGFEA">Join&nbsp;Slack</a>
   &emsp; | &emsp;
   <a href="https://orbit-ml.readthedocs.io/en/stable/">Documentation</a>
   &emsp; | &emsp;
