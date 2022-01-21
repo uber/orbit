@@ -1017,13 +1017,12 @@ class KTRModel(ModelTemplate):
         # if date_array not specified, coefficients in the training period will be retrieved
         if date_array is None:
             if coefficient_method == 'smooth':
-
                 coef_knots = posteriors.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
+                if len(self._regressor_col) == 1:
+                    coef_knots = np.expand_dims(coef_knots, 1)
                 # only 1 knot for 0 segments
                 if self.regression_segments == 0:
                     coef_knots = np.expand_dims(coef_knots, -1)
-                if len(self._regressor_col) == 1:
-                    coef_knots = np.expand_dims(coef_knots, 1)
 
                 # result in batch x time step x regressor size shape
                 regressor_betas = np.matmul(coef_knots, self._kernel_coefficients.transpose((1, 0)))
@@ -1066,7 +1065,7 @@ class KTRModel(ModelTemplate):
 
                 coef_knots = posteriors.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
                 if len(self._regressor_col) == 1:
-                    coef_knots = np.expand_dims(coef_knots, -1)
+                    coef_knots = np.expand_dims(coef_knots, 1)
                 # only 1 knot for 0 segments
                 if self.regression_segments == 0:
                     coef_knots = np.expand_dims(coef_knots, -1)
