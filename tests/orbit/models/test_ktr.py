@@ -342,6 +342,7 @@ def test_ktr_regressor_sizes(iclaims_training_data, regression_segments, regress
         num_sample=100,
     )
     ktr.fit(df)
+    ktr.predict(df)
     coef_df = ktr.get_regression_coefs()
     knot_df = ktr.get_regression_coef_knots()
 

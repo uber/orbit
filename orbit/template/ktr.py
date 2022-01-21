@@ -1125,7 +1125,6 @@ class KTRModel(ModelTemplate):
         if len(coefs.shape) == 1:
             coefs = np.expand_dims(coefs, -1)
 
-
         reg_df = pd.DataFrame(data=coefs, columns=self._regressor_col)
         if date_array is not None:
             reg_df[date_col] = date_array
@@ -1173,11 +1172,11 @@ class KTRModel(ModelTemplate):
             .get(_point_method) \
             .get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
 
+        if len(self._regressor_col) == 1:
+            coef_knots = np.expand_dims(coef_knots, 1)
         # only 1 knot for 0 segments
         if self.regression_segments == 0:
             coef_knots = np.expand_dims(coef_knots, -1)
-        if len(self._regressor_col) == 1:
-            coef_knots = np.expand_dims(coef_knots, 1)
 
         for idx, col in enumerate(self._regressor_col):
             knots_df[col] = np.transpose(coef_knots[:, idx])
