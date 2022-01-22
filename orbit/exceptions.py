@@ -16,8 +16,10 @@ class ModelException(Exception):
 class IllegalArgument(Exception):
     pass
 
+
 class DataInputException(Exception):
     pass
+
 
 class PredictionException(Exception):
     pass

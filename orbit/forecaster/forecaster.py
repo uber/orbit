@@ -4,7 +4,7 @@ import pandas as pd
 import warnings
 from enum import Enum
 
-from ..exceptions import ForecasterException, AbstractMethodException
+from ..exceptions import ForecasterException, AbstractMethodException, IllegalArgument
 from ..utils.general import is_ordered_datetime, is_even_gap_datetime
 from ..template.model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMCMC
@@ -314,7 +314,8 @@ class Forecaster(object):
             )
             # time index for prediction start
             start = pd.Index(
-                self._training_meta[TrainingMetaKeys.DATE_ARRAY.value]).get_loc(prediction_meta[PredictionMetaKeys.START.value])
+                self._training_meta[TrainingMetaKeys.DATE_ARRAY.value]).get_loc(
+                prediction_meta[PredictionMetaKeys.START.value])
 
         prediction_meta.update({
             PredictionMetaKeys.START_INDEX.value: start,
@@ -328,7 +329,6 @@ class Forecaster(object):
 
     def get_training_metrics(self):
         return deepcopy(self._training_metrics)
-
 
     def get_posterior_samples(self, relabel=False, permute=True):
         """
@@ -361,8 +361,8 @@ class Forecaster(object):
             if self.estimator_type == StanEstimatorMCMC:
                 for key, val in posterior_samples.items():
                     posterior_samples[key] = val.reshape((self.estimator.chains,
-                                                        self.estimator._num_sample_per_chain,
-                                                        *val.shape[1:]))
+                                                          self.estimator._num_sample_per_chain,
+                                                          *val.shape[1:]))
         return posterior_samples
 
     def get_point_posteriors(self):
@@ -389,8 +389,13 @@ class Forecaster(object):
         Returns
         -------
         df : future dataframe
+
+        Notes
+        -----
+        Alert: Right now this only works on future dataframe that doesn't require any regressors.
         """
-        assert periods >= 1
+        if periods < 1:
+            raise IllegalArgument("Periods need to be greater than or equal to 1.")
         train_meta = self.get_training_meta()
         date_array = train_meta[TrainingMetaKeys.DATE_ARRAY.value]
         date_col = train_meta[TrainingMetaKeys.DATE_COL.value]
