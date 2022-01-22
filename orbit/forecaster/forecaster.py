@@ -376,3 +376,26 @@ class Forecaster(object):
             return deepcopy(self._model._regressor_col)
         else:
             return list()
+
+    def make_future_df(self, periods=1):
+        """Given an Orbit Forecaster and number of periods, return a dataframe for future prediction
+
+        Parameters
+        ----------
+        self : orbit.forecaster.Forecaster
+        periods : int
+            number of periods to generate future data frame
+
+        Returns
+        -------
+        df : future dataframe
+        """
+        assert periods >= 1
+        train_meta = self.get_training_meta()
+        date_array = train_meta[TrainingMetaKeys.DATE_ARRAY.value]
+        date_col = train_meta[TrainingMetaKeys.DATE_COL.value]
+        train_end = date_array[len(date_array) - 1]
+        infer_delta = date_array.diff().min()
+        future_date_array = train_end + np.arange(1, periods + 1) * infer_delta
+        future_df = pd.DataFrame(future_date_array).rename(columns={0: date_col})
+        return future_df
