@@ -1,6 +1,7 @@
 from abc import abstractmethod
 import numpy as np
 import logging
+
 logger = logging.getLogger('orbit')
 
 import pyro
@@ -36,6 +37,7 @@ class PyroEstimator(BaseEstimator):
     -----
         See http://docs.pyro.ai/en/stable/_modules/pyro/optim/clipped_adam.html for optimizer details
     """
+
     def __init__(self, num_steps=301, learning_rate=0.1, learning_rate_total_decay=1.0, message=100, **kwargs):
         super().__init__(**kwargs)
         self.num_steps = num_steps
