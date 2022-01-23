@@ -8,16 +8,17 @@ the hood.
 
 Currently, it supports the following models:
 
+-  Damped Local Trend (DLT)
 -  Exponential Smoothing (ETS)
 -  Local Global Trend (LGT)
--  Damped Local Trend (DLT)
+-  Kernel-based Time-varying Regression (KTR)
 
 It also supports the following sampling methods for
 model estimation:
 
 -  Markov-Chain Monte Carlo (MCMC) as a full sampling method
 -  Maximum a Posteriori (MAP) as a point estimate method
--  Variational Inference (VI) as a hybrid-sampling method on approximate
+-  Stochastic Variational Inference (SVI) as a hybrid-sampling method on approximate
    distribution
 
 
