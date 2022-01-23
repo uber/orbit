@@ -1,6 +1,8 @@
 from abc import abstractmethod
 import numpy as np
 import logging
+logger = logging.getLogger('orbit')
+
 import pyro
 from pyro.infer import SVI, Trace_ELBO
 from pyro.infer.autoguide import AutoLowRankMultivariateNormal, AutoDelta
@@ -68,11 +70,6 @@ class PyroEstimatorSVI(PyroEstimator):
         self.num_sample = num_sample
         self.num_particles = num_particles
         self.init_scale = init_scale
-        if self.verbose:
-            msg_template = "Using {} steps, {} samples, {} learning rate and {} particles for SVI."
-            msg = msg_template.format(
-                self.num_steps, self.num_sample, self.learning_rate, self.num_particles)
-            logging.info(msg)
 
     def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         # verbose is passed through from orbit.template.base_estimator
@@ -83,6 +80,11 @@ class PyroEstimatorSVI(PyroEstimator):
         num_sample = self.num_sample
         seed = self.seed
         num_steps = self.num_steps
+        if self.verbose:
+            msg_template = "Using SVI(Pyro) with {} steps, {} samples, {} learning rate and {} particles."
+            msg = msg_template.format(
+                self.num_steps, self.num_sample, self.learning_rate, self.num_particles)
+            logger.info(msg)
 
         pyro.set_rng_seed(seed)
         if fitter is None:
@@ -104,7 +106,7 @@ class PyroEstimatorSVI(PyroEstimator):
             loss_elbo.append(loss)
             if verbose and step % message == 0:
                 scale_rms = guide._loc_scale()[1].detach().pow(2).mean().sqrt().item()
-                print("step {: >4d} loss = {:0.5g}, scale = {:0.5g}".format(step, loss, scale_rms))
+                logger.info("step {: >4d} loss = {:0.5g}, scale = {:0.5g}".format(step, loss, scale_rms))
 
         # Extract samples.
         vectorize = pyro.plate("samples", num_sample, dim=-1 - model.max_plate_nesting)

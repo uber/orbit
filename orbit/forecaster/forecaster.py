@@ -314,7 +314,8 @@ class Forecaster(object):
             )
             # time index for prediction start
             start = pd.Index(
-                self._training_meta[TrainingMetaKeys.DATE_ARRAY.value]).get_loc(prediction_meta[PredictionMetaKeys.START.value])
+                self._training_meta[TrainingMetaKeys.DATE_ARRAY.value]).get_loc(
+                prediction_meta[PredictionMetaKeys.START.value])
 
         prediction_meta.update({
             PredictionMetaKeys.START_INDEX.value: start,
@@ -328,7 +329,6 @@ class Forecaster(object):
 
     def get_training_metrics(self):
         return deepcopy(self._training_metrics)
-
 
     def get_posterior_samples(self, relabel=False, permute=True):
         """
@@ -361,8 +361,8 @@ class Forecaster(object):
             if self.estimator_type == StanEstimatorMCMC:
                 for key, val in posterior_samples.items():
                     posterior_samples[key] = val.reshape((self.estimator.chains,
-                                                        self.estimator._num_sample_per_chain,
-                                                        *val.shape[1:]))
+                                                          self.estimator._num_sample_per_chain,
+                                                          *val.shape[1:]))
         return posterior_samples
 
     def get_point_posteriors(self):
