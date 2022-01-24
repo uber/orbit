@@ -23,7 +23,7 @@ def get_knot_dates(start_date, knot_idx, freq):
 
 
 def get_dates_delta(start_date, end_date, freq):
-    """Returns knot index based on date difference normalized with the number of steps by frequency provided
+    """return knot index based on date difference normalized with the number of steps by frequency provided
 
     Parameters
     ----
