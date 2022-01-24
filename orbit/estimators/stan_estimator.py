@@ -1,7 +1,8 @@
 from abc import abstractmethod
 from copy import copy
 import logging
-import numpy as np
+logger = logging.getLogger('orbit')
+
 import multiprocessing
 from sys import platform, version_info
 if platform == 'darwin' and version_info[0] == 3 and version_info[1] == 9:
@@ -9,7 +10,7 @@ if platform == 'darwin' and version_info[0] == 3 and version_info[1] == 9:
     multiprocessing.set_start_method("fork", force=True)
 from .base_estimator import BaseEstimator
 from ..exceptions import EstimatorException
-from ..utils.stan import get_compiled_stan_model
+from ..utils.stan import get_compiled_stan_model, suppress_stdout_stderr
 from ..utils.general import update_dict
 
 
@@ -77,11 +78,6 @@ class StanEstimatorMCMC(StanEstimator):
         Supplemental stan mcmc args to pass to PyStan.sampling()
 
     """
-    # is_mcmc boolean indicator -- some template are parameterized slightly different for
-    # MCMC estimator vs other estimators for convergence. Indicator let's model and estimator
-    # to remain independent
-    # _is_mcmc_estimator = True
-
     def __init__(self, stan_mcmc_control=None, stan_mcmc_args=None, **kwargs):
         super().__init__(**kwargs)
         self.stan_mcmc_control = stan_mcmc_control
@@ -94,11 +90,6 @@ class StanEstimatorMCMC(StanEstimator):
 
     def _set_computed_stan_mcmc_configs(self):
         self._stan_mcmc_args = update_dict({}, self._stan_mcmc_args)
-        if self.verbose:
-            msg_template = "Using {} chains, {} cores, {} warmup and {} samples per chain for sampling."
-            msg = msg_template.format(
-                self.chains, self.cores, self._num_warmup_per_chain, self._num_sample_per_chain)
-            logging.info(msg)
 
     def fit(self, model_name, model_param_names, sampling_temperature, data_input, fitter=None, init_values=None):
         compiled_stan_file = get_compiled_stan_model(model_name)
@@ -108,32 +99,33 @@ class StanEstimatorMCMC(StanEstimator):
         #   if None, use default as defined in class variable
         init_values = init_values or self.stan_init
 
-        # set sampling temp
+        # T_STAR is used as sampling temperature which is used for WBIC calculation
         data_input.update({'T_STAR': sampling_temperature})
-        # with suppress_stdout_stderr():
-        # with suppress_stdout_stderr():
+
+        if self.verbose:
+            msg_template = "Sampling (PyStan) with chains:{}, cores:{}, temperature:{}, " \
+                           "warmups per chain:{} and samples per chain:{} ."
+            msg = msg_template.format(
+                self.chains, self.cores, sampling_temperature,
+                self._num_warmup_per_chain, self._num_sample_per_chain)
+            logger.info(msg)
+
         # with io.capture_output() as captured:
-        stan_mcmc_fit = compiled_stan_file.sampling(
-            data=data_input,
-            pars=model_param_names + ['log_prob'],
-            iter=self._num_iter_per_chain,
-            warmup=self._num_warmup_per_chain,
-            chains=self.chains,
-            n_jobs=self.cores,
-            # fall back to default if not provided by model payload
-            init=init_values,
-            seed=self.seed,
-            algorithm=self.algorithm,
-            control=self.stan_mcmc_control,
-            **self._stan_mcmc_args
-        )
-
-        log_p = stan_mcmc_fit.extract(pars=['log_prob'], permuted=True)['log_prob']
-        training_metrics = {'log_probability': log_p}
-
-        # extract `log_prob` in addition to defined model params
-        # to make naming consistent across api; we move lp along with warm up lp to `training_metrics`
-        # model_param_names_with_lp = model_param_names[:] + ['lp__']
+        with suppress_stdout_stderr():
+            stan_mcmc_fit = compiled_stan_file.sampling(
+                data=data_input,
+                pars=model_param_names + ['log_prob'],
+                iter=self._num_iter_per_chain,
+                warmup=self._num_warmup_per_chain,
+                chains=self.chains,
+                n_jobs=self.cores,
+                # fall back to default if not provided by model payload
+                init=init_values,
+                seed=self.seed,
+                algorithm=self.algorithm,
+                control=self.stan_mcmc_control,
+                **self._stan_mcmc_args
+            )
 
         posteriors = stan_mcmc_fit.extract(
             pars=model_param_names,
@@ -148,7 +140,12 @@ class StanEstimatorMCMC(StanEstimator):
                 posteriors[key] = val.flatten(order='F')
             else:
                 posteriors[key] = val.reshape((-1, *val.shape[2:]), order='F')
-        # log-posterior including warm up
+
+        # extract `log_prob` in addition to defined model params
+        # to make naming consistent across api; we move lp along with warm up lp to `training_metrics`
+        # model_param_names_with_lp = model_param_names[:] + ['lp__']
+        log_p = stan_mcmc_fit.extract(pars=['log_prob'], permuted=True)['log_prob']
+        training_metrics = {'log_probability': log_p}
         training_metrics.update({'log_posterior': stan_mcmc_fit.get_logposterior(inc_warmup=True)})
         training_metrics.update({'sampling_temperature': sampling_temperature})
 
@@ -177,14 +174,15 @@ class StanEstimatorMAP(StanEstimator):
     def _set_computed_stan_map_configs(self):
         default_stan_map_args = {}
         self._stan_map_args = update_dict(default_stan_map_args, self._stan_map_args)
+        # TODO: should it be within the fit block?
         if self.verbose:
-            msg_template = "Using {} algorithm for optimizing."
+            msg_template = "Optimizing(PyStan) with algorithm:{} ."
             if self.algorithm is None:
                 algorithm = "LBFGS"
             else:
                 algorithm = self.algorithm
             msg = msg_template.format(algorithm)
-            logging.info(msg)
+            logger.info(msg)
 
     def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
         compiled_stan_file = get_compiled_stan_model(model_name)
@@ -192,25 +190,27 @@ class StanEstimatorMAP(StanEstimator):
 
         # passing callable from the model as seen in `initfun1()`
         init_values = init_values or self.stan_init
-        # with suppress_stdout_stderr():
+
         # in case optimizing fails with given algorithm fallback to `Newton`
         try:
-            stan_extract = compiled_stan_file.optimizing(
-                data=data_input,
-                init=init_values,
-                seed=self.seed,
-                algorithm=self.algorithm,
-                **self._stan_map_args
-            )
+            with suppress_stdout_stderr():
+                stan_extract = compiled_stan_file.optimizing(
+                    data=data_input,
+                    init=init_values,
+                    seed=self.seed,
+                    algorithm=self.algorithm,
+                    **self._stan_map_args
+                )
         except RuntimeError:
             self.algorithm = 'Newton'
-            stan_extract = compiled_stan_file.optimizing(
-                data=data_input,
-                init=init_values,
-                seed=self.seed,
-                algorithm=self.algorithm,
-                **self._stan_map_args
-            )
+            with suppress_stdout_stderr():
+                stan_extract = compiled_stan_file.optimizing(
+                    data=data_input,
+                    init=init_values,
+                    seed=self.seed,
+                    algorithm=self.algorithm,
+                    **self._stan_map_args
+                )
 
         # make sure that model param names are a subset of stan extract keys
         invalid_model_param = set(model_param_names) - set(list(stan_extract.keys()))

@@ -78,7 +78,7 @@ def KTR(
         list of pre-specified dates for regression knots
     regression_rho : float
         sigma in the Gaussian kernel for the regression term
-    degree of freedom : int
+    degree_of_freedom : int
         degree of freedom for error t-distribution
     date_freq : str
         date frequency; if not supplied, pd.infer_freq will be used to imply the date frequency.
