@@ -11,12 +11,24 @@
 ![Orbit banner](https://raw.githubusercontent.com/uber/orbit/dev/docs/img/orbit-banner.png)
 
 -------------------------------------------------------------------------------------------------------------------------------------
+<!--- BADGES: START --->
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/uber/orbit)
-![PyPI](https://img.shields.io/pypi/v/orbit-ml)
+[![PyPI](https://img.shields.io/pypi/v/orbit-ml)][#pypi-package]
 [![Build Status](https://github.com/uber/orbit/workflows/build/badge.svg?branch=dev)](https://github.com/uber/orbit/actions)
 [![Documentation Status](https://readthedocs.org/projects/orbit-ml/badge/?version=latest)](https://orbit-ml.readthedocs.io/en/latest/?badge=latest)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/orbit-ml)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/orbit-ml)][#pypi-package]
 [![Downloads](https://pepy.tech/badge/orbit-ml)](https://pepy.tech/project/orbit-ml)
+[![Conda Recipe](https://img.shields.io/static/v1?logo=conda-forge&style=flat&color=green&label=recipe&message=orbit-ml)][#conda-forge-feedstock]
+[![Conda - Platform](https://img.shields.io/conda/pn/conda-forge/orbit-ml?logo=anaconda&style=flat)][#conda-forge-package]
+[![Conda (channel only)](https://img.shields.io/conda/vn/conda-forge/orbit-ml?logo=anaconda&style=flat&color=orange)][#conda-forge-package]
+[![PyPI - License](https://img.shields.io/pypi/l/orbit-ml?logo=pypi&style=flat&color=green)][#github-license]
+
+[#github-license]: https://github.com/uber/orbit/blob/master/LICENSE
+[#pypi-package]: https://pypi.org/project/orbit-ml/
+[#conda-forge-package]: https://anaconda.org/conda-forge/orbit-ml
+[#conda-forge-feedstock]: https://github.com/conda-forge/orbit-ml-feedstock
+<!--- BADGES: END --->
+
 
 # User Notice
 
@@ -55,27 +67,45 @@ It also supports the following sampling/optimization methods for model estimatio
 
 
 ##  Installation
+
 ### Installing Stable Release
 
-Install from PyPi:
-```shell
-$ pip install orbit-ml
-```
+Install the library either from PyPi or from the source with `pip`. 
+Alternatively, you can also install it from Anaconda with `conda`:
 
-Install from source:
-```shell
-$ git clone https://github.com/uber/orbit.git
-$ cd orbit
-$ pip install -r requirements.txt
-$ pip install .
+**With pip**
+
+1. Installing from PyPI
+
+   ```sh
+   $ pip install orbit-ml
+   ```
+
+2. Install from source
+
+   ```sh
+   $ git clone https://github.com/uber/orbit.git
+   $ cd orbit
+   $ pip install -r requirements.txt
+   $ pip install .
+   ```
+
+**With conda**
+
+The library can be installed from the conda-forge channel using conda.
+
+```sh
+$ conda install -c conda-forge orbit-ml
 ```
 
 ### Installing from Dev Branch
-```shell
+
+```sh
 $ pip install git+https://github.com/uber/orbit.git@dev
 ```
 
 ## Quick Start with Damped-Local-Trend (DLT) Model
+
 ### FULL Bayesian Prediction
 
 ```python
@@ -123,12 +153,14 @@ More examples can be found under [tutorials](./docs/tutorials)
 and [examples](./examples).
 
 # Contributing
+
 We welcome community contributors to the project. Before you start, please read our
 [code of conduct](CODE_OF_CONDUCT.md) and check out
 [contributing guidelines](CONTRIBUTING.md) first.
 
 
 # Versioning
+
 We document versions and changes in our [changelog](./docs/changelog.rst).
 
 
@@ -146,6 +178,7 @@ To cite Orbit in publications, refer to the following whitepaper:
 [Orbit: Probabilistic Forecast with Exponential Smoothing](https://arxiv.org/abs/2004.08492)
 
 Bibtex:
+
 ```
 @misc{
     ng2020orbit,
