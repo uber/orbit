@@ -17,12 +17,13 @@
       int<lower=0> K;
       int<lower=0> NUM_OF_OBS;
       matrix[NUM_OF_OBS, K] X;
-      real t_star;
+      real<lower=0> T_STAR;
       real RESPONSE[NUM_OF_OBS]; 
       // to avoid having to do every lag 
-      int lag_ar[P]; 
-      int lag_ma[Q];
-      int lm_first; 
+      int LAG_AR[P]; 
+      int LAG_MA[Q];
+      // Do you want to do the LM first; i.e., use the residuals for the ARMA or run ARMA on y directly?
+      int LM_FIRST; 
 
     }
     
@@ -31,7 +32,7 @@
     int N;
     real y[NUM_OF_OBS];
 
-    watanabe_beta = 1.0/t_star; // the sampling temp  
+    watanabe_beta = 1.0/T_STAR; // the sampling temp  
     y = RESPONSE;
     N = NUM_OF_OBS;
     
@@ -63,23 +64,23 @@
               }
             // lm_first = 1 means resid = y - X beta
             // lm_first = 0 means resid = y
-            resid[i] = y[i] - lm_first*lhat[i]; // get the residuals from the linear model
+            resid[i] = y[i] - LM_FIRST*lhat[i]; // get the residuals from the linear model
             
             for (p in 1:P) {  // add in the ar terms 
-              if ( i > lag_ar[p] ) {
-                  arhat[i] += rho[p] * resid[i-lag_ar[p]];
+              if ( i > LAG_AR[p] ) {
+                  arhat[i] += rho[p] * resid[i-LAG_AR[p]];
                   }
               }
             for (q in 1:Q) { // add in the MA terms 
-              if ( i > lag_ma[q] ) {
-                  mahat[i] += theta[q]*err[i-lag_ma[q]] ;
+              if ( i > LAG_MA[q] ) {
+                  mahat[i] += theta[q]*err[i-LAG_MA[q]] ;
                   }
               }
             // 
             
             // lm_first = 1 means error = 0 - ar - ma (1-lm_first = 0)
             // lm_first = 0 means resid = y - yhat = y - lm - ar - ma (1-lm_first = 1)
-            err[i] = (1-lm_first)*y[i] - (1-lm_first)*lhat[i] - arhat[i] - mahat[i]; // get the error 
+            err[i] = (1-LM_FIRST)*y[i] - (1-LM_FIRST)*lhat[i] - arhat[i] - mahat[i]; // get the error 
             
             yhat[i] = lhat[i] + arhat[i] + mahat[i]; // the full prediction
 

@@ -31,9 +31,8 @@ class DataInputMapper(Enum):
     REGRESSOR_MATRIX = 'X'
     NUM_OF_AR_LAGS = 'P'
     NUM_OF_MA_LAGS = 'Q'
-    AR_LAGS = 'LAG AR'
+    AR_LAGS = 'LAG_AR'
     MA_LAGS = 'LAG_MA'
-    #NUM_OF_OBS = 'NUM_OF_OBS' 
     LM_FIRST = 'LM_FIRST'   
 
 
@@ -119,7 +118,7 @@ class ARMAModel(ModelTemplate):
     #_fitter = None # not sure what this is 
     _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC]
 
-    def __init__(self, num_of_ar_lags =0, num_of_ma_lags =0, lm_first = 0,  **kwargs):
+    def __init__(self,   **kwargs):
         # set by ._set_init_values
         # this is ONLY used by stan which by default used 'random'
         super().__init__(**kwargs)
@@ -134,14 +133,22 @@ class ARMAModel(ModelTemplate):
         self._mu = list() # mean
         
         # the arma stuff 
-        self.num_of_ar_lags = num_of_ar_lags
-        self.num_of_ma_lags = num_of_ma_lags
+        self.num_of_ar_lags = 0
+        self.num_of_ma_lags = 0
         self.ar_lags = list()
         self.ma_lags = list()
 
-        self.lm_first = lm_first
+        #self.num_of_ar_lags = num_of_ar_lags
+        #self.num_of_ma_lags = num_of_ma_lags
+        #self.ar_lags = ar_lags
+        #self.ma_lags = ma_lags
+
+        
+        self.lm_first = 0
         
         self._set_model_param_names()
+        
+        print(dir(self))
 
         
     def _set_model_param_names(self):
