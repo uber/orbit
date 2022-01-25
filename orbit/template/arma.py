@@ -44,13 +44,14 @@ class BaseSamplingParameters(Enum):
     # ---------- Noise Trend ---------- #
     RESIDUAL_SIGMA = 'obs_sigma'
     # ---------- ARMA Model Specific ---------- #
-
-
-class MUSamplingParameters(Enum):
-    """
-    regression component related parameters in posteriors sampling
-    """
     SIGNAL_MU = 'mu'
+
+
+#class MUSamplingParameters(Enum):
+#    """
+#    regression component related parameters in posteriors sampling
+#    """
+#    SIGNAL_MU = 'mu'
 
 
 class LMSamplingParameters(Enum):
@@ -118,13 +119,19 @@ class ARMAModel(ModelTemplate):
     #_fitter = None # not sure what this is 
     _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC]
 
-    def __init__(self,   **kwargs):
+    def __init__(self,  ar_lags, ma_lags, num_of_ma_lags, num_of_ar_lags,  regressor_col, **kwargs):
         # set by ._set_init_values
         # this is ONLY used by stan which by default used 'random'
         super().__init__(**kwargs)
         self._init_values = None
-        self.num_of_regressors = 0
+        
+        
         self.regessor_matrix = None
+        self.num_of_regressors = 0
+        if (regressor_col is not None):
+            self.num_of_regressors = len(regressor_col)
+            self.regressor_col = regressor_col
+            self.regessor_matrix = None
 
         # set by _set_model_param_names()
         self._rho = list() # AR 
@@ -133,22 +140,13 @@ class ARMAModel(ModelTemplate):
         self._mu = list() # mean
         
         # the arma stuff 
-        self.num_of_ar_lags = 0
-        self.num_of_ma_lags = 0
-        self.ar_lags = list()
-        self.ma_lags = list()
-
-        #self.num_of_ar_lags = num_of_ar_lags
-        #self.num_of_ma_lags = num_of_ma_lags
-        #self.ar_lags = ar_lags
-        #self.ma_lags = ma_lags
-
-        
+        self.num_of_ar_lags = num_of_ar_lags
+        self.num_of_ma_lags = num_of_ma_lags
+        self.ar_lags = np.array(ar_lags).astype(np.int64)
+        self.ma_lags = np.array(ma_lags).astype(np.int64)
         self.lm_first = 0
-        
         self._set_model_param_names()
         
-        print(dir(self))
 
         
     def _set_model_param_names(self):
@@ -158,15 +156,25 @@ class ARMAModel(ModelTemplate):
         Overriding :func: `~orbit.models.BaseETS._set_model_param_names`
         It sets additional required attributes related to trend and regression
         """
-        print("here")
         self._model_param_names += [param.value for param in BaseSamplingParameters]
+       
 
-
+        # append ar if any
+        if self.num_of_ar_lags > 0:
+            self._model_param_names += [
+                ARSamplingParameters.AR_RHO.value]
+        
+        # append ma if any
+        if self.num_of_ma_lags > 0:
+            self._model_param_names += [
+                MASamplingParameters.MA_THETA.value]
+        
         # append regressors if any
         if self.num_of_regressors > 0:
             self._model_param_names += [
-                RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value]
-
+                LMSamplingParameters.LM_BETA.value]
+     
+        
 
 
 

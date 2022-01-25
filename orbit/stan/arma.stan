@@ -42,13 +42,13 @@
       real mu;
       real<lower=-1,upper=1> rho[P];
       real<lower=-1,upper=1> theta[Q];
-      real<lower=0> sigma;
+      real<lower=0> obs_sigma;
       real beta[K];
     }
     
     transformed parameters {
         vector[N] yhat;  // full prediction
-        vector[N] log_p; // log prob of each observation
+        vector[N] log_prob; // log prob of each observation
         vector[N] err;   // error for time t for the MA model
         vector[N] resid; // the residual of the linear model
         vector[N] lhat;  // the prediction of the linear model
@@ -84,7 +84,7 @@
             
             yhat[i] = lhat[i] + arhat[i] + mahat[i]; // the full prediction
 
-            log_p[i] = normal_lpdf(y[i]|yhat[i], sigma); // the log probs 
+            log_prob[i] = normal_lpdf(y[i]|yhat[i], obs_sigma); // the log probs 
             }
     }
     
@@ -92,6 +92,6 @@
     model {
       
       for (i in 1:N) 
-        target += watanabe_beta*log_p[i];
+        target += watanabe_beta*log_prob[i];
       
     }

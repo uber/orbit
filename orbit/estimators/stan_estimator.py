@@ -101,8 +101,6 @@ class StanEstimatorMCMC(StanEstimator):
             logging.info(msg)
 
     def fit(self, model_name, model_param_names, sampling_temperature, data_input, fitter=None, init_values=None):
-        print("here in orbit/orbit/estimators/stan_estimator.py")
-        print(sampling_temperature)
         compiled_stan_file = get_compiled_stan_model(model_name)
 
         #   passing callable from the model as seen in `initfun1()`
@@ -112,7 +110,6 @@ class StanEstimatorMCMC(StanEstimator):
 
         # set sampling temp
         data_input.update({'T_STAR': sampling_temperature})
-        print(data_input)
         # with suppress_stdout_stderr():
         # with suppress_stdout_stderr():
         # with io.capture_output() as captured:

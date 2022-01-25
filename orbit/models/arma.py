@@ -15,7 +15,6 @@ def ARMA(
         regressor_col=None,
         lm_first=False,
         estimator='stan-mcmc',
-    
         **kwargs):
     """
     Args
@@ -35,6 +34,12 @@ def ARMA(
     arma = ARMAModel(
         regressor_col=regressor_col,
         lm_first = lm_first,
+        
+        num_of_ar_lags = num_of_ar_lags,
+        num_of_ma_lags = num_of_ma_lags,
+        ar_lags = ar_lags,
+        ma_lags = ma_lags,
+        
     )
     if estimator == EstimatorsKeys.StanMAP.value:
         arma_forecaster = MAPForecaster(
