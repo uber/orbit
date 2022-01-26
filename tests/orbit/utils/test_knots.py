@@ -10,7 +10,7 @@ from orbit.utils.knots import get_knot_idx, get_knot_dates
 @pytest.mark.parametrize(
     "dataset, date_col", [
         ("iclaims_training_data", "week"),
-        ("m3_monthly_data", "date")
+        ("m3_monthly_data", "date"),
         ("ca_hourly_electricity_data", "Dates")
     ]
 )
@@ -32,7 +32,7 @@ def test_segments_args(dataset, date_col, num_of_segments, request):
 @pytest.mark.parametrize(
     "dataset, date_col", [
         ("iclaims_training_data", "week"),
-        ("m3_monthly_data", "date")
+        ("m3_monthly_data", "date"),
         ("ca_hourly_electricity_data", "Dates")
     ]
 )
