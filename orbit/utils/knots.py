@@ -104,7 +104,7 @@ def get_knot_idx(
             (x <= date_array.max()) and (x >= date_array.min())
         ])
 
-        time_delta = date_array.diff().min()
+        time_delta = date_array.diff().mean()
 
         knot_idx = get_dates_delta(
             start_date=date_array[0],
