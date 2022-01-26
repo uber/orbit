@@ -20,26 +20,20 @@ model estimation:
 -  Variational Inference (VI) as a hybrid-sampling method on approximate
    distribution
 
-Quick Example
--------------
+Currently, it supports the following models:
 
-Orbit APIs follow a Scikit-learn stype API design, with a user-friendly interface. After instantiating a model
-object, one can use .fit and .predict for model training and prediction. Below is a quick illustration using the DLT model.
+-  Damped Local Trend (DLT)
+-  Exponential Smoothing (ETS)
+-  Local Global Trend (LGT)
+-  Kernel-based Time-varying Regression (KTR)
 
-.. code:: python
+It also supports the following sampling methods for
+model estimation:
 
-    from orbit.models.dlt import DLTFull
-
-    dlt = DLTFull(
-        response_col='claims',
-        date_col='week',
-        regressor_col=['trend.unemploy', 'trend.filling', 'trend.job'],
-        seasonality=52,
-    )
-
-    dlt.fit(df=train_df)
-
-    predicted_df = dlt.predict(df=test_df)
+-  Markov-Chain Monte Carlo (MCMC) as a full sampling method
+-  Maximum a Posteriori (MAP) as a point estimate method
+-  Stochastic Variational Inference (SVI) as a hybrid-sampling method on approximate
+   distribution
 
 
 Citation
