@@ -46,9 +46,6 @@ def test_distance_args(dataset, date_col, knot_distance, request):
 
 
 @pytest.mark.parametrize(
-    "knot_dates", []
-)
-@pytest.mark.parametrize(
     "dataset, date_col, knot_dates, knot_idx", [
         ("iclaims_training_data", "week",
          pd.to_datetime(['2014-05-18', '2016-10-30']),
