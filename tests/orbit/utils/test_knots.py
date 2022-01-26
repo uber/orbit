@@ -11,8 +11,8 @@ from tests.conftest import iclaims_training_data, m3_monthly_data, ca_hourly_ele
 @pytest.mark.parametrize(
     "dataset", [iclaims_training_data, m3_monthly_data, ca_hourly_electricity_data]
 )
-def test_segments_args(dataset, num_of_segments):
-    df = dataset
+def test_segments_args(dataset, num_of_segments, request):
+    df = request.getfixturevalue(dataset)
     date_array = df['week']
     knot_idx = get_knot_idx(num_of_obs=df.shape[0], num_of_segments=num_of_segments)
     assert knot_idx[0] == 0
@@ -28,8 +28,8 @@ def test_segments_args(dataset, num_of_segments):
 @pytest.mark.parametrize(
     "dataset", [iclaims_training_data, m3_monthly_data, ca_hourly_electricity_data]
 )
-def test_distance_args(dataset, knot_distance):
-    df = dataset
+def test_distance_args(dataset, knot_distance, request):
+    df = request.getfixturevalue(dataset)
     date_array = df['week']
     knot_idx = get_knot_idx(num_of_obs=df.shape[0], knot_distance=knot_distance)
     assert knot_idx[0] == 0
@@ -47,8 +47,8 @@ def test_distance_args(dataset, knot_distance):
 @pytest.mark.parametrize(
     "dataset", [iclaims_training_data, m3_monthly_data, ca_hourly_electricity_data]
 )
-def test_dates_args(dataset, knot_dates):
-    df = dataset
+def test_dates_args(dataset, knot_dates, request):
+    df = request.getfixturevalue(dataset)
     date_array = df['week']
     knot_idx = get_knot_idx(date_array=date_array, knot_dates=knot_dates)
     expected_dates = get_knot_dates(date_array[0], knot_idx, date_array[1] - date_array[0])
