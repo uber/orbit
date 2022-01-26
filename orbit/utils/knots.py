@@ -10,30 +10,34 @@ def get_knot_dates(start_date, knot_idx, freq):
     start_date : datetime array
     knot_idx : ndarray
         1D array containing index with `int` type.
-    freq : datetime delta
+    freq : date frequency
 
     Returns
     -------
     list :
         list of knot dates with provided start date time and indices
     """
-    knot_dates = knot_idx * freq + start_date
+    # knot_dates = knot_idx * freq + start_date
+    # knot_dates = knot_idx * np.timedelta64(1, freq) + start_date
+    dates_lst = pd.date_range(start=start_date, periods=max(knot_idx) + 1, freq=freq)
+    knot_dates = dates_lst[knot_idx]
 
     return knot_dates
 
 
-def get_dates_delta(start_date, end_date, freq):
+def get_dates_delta(start_date, end_date, time_delta):
     """return knot index based on date difference normalized with the number of steps by frequency provided
 
     Parameters
     ----
     start_date : numpy datetime
     end_date : numpy datetime array
-    freq : pandas timedelta; min date gap
+    time_delta : time delta between dates
     """
     date_diff = end_date - start_date
     # can also be deemed as the "knot_idx"
-    norm_delta = np.array(date_diff / freq).astype(int)
+    norm_delta = np.round(date_diff / time_delta).astype(int)
+
     return norm_delta
 
 
@@ -55,8 +59,8 @@ def get_knot_idx(
         num_of_segments=None,
         knot_distance=None,
         date_array=None,
-        knot_dates=None,
-        date_freq=None):
+        knot_dates=None
+    ):
     """ function to calculate and return the knot locations as indices based on
     This function will be used in KTRLite and KTRX model.
 
@@ -80,8 +84,6 @@ def get_knot_idx(
         only used when knot_dates is not None
     knot_dates : list or array of numpy datetime
         list of dates in string format (%Y-%m-%d) or numpy datetime array which will be used as the knot locations
-    date_freq : str
-        the date frequency of the input data; only used when knot_dates is not None
 
     Returns
     -------
@@ -102,14 +104,12 @@ def get_knot_idx(
             (x <= date_array.max()) and (x >= date_array.min())
         ])
 
-        if date_freq is None:
-            # infer date freq if not supplied
-            date_freq = date_array.diff().min()
+        time_delta = date_array.diff().min()
 
         knot_idx = get_dates_delta(
             start_date=date_array[0],
             end_date=_knot_dates,
-            freq=date_freq
+            time_delta=time_delta
         )
 
     elif knot_distance is not None:
