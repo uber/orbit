@@ -208,8 +208,8 @@ def ca_hourly_electricity_data():
         parse_dates=['Dates', 'Date'],
     )
 
-    train_df = df[df['Date'] < '2018-07-01']
-    test_df = df[df['Date'] >= '2018-07-01']
+    # train_df = df[df['Date'] < '2018-07-01']
+    # test_df = df[df['Date'] >= '2018-07-01']
 
-    return train_df, test_df
+    return df
 

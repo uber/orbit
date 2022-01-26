@@ -283,7 +283,7 @@ def test_ktrlite_predict_decompose_point_estimate(make_daily_data):
 
 
 def test_ktrlite_hourly_data(ca_hourly_electricity_data):
-    train_df, test_df = ca_hourly_electricity_data
+    train_df = ca_hourly_electricity_data
 
     ktrlite = KTRLite(
         response_col='SDGE',
