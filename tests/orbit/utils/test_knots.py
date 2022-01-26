@@ -2,14 +2,13 @@ import pytest
 import numpy as np
 import pandas as pd
 from orbit.utils.knots import get_knot_idx, get_knot_dates
-# from tests.conftest import iclaims_training_data, m3_monthly_data, ca_hourly_electricity_data
 
 
 @pytest.mark.parametrize(
     "num_of_segments", [0, 1, 3, 10]
 )
 @pytest.mark.parametrize(
-    "dataset", [iclaims_training_data, m3_monthly_data, ca_hourly_electricity_data]
+    "dataset", ["iclaims_training_data", "m3_monthly_data", "ca_hourly_electricity_data"]
 )
 def test_segments_args(dataset, num_of_segments, request):
     df = request.getfixturevalue(dataset)
@@ -26,7 +25,7 @@ def test_segments_args(dataset, num_of_segments, request):
     "knot_distance", [2, 4]
 )
 @pytest.mark.parametrize(
-    "dataset", [iclaims_training_data, m3_monthly_data, ca_hourly_electricity_data]
+    "dataset", ["iclaims_training_data", "m3_monthly_data", "ca_hourly_electricity_data"]
 )
 def test_distance_args(dataset, knot_distance, request):
     df = request.getfixturevalue(dataset)
@@ -45,7 +44,7 @@ def test_distance_args(dataset, knot_distance, request):
     "knot_dates", [pd.to_datetime(['2014-05-18', '2016-10-30'])]
 )
 @pytest.mark.parametrize(
-    "dataset", [iclaims_training_data, m3_monthly_data, ca_hourly_electricity_data]
+    "dataset", ["iclaims_training_data", "m3_monthly_data", "ca_hourly_electricity_data"]
 )
 def test_dates_args(dataset, knot_dates, request):
     df = request.getfixturevalue(dataset)
