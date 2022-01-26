@@ -400,7 +400,8 @@ class Forecaster(object):
         date_array = train_meta[TrainingMetaKeys.DATE_ARRAY.value]
         date_col = train_meta[TrainingMetaKeys.DATE_COL.value]
         train_end = date_array[len(date_array) - 1]
-        infer_delta = date_array.diff().min()
-        future_date_array = train_end + np.arange(1, periods + 1) * infer_delta
+        freq = pd.infer_freq(date_array)
+        future_date_array = pd.date_range(start=train_end, periods=periods + 1, freq=freq)[1:]
         future_df = pd.DataFrame(future_date_array).rename(columns={0: date_col})
+
         return future_df
