@@ -47,11 +47,11 @@ class BaseSamplingParameters(Enum):
     SIGNAL_MU = 'mu'
 
 
-#class MUSamplingParameters(Enum):
-#    """
-#    regression component related parameters in posteriors sampling
-#    """
-#    SIGNAL_MU = 'mu'
+class MUSamplingParameters(Enum):
+    """
+    regression component related parameters in posteriors sampling
+    """
+    SIGNAL_MU = 'mu'
 
 
 class LMSamplingParameters(Enum):
@@ -73,7 +73,7 @@ class MASamplingParameters(Enum):
     MA_THETA = 'theta'
 
 
-
+# I think this must be removed 
 class LatentSamplingParameters(Enum):
     """
     latent variables to be sampled
@@ -91,6 +91,7 @@ class ARMAInitializer(object):
         self.num_of_ma_lags = num_of_ma_lags
         self.num_of_regressors =  num_of_regressors
  
+    # this might need to be updated 
     def __call__(self):
         init_values = dict()
         if self.num_of_ar_lags > 0:
@@ -119,13 +120,14 @@ class ARMAModel(ModelTemplate):
     #_fitter = None # not sure what this is 
     _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC]
 
-    def __init__(self,  ar_lags, ma_lags, num_of_ma_lags, num_of_ar_lags,  regressor_col, **kwargs):
+    def __init__(self,  ar_lags, ma_lags, num_of_ma_lags, num_of_ar_lags,  regressor_col,response_col, **kwargs):
         # set by ._set_init_values
         # this is ONLY used by stan which by default used 'random'
         super().__init__(**kwargs)
         self._init_values = None
         
-        
+        self.response_col = response_col
+        self.regressor_col =None
         self.regessor_matrix = None
         self.num_of_regressors = 0
         if (regressor_col is not None):
@@ -192,7 +194,7 @@ class ARMAModel(ModelTemplate):
         # Prediction Attributes
         ################################################################
         n_forecast_steps = prediction_meta[PredictionMetaKeys.FUTURE_STEPS.value]
-        start = prediction_meta[PredictionMetaKeys.START_INDEX.value]
+        start = prediction_meta[PredictionMetaKeys.START_INDEX.value] # this might need to always be the start of the data 
         trained_len = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         output_len = prediction_meta[PredictionMetaKeys.PREDICTION_DF_LEN.value]
         full_len = trained_len + n_forecast_steps
@@ -221,26 +223,78 @@ class ARMAModel(ModelTemplate):
         # lm
         regressor_beta = model.get(LMSamplingParameters.LM_BETA.value)
 
-
+        ################################################################
+        # mu Component; i.e., the trend 
+        # this always happens; i.e., yhat = mu is the simplest possible model
+        ################################################################
+        regressor_matrix = np.ones(full_len)
+        
+        regressor_mu = regressor_mu.unsqueeze(0)
+        regressor_torch = torch.from_numpy(regressor_matrix).double().unsqueeze(0)
+        pred_mu = torch.matmul(regressor_torch.t(), regressor_mu)
+        pred_mu = pred_mu.t()
+        
         ################################################################
         # Regression Component
         ################################################################
         # calculate regression component
-        if self.regressor_col is not None and len(self.regressor_col) > 0:
-            regressor_matrix = df[self._regressor_col].values
+        if self.regressor_col is not None and self.num_of_regressors > 0:
+            regressor_matrix = df[self.regressor_col].values
             if not np.all(np.isfinite(regressor_matrix)):
                 raise PredictionException("Invalid regressors values. They must be all not missing and finite.")
             regressor_beta = regressor_beta.t()
             if len(regressor_beta.shape) == 1:
                 regressor_beta = regressor_beta.unsqueeze(0)
             regressor_torch = torch.from_numpy(regressor_matrix).double()
-            regression = torch.matmul(regressor_torch, regressor_beta)
-            regression = regression.t()
+            pred_lm = torch.matmul(regressor_torch, regressor_beta)
+            pred_lm = pred_lm.t()
         else:
             # regressor is always dependent with df. hence, no need to make full size
-            regression = torch.zeros((num_sample, output_len), dtype=torch.double)
+            pred_lm = torch.zeros((num_sample, output_len), dtype=torch.double)
 
- 
+        ################################################################
+        # ARMA stuff 
+        # resid is y - beta X
+        # error is y - beta X - ar - ma (total error)
+        ################################################################
+        # this is the prediction so far 
+        # there is S (number of MCMC samples) by N (Number of predictions that are made )
+        pred_mu_lm = pred_mu + pred_lm
+        
+        # initialize the is the error used in the MA
+        error = torch.zeros((num_sample, output_len), dtype=torch.double)
+        # the observed data torch.tensor(df[self.response_col].values.copy())
+        obs = torch.tile(torch.tensor(df[self.response_col].values.copy()), [num_sample, 1])
+        # this needs to be augmented with the yhat for true predictions 
+        
+        if self.lm_first: # r = y - beta X  
+            resid = obs - pred_mu_lm
+        else: # r = y 
+            resid = obs
+        
+        
+        # make the prediction arrays 
+        pred_ar = torch.zeros((num_sample, output_len), dtype=torch.double)
+        pred_ma = torch.zeros((num_sample, output_len), dtype=torch.double)
+        
+        for i in range(output_len):  
+            #print(i)
+            if self.num_of_ar_lags > 0: # ar process 
+                for p in range(self.num_of_ar_lags):
+                        if self.ar_lags[p] < i:
+                            #print( regressor_rho[:,p])
+                            #print(resid[:,i-self.ar_lags[p]])
+                            pred_ar[:,i] = pred_ar[:,i] + regressor_rho[:,p]*resid[:,i-self.ar_lags[p]]
+            if self.num_of_ma_lags > 0: # ma process
+                for q in range(self.num_of_ma_lags):
+                        if self.ar_lags[q] < i:
+                            pred_ma[:,i] = pred_ma[:,i] + regressor_theta[:,q]*error[:,i-self.ma_lags[q]]
+                if self.lm_first:
+                    error[:,i] = - pred_ar[:,i] - pred_ma[:,i]
+                else:
+                    error[:,i] = obs[:,i] - pred_mu_lm[:,i] - pred_ar[:,i] - pred_ma[:,i]
+            
+
 
         ################################################################
         # Combine Components
@@ -249,14 +303,30 @@ class ARMAModel(ModelTemplate):
         # trim component with right start index
 
         # sum components
-        pred_array = regression
+        pred_all = pred_mu_lm + pred_ar + pred_ma
+        
+        pred_mean = torch.mean(pred_all, 0)
+        obs_mean = torch.mean(obs, 0)
+        #
+        #print(pred_mean)
+        #print(obs_mean)
+        #
+        print(torch.std(obs_mean))
+        print(torch.std(obs_mean-pred_mean))
 
-        pred_array = pred_array.numpy()
-        regression = regression.numpy()
+        pred_all = pred_all.numpy()
+        pred_lm  = pred_lm.numpy()
+
+        
+        
 
         out = {
-            PredictionKeys.PREDICTION.value: pred_array,
-            PredictionKeys.REGRESSION.value: regression
+            'prediction': pred_all,
+            'trend': pred_mu,
+            'regression': pred_lm,
+            'autoregressor': pred_ar,
+            'moving-average': pred_ma
+            
         }
 
         return out

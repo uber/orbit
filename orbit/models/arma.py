@@ -7,14 +7,14 @@ from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
 from ..constants.constants import EstimatorsKeys
 
 
-def ARMA(
+def ARMA(response_col,
         num_of_ar_lags = 0,
         num_of_ma_lags = 0,
         ar_lags = [],
         ma_lags = [],
         regressor_col=None,
         lm_first=False,
-        estimator='stan-mcmc',
+        estimator='stan-mcmc',   
         **kwargs):
     """
     Args
@@ -39,6 +39,7 @@ def ARMA(
         num_of_ma_lags = num_of_ma_lags,
         ar_lags = ar_lags,
         ma_lags = ma_lags,
+        response_col= response_col,
         
     )
     if estimator == EstimatorsKeys.StanMAP.value:
