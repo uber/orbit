@@ -105,7 +105,7 @@ class KTRLiteModel(ModelTemplate):
     degree_of_freedom : int
         degree of freedom for error t-distribution
     date_freq : str
-        date frequency; if not supplied, the minimum timestamp difference in the date would be used
+        date frequency; if not supplied, pd.infer_freq will be used to imply the date frequency.
     """
     _data_input_mapper = DataInputMapper
     _model_name = 'ktrlite'
@@ -317,7 +317,6 @@ class KTRLiteModel(ModelTemplate):
             num_of_segments=self.level_segments,
             date_array=date_array,
             knot_dates=self.level_knot_dates,
-            date_freq=self.date_freq,
         )
         # kernel of coefficients calculations
         # set some default
@@ -331,7 +330,6 @@ class KTRLiteModel(ModelTemplate):
                 knot_dates=None,
                 knot_distance=None,
                 num_of_segments=self.seasonality_segments,
-                date_freq=self.date_freq,
             )
 
         tp = np.arange(1, num_of_observations + 1) / num_of_observations
@@ -339,7 +337,8 @@ class KTRLiteModel(ModelTemplate):
         self.kernel_level = sandwich_kernel(tp, self.knots_tp_level)
         self.num_knots_level = len(self.knots_tp_level)
         if self.date_freq is None:
-            self.date_freq = date_array.diff().min()
+            self.date_freq = pd.infer_freq(date_array)
+            # self.time_delta = date_array.diff().min()
         self._level_knot_dates = get_knot_dates(date_array[0], self._level_knots_idx, self.date_freq)
 
         # update rest of the seasonality related fields
