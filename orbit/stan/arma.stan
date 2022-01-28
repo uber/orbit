@@ -86,6 +86,7 @@
 
             log_prob[i] = normal_lpdf(y[i]|yhat[i], obs_sigma); // the log probs 
             }
+
     }
     
     
@@ -93,5 +94,6 @@
       
       for (i in 1:N) 
         target += watanabe_beta*log_prob[i];
-      
+
+    
     }

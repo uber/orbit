@@ -73,7 +73,6 @@ class MASamplingParameters(Enum):
     MA_THETA = 'theta'
 
 
-# I think this must be removed 
 class LatentSamplingParameters(Enum):
     """
     latent variables to be sampled
@@ -90,8 +89,7 @@ class ARMAInitializer(object):
         self.num_of_ar_lags = num_of_ar_lags
         self.num_of_ma_lags = num_of_ma_lags
         self.num_of_regressors =  num_of_regressors
- 
-    # this might need to be updated 
+
     def __call__(self):
         init_values = dict()
         if self.num_of_ar_lags > 0:
@@ -213,14 +211,13 @@ class ARMAModel(ModelTemplate):
         arbitrary_posterior_value = list(model.values())[0]
         num_sample = arbitrary_posterior_value.shape[0]
 
-
-        # mu 
+        # mu serries mean / trend 
         regressor_mu = model.get(MUSamplingParameters.SIGNAL_MU.value)
-        # ar 
+        # auto regressor
         regressor_rho = model.get(ARSamplingParameters.AR_RHO.value)
-        # ma 
+        # moving average 
         regressor_theta = model.get(MASamplingParameters.MA_THETA.value)
-        # lm
+        # linear model
         regressor_beta = model.get(LMSamplingParameters.LM_BETA.value)
 
         ################################################################
@@ -265,35 +262,37 @@ class ARMAModel(ModelTemplate):
         error = torch.zeros((num_sample, output_len), dtype=torch.double)
         # the observed data torch.tensor(df[self.response_col].values.copy())
         obs = torch.tile(torch.tensor(df[self.response_col].values.copy()), [num_sample, 1])
-        # this needs to be augmented with the yhat for true predictions 
         
         if self.lm_first: # r = y - beta X  
             resid = obs - pred_mu_lm
         else: # r = y 
             resid = obs
         
-        
+        ################################################################
+        # ARMA prediction 
+        ################################################################
         # make the prediction arrays 
         pred_ar = torch.zeros((num_sample, output_len), dtype=torch.double)
         pred_ma = torch.zeros((num_sample, output_len), dtype=torch.double)
         
         for i in range(output_len):  
-            #print(i)
             if self.num_of_ar_lags > 0: # ar process 
                 for p in range(self.num_of_ar_lags):
                         if self.ar_lags[p] < i:
-                            #print( regressor_rho[:,p])
-                            #print(resid[:,i-self.ar_lags[p]])
                             pred_ar[:,i] = pred_ar[:,i] + regressor_rho[:,p]*resid[:,i-self.ar_lags[p]]
             if self.num_of_ma_lags > 0: # ma process
                 for q in range(self.num_of_ma_lags):
                         if self.ar_lags[q] < i:
                             pred_ma[:,i] = pred_ma[:,i] + regressor_theta[:,q]*error[:,i-self.ma_lags[q]]
+                # update the error for the ma model 
                 if self.lm_first:
                     error[:,i] = - pred_ar[:,i] - pred_ma[:,i]
                 else:
                     error[:,i] = obs[:,i] - pred_mu_lm[:,i] - pred_ar[:,i] - pred_ma[:,i]
-            
+                    
+            # update the obs with the prediction in the forecast range 
+            if i > trained_len:
+                obs[:,i] = pred_mu_lm[:,i] + pred_ar[:,i] + pred_ma[:,i]
 
 
         ################################################################
@@ -305,20 +304,10 @@ class ARMAModel(ModelTemplate):
         # sum components
         pred_all = pred_mu_lm + pred_ar + pred_ma
         
-        pred_mean = torch.mean(pred_all, 0)
-        obs_mean = torch.mean(obs, 0)
-        #
-        #print(pred_mean)
-        #print(obs_mean)
-        #
-        print(torch.std(obs_mean))
-        print(torch.std(obs_mean-pred_mean))
-
         pred_all = pred_all.numpy()
         pred_lm  = pred_lm.numpy()
-
-        
-        
+        pred_ar  = pred_ar.numpy()
+        pred_ma  = pred_ma.numpy()
 
         out = {
             'prediction': pred_all,
