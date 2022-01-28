@@ -1,16 +1,38 @@
+<p align="center">
+  &emsp;
+  <a href="https://join.slack.com/t/orbit-support/shared_invite/zt-1207qlxjl-fhiX_8vTu1Fsa1ao1vGFEA">Join&nbsp;Slack</a>
+  &emsp; | &emsp;
+  <a href="https://orbit-ml.readthedocs.io/en/stable/">Documentation</a>
+  &emsp; | &emsp;
+  <a href="https://eng.uber.com/orbit/">Blog</a>
+  &emsp;
+</p>
+
 ![Orbit banner](https://raw.githubusercontent.com/uber/orbit/dev/docs/img/orbit-banner.png)
 
 -------------------------------------------------------------------------------------------------------------------------------------
+<!--- BADGES: START --->
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/uber/orbit)
-![PyPI](https://img.shields.io/pypi/v/orbit-ml)
+[![PyPI](https://img.shields.io/pypi/v/orbit-ml)][#pypi-package]
 [![Build Status](https://github.com/uber/orbit/workflows/build/badge.svg?branch=dev)](https://github.com/uber/orbit/actions)
 [![Documentation Status](https://readthedocs.org/projects/orbit-ml/badge/?version=latest)](https://orbit-ml.readthedocs.io/en/latest/?badge=latest)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/orbit-ml)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/orbit-ml)][#pypi-package]
 [![Downloads](https://pepy.tech/badge/orbit-ml)](https://pepy.tech/project/orbit-ml)
+[![Conda Recipe](https://img.shields.io/static/v1?logo=conda-forge&style=flat&color=green&label=recipe&message=orbit-ml)][#conda-forge-feedstock]
+[![Conda - Platform](https://img.shields.io/conda/pn/conda-forge/orbit-ml?logo=anaconda&style=flat)][#conda-forge-package]
+[![Conda (channel only)](https://img.shields.io/conda/vn/conda-forge/orbit-ml?logo=anaconda&style=flat&color=orange)][#conda-forge-package]
+[![PyPI - License](https://img.shields.io/pypi/l/orbit-ml?logo=pypi&style=flat&color=green)][#github-license]
 
-# Users Notice
+[#github-license]: https://github.com/uber/orbit/blob/master/LICENSE
+[#pypi-package]: https://pypi.org/project/orbit-ml/
+[#conda-forge-package]: https://anaconda.org/conda-forge/orbit-ml
+[#conda-forge-feedstock]: https://github.com/conda-forge/orbit-ml-feedstock
+<!--- BADGES: END --->
 
-The default page of the repo is on `dev` branch. To install the version, please check the `Installing from Dev Branch` section. If you are looking for a **stable version**, please refer to the `master` branch [here](https://github.com/uber/orbit/tree/master).
+
+# User Notice
+
+The default page of the repo is on `dev` branch. To install the dev version, please check the section `Installing from Dev Branch`. If you are looking for a **stable version**, please refer to the `master` branch [here](https://github.com/uber/orbit/tree/master).
 
 
 # Disclaimer
@@ -45,27 +67,45 @@ It also supports the following sampling/optimization methods for model estimatio
 
 
 ##  Installation
+
 ### Installing Stable Release
 
-Install from PyPi:
-```shell
-$ pip install orbit-ml
-```
+Install the library either from PyPi or from the source with `pip`. 
+Alternatively, you can also install it from Anaconda with `conda`:
 
-Install from source:
-```shell
-$ git clone https://github.com/uber/orbit.git
-$ cd orbit
-$ pip install -r requirements.txt
-$ pip install .
+**With pip**
+
+1. Installing from PyPI
+
+   ```sh
+   $ pip install orbit-ml
+   ```
+
+2. Install from source
+
+   ```sh
+   $ git clone https://github.com/uber/orbit.git
+   $ cd orbit
+   $ pip install -r requirements.txt
+   $ pip install .
+   ```
+
+**With conda**
+
+The library can be installed from the conda-forge channel using conda.
+
+```sh
+$ conda install -c conda-forge orbit-ml
 ```
 
 ### Installing from Dev Branch
-```shell
+
+```sh
 $ pip install git+https://github.com/uber/orbit.git@dev
 ```
 
 ## Quick Start with Damped-Local-Trend (DLT) Model
+
 ### FULL Bayesian Prediction
 
 ```python
@@ -99,27 +139,29 @@ plot_predicted_data(
 
 ![full-pred](docs/img/dlt-mcmc-pred.png)
 
-## Demo 
+## Demo
 
-Forecasting / Nowcasting with Regression in DLT (based on v1.0.13):
+Nowcasting with Regression in DLT:
 
-[![Open All Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1kStoPB_Xo3yDy_n_qqh5_jRpHt_RcDkV?usp=sharing)
+[![Open All Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/edwinnglabs/ts-playground/blob/master/Orbit_Tutorial.ipynb)
 
 Backtest on M3 Data:
 
 [![Open All Collab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/edwinnglabs/ts-playground/blob/master/orbit_m3_backtest.ipynb)
 
-More examples can be found under [tutorials](https://github.com/uber/orbit/tree/dev/docs/tutorials)
-and [examples](https://github.com/uber/orbit/tree/dev/examples).
+More examples can be found under [tutorials](./docs/tutorials)
+and [examples](./examples).
 
 # Contributing
+
 We welcome community contributors to the project. Before you start, please read our
-[code of conduct](https://github.com/uber/orbit/blob/dev/CODE_OF_CONDUCT.md) and check out
-[contributing guidelines](https://github.com/uber/orbit/blob/dev/CONTRIBUTING.md) first.
+[code of conduct](CODE_OF_CONDUCT.md) and check out
+[contributing guidelines](CONTRIBUTING.md) first.
 
 
 # Versioning
-We document versions and changes in our [changelog](https://github.com/uber/orbit/blob/dev/docs/changelog.rst).
+
+We document versions and changes in our [changelog](./docs/changelog.rst).
 
 
 # References
@@ -136,6 +178,7 @@ To cite Orbit in publications, refer to the following whitepaper:
 [Orbit: Probabilistic Forecast with Exponential Smoothing](https://arxiv.org/abs/2004.08492)
 
 Bibtex:
+
 ```
 @misc{
     ng2020orbit,

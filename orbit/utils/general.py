@@ -16,6 +16,7 @@ def is_ordered_datetime(array):
     """Returns True if array is ordered and non-repetitive"""
     return np.all(np.diff(array).astype(float) > 0)
 
+
 def is_even_gap_datetime(array):
     """Returns True if array is evenly distributed"""
     if len(array) >= 3:

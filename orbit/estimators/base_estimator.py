@@ -18,7 +18,7 @@ class BaseEstimator(object):
 
     """
 
-    def __init__(self, seed=8888, verbose=False):
+    def __init__(self, seed=8888, verbose=True):
         self.seed = seed
         self.verbose = verbose
 
