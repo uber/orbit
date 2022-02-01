@@ -1,5 +1,3 @@
-
-
 import numpy as np
 import pandas as pd
 from scipy.stats import nct
@@ -33,8 +31,7 @@ class DataInputMapper(Enum):
     NUM_OF_MA_LAGS = 'Q'
     AR_LAGS = 'LAG_AR'
     MA_LAGS = 'LAG_MA'
-    LM_FIRST = 'LM_FIRST'   
-
+    LM_FIRST = 'LM_FIRST'
 
 
 class BaseSamplingParameters(Enum):
@@ -60,11 +57,13 @@ class LMSamplingParameters(Enum):
     """
     LM_BETA = 'beta'
 
+
 class ARSamplingParameters(Enum):
     """
     regression component related parameters in posteriors sampling
     """
     AR_RHO = 'rho'
+
 
 class MASamplingParameters(Enum):
     """
@@ -82,26 +81,27 @@ class LatentSamplingParameters(Enum):
     REGRESSION_LM_COEFFICIENTS = 'lm_beta'
 
 
-
 # a callable object for generating initial values in sampling/optimization
 class ARMAInitializer(object):
     def __init__(self, num_of_ar_lags, num_of_ma_lags, num_of_regressors):
         self.num_of_ar_lags = num_of_ar_lags
         self.num_of_ma_lags = num_of_ma_lags
-        self.num_of_regressors =  num_of_regressors
+        self.num_of_regressors = num_of_regressors
 
     def __call__(self):
         init_values = dict()
         if self.num_of_ar_lags > 0:
-            init_ar = np.clip(np.random.normal(loc=0, scale=1.0/self.num_of_ar_lags, size=self.num_of_ar_lags), -1.0, 1.0)
+            init_ar = np.clip(np.random.normal(loc=0, scale=1.0 / self.num_of_ar_lags, size=self.num_of_ar_lags), -1.0,
+                              1.0)
             init_values[LatentSamplingParameters.REGRESSION_AR_COEFFICIENTS.value] = init_ar
         if self.num_of_ma_lags > 0:
-            init_ma = np.clip(np.random.normal(loc=0, scale=1.0/self.num_of_ma_lags, size=self.num_of_ma_lags), -1.0, 1.0)
+            init_ma = np.clip(np.random.normal(loc=0, scale=1.0 / self.num_of_ma_lags, size=self.num_of_ma_lags), -1.0,
+                              1.0)
             init_values[LatentSamplingParameters.REGRESSION_MA_COEFFICIENTS.value] = init_ma
         if self.num_of_regressors > 0:
-            init_lm = np.clip(np.random.normal(loc=0, scale=1.0/self.num_of_regressors, size=self.num_of_regressors), -5.0, 5.0)
+            init_lm = np.clip(np.random.normal(loc=0, scale=1.0 / self.num_of_regressors, size=self.num_of_regressors),
+                              -5.0, 5.0)
             init_values[LatentSamplingParameters.REGRESSION_LM_COEFFICIENTS.value] = init_lm
-
 
         return init_values
 
@@ -115,17 +115,17 @@ class ARMAModel(ModelTemplate):
     # class attributes
     _data_input_mapper = DataInputMapper
     _model_name = 'arma'
-    #_fitter = None # not sure what this is 
+    # _fitter = None # not sure what this is
     _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC]
 
-    def __init__(self,  ar_lags, ma_lags, num_of_ma_lags, num_of_ar_lags,  regressor_col,response_col, **kwargs):
+    def __init__(self, ar_lags, ma_lags, num_of_ma_lags, num_of_ar_lags, regressor_col, response_col, **kwargs):
         # set by ._set_init_values
         # this is ONLY used by stan which by default used 'random'
         super().__init__(**kwargs)
         self._init_values = None
-        
+
         self.response_col = response_col
-        self.regressor_col =None
+        self.regressor_col = None
         self.regessor_matrix = None
         self.num_of_regressors = 0
         if (regressor_col is not None):
@@ -134,11 +134,11 @@ class ARMAModel(ModelTemplate):
             self.regessor_matrix = None
 
         # set by _set_model_param_names()
-        self._rho = list() # AR 
-        self._theta = list() # MA
-        self._beta = list() # LM 
-        self._mu = list() # mean
-        
+        self._rho = list()  # AR
+        self._theta = list()  # MA
+        self._beta = list()  # LM
+        self._mu = list()  # mean
+
         # the arma stuff 
         self.num_of_ar_lags = num_of_ar_lags
         self.num_of_ma_lags = num_of_ma_lags
@@ -146,9 +146,7 @@ class ARMAModel(ModelTemplate):
         self.ma_lags = np.array(ma_lags).astype(np.int64)
         self.lm_first = 0
         self._set_model_param_names()
-        
 
-        
     def _set_model_param_names(self):
         """Set posteriors keys to extract from sampling/optimization api
         Notes
@@ -157,26 +155,21 @@ class ARMAModel(ModelTemplate):
         It sets additional required attributes related to trend and regression
         """
         self._model_param_names += [param.value for param in BaseSamplingParameters]
-       
 
         # append ar if any
         if self.num_of_ar_lags > 0:
             self._model_param_names += [
                 ARSamplingParameters.AR_RHO.value]
-        
+
         # append ma if any
         if self.num_of_ma_lags > 0:
             self._model_param_names += [
                 MASamplingParameters.MA_THETA.value]
-        
+
         # append regressors if any
         if self.num_of_regressors > 0:
             self._model_param_names += [
                 LMSamplingParameters.LM_BETA.value]
-     
-        
-
-
 
     def set_init_values(self):
         """Optional; set init as a callable (for Stan ONLY)
@@ -184,15 +177,15 @@ class ARMAModel(ModelTemplate):
         """
         pass
 
-
     def predict(self, posterior_estimates, df, training_meta, prediction_meta, include_error=False, **kwargs):
-    	# this is currently only going to use the mu 
+        # this is currently only going to use the mu
         """Vectorized version of prediction math"""
         ################################################################
         # Prediction Attributes
         ################################################################
         n_forecast_steps = prediction_meta[PredictionMetaKeys.FUTURE_STEPS.value]
-        start = prediction_meta[PredictionMetaKeys.START_INDEX.value] # this might need to always be the start of the data 
+        start = prediction_meta[
+            PredictionMetaKeys.START_INDEX.value]  # this might need to always be the start of the data
         trained_len = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         output_len = prediction_meta[PredictionMetaKeys.PREDICTION_DF_LEN.value]
         full_len = trained_len + n_forecast_steps
@@ -225,12 +218,12 @@ class ARMAModel(ModelTemplate):
         # this always happens; i.e., yhat = mu is the simplest possible model
         ################################################################
         regressor_matrix = np.ones(full_len)
-        
+
         regressor_mu = regressor_mu.unsqueeze(0)
         regressor_torch = torch.from_numpy(regressor_matrix).double().unsqueeze(0)
         pred_mu = torch.matmul(regressor_torch.t(), regressor_mu)
         pred_mu = pred_mu.t()
-        
+
         ################################################################
         # Regression Component
         ################################################################
@@ -257,43 +250,42 @@ class ARMAModel(ModelTemplate):
         # this is the prediction so far 
         # there is S (number of MCMC samples) by N (Number of predictions that are made )
         pred_mu_lm = pred_mu + pred_lm
-        
+
         # initialize the is the error used in the MA
         error = torch.zeros((num_sample, output_len), dtype=torch.double)
         # the observed data torch.tensor(df[self.response_col].values.copy())
         obs = torch.tile(torch.tensor(df[self.response_col].values.copy()), [num_sample, 1])
-        
-        if self.lm_first: # r = y - beta X  
+
+        if self.lm_first:  # r = y - beta X
             resid = obs - pred_mu_lm
-        else: # r = y 
+        else:  # r = y
             resid = obs
-        
+
         ################################################################
         # ARMA prediction 
         ################################################################
         # make the prediction arrays 
         pred_ar = torch.zeros((num_sample, output_len), dtype=torch.double)
         pred_ma = torch.zeros((num_sample, output_len), dtype=torch.double)
-        
-        for i in range(output_len):  
-            if self.num_of_ar_lags > 0: # ar process 
+
+        for i in range(output_len):
+            if self.num_of_ar_lags > 0:  # ar process
                 for p in range(self.num_of_ar_lags):
-                        if self.ar_lags[p] < i:
-                            pred_ar[:,i] = pred_ar[:,i] + regressor_rho[:,p]*resid[:,i-self.ar_lags[p]]
-            if self.num_of_ma_lags > 0: # ma process
+                    if self.ar_lags[p] < i:
+                        pred_ar[:, i] = pred_ar[:, i] + regressor_rho[:, p] * resid[:, i - self.ar_lags[p]]
+            if self.num_of_ma_lags > 0:  # ma process
                 for q in range(self.num_of_ma_lags):
-                        if self.ar_lags[q] < i:
-                            pred_ma[:,i] = pred_ma[:,i] + regressor_theta[:,q]*error[:,i-self.ma_lags[q]]
+                    if self.ar_lags[q] < i:
+                        pred_ma[:, i] = pred_ma[:, i] + regressor_theta[:, q] * error[:, i - self.ma_lags[q]]
                 # update the error for the ma model 
                 if self.lm_first:
-                    error[:,i] = - pred_ar[:,i] - pred_ma[:,i]
+                    error[:, i] = - pred_ar[:, i] - pred_ma[:, i]
                 else:
-                    error[:,i] = obs[:,i] - pred_mu_lm[:,i] - pred_ar[:,i] - pred_ma[:,i]
-                    
+                    error[:, i] = obs[:, i] - pred_mu_lm[:, i] - pred_ar[:, i] - pred_ma[:, i]
+
             # update the obs with the prediction in the forecast range 
             if i > trained_len:
-                obs[:,i] = pred_mu_lm[:,i] + pred_ar[:,i] + pred_ma[:,i]
-
+                obs[:, i] = pred_mu_lm[:, i] + pred_ar[:, i] + pred_ma[:, i]
 
         ################################################################
         # Combine Components
@@ -303,11 +295,11 @@ class ARMAModel(ModelTemplate):
 
         # sum components
         pred_all = pred_mu_lm + pred_ar + pred_ma
-        
+
         pred_all = pred_all.numpy()
-        pred_lm  = pred_lm.numpy()
-        pred_ar  = pred_ar.numpy()
-        pred_ma  = pred_ma.numpy()
+        pred_lm = pred_lm.numpy()
+        pred_ar = pred_ar.numpy()
+        pred_ma = pred_ma.numpy()
 
         out = {
             'prediction': pred_all,
@@ -315,7 +307,7 @@ class ARMAModel(ModelTemplate):
             'regression': pred_lm,
             'autoregressor': pred_ar,
             'moving-average': pred_ma
-            
+
         }
 
         return out
@@ -371,8 +363,6 @@ class ARMAModel(ModelTemplate):
         # note ordering here is not the same as `self.regressor_cols` because regressors here are grouped by signs
         regressor_cols = lm
 
-
-
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
         coef_df[COEFFICIENT_DF_COLS.COEFFICIENT] = coef.flatten()
 
@@ -389,6 +379,7 @@ class ARMAModel(ModelTemplate):
             return coef_df, coef_df_lower, coef_df_upper
         else:
             return coef_df
+
     # repeat for AR MA 
     def _set_regressor_matrix(self, df, num_of_observations):
         """Set regressor matrix based on the input data-frame.
@@ -405,12 +396,12 @@ class ARMAModel(ModelTemplate):
                 items=self.regressor_col, ).values
             if not np.all(np.isfinite(self.regressor_matrix)):
                 raise ModelException("Invalid regressors values. They must be all not missing and finite.")
-     
+
     def set_dynamic_attributes(self, df, training_meta):
         """Overriding: func: `~orbit.models.BaseETS._set_dynamic_attributes"""
         super().set_dynamic_attributes(df, training_meta)
         # depends on num_of_observations
-        self._set_regressor_matrix(df, training_meta[TrainingMetaKeys.NUM_OF_OBS.value])    
+        self._set_regressor_matrix(df, training_meta[TrainingMetaKeys.NUM_OF_OBS.value])
 
     def set_init_values(self):
         """Override function from Base Template
@@ -421,31 +412,8 @@ class ARMAModel(ModelTemplate):
         # lambda does not work in serialization in pickle
         # callable object as an alternative workaround
         init_values_callable = ARMAInitializer(
-                 self.num_of_ar_lags, 
-                 self.num_of_ma_lags, 
-                 self.num_of_regressors
-            )
-        self._init_values = init_values_callable    
-        
-        
-        
-    def get_init_values(self):
-        return self._init_values
-
-    def get_model_param_names(self):
-        return self._model_param_names
-
-    def get_data_input_mapper(self):
-        return self._data_input_mapper
-
-    def get_model_name(self):
-        return self._model_name
-
-    def get_fitter(self):
-        return self._fitter
-
-    def get_supported_estimator_types(self):
-        return self._supported_estimator_types
-    
-    
-    
+            self.num_of_ar_lags,
+            self.num_of_ma_lags,
+            self.num_of_regressors
+        )
+        self._init_values = init_values_callable
