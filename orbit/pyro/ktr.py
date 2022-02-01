@@ -3,6 +3,7 @@ import torch
 
 import pyro
 import pyro.distributions as dist
+from orbit.utils.at_temp_dist import StudentTAT
 
 # FIXME: this is sort of dangerous; consider better implementation later
 torch.set_default_tensor_type('torch.DoubleTensor')
@@ -211,6 +212,7 @@ class Model:
 
         pyro.sample("response",
                     dist.StudentT(dof, yhat[..., which_valid], obs_scale).to_event(1),
+                    #StudentTAT(dof, yhat[..., which_valid], obs_scale, t_star = 100.0).to_event(1),
                     obs=response_tran[which_valid])
 
         lev_knot = lev_knot_tran + meany
