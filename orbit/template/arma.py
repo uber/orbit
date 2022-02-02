@@ -201,6 +201,8 @@ class ARMAModel(ModelTemplate):
         regressor_theta = model.get(MASamplingParameters.MA_THETA.value)
         # linear model
         regressor_beta = model.get(LMSamplingParameters.LM_BETA.value)
+        # the sigma
+        residual_sigma = model.get(BaseSamplingParameters.RESIDUAL_SIGMA.value)
 
         ################################################################
         # mu Component; i.e., the trend 
@@ -214,6 +216,15 @@ class ARMAModel(ModelTemplate):
         pred_mu = torch.matmul(regressor_torch.t(), regressor_mu)
         pred_mu = pred_mu.t()
 
+        ################################################################
+        # random error prediction 
+        ################################################################
+        error_value = np.random.normal(
+                    loc=0,
+                    scale=residual_sigma.unsqueeze(-1),
+                    size=pred_mu.shape)
+                
+        
         ################################################################
         # Regression Component
         ################################################################
@@ -239,8 +250,8 @@ class ARMAModel(ModelTemplate):
         ################################################################
         # this is the prediction so far 
         # there is S (number of MCMC samples) by N (Number of predictions that are made )
-        pred_mu_lm = pred_mu + pred_lm
-
+        pred_mu_lm = pred_mu + pred_lm 
+        
         # initialize the is the error used in the MA
         error = torch.zeros((num_sample, output_len), dtype=torch.double)
         # the observed data torch.tensor(df[self.response_col].values.copy())
@@ -265,8 +276,8 @@ class ARMAModel(ModelTemplate):
                         pred_ar[:, i] = pred_ar[:, i] + regressor_rho[:, p] * resid[:, i - self.ar_lags[p]]
             if self.num_of_ma_lags > 0:  # ma process
                 for q in range(self.num_of_ma_lags):
-                    if self.ar_lags[q] < i:
-                        pred_ma[:, i] = pred_ma[:, i] + regressor_theta[:, q] * error[:, i - self.ma_lags[q]]
+                        if self.ma_lags[q] < i:
+                            pred_ma[:,i] = pred_ma[:,i] + regressor_theta[:,q]*error[:,i-self.ma_lags[q]]
                 # update the error for the ma model 
                 if self.lm_first:
                     error[:, i] = - pred_ar[:, i] - pred_ma[:, i]
@@ -275,8 +286,13 @@ class ARMAModel(ModelTemplate):
 
             # update the obs with the prediction in the forecast range 
             if i > trained_len:
-                obs[:, i] = pred_mu_lm[:, i] + pred_ar[:, i] + pred_ma[:, i]
-
+                obs[:,i] = pred_mu_lm[:,i] + pred_ar[:,i] + pred_ma[:,i] + error_value[:,i]
+                if self.lm_first: # r = y - beta X  
+                    resid[:,i] = obs[:,i] - pred_mu_lm[:,i]
+                else: # r = y 
+                    resid[:,i] = obs[:,i]
+                
+                
         ################################################################
         # Combine Components
         ################################################################
@@ -284,8 +300,8 @@ class ARMAModel(ModelTemplate):
         # trim component with right start index
 
         # sum components
-        pred_all = pred_mu_lm + pred_ar + pred_ma
-
+        pred_all = pred_mu_lm + pred_ar + pred_ma +error_value
+        
         pred_all = pred_all.numpy()
         pred_lm = pred_lm.numpy()
         pred_ar = pred_ar.numpy()
@@ -296,14 +312,20 @@ class ARMAModel(ModelTemplate):
             'trend': pred_mu,
             'regression': pred_lm,
             'autoregressor': pred_ar,
-            'moving-average': pred_ma
-
+            'moving-average': pred_ma,
+            'residual-error': error_value
         }
 
         return out
 
     def get_regression_coefs(self, training_meta, point_method, point_posteriors, posterior_samples,
                              include_ci=False, lower=0.05, upper=0.95):
+        print("----------------------")
+        print("----------------------")
+        print("-get_regression_coefs-")
+        print("----------------------")
+        print("----------------------")
+        
         """Return DataFrame regression coefficients.
           If point_method is None when fitting, return the median of coefficients.
 
@@ -329,7 +351,7 @@ class ARMAModel(ModelTemplate):
 
         _point_method = point_method
         if point_method is None:
-            _point_method = PredictMethod.MEDIAN.value
+           _point_method = PredictMethod.MEDIAN.value
 
         coef_mu = point_posteriors \
             .get(_point_method) \
@@ -349,9 +371,6 @@ class ARMAModel(ModelTemplate):
 
         # get column names
         lm_cols = self.regressor_col
-
-        # note ordering here is not the same as `self.regressor_cols` because regressors here are grouped by signs
-        regressor_cols = lm
 
         coef_df[COEFFICIENT_DF_COLS.REGRESSOR] = regressor_cols
         coef_df[COEFFICIENT_DF_COLS.COEFFICIENT] = coef.flatten()
@@ -407,3 +426,4 @@ class ARMAModel(ModelTemplate):
             self.num_of_regressors
         )
         self._init_values = init_values_callable
+
