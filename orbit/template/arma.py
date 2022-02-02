@@ -72,13 +72,13 @@ class MASamplingParameters(Enum):
     MA_ERROR = 'err'
 
 
-class LatentSamplingParameters(Enum):
-    """
-    latent variables to be sampled
-    """
-    REGRESSION_AR_COEFFICIENTS = 'ar_rho'
-    REGRESSION_MA_COEFFICIENTS = 'ma_theta'
-    REGRESSION_LM_COEFFICIENTS = 'lm_beta'
+#class LatentSamplingParameters(Enum):
+#    """
+#    latent variables to be sampled
+#    """
+#    REGRESSION_AR_COEFFICIENTS = 'ar_rho'
+#    REGRESSION_MA_COEFFICIENTS = 'ma_theta'
+#    REGRESSION_LM_COEFFICIENTS = 'lm_beta'
 
 
 # a callable object for generating initial values in sampling/optimization
