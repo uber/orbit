@@ -8,7 +8,8 @@ from ..constants.constants import (
     COEFFICIENT_DF_COLS,
     PredictMethod,
     TrainingMetaKeys,
-    PredictionMetaKeys
+    PredictionKeys,
+    PredictionMetaKeys,
 )
 from .model_template import ModelTemplate
 from ..exceptions import IllegalArgument, ModelException, PredictionException
@@ -209,6 +210,9 @@ class ARMAModel(ModelTemplate):
         # TODO: so this block is needed as long as we have either ar or ma
         obs = torch.zeros((1, full_len), dtype=torch.double)
         obs[0, :trained_len] = torch.from_numpy(training_meta[TrainingMetaKeys.RESPONSE.value][:trained_len])
+        # expand dimension to fit sample size dimension into first dimension
+        obs = torch.tile(obs, (num_sample, full_len))
+
         # output may not consume the full length, but it is cleaner to align every term with full length
         pred_ar = torch.zeros((num_sample, full_len), dtype=torch.double)
         pred_ar_train = model.get(ARSamplingParameters.AR_HAT.value)
@@ -306,22 +310,14 @@ class ARMAModel(ModelTemplate):
                     if self.ma_lags[q] < idx:
                         pred_ma[:, idx] = pred_ma[:, idx] + regressor_theta[:, q] * ma_error[:, idx - self.ma_lags[q]]
 
-            # update the obs with the prediction in the forecast range
-            # if idx > trained_len:
-            reduced_obs[:, idx] = pred_mu[:, idx] + pred_ar[:, idx] + pred_ma[:, idx] + error_value[:, idx]
-
             # update step
+            reduced_obs[:, idx] = pred_mu[:, idx] + pred_ar[:, idx] + pred_ma[:, idx]
+            if include_error:
+                reduced_obs[:, idx] += error_value[:, idx]
+
             if self.lm_first:
                 ma_error[:, idx] = reduced_obs[:, idx] - pred_ar[:, idx] - pred_ma[:, idx]
             else:
-                ma_error[:, idx] = reduced_obs[:, idx] - pred_mu[:, idx] - pred_ar[:, idx] - pred_ma[:, idx]
-
-
-            if self.lm_first:  # r = y - beta X
-                reduced_obs[:, idx] = reduced_obs[:, idx] - pred_mu[:, idx]
-                ma_error[:, idx] = - pred_ar[:, idx] - pred_ma[:, idx]
-            else:  # r = y
-                reduced_obs[:, idx] = reduced_obs[:, idx]
                 ma_error[:, idx] = reduced_obs[:, idx] - pred_mu[:, idx] - pred_ar[:, idx] - pred_ma[:, idx]
 
         ################################################################
@@ -331,20 +327,25 @@ class ARMAModel(ModelTemplate):
         # trim component with right start index
 
         # sum components
-        pred_all = pred_mu_lm + pred_ar + pred_ma + error_value
+        # pred_all = pred_mu_lm + pred_ar + pred_ma + error_value
+        pred_mu = pred_mu[:, start:]
+        pred_ar = pred_ar[:, start:]
+        pred_ma = pred_ma[:, start:]
+        error_value = error_value[:, start:]
+
+        pred_all = pred_mu + pred_ar + pred_ma + error_value
 
         pred_all = pred_all.numpy()
-        pred_lm = pred_lm.numpy()
+        # pred_lm = pred_lm.numpy()
         pred_ar = pred_ar.numpy()
         pred_ma = pred_ma.numpy()
 
         out = {
-            'prediction': pred_all,
-            'trend': pred_mu,
-            'regression': pred_lm,
+            PredictionKeys.PREDICTION.value: pred_all,
+            'trend':  pred_mu,
+            # 'regression': pred_lm,
             'autoregressor': pred_ar,
             'moving-average': pred_ma,
-            'residual-error': error_value
         }
 
         return out
