@@ -205,6 +205,8 @@ class ARMAModel(ModelTemplate):
         ################################################################
         # ar terms coef
         regressor_rho = model.get(ARSamplingParameters.AR_RHO.value)
+        # TODO: we also need this to calculate ma_error, so need to move it outside ar block;
+        # TODO: so this block is needed as long as we have either ar or ma
         obs = torch.zeros((1, full_len), dtype=torch.double)
         obs[0, :trained_len] = torch.from_numpy(training_meta[TrainingMetaKeys.RESPONSE.value][:trained_len])
         # output may not consume the full length, but it is cleaner to align every term with full length
@@ -280,6 +282,7 @@ class ARMAModel(ModelTemplate):
 
         if self.lm_first:  # r = y - beta X
             reduced_obs = obs - pred_mu
+            # reduced_obs = obs - pred_mu_lm
         else:  # r = y
             reduced_obs = obs
 
@@ -293,6 +296,7 @@ class ARMAModel(ModelTemplate):
         # run simulation
 
         for idx in range(trained_len, full_len):
+            # estimation step
             if self.num_of_ar_lags > 0:  # ar process
                 for p in range(self.num_of_ar_lags):
                     if self.ar_lags[p] < idx:
@@ -301,15 +305,18 @@ class ARMAModel(ModelTemplate):
                 for q in range(self.num_of_ma_lags):
                     if self.ma_lags[q] < idx:
                         pred_ma[:, idx] = pred_ma[:, idx] + regressor_theta[:, q] * ma_error[:, idx - self.ma_lags[q]]
-                # update the error for the ma model 
-                if self.lm_first:
-                    ma_error[:, idx] = - pred_ar[:, idx] - pred_ma[:, idx]
-                else:
-                    ma_error[:, idx] = reduced_obs[:, idx] - pred_mu[:, idx] - pred_ar[:, idx] - pred_ma[:, idx]
 
-            # update the obs with the prediction in the forecast range 
+            # update the obs with the prediction in the forecast range
             # if idx > trained_len:
             reduced_obs[:, idx] = pred_mu[:, idx] + pred_ar[:, idx] + pred_ma[:, idx] + error_value[:, idx]
+
+            # update step
+            if self.lm_first:
+                ma_error[:, idx] = reduced_obs[:, idx] - pred_ar[:, idx] - pred_ma[:, idx]
+            else:
+                ma_error[:, idx] = reduced_obs[:, idx] - pred_mu[:, idx] - pred_ar[:, idx] - pred_ma[:, idx]
+
+
             if self.lm_first:  # r = y - beta X
                 reduced_obs[:, idx] = reduced_obs[:, idx] - pred_mu[:, idx]
                 ma_error[:, idx] = - pred_ar[:, idx] - pred_ma[:, idx]
