@@ -289,8 +289,12 @@ class ARMAModel(ModelTemplate):
                 obs[:,i] = pred_mu_lm[:,i] + pred_ar[:,i] + pred_ma[:,i] + error_value[:,i]
                 if self.lm_first: # r = y - beta X  
                     resid[:,i] = obs[:,i] - pred_mu_lm[:,i]
+                    error[:,i] = - pred_ar[:,i] - pred_ma[:,i]
                 else: # r = y 
                     resid[:,i] = obs[:,i]
+                    error[:,i] = obs[:,i] - pred_mu_lm[:,i] - pred_ar[:,i] - pred_ma[:,i]
+    
+                
                 
                 
         ################################################################
