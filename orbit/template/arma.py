@@ -1,17 +1,12 @@
 import numpy as np
 import pandas as pd
-from scipy.stats import nct
 from copy import deepcopy
 import torch
 from enum import Enum
 
 from ..constants.constants import (
-    DEFAULT_REGRESSOR_SIGN,
-    DEFAULT_REGRESSOR_BETA,
-    DEFAULT_REGRESSOR_SIGMA,
     COEFFICIENT_DF_COLS,
     PredictMethod,
-    PredictionKeys,
     TrainingMetaKeys,
     PredictionMetaKeys
 )
@@ -128,7 +123,7 @@ class ARMAModel(ModelTemplate):
         self.regressor_col = None
         self.regessor_matrix = None
         self.num_of_regressors = 0
-        if (regressor_col is not None):
+        if regressor_col is not None:
             self.num_of_regressors = len(regressor_col)
             self.regressor_col = regressor_col
             self.regessor_matrix = None
@@ -171,12 +166,6 @@ class ARMAModel(ModelTemplate):
             self._model_param_names += [
                 LMSamplingParameters.LM_BETA.value]
 
-    def set_init_values(self):
-        """Optional; set init as a callable (for Stan ONLY)
-        See: https://pystan.readthedocs.io/en/latest/api.htm
-        """
-        pass
-
     def predict(self, posterior_estimates, df, training_meta, prediction_meta, include_error=False, **kwargs):
         # this is currently only going to use the mu
         """Vectorized version of prediction math"""
@@ -184,8 +173,8 @@ class ARMAModel(ModelTemplate):
         # Prediction Attributes
         ################################################################
         n_forecast_steps = prediction_meta[PredictionMetaKeys.FUTURE_STEPS.value]
-        start = prediction_meta[
-            PredictionMetaKeys.START_INDEX.value]  # this might need to always be the start of the data
+        # this might need to always be the start of the data
+        start = prediction_meta[PredictionMetaKeys.START_INDEX.value]
         trained_len = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         output_len = prediction_meta[PredictionMetaKeys.PREDICTION_DF_LEN.value]
         full_len = trained_len + n_forecast_steps
@@ -204,7 +193,7 @@ class ARMAModel(ModelTemplate):
         arbitrary_posterior_value = list(model.values())[0]
         num_sample = arbitrary_posterior_value.shape[0]
 
-        # mu serries mean / trend 
+        # mu series mean / trend
         regressor_mu = model.get(MUSamplingParameters.SIGNAL_MU.value)
         # auto regressor
         regressor_rho = model.get(ARSamplingParameters.AR_RHO.value)
@@ -217,6 +206,7 @@ class ARMAModel(ModelTemplate):
         # mu Component; i.e., the trend 
         # this always happens; i.e., yhat = mu is the simplest possible model
         ################################################################
+        # TODO: can't we just do torch.ones ?
         regressor_matrix = np.ones(full_len)
 
         regressor_mu = regressor_mu.unsqueeze(0)
@@ -243,9 +233,9 @@ class ARMAModel(ModelTemplate):
             pred_lm = torch.zeros((num_sample, output_len), dtype=torch.double)
 
         ################################################################
-        # ARMA stuff 
-        # resid is y - beta X
-        # error is y - beta X - ar - ma (total error)
+        # ARMA terms definition:
+        # resid: y - beta X
+        # error: y - beta X - ar - ma (total error)
         ################################################################
         # this is the prediction so far 
         # there is S (number of MCMC samples) by N (Number of predictions that are made )
