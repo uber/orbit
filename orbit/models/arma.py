@@ -8,8 +8,6 @@ from ..constants.constants import EstimatorsKeys
 
 
 def ARMA(response_col,
-        num_of_ar_lags = 0,
-        num_of_ma_lags = 0,
         ar_lags = [],
         ma_lags = [],
         regressor_col=None,
@@ -35,8 +33,8 @@ def ARMA(response_col,
         regressor_col=regressor_col,
         lm_first = lm_first,
         
-        num_of_ar_lags = num_of_ar_lags,
-        num_of_ma_lags = num_of_ma_lags,
+        num_of_ar_lags = len(ar_lags),
+        num_of_ma_lags = len(ma_lags),
         ar_lags = ar_lags,
         ma_lags = ma_lags,
         response_col= response_col,
