@@ -628,22 +628,33 @@ class KTRModel(ModelTemplate):
         training_end = training_meta[TrainingMetaKeys.END.value]
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
+        date_array_dedup = date_array.unique()
+        num_of_steps = len(date_array_dedup)
         prediction_start = prediction_date_array[0]
         output_len = len(prediction_date_array)
-        if prediction_start > training_end:
-            start = num_of_observations
-        else:
-            start = pd.Index(date_array).get_loc(prediction_start)
 
-        new_tp = np.arange(start + 1, start + output_len + 1) / num_of_observations
+        start_date = date_array_dedup[0]
+        time_delta = np.mean(np.diff(date_array_dedup))
+        new_tp_idx = np.round((prediction_date_array - start_date) / time_delta).astype(int)
+        new_tp_idx = np.array(new_tp_idx)
+        new_tp = (1 + new_tp_idx) / num_of_steps
+
         return new_tp
 
     def _generate_insample_tp(self, training_meta, date_array):
         """Used in _generate_seas"""
-        train_date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
+        training_end = training_meta[TrainingMetaKeys.END.value]
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
-        idx = np.nonzero(np.in1d(train_date_array, date_array))[0]
-        tp = (idx + 1) / num_of_observations
+        date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
+        date_array_dedup = date_array.unique()
+        num_of_steps = len(date_array_dedup)
+
+        start_date = date_array_dedup[0]
+        time_delta = np.mean(np.diff(date_array_dedup))
+        tp_idx = np.round((date_array - start_date) / time_delta).astype(int)
+        tp_idx = np.array(tp_idx)
+        tp = (1 + tp_idx) / num_of_steps
+
         return tp
 
     # def _generate_coefs(self, training_meta, prediction_date_array, coef_knot_dates, coef_knot):
@@ -732,6 +743,8 @@ class KTRModel(ModelTemplate):
         date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
+        date_array_dedup = date_array.unique()
+        num_of_steps = len(date_array_dedup)
 
         # use ktrlite to derive levs and seas
         ktrlite = KTRLite(
@@ -770,7 +783,17 @@ class KTRModel(ModelTemplate):
         # this part is to extract level and seasonality result from KTRLite
         self._level_knots = np.squeeze(ktrlite_pt_posteriors['map']['lev_knot'])
         self._level_knot_dates = ktrlite._model._level_knot_dates
-        tp = np.arange(1, num_of_observations + 1) / num_of_observations
+
+        # FIXME: this is just proof-of-concept
+        # FIXME: it should be calculated by some utilities function
+        start_date = date_array[0]
+        time_delta = np.mean(np.diff(date_array_dedup))
+
+        tp_idx = np.round((date_array - start_date) / time_delta).astype(int)
+        # enforce a tp_idx; somehow this can be just a pd series
+        tp_idx = np.array(tp_idx)
+        tp = (1 + tp_idx) / (1 + np.max(tp_idx))
+
         # # trim level knots dates when they are beyond training dates
         # lev_knot_dates = list()
         # lev_knots = list()
@@ -783,12 +806,12 @@ class KTRModel(ModelTemplate):
 
         self._level_knots_idx = get_knot_idx(
             date_array=date_array,
-            num_of_obs=None,
+            num_of_steps=None,
             knot_dates=self._level_knot_dates,
             knot_distance=None,
             num_of_segments=None,
         )
-        self.knots_tp_level = (1 + self._level_knots_idx) / num_of_observations
+        self.knots_tp_level = (1 + self._level_knots_idx) / (1 + np.max(tp_idx))
         self._kernel_level = sandwich_kernel(tp, self.knots_tp_level)
         self._num_knots_level = len(self._level_knot_dates)
 
@@ -900,21 +923,29 @@ class KTRModel(ModelTemplate):
         # Prediction Attributes
         ################################################################
         output_len = prediction_meta[PredictionMetaKeys.PREDICTION_DF_LEN.value]
-        prediction_start = prediction_meta[PredictionMetaKeys.START.value]
-        date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
+        prediction_date_array = prediction_meta[PredictionMetaKeys.DATE_ARRAY.value]
+        train_date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
+        train_date_array_dedup = train_date_array.unique()
+        num_of_steps = len(train_date_array_dedup)
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         training_end = training_meta[TrainingMetaKeys.END.value]
+
+        time_delta = np.mean(np.diff(train_date_array_dedup))
+        train_start = train_date_array_dedup[0]
 
         # Here assume dates are ordered and consecutive
         # if prediction_meta[PredictionMetaKeys.START.value] > self.training_end,
         # assume prediction starts right after train end
-        if prediction_start > training_end:
-            # time index for prediction start
-            start = num_of_observations
-        else:
-            start = pd.Index(date_array).get_loc(prediction_start)
+        # if prediction_start > training_end:
+        #     # time index for prediction start
+        #     start = num_of_observations
+        # else:
+        #     start = pd.Index(date_array).get_loc(prediction_start)
 
-        new_tp = np.arange(start + 1, start + output_len + 1) / num_of_observations
+        new_tp_idx = np.round((prediction_date_array - train_start) / time_delta).astype(int)
+        new_tp_idx = np.array(new_tp_idx)
+        new_tp = (1 + new_tp_idx) / num_of_steps
+
         if include_error:
             # in-sample knots
             lev_knot_in = model.get(BaseSamplingParameters.LEVEL_KNOT.value)
@@ -1037,9 +1068,14 @@ class KTRModel(ModelTemplate):
             date_array = pd.to_datetime(date_array).values
             output_len = len(date_array)
             train_len = num_of_observations
+            train_date_array_dedup = train_date_array.unique()
+            num_of_steps = len(train_date_array_dedup)
+            time_delta = np.mean(np.diff(train_date_array_dedup))
+            train_start = train_date_array_dedup[0]
+
             # some validation of date array
-            if not is_ordered_datetime(date_array):
-                raise IllegalArgument('Datetime index must be ordered and not repeat')
+            # if not is_ordered_datetime(date_array):
+            #     raise IllegalArgument('Datetime index must be ordered and not repeat')
             prediction_start = date_array[0]
 
             if prediction_start < training_start:
@@ -1057,7 +1093,9 @@ class KTRModel(ModelTemplate):
                     coef_repeats = [0] * start + [1] * output_len + [0] * (train_len - start - output_len)
                 else:
                     coef_repeats = [0] * start + [1] * (train_len - start - 1) + [output_len - train_len + start + 1]
-            new_tp = np.arange(start + 1, start + output_len + 1) / num_of_observations
+            new_tp_idx = np.round((date_array - train_start) / time_delta).astype(int)
+            new_tp_idx = np.array(new_tp_idx)
+            new_tp = (1 + new_tp_idx) / num_of_steps
 
             if coefficient_method == 'smooth':
                 kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.regression_rho)

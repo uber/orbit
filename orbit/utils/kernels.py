@@ -66,7 +66,7 @@ def sandwich_kernel(x, x_i):
     x : array-like
         points required to compute kernel weight
     x_i : array-like
-        reference points location used to compute correspondent distance of each entry points
+        reference points (knots) location used to compute correspondent distance of each entry points
 
     Returns
     -------
@@ -85,7 +85,7 @@ def sandwich_kernel(x, x_i):
     M = len(x_i)
     k = np.zeros((N, M), dtype=np.double)
 
-    np_idx = np.where(x < x_i[0])
+    np_idx = np.where(x < x_i[0])[0]
     k[np_idx, 0] = 1
 
     for m in range(M - 1):

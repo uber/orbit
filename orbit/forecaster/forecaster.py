@@ -244,8 +244,8 @@ class Forecaster(object):
 
         # validate ordering of time series
         date_array = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
-        if not is_ordered_datetime(date_array):
-            raise ForecasterException('Datetime index must be ordered and not repeat')
+        # if not is_ordered_datetime(date_array):
+        #     raise ForecasterException('Datetime index must be ordered and not repeat')
 
         if not is_even_gap_datetime(date_array):
             warnings.warn('Datetime index is not evenly distributed')
@@ -281,8 +281,8 @@ class Forecaster(object):
             PredictionMetaKeys.END.value: df[self.date_col].iloc[-1],
         }
 
-        if not is_ordered_datetime(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]):
-            raise ForecasterException('Datetime index must be ordered and not repeat')
+        # if not is_ordered_datetime(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]):
+        #     raise ForecasterException('Datetime index must be ordered and not repeat')
 
         if not is_even_gap_datetime(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]):
             warnings.warn('Datetime index is not evenly distributed')

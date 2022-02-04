@@ -32,7 +32,8 @@ def get_dates_delta(start_date, end_date, time_delta):
     ----
     start_date : numpy datetime
     end_date : numpy datetime array
-    time_delta : time delta between dates
+    time_delta : numpy.timedelta
+        time delta between dates
     """
     date_diff = end_date - start_date
     # can also be deemed as the "knot_idx"
@@ -43,7 +44,7 @@ def get_dates_delta(start_date, end_date, time_delta):
 
 def get_knot_idx_by_dist(num_of_obs, knot_distance):
     """function to calculate the knot idx based on num_of_obs and knot_distance."""
-    # starts with the the ending point
+    # starts with the ending point
     # use negative values or simply append 0 to the sequence?
     knot_idx = np.sort(np.arange(num_of_obs - 1, -1, -knot_distance))
     knot_idx = np.round(knot_idx).astype('int')
@@ -55,7 +56,7 @@ def get_knot_idx_by_dist(num_of_obs, knot_distance):
 
 
 def get_knot_idx(
-        num_of_obs=None,
+        num_of_steps=None,
         num_of_segments=None,
         knot_distance=None,
         date_array=None,
@@ -74,8 +75,8 @@ def get_knot_idx(
 
     Parameters
     ----------
-    num_of_obs : int
-        number of observations to derive segments and knots; will be ignored if knot_dates is not None
+    num_of_steps : int
+        number of steps to derive segments and knots; will be ignored if knot_dates is not None
     num_of_segments : int
         number of segments, which will be used to calculate the knot distance
     knot_distance : int
@@ -90,21 +91,23 @@ def get_knot_idx(
     an array of integers, which are the knot location indices (starts at 0).
 
     """
-    if knot_dates is None and num_of_obs is None:
-        raise IllegalArgument('Either knot_dates or num_of_obs needs to be provided.')
+    if knot_dates is None and num_of_steps is None:
+        raise IllegalArgument('Either knot_dates or num_of_steps needs to be provided.')
 
     if knot_dates is not None:
         if date_array is None:
             raise IllegalArgument('When knot_dates are supplied, users need to supply date_array as well.')
         knot_dates = np.array(knot_dates, dtype='datetime64')
 
-        # filter out
+        # excluding knots where the date does not fit within the data date range
         _knot_dates = pd.to_datetime([
             x for x in knot_dates if
             (x <= date_array.max()) and (x >= date_array.min())
         ])
 
-        time_delta = date_array.diff().mean()
+        # suppose deduping is done outside
+        # date_array_dedup = date_array.unique()
+        time_delta = np.mean(np.diff(date_array))
 
         knot_idx = get_dates_delta(
             start_date=date_array[0],
@@ -115,12 +118,13 @@ def get_knot_idx(
     elif knot_distance is not None:
         if not isinstance(knot_distance, int):
             raise Exception("knot_distance must be an int.")
-        knot_idx = get_knot_idx_by_dist(num_of_obs, knot_distance)
+        # FIXME: now num_of_obs is confusing; should change it to num_of_steps
+        knot_idx = get_knot_idx_by_dist(num_of_obs=num_of_steps, knot_distance=knot_distance)
 
     elif num_of_segments is not None:
         if num_of_segments >= 1:
-            knot_distance = (num_of_obs - 1) / num_of_segments
-            knot_idx = get_knot_idx_by_dist(num_of_obs, knot_distance)
+            knot_distance = (num_of_steps - 1) / num_of_segments
+            knot_idx = get_knot_idx_by_dist(num_of_obs=num_of_steps, knot_distance=knot_distance)
         else:
             # one single knot at the beginning
             knot_idx = np.array([0])
