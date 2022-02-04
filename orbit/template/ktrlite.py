@@ -321,7 +321,7 @@ class KTRLiteModel(ModelTemplate):
         tp_idx = np.round((date_array - start_date) / time_delta).astype(int)
         # enforce a tp_idx; somehow this can be just a pd series
         tp_idx = np.array(tp_idx)
-        tp = (1 + tp_idx) / (1 + np.max(tp_idx))
+        tp = (1 + tp_idx) / (1 + num_of_steps)
 
         self._level_knots_idx = get_knot_idx(
             date_array=date_array_dedup,
@@ -344,7 +344,7 @@ class KTRLiteModel(ModelTemplate):
                 num_of_segments=self.seasonality_segments,
             )
 
-        self.knots_tp_level = (1 + self._level_knots_idx) / (1 + np.max(tp_idx))
+        self.knots_tp_level = (1 + self._level_knots_idx) / (1 + num_of_steps)
         self.kernel_level = sandwich_kernel(tp, self.knots_tp_level)
         self.num_knots_level = len(self.knots_tp_level)
         if self.date_freq is None:
@@ -354,7 +354,7 @@ class KTRLiteModel(ModelTemplate):
 
         # update rest of the seasonality related fields
         if self.num_of_regressors > 0:
-            self.knots_tp_coefficients = (1 + self._seas_knots_idx) / (1 + np.max(tp_idx))
+            self.knots_tp_coefficients = (1 + self._seas_knots_idx) / (1 + num_of_steps)
             self.kernel_coefficients = sandwich_kernel(tp, self.knots_tp_coefficients)
             self.num_knots_coefficients = len(self.knots_tp_coefficients)
             self._coef_knot_dates = get_knot_dates(date_array[0], self._seas_knots_idx, self.date_freq)

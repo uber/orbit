@@ -484,6 +484,10 @@ class KTRModel(ModelTemplate):
         """Derive knots position and kernel matrix and other related meta data"""
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
+        date_array_dedup = date_array.unique()
+        num_of_steps = len(date_array_dedup)
+        start_date = date_array_dedup[0]
+        time_delta = np.mean(np.diff(date_array_dedup))
         # date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
 
         # placeholder
@@ -499,8 +503,9 @@ class KTRModel(ModelTemplate):
                 num_of_segments=self.regression_segments,
             )
 
-            tp = np.arange(1, num_of_observations + 1) / num_of_observations
-            self._knots_tp_coefficients = (1 + self._regression_knots_idx) / num_of_observations
+            tp_idx = np.round((date_array - start_date) / time_delta).astype(int)
+            tp = (1 + tp_idx) / num_of_steps
+            self._knots_tp_coefficients = (1 + self._regression_knots_idx) / num_of_steps
             self._kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.regression_rho)
             self._num_knots_coefficients = len(self._knots_tp_coefficients)
             if self.date_freq is None:
