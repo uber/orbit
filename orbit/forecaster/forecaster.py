@@ -162,6 +162,10 @@ class Forecaster(object):
         response = df[self.response_col].values
         training_meta[TrainingMetaKeys.RESPONSE.value] = response
         training_meta[TrainingMetaKeys.DATE_ARRAY.value] = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
+        training_meta[TrainingMetaKeys.DATE_UNIQUE_ARRAY.value] = \
+            training_meta[TrainingMetaKeys.DATE_ARRAY.value].unique()
+        training_meta[TrainingMetaKeys.NUM_OF_STEPS.value] = \
+            len(training_meta[TrainingMetaKeys.DATE_UNIQUE_ARRAY.value])
         training_meta[TrainingMetaKeys.NUM_OF_OBS.value] = len(response)
         training_meta[TrainingMetaKeys.RESPONSE_SD.value] = np.nanstd(response)
         training_meta[TrainingMetaKeys.START.value] = df[self.date_col].iloc[0]
@@ -244,6 +248,13 @@ class Forecaster(object):
 
         # validate ordering of time series
         date_array = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
+        num_of_obs = len(date_array)
+        date_array = date_array.unique()
+        num_of_steps = len(date_array)
+
+        if num_of_obs != num_of_steps:
+            warnings.warn("Multiple observations found in single datetime stamp.")
+
         if not is_ordered_datetime(date_array):
             raise ForecasterException('Datetime index must be ordered and not repeat')
 
@@ -281,7 +292,15 @@ class Forecaster(object):
             PredictionMetaKeys.END.value: df[self.date_col].iloc[-1],
         }
 
-        if not is_ordered_datetime(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]):
+        pred_date_array = prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]
+        num_of_obs = len(pred_date_array)
+        pred_date_array = pred_date_array.unique()
+        num_of_steps = len(pred_date_array)
+
+        if num_of_obs != num_of_steps:
+            warnings.warn("Multiple observations found in single datetime stamp.")
+
+        if not is_ordered_datetime(pred_date_array):
             raise ForecasterException('Datetime index must be ordered and not repeat')
 
         if not is_even_gap_datetime(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]):
@@ -300,7 +319,7 @@ class Forecaster(object):
             forecast_dates = set(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value])
             n_forecast_steps = len(forecast_dates)
             # time index for prediction start
-            start = trained_len
+            start_idx = trained_len
         else:
             # compute how many steps to forecast
             forecast_dates = \
@@ -312,13 +331,14 @@ class Forecaster(object):
                 len(set(self._training_meta[TrainingMetaKeys.DATE_ARRAY.value]) -
                     set(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]))
             )
+            # FIXME: this won't work when you have multiple observations in the series
             # time index for prediction start
-            start = pd.Index(
+            start_idx = pd.Index(
                 self._training_meta[TrainingMetaKeys.DATE_ARRAY.value]).get_loc(
                 prediction_meta[PredictionMetaKeys.START.value])
 
         prediction_meta.update({
-            PredictionMetaKeys.START_INDEX.value: start,
+            PredictionMetaKeys.START_INDEX.value: start_idx,
             PredictionMetaKeys.FUTURE_STEPS.value: n_forecast_steps,
         })
 

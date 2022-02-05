@@ -1,9 +1,7 @@
 import numpy as np
 import pandas as pd
 from copy import deepcopy
-import torch
 from enum import Enum
-import math
 from scipy.stats import nct
 import matplotlib.pyplot as plt
 
@@ -19,7 +17,7 @@ from ..estimators.stan_estimator import StanEstimatorMAP
 from ..utils.kernels import sandwich_kernel
 from ..utils.features import make_fourier_series_df
 from orbit.constants.palette import OrbitPalette
-from ..utils.knots import get_knot_idx, get_knot_dates
+from ..utils.knots import get_knot_idx, get_idx_from_dates, get_dates_from_idx
 from ..utils.plot import orbit_style_decorator
 
 
@@ -308,45 +306,54 @@ class KTRLiteModel(ModelTemplate):
         df : pd.DataFrame
         training_meta : dict
         """
-        num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
+        num_of_steps = training_meta[TrainingMetaKeys.NUM_OF_STEPS.value]
+        num_of_obs = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
+        date_uni_array = training_meta[TrainingMetaKeys.DATE_UNIQUE_ARRAY.value]
+        train_start = training_meta[TrainingMetaKeys.START.value]
 
         self._level_knots_idx = get_knot_idx(
-            num_of_obs=num_of_observations,
+            num_of_steps=num_of_steps,
             knot_distance=self.level_knot_distance,
             num_of_segments=self.level_segments,
-            date_array=date_array,
+            date_array=date_uni_array,
             knot_dates=self.level_knot_dates,
         )
         # kernel of coefficients calculations
         # set some default
-        self.kernel_coefficients = np.zeros((num_of_observations, 0), dtype=np.double)
+        self.kernel_coefficients = np.zeros((num_of_obs, 0), dtype=np.double)
         self.num_knots_coefficients = 0
 
         if self.num_of_regressors > 0:
+            # not supporting seasonal knot date yet
             self._seas_knots_idx = get_knot_idx(
                 date_array=None,
-                num_of_obs=num_of_observations,
+                num_of_steps=num_of_steps,
                 knot_dates=None,
                 knot_distance=None,
                 num_of_segments=self.seasonality_segments,
             )
 
-        tp = np.arange(1, num_of_observations + 1) / num_of_observations
-        self.knots_tp_level = (1 + self._level_knots_idx) / num_of_observations
+        tp_idx = get_idx_from_dates(
+            start_date=train_start,
+            date_array=date_array
+        )
+        tp = (1 + tp_idx) / num_of_steps
+
+        self.knots_tp_level = (1 + self._level_knots_idx) / num_of_steps
         self.kernel_level = sandwich_kernel(tp, self.knots_tp_level)
         self.num_knots_level = len(self.knots_tp_level)
         if self.date_freq is None:
             self.date_freq = pd.infer_freq(date_array)
-            # self.time_delta = date_array.diff().min()
-        self._level_knot_dates = get_knot_dates(date_array[0], self._level_knots_idx, self.date_freq)
+
+        self._level_knot_dates = get_dates_from_idx(train_start, self._level_knots_idx, self.date_freq)
 
         # update rest of the seasonality related fields
         if self.num_of_regressors > 0:
-            self.knots_tp_coefficients = (1 + self._seas_knots_idx) / num_of_observations
+            self.knots_tp_coefficients = (1 + self._seas_knots_idx) / num_of_steps
             self.kernel_coefficients = sandwich_kernel(tp, self.knots_tp_coefficients)
             self.num_knots_coefficients = len(self.knots_tp_coefficients)
-            self._coef_knot_dates = get_knot_dates(date_array[0], self._seas_knots_idx, self.date_freq)
+            self._coef_knot_dates = get_dates_from_idx(train_start, self._seas_knots_idx, self.date_freq)
 
     def set_dynamic_attributes(self, df, training_meta):
         """Overriding the parent class to customize pre-processing in fitting process"""
@@ -369,9 +376,15 @@ class KTRLiteModel(ModelTemplate):
         ################################################################
         # Prediction Attributes
         ################################################################
-        start = prediction_meta[PredictionMetaKeys.START_INDEX.value]
-        trained_len = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
+        pred_start_dt = prediction_meta[PredictionMetaKeys.START.value]
+        train_dt_uni_array = training_meta[TrainingMetaKeys.DATE_UNIQUE_ARRAY.value]
+        pred_dt_array = prediction_meta[PredictionMetaKeys.DATE_ARRAY.value]
+        train_start_dt = training_meta[TrainingMetaKeys.START.value]
+        num_of_steps = training_meta[TrainingMetaKeys.NUM_OF_STEPS.value]
         output_len = prediction_meta[PredictionMetaKeys.PREDICTION_DF_LEN.value]
+        time_delta = np.mean(np.diff(train_dt_uni_array))
+
+        pred_start_idx = np.round((pred_start_dt - train_start_dt) / time_delta).astype(int)
 
         ################################################################
         # Model Attributes
@@ -391,11 +404,15 @@ class KTRLiteModel(ModelTemplate):
         ################################################################
         # Trend Component
         ################################################################
-        new_tp = np.arange(start + 1, start + output_len + 1) / trained_len
+        new_tp_idx = get_idx_from_dates(start_date=train_start_dt, date_array=pred_dt_array)
+        new_tp = (1 + new_tp_idx) / num_of_steps
+
         if include_error:
             # in-sample knots
             lev_knot_in = model.get(BaseSamplingParameters.LEVEL_KNOT.value)
-            # TODO: hacky way; let's just assume last two knot distance is knots distance for all knots
+            # FIXME: hacky way; let's just assume last two knot distance is knots distance for all knots
+            # FIXME: this won't work when there are less one knot
+            # this is measured by idx level
             lev_knot_width = self.knots_tp_level[-1] - self.knots_tp_level[-2]
             # check whether we need to put new knots for simulation
             if new_tp[-1] > 1:
@@ -431,7 +448,9 @@ class KTRLiteModel(ModelTemplate):
         seas_decomp = {}
         # update seasonal regression matrices
         if self._seasonality and self.regressor_col:
-            df = self._make_seasonal_regressors(df, shift=start)
+            # FIXME: this won't work when you have mutli obs in single time stamp
+            # FIXME: need something to make use of the date array instead
+            df = self._make_seasonal_regressors(df, shift=pred_start_idx)
             coef_knot = model.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
             kernel_coefficients = sandwich_kernel(new_tp, self.knots_tp_coefficients)
             coef = np.matmul(coef_knot, kernel_coefficients.transpose(1, 0))

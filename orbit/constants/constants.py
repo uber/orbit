@@ -38,12 +38,15 @@ class TrainingMetaKeys(Enum):
     """
     RESPONSE = 'response'
     DATE_ARRAY = 'date_array'
+    DATE_UNIQUE_ARRAY = 'date_unique_array'
     NUM_OF_OBS = 'num_of_obs'
+    NUM_OF_STEPS = 'num_of_steps'
     RESPONSE_SD = 'response_sd'
     START = 'training_start'
     END = 'training_end'
     RESPONSE_COL = 'response_col'
     DATE_COL = 'date_col'
+    INFER_FREQ = 'infer_freq'
 
 
 class PredictionMetaKeys(Enum):
@@ -51,11 +54,13 @@ class PredictionMetaKeys(Enum):
     prediction input meta data dictionary processed under `Forecaster.predict()`
     """
     DATE_ARRAY = 'date_array'
+    # number of forward steps needed in the forecast region after the end of train period
+    # this is purely based on shape of dataframes; not from calculation of date array distances
     FUTURE_STEPS = 'n_forecast_steps'
     START = 'prediction_start'
     END = 'prediction_end'
     START_INDEX = 'start'
-    PREDICTION_DF_LEN = 'df_length'
+    PREDICTION_DF_LEN = 'prediction_length'
 
 
 class PlotLabels(Enum):

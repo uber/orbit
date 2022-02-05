@@ -22,7 +22,7 @@ from .model_template import ModelTemplate
 from ..estimators.pyro_estimator import PyroEstimatorSVI
 from ..models import KTRLite
 from orbit.constants.palette import OrbitPalette
-from ..utils.knots import get_knot_idx, get_knot_dates
+from ..utils.knots import get_knot_idx, get_idx_from_dates, get_dates_from_idx
 from ..utils.plot import orbit_style_decorator
 
 
@@ -483,8 +483,9 @@ class KTRModel(ModelTemplate):
     def _set_coefficients_kernel_matrix(self, df, training_meta):
         """Derive knots position and kernel matrix and other related meta data"""
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
-        date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
-        # date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
+        train_date_uni_array = training_meta[TrainingMetaKeys.DATE_UNIQUE_ARRAY.value]
+        train_start_dt = training_meta[TrainingMetaKeys.START.value]
+        num_of_steps = training_meta[TrainingMetaKeys.NUM_OF_STEPS.value]
 
         # placeholder
         self._kernel_coefficients = np.zeros((num_of_observations, 0), dtype=np.double)
@@ -492,8 +493,8 @@ class KTRModel(ModelTemplate):
 
         if self._num_of_regressors > 0:
             self._regression_knots_idx = get_knot_idx(
-                date_array=date_array,
-                num_of_obs=num_of_observations,
+                date_array=train_date_uni_array,
+                num_of_steps=num_of_steps,
                 knot_dates=self._regression_knot_dates,
                 knot_distance=self.regression_knot_distance,
                 num_of_segments=self.regression_segments,
@@ -504,9 +505,9 @@ class KTRModel(ModelTemplate):
             self._kernel_coefficients = gauss_kernel(tp, self._knots_tp_coefficients, rho=self.regression_rho)
             self._num_knots_coefficients = len(self._knots_tp_coefficients)
             if self.date_freq is None:
-                self.date_freq = pd.infer_freq(date_array)
+                self.date_freq = pd.infer_freq(train_date_uni_array)
                 # self.date_timedelta = date_array.diff().min()
-            self._regression_knot_dates = get_knot_dates(date_array[0], self._regression_knots_idx, self.date_freq)
+            self._regression_knot_dates = get_dates_from_idx(train_start_dt, self._regression_knots_idx, self.date_freq)
 
     def _set_knots_scale_matrix(self, df, training_meta):
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
