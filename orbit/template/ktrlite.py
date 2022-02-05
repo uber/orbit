@@ -269,7 +269,7 @@ class KTRLiteModel(ModelTemplate):
         self.which_valid_response = np.where(self.is_valid_response)[0]
         self.num_of_valid_response = len(self.which_valid_response)
 
-    def _make_seasonal_regressors(self, df, shift):
+    def _make_seasonal_regressors(self, df, date_col, shift=0):
         """
         df : pd.DataFrame
         shift: int
@@ -282,7 +282,14 @@ class KTRLiteModel(ModelTemplate):
         if len(self._seasonality) > 0:
             for idx, s in enumerate(self._seasonality):
                 order = self._seasonality_fs_order[idx]
-                df, _ = make_fourier_series_df(df, s, order=order, prefix='seas{}_'.format(s), shift=shift)
+                df, _ = make_fourier_series_df(
+                    df=df,
+                    date_col=date_col,
+                    period=s,
+                    order=order,
+                    prefix='seas{}_'.format(s),
+                    shift=shift
+                )
 
         return df
 
@@ -309,14 +316,14 @@ class KTRLiteModel(ModelTemplate):
         num_of_steps = training_meta[TrainingMetaKeys.NUM_OF_STEPS.value]
         num_of_obs = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
-        date_uni_array = training_meta[TrainingMetaKeys.DATE_UNIQUE_ARRAY.value]
-        train_start = training_meta[TrainingMetaKeys.START.value]
+        train_date_uni_array = training_meta[TrainingMetaKeys.DATE_UNIQUE_ARRAY.value]
+        train_start_dt = training_meta[TrainingMetaKeys.START.value]
 
         self._level_knots_idx = get_knot_idx(
             num_of_steps=num_of_steps,
             knot_distance=self.level_knot_distance,
             num_of_segments=self.level_segments,
-            date_array=date_uni_array,
+            date_array=train_date_uni_array,
             knot_dates=self.level_knot_dates,
         )
         # kernel of coefficients calculations
@@ -335,7 +342,7 @@ class KTRLiteModel(ModelTemplate):
             )
 
         tp_idx = get_idx_from_dates(
-            start_date=train_start,
+            start_date=train_start_dt,
             date_array=date_array
         )
         tp = (1 + tp_idx) / num_of_steps
@@ -346,21 +353,21 @@ class KTRLiteModel(ModelTemplate):
         if self.date_freq is None:
             self.date_freq = pd.infer_freq(date_array)
 
-        self._level_knot_dates = get_dates_from_idx(train_start, self._level_knots_idx, self.date_freq)
+        self._level_knot_dates = get_dates_from_idx(train_start_dt, self._level_knots_idx, self.date_freq)
 
         # update rest of the seasonality related fields
         if self.num_of_regressors > 0:
             self.knots_tp_coefficients = (1 + self._seas_knots_idx) / num_of_steps
             self.kernel_coefficients = sandwich_kernel(tp, self.knots_tp_coefficients)
             self.num_knots_coefficients = len(self.knots_tp_coefficients)
-            self._coef_knot_dates = get_dates_from_idx(train_start, self._seas_knots_idx, self.date_freq)
+            self._coef_knot_dates = get_dates_from_idx(train_start_dt, self._seas_knots_idx, self.date_freq)
 
     def set_dynamic_attributes(self, df, training_meta):
         """Overriding the parent class to customize pre-processing in fitting process"""
         # extra settings and validation for KTRLite
         self._set_validate_ktr_params(training_meta)
         # attach fourier series as regressors
-        df = self._make_seasonal_regressors(df, shift=0)
+        df = self._make_seasonal_regressors(df, date_col=training_meta[TrainingMetaKeys.DATE_COL.value], shift=0)
         # set regressors as input matrix and derive kernels
         self._set_regressor_matrix(df, training_meta)
         self._set_kernel_matrix(df, training_meta)
@@ -381,10 +388,7 @@ class KTRLiteModel(ModelTemplate):
         pred_dt_array = prediction_meta[PredictionMetaKeys.DATE_ARRAY.value]
         train_start_dt = training_meta[TrainingMetaKeys.START.value]
         num_of_steps = training_meta[TrainingMetaKeys.NUM_OF_STEPS.value]
-        output_len = prediction_meta[PredictionMetaKeys.PREDICTION_DF_LEN.value]
         time_delta = np.mean(np.diff(train_dt_uni_array))
-
-        pred_start_idx = np.round((pred_start_dt - train_start_dt) / time_delta).astype(int)
 
         ################################################################
         # Model Attributes
@@ -450,7 +454,7 @@ class KTRLiteModel(ModelTemplate):
         if self._seasonality and self.regressor_col:
             # FIXME: this won't work when you have mutli obs in single time stamp
             # FIXME: need something to make use of the date array instead
-            df = self._make_seasonal_regressors(df, shift=pred_start_idx)
+            df = self._make_seasonal_regressors(df=df, date_col=training_meta[TrainingMetaKeys.DATE_COL.value])
             coef_knot = model.get(RegressionSamplingParameters.COEFFICIENTS_KNOT.value)
             kernel_coefficients = sandwich_kernel(new_tp, self.knots_tp_coefficients)
             coef = np.matmul(coef_knot, kernel_coefficients.transpose(1, 0))

@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
 from orbit.exceptions import IllegalArgument
+from datetime import datetime
 
 
-def make_fourier_series(n, period, order=3,  shift=0):
+def make_fourier_series(n, period, order=3, shift=0):
     """ Given time series length, cyclical period and order, return a set of fourier series.
 
     Parameters
@@ -35,7 +36,39 @@ def make_fourier_series(n, period, order=3,  shift=0):
     return out
 
 
-def make_fourier_series_df(df, period, order=3, prefix='', suffix='', shift=0):
+def make_fourier_series_by_date(date_array, period, order=3):
+    """Provides Fourier series components with the specified frequency
+    and order.
+
+    Parameters
+    ----------
+    date_array: pd.Series
+        series / array-like object that contains timestamps
+    period : int
+        Length of a cyclical period. E.g., with daily data, `period = 7` means weekly seasonality.
+    order : int
+        Number of components for each sin() or cos() series.
+
+    Returns
+    -------
+    Matrix with seasonality features.
+    """
+    # convert to days since epoch
+    t = np.array(
+        (date_array - datetime(1970, 1, 1))
+            .dt.total_seconds()
+            .astype(float)
+    ) / (3600 * 24.)
+    out = list()
+    for i in range(1, order + 1):
+        x = 2.0 * i * np.pi * t / period
+        out.append(np.cos(x))
+        out.append(np.sin(x))
+    out = np.column_stack(out)
+    return out
+
+
+def make_fourier_series_df(df, period, date_col=None, order=3, prefix='', suffix='', shift=0):
     """ Given a data-frame, cyclical period and order, return a set of fourier series in a dataframe.
 
     Parameters
@@ -44,6 +77,8 @@ def make_fourier_series_df(df, period, order=3, prefix='', suffix='', shift=0):
         Input dataframe to supply datetime array for generating fourier series
     period : int
         Length of a cyclical period. E.g., with daily data, `period = 7` means weekly seasonality.
+    date_col : str
+        if date_col is not None, use date_array logic to compute fourier series
     order : int
         Number of components for each sin() or cos() series.
     prefix : str
@@ -62,7 +97,10 @@ def make_fourier_series_df(df, period, order=3, prefix='', suffix='', shift=0):
     -----
         This is calling :func:`make_fourier_series`
     """
-    fs = make_fourier_series(df.shape[0], period, order=order, shift=shift)
+    if date_col is None:
+        fs = make_fourier_series(df.shape[0], period, order=order, shift=shift)
+    else:
+        fs = make_fourier_series_by_date(df[date_col], period, order=order)
     fs_cols = []
     for i in range(1, order + 1):
         fs_cols.append('{}fs_cos{}{}'.format(prefix, i, suffix))
