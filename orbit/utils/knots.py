@@ -24,7 +24,7 @@ def get_dates_from_idx(start_date, idx, freq):
     return dates_array
 
 
-def get_idx_from_dates(start_date, date_array):
+def get_idx_from_dates(start_date, date_array, time_delta):
     """return knot index based on date difference normalized with the number of steps by frequency provided
 
     Parameters
@@ -32,15 +32,16 @@ def get_idx_from_dates(start_date, date_array):
     start_date : numpy datetime
         the starting date to anchor the start of indexing
     date_array : numpy datetime array
+    time_delta : np.timedelta
     """
     date_diff = date_array - start_date
-    time_delta = np.mean(np.diff(date_array))
+    # time_delta = np.mean(np.diff(date_array))
     # round-up normalized delta can be deemed as indices converted from an array
-    norm_delta = np.round(date_diff / time_delta).astype(int)
+    date_idx = np.round(date_diff / time_delta).astype(int)
     # to make output consistence
-    norm_delta = np.array(norm_delta)
+    date_idx = np.array(date_idx)
 
-    return norm_delta
+    return date_idx
 
 
 def get_knot_idx_by_dist(num_of_steps, knot_distance):
@@ -60,7 +61,8 @@ def get_knot_idx(
         num_of_segments=None,
         knot_distance=None,
         date_array=None,
-        knot_dates=None
+        knot_dates=None,
+        time_delta=None,
     ):
     """ function to calculate and return the knot locations as indices based on
     This function will be used in KTRLite and KTRX model.
@@ -109,6 +111,7 @@ def get_knot_idx(
         knot_idx = get_idx_from_dates(
             start_date=date_array[0],
             date_array=_knot_dates,
+            time_delta=time_delta,
         )
 
     elif knot_distance is not None:

@@ -161,12 +161,17 @@ class Forecaster(object):
         training_meta = dict()
         response = df[self.response_col].values
         training_meta[TrainingMetaKeys.RESPONSE.value] = response
-        training_meta[TrainingMetaKeys.DATE_ARRAY.value] = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
-        training_meta[TrainingMetaKeys.DATE_UNIQUE_ARRAY.value] = \
-            training_meta[TrainingMetaKeys.DATE_ARRAY.value].unique()
-        training_meta[TrainingMetaKeys.NUM_OF_STEPS.value] = \
-            len(training_meta[TrainingMetaKeys.DATE_UNIQUE_ARRAY.value])
-        training_meta[TrainingMetaKeys.NUM_OF_OBS.value] = len(response)
+
+        date_array = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
+        training_meta[TrainingMetaKeys.DATE_ARRAY.value] = date_array
+        training_meta[TrainingMetaKeys.NUM_OF_OBS.value] = len(date_array)
+
+        date_uni_array = date_array.unique()
+
+        training_meta[TrainingMetaKeys.DATE_UNIQUE_ARRAY.value] = date_uni_array
+        training_meta[TrainingMetaKeys.NUM_OF_STEPS.value] = len(date_uni_array)
+        training_meta[TrainingMetaKeys.TIME_DELTA.value] = np.mean(np.diff(date_uni_array))
+
         training_meta[TrainingMetaKeys.RESPONSE_SD.value] = np.nanstd(response)
         training_meta[TrainingMetaKeys.START.value] = df[self.date_col].iloc[0]
         training_meta[TrainingMetaKeys.END.value] = df[self.date_col].iloc[-1]

@@ -47,6 +47,7 @@ class TrainingMetaKeys(Enum):
     RESPONSE_COL = 'response_col'
     DATE_COL = 'date_col'
     INFER_FREQ = 'infer_freq'
+    TIME_DELTA = 'time_delta'
 
 
 class PredictionMetaKeys(Enum):

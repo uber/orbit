@@ -318,6 +318,7 @@ class KTRLiteModel(ModelTemplate):
         date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
         train_date_uni_array = training_meta[TrainingMetaKeys.DATE_UNIQUE_ARRAY.value]
         train_start_dt = training_meta[TrainingMetaKeys.START.value]
+        time_delta = training_meta[TrainingMetaKeys.TIME_DELTA.value]
 
         self._level_knots_idx = get_knot_idx(
             num_of_steps=num_of_steps,
@@ -339,11 +340,13 @@ class KTRLiteModel(ModelTemplate):
                 knot_dates=None,
                 knot_distance=None,
                 num_of_segments=self.seasonality_segments,
+                time_delta=time_delta,
             )
 
         tp_idx = get_idx_from_dates(
             start_date=train_start_dt,
-            date_array=date_array
+            date_array=date_array,
+            time_delta=time_delta,
         )
         tp = (1 + tp_idx) / num_of_steps
 
@@ -388,7 +391,7 @@ class KTRLiteModel(ModelTemplate):
         pred_dt_array = prediction_meta[PredictionMetaKeys.DATE_ARRAY.value]
         train_start_dt = training_meta[TrainingMetaKeys.START.value]
         num_of_steps = training_meta[TrainingMetaKeys.NUM_OF_STEPS.value]
-        time_delta = np.mean(np.diff(train_dt_uni_array))
+        time_delta = training_meta[TrainingMetaKeys.TIME_DELTA.value]
 
         ################################################################
         # Model Attributes
@@ -408,7 +411,7 @@ class KTRLiteModel(ModelTemplate):
         ################################################################
         # Trend Component
         ################################################################
-        new_tp_idx = get_idx_from_dates(start_date=train_start_dt, date_array=pred_dt_array)
+        new_tp_idx = get_idx_from_dates(start_date=train_start_dt, date_array=pred_dt_array, time_delta=time_delta)
         new_tp = (1 + new_tp_idx) / num_of_steps
 
         if include_error:

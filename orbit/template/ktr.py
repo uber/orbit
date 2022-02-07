@@ -487,6 +487,7 @@ class KTRModel(ModelTemplate):
         date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
         train_date_uni_array = training_meta[TrainingMetaKeys.DATE_UNIQUE_ARRAY.value]
         train_start_dt = training_meta[TrainingMetaKeys.START.value]
+        time_delta = training_meta[TrainingMetaKeys.TIME_DELTA.value]
 
         # placeholder
         self._kernel_coefficients = np.zeros((num_of_obs, 0), dtype=np.double)
@@ -503,7 +504,8 @@ class KTRModel(ModelTemplate):
 
             tp_idx = get_idx_from_dates(
                 start_date=train_start_dt,
-                date_array=date_array
+                date_array=date_array,
+                time_delta=time_delta
             )
             tp = (1 + tp_idx) / num_of_steps
 
@@ -697,6 +699,7 @@ class KTRModel(ModelTemplate):
             training_end = training_meta[TrainingMetaKeys.END.value]
             num_of_obs = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
             num_of_steps = training_meta[TrainingMetaKeys.NUM_OF_STEPS.value]
+            time_delta = training_meta[TrainingMetaKeys.TIME_DELTA.value]
 
             prediction_date_array = df[date_col].values
             # prediction_start = prediction_date_array[0]
@@ -717,10 +720,17 @@ class KTRModel(ModelTemplate):
                 seas_regressors[label] = fs
 
             # new_tp = self._generate_tp(training_meta, prediction_date_array)
-            new_tp_idx = get_idx_from_dates(start_date=training_start, date_array=prediction_date_array)
+            new_tp_idx = get_idx_from_dates(
+                start_date=training_start,
+                date_array=prediction_date_array,
+                time_delta=time_delta)
             new_tp = (1 + new_tp_idx) / num_of_steps
             # knots_tp_coef = self._generate_insample_tp(training_meta, coef_knot_dates)
-            knots_tp_idx_coef = get_idx_from_dates(start_date=training_start, date_array=coef_knot_dates)
+            knots_tp_idx_coef = get_idx_from_dates(
+                start_date=training_start,
+                date_array=coef_knot_dates,
+                time_delta=time_delta,
+            )
             knots_tp_coef = (1 + knots_tp_idx_coef) / num_of_steps
             coef_kernel = sandwich_kernel(new_tp, knots_tp_coef)
 
@@ -747,6 +757,7 @@ class KTRModel(ModelTemplate):
         num_of_steps = training_meta[TrainingMetaKeys.NUM_OF_STEPS.value]
         train_date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
         train_start_dt = training_meta[TrainingMetaKeys.START.value]
+        time_delta = training_meta[TrainingMetaKeys.TIME_DELTA.value]
 
         # use ktrlite to derive levs and seas
         ktrlite = KTRLite(
@@ -806,7 +817,7 @@ class KTRModel(ModelTemplate):
         self._level_knots_idx = ktrlite._model._level_knots_idx
 
         # tp = np.arange(1, num_of_observations + 1) / num_of_observations
-        tp_idx = get_idx_from_dates(start_date=train_start_dt, date_array=train_date_array)
+        tp_idx = get_idx_from_dates(start_date=train_start_dt, date_array=train_date_array, time_delta=time_delta)
         tp = (1 + tp_idx) / num_of_steps
 
         self.knots_tp_level = (1 + self._level_knots_idx) / num_of_steps
@@ -929,9 +940,9 @@ class KTRModel(ModelTemplate):
         train_start_dt = training_meta[TrainingMetaKeys.START.value]
         num_of_steps = training_meta[TrainingMetaKeys.NUM_OF_STEPS.value]
         output_len = prediction_meta[PredictionMetaKeys.PREDICTION_DF_LEN.value]
-        time_delta = np.mean(np.diff(train_dt_uni_array))
+        time_delta = training_meta[TrainingMetaKeys.TIME_DELTA.value]
 
-        new_tp_idx = get_idx_from_dates(start_date=train_start_dt, date_array=pred_dt_array)
+        new_tp_idx = get_idx_from_dates(start_date=train_start_dt, date_array=pred_dt_array, time_delta=time_delta)
         new_tp = (1 + new_tp_idx) / num_of_steps
 
         if include_error:
@@ -1018,10 +1029,9 @@ class KTRModel(ModelTemplate):
             then beta.
             this mainly impacts the aggregated estimation method; full bayesian should not be impacted.
         """
-        num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
+        num_of_steps = training_meta[TrainingMetaKeys.NUM_OF_STEPS.value]
         training_start = training_meta[TrainingMetaKeys.START.value]
-        training_end = training_meta[TrainingMetaKeys.END.value]
-        train_date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
+        time_delta = training_meta[TrainingMetaKeys.TIME_DELTA.value]
 
         if self._num_of_regular_regressors + self._num_of_positive_regressors + self._num_of_negative_regressors == 0:
             return None
@@ -1047,9 +1057,9 @@ class KTRModel(ModelTemplate):
             else:
                 raise IllegalArgument('Wrong coefficient_method:{}'.format(coefficient_method))
         else:
-            date_array = pd.to_datetime(date_array).values
-            output_len = len(date_array)
-            train_len = num_of_observations
+            # date_array = pd.to_datetime(date_array).values
+            # output_len = len(date_array)
+            # train_len = num_of_observations
             # some validation of date array
             # if not is_ordered_datetime(date_array):
             #     raise IllegalArgument('Datetime index must be ordered and not repeat')
@@ -1071,7 +1081,8 @@ class KTRModel(ModelTemplate):
             #     else:
             #         coef_repeats = [0] * start + [1] * (train_len - start - 1) + [output_len - train_len + start + 1]
             # new_tp = np.arange(start + 1, start + output_len + 1) / num_of_observations
-
+            new_tp_idx = get_idx_from_dates(start_date=training_start, date_array=date_array, time_delta=time_delta)
+            new_tp = (1 + new_tp_idx) / num_of_steps
 
             if coefficient_method == 'smooth':
                 kernel_coefficients = gauss_kernel(new_tp, self._knots_tp_coefficients, rho=self.regression_rho)
