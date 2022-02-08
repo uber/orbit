@@ -264,19 +264,24 @@ class ARMAModel(ModelTemplate):
         # Regression Component
         ################################################################
         # calculate regression component
+        pred_lm = torch.zeros((num_sample, full_len), dtype=torch.double)
         if self.regressor_col is not None and self.num_of_regressors > 0:
-            # linear model
-            regressor_beta = model.get(LMSamplingParameters.LM_BETA.value)
+            # exception code 
+            if n_forecast_steps != output_len:
+                raise ValueError("For ARMA with linear predictors the prediction data must follow directly from the training data")
 
-        if self.regressor_col is not None and self.num_of_regressors > 0:
+            # linear model
+            # get the predictions from the training data 
+            pred_lm_train = model.get(LMSamplingParameters.L_HAT.value)
+            pred_lm[:, :trained_len] = pred_lm_train[:, :trained_len]    
+            
+            
+            regressor_beta = model.get(LMSamplingParameters.LM_BETA.value)
             regressor_matrix = df[self.regressor_col].values
             if not np.all(np.isfinite(regressor_matrix)):
                  raise PredictionException("Invalid regressors values. They must be all not missing and finite.")
             regressor_torch = torch.from_numpy(regressor_matrix).double()
-            pred_lm = torch.matmul(regressor_beta, regressor_torch.t())
-        else:
-            # regressor is always dependent with df. hence, no need to make full size
-            pred_lm = torch.zeros((num_sample, output_len), dtype=torch.double)
+            pred_lm[:,trained_len: ] = torch.matmul(regressor_beta, regressor_torch.t())
 
         ################################################################
         # ARMA terms definition:
