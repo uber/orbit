@@ -151,7 +151,7 @@ class ARMAModel(ModelTemplate):
         """Set posteriors keys to extract from sampling/optimization api
         Notes
         -----
-        Overriding :func: `~orbit.models.BaseETS._set_model_param_names`
+        Overriding :func: `~orbit.models.BaseTemplate._set_model_param_names`
         It sets additional required attributes related to trend and regression
         """
         self._model_param_names += [param.value for param in BaseSamplingParameters]
@@ -175,7 +175,6 @@ class ARMAModel(ModelTemplate):
         # Prediction Attributes
         ################################################################
         n_forecast_steps = prediction_meta[PredictionMetaKeys.FUTURE_STEPS.value]
-        # this might need to always be the start of the data
         start = prediction_meta[PredictionMetaKeys.START_INDEX.value]
         trained_len = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         output_len = prediction_meta[PredictionMetaKeys.PREDICTION_DF_LEN.value]
@@ -197,7 +196,7 @@ class ARMAModel(ModelTemplate):
         
         ################################################################
         # intercept
-        # mu Component; i.e., the trend 
+        # mu Component; i.e., the trend / level 
         # this always happens; i.e., yhat = mu is the simplest possible model
         
         # TODO: can't we just do torch.ones ?
@@ -211,10 +210,10 @@ class ARMAModel(ModelTemplate):
         ################################################################
         # random error prediction 
         ################################################################
-        
         # dimension sample x 1
         residual_sigma = model.get(BaseSamplingParameters.RESIDUAL_SIGMA.value).unsqueeze(-1)
 
+        # if this is included in the prediction or not
         if include_error:
             error_value = np.random.normal(
                 loc=0,
