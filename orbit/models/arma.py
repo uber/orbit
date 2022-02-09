@@ -10,17 +10,11 @@ from ..constants.constants import EstimatorsKeys
 def ARMA(response_col,
         ar_lags = [],
         ma_lags = [],
-        regressor_col=None,
-        lm_first=False,
         estimator='stan-mcmc',   
         **kwargs):
     """
     Args
     ----------
-    regressor_col : list
-        Names of regressor columns, if any
-    lm_first : boolean
-        This indicates if the ARMA model is on the residuals of the lm model or estimated concurrently 
     estimator : string; {'stan-mcmc', 'stan-map'}
         default to be 'stan-mcmc'.
 
@@ -34,9 +28,6 @@ def ARMA(response_col,
     _supported_estimators = [EstimatorsKeys.StanMAP.value, EstimatorsKeys.StanMCMC.value]
 
     arma = ARMAModel(
-        regressor_col=regressor_col,
-        lm_first = lm_first,
-        
         num_of_ar_lags = len(ar_lags),
         num_of_ma_lags = len(ma_lags),
         ar_lags = ar_lags,
