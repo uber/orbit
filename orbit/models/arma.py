@@ -27,6 +27,10 @@ def ARMA(response_col,
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator
     """
+    regressor_col
+    if regressor_col is not None:
+        raise IllegalArgument('Orbit ARMA no longer supports linear prediction! Please remove the regressor_col argument.')
+    
     _supported_estimators = [EstimatorsKeys.StanMAP.value, EstimatorsKeys.StanMCMC.value]
 
     arma = ARMAModel(

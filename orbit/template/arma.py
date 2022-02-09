@@ -265,23 +265,22 @@ class ARMAModel(ModelTemplate):
         ################################################################
         # calculate regression component
         pred_lm = torch.zeros((num_sample, full_len), dtype=torch.double)
-        if self.regressor_col is not None and self.num_of_regressors > 0:
-            # exception code 
-            if n_forecast_steps != output_len:
-                raise ValueError("For ARMA with linear predictors the prediction data must follow directly from the training data")
-
-            # linear model
-            # get the predictions from the training data 
-            pred_lm_train = model.get(LMSamplingParameters.L_HAT.value)
-            pred_lm[:, :trained_len] = pred_lm_train[:, :trained_len]    
-            
-            
-            regressor_beta = model.get(LMSamplingParameters.LM_BETA.value)
-            regressor_matrix = df[self.regressor_col].values
-            if not np.all(np.isfinite(regressor_matrix)):
-                 raise PredictionException("Invalid regressors values. They must be all not missing and finite.")
-            regressor_torch = torch.from_numpy(regressor_matrix).double()
-            pred_lm[:,trained_len: ] = torch.matmul(regressor_beta, regressor_torch.t())
+        #if self.regressor_col is not None and self.num_of_regressors > 0:
+        #    # exception code 
+        #    if n_forecast_steps != output_len:
+        #        raise ValueError("For ARMA with linear predictors the prediction data must follow directly from the training data")
+        #    # linear model
+        #    # get the predictions from the training data 
+        #    pred_lm_train = model.get(LMSamplingParameters.L_HAT.value)
+        #    pred_lm[:, :trained_len] = pred_lm_train[:, :trained_len]    
+        #    
+        #    
+        #    regressor_beta = model.get(LMSamplingParameters.LM_BETA.value)
+        #    regressor_matrix = df[self.regressor_col].values
+        #    if not np.all(np.isfinite(regressor_matrix)):
+        #         raise PredictionException("Invalid regressors values. They must be all not missing and finite.")
+        #    regressor_torch = torch.from_numpy(regressor_matrix).double()
+        #    pred_lm[:,trained_len: ] = torch.matmul(regressor_beta, regressor_torch.t())
 
         ################################################################
         # ARMA terms definition:
