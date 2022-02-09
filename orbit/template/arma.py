@@ -21,13 +21,10 @@ class DataInputMapper(Enum):
     mapping from object input to stan file
     """
     # ----------  Regressions ---------- #
-    NUM_OF_REGRESSORS = 'K'
-    REGRESSOR_MATRIX = 'X'
     NUM_OF_AR_LAGS = 'P'
     NUM_OF_MA_LAGS = 'Q'
     AR_LAGS = 'LAG_AR'
     MA_LAGS = 'LAG_MA'
-    LM_FIRST = 'LM_FIRST'
 
 
 class BaseSamplingParameters(Enum):
@@ -45,14 +42,6 @@ class MUSamplingParameters(Enum):
     regression component related parameters in posteriors sampling
     """
     SIGNAL_MU = 'mu'
-
-
-class LMSamplingParameters(Enum):
-    """
-    regression component related parameters in posteriors sampling
-    """
-    LM_BETA = 'beta'
-    L_HAT = 'lhat'
 
 
 class ARSamplingParameters(Enum):
@@ -78,7 +67,6 @@ class LatentSamplingParameters(Enum):
     """
     REGRESSION_AR_COEFFICIENTS = 'ar_rho'
     REGRESSION_MA_COEFFICIENTS = 'ma_theta'
-    REGRESSION_LM_COEFFICIENTS = 'lm_beta'
 
 
 # a callable object for generating initial values in sampling/optimization

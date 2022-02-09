@@ -1,5 +1,3 @@
-# from inspect import signature
-# from ..template.arma import ARMAModel
 from orbit.template.arma import ARMAModel
 from ..forecaster import MAPForecaster, FullBayesianForecaster
 from ..exceptions import IllegalArgument
@@ -33,7 +31,6 @@ def ARMA(response_col,
         ar_lags = ar_lags,
         ma_lags = ma_lags,
         response_col= response_col,
-        
     )
     if estimator == EstimatorsKeys.StanMAP.value:
         arma_forecaster = MAPForecaster(
