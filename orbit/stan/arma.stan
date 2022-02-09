@@ -14,9 +14,7 @@
  data {
       int<lower=0> P;
       int<lower=0> Q;
-      int<lower=0> K;
       int<lower=0> NUM_OF_OBS;
-      matrix[NUM_OF_OBS, K] X;
       real<lower=0> T_STAR;
       real RESPONSE[NUM_OF_OBS]; 
       // to avoid having to do every lag 
@@ -43,7 +41,6 @@
       real<lower=-1,upper=1> rho[P];
       real<lower=-1,upper=1> theta[Q];
       real<lower=0> obs_sigma;
-      real beta[K];
     }
     
     transformed parameters {
@@ -51,20 +48,17 @@
         vector[N] log_prob; // log prob of each observation
         vector[N] err;   // error for time t for the MA model
         vector[N] resid; // the residual of the linear model
-        vector[N] lhat;  // the prediction of the linear model
+        vector[N] level_hat;  // the prediction of the linear model
         vector[N] arhat; // the prediction of the AR model 
         vector[N] mahat; // the prediction of the MA  
         for (i in 1:N) {
             // initialize all the contributions 
             arhat[i] = 0; 
             mahat[i] = 0; 
-            lhat[i] = mu; // add the constant
-            for (k in 1:K) { // additional regressors 
-              lhat[i] += beta[k]*X[i,k];
-              }
+            level_hat[i] = mu; // add the constant
             // lm_first = 1 means resid = y - X beta
             // lm_first = 0 means resid = y
-            resid[i] = y[i] - LM_FIRST*lhat[i]; // get the residuals from the linear model
+            resid[i] = y[i] - LM_FIRST*level_hat[i]; // get the residuals from the linear model
             
             for (p in 1:P) {  // add in the ar terms 
               if ( i > LAG_AR[p] ) {
@@ -80,9 +74,9 @@
             
             // lm_first = 1 means error = 0 - ar - ma (1-lm_first = 0)
             // lm_first = 0 means resid = y - yhat = y - lm - ar - ma (1-lm_first = 1)
-            err[i] = (1-LM_FIRST)*y[i] - (1-LM_FIRST)*lhat[i] - arhat[i] - mahat[i]; // get the error 
+            err[i] = (1-LM_FIRST)*y[i] - (1-LM_FIRST)*level_hat[i] - arhat[i] - mahat[i]; // get the error 
             
-            yhat[i] = lhat[i] + arhat[i] + mahat[i]; // the full prediction
+            yhat[i] = level_hat[i] + arhat[i] + mahat[i]; // the full prediction
 
             log_prob[i] = normal_lpdf(y[i]|yhat[i], obs_sigma); // the log probs 
             }
