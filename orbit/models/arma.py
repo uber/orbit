@@ -18,7 +18,10 @@ def ARMA(response_col,
     ----------
     estimator : string; {'stan-mcmc', 'stan-map'}
         default to be 'stan-mcmc'.
-
+    ar_lags : int; this is a list of the lags used in the ar model. 
+        Note that these do not need to be a full list; e.g., it could be [1,7, 365] and does not need to be 1 to 365!
+    ma_lags : int; this is a list of the lags used in the ma model. 
+        Note that these do not need to be a full list; e.g., it could be [1,7, 365] and does not need to be 1 to 365!    
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator
     """
@@ -26,7 +29,7 @@ def ARMA(response_col,
 
     arma = ARMAModel(
         response_col=response_col,
-        lm_first=level_first,
+        level_first=level_first,
         num_of_ar_lags=len(ar_lags),
         num_of_ma_lags=len(ma_lags),
         ar_lags=ar_lags,

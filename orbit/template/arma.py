@@ -24,7 +24,7 @@ class DataInputMapper(Enum):
     NUM_OF_MA_LAGS = 'Q'
     AR_LAGS = 'LAG_AR'
     MA_LAGS = 'LAG_MA'
-    LM_FIRST = 'LM_FIRST'
+    LEVEL_FIRST = 'LEVEL_FIRST'
 
 
 class BaseSamplingParameters(Enum):
@@ -65,8 +65,8 @@ class LatentSamplingParameters(Enum):
     """
     latent variables to be sampled
     """
-    REGRESSION_AR_COEFFICIENTS = 'ar_rho'
-    REGRESSION_MA_COEFFICIENTS = 'ma_theta'
+    AR_COEFFICIENTS = 'ar_rho'
+    MA_COEFFICIENTS = 'ma_theta'
 
 
 # a callable object for generating initial values in sampling/optimization
@@ -81,11 +81,11 @@ class ARMAInitializer(object):
         if self.num_of_ar_lags > 0:
             init_ar = np.clip(np.random.normal(loc=0, scale=1.0 / self.num_of_ar_lags, size=self.num_of_ar_lags), -1.0,
                               1.0)
-            init_values[LatentSamplingParameters.REGRESSION_AR_COEFFICIENTS.value] = init_ar
+            init_values[LatentSamplingParameters.AR_COEFFICIENTS.value] = init_ar
         if self.num_of_ma_lags > 0:
             init_ma = np.clip(np.random.normal(loc=0, scale=1.0 / self.num_of_ma_lags, size=self.num_of_ma_lags), -1.0,
                               1.0)
-            init_values[LatentSamplingParameters.REGRESSION_MA_COEFFICIENTS.value] = init_ma
+            init_values[LatentSamplingParameters.MA_COEFFICIENTS.value] = init_ma
 
         return init_values
 
@@ -102,7 +102,7 @@ class ARMAModel(ModelTemplate):
     # _fitter = None # not sure what this is
     _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC]
 
-    def __init__(self, ar_lags, ma_lags, num_of_ma_lags, num_of_ar_lags,  response_col, **kwargs):
+    def __init__(self, ar_lags, ma_lags, num_of_ma_lags, num_of_ar_lags,  response_col, level_first, **kwargs):
         # set by ._set_init_values
         # this is ONLY used by stan which by default used 'random'
         super().__init__(**kwargs)
@@ -118,6 +118,7 @@ class ARMAModel(ModelTemplate):
         self.num_of_ma_lags = num_of_ma_lags
         self.ar_lags = np.array(ar_lags).astype(np.int64)
         self.ma_lags = np.array(ma_lags).astype(np.int64)
+        self.level_first = level_first
         self._set_model_param_names()
         
         self.num_of_regressors = 0
@@ -128,6 +129,8 @@ class ARMAModel(ModelTemplate):
         -----
         Overriding :func: `~orbit.models.BaseTemplate._set_model_param_names`
         """
+        print("_set_model_param_names")
+        print(self.level_first)
         self._model_param_names += [param.value for param in BaseSamplingParameters]
 
         # append ar if any
@@ -199,7 +202,8 @@ class ARMAModel(ModelTemplate):
             obs = torch.zeros((1, full_len), dtype=torch.double)
             obs[0, :trained_len] = torch.from_numpy(training_meta[TrainingMetaKeys.RESPONSE.value][:trained_len])
             # expand dimension to fit sample size dimension into first dimension
-            obs = torch.tile(obs, (num_sample, full_len))
+            obs = torch.tile(obs, (num_sample,1))
+            print(obs.shape)
         ################################################################        
         
         ################################################################
@@ -236,7 +240,7 @@ class ARMAModel(ModelTemplate):
         # this is the prediction so far 
         # dimension sample by N (Number of predictions that are made )
 
-        if self.lm_first:  # r = y - beta X
+        if self.level_first:  # r = y - beta X
             reduced_obs = obs - pred_mu
         else:  # r = y
             reduced_obs = obs
@@ -267,7 +271,7 @@ class ARMAModel(ModelTemplate):
                 reduced_obs[:, idx] += error_value[:, idx]
             # update the ma error if applicable   
             if self.num_of_ma_lags > 0:
-                if self.lm_first:
+                if self.level_first:
                     ma_error[:, idx] = reduced_obs[:, idx] - pred_ar[:, idx] - pred_ma[:, idx]
                 else:
                     ma_error[:, idx] = reduced_obs[:, idx] - pred_mu[:, idx] - pred_ar[:, idx] - pred_ma[:, idx]

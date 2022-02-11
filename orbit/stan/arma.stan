@@ -20,8 +20,8 @@
       // to avoid having to do every lag 
       int LAG_AR[P]; 
       int LAG_MA[Q];
-      // Do you want to do the LM first; i.e., use the residuals for the ARMA or run ARMA on y directly?
-      int LM_FIRST; 
+      // Do you want to remove the mu first; i.e., use the residuals for the ARMA or run ARMA on y directly?
+      int LEVEL_FIRST; 
 
     }
     
@@ -56,9 +56,9 @@
             arhat[i] = 0; 
             mahat[i] = 0; 
             level_hat[i] = mu; // add the constant
-            // lm_first = 1 means resid = y - X beta
-            // lm_first = 0 means resid = y
-            resid[i] = y[i] - LM_FIRST*level_hat[i]; // get the residuals from the linear model
+            // level_first = 1 means resid = y - X beta
+            // level_first = 0 means resid = y
+            resid[i] = y[i] - LEVEL_FIRST*level_hat[i]; // get the residuals from the linear model
             
             for (p in 1:P) {  // add in the ar terms 
               if ( i > LAG_AR[p] ) {
@@ -72,9 +72,9 @@
               }
             // 
             
-            // lm_first = 1 means error = 0 - ar - ma (1-lm_first = 0)
-            // lm_first = 0 means resid = y - yhat = y - lm - ar - ma (1-lm_first = 1)
-            err[i] = (1-LM_FIRST)*y[i] - (1-LM_FIRST)*level_hat[i] - arhat[i] - mahat[i]; // get the error 
+            // level_first = 1 means error = 0 - ar - ma (1-lm_first = 0)
+            // level_first = 0 means resid = y - yhat = y - lm - ar - ma (1-lm_first = 1)
+            err[i] = (1-LEVEL_FIRST)*y[i] - (1-LEVEL_FIRST)*level_hat[i] - arhat[i] - mahat[i]; // get the error 
             
             yhat[i] = level_hat[i] + arhat[i] + mahat[i]; // the full prediction
 
