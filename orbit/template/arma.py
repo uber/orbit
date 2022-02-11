@@ -48,7 +48,7 @@ class ARSamplingParameters(Enum):
     """
     regression component related parameters in posteriors sampling
     """
-    AR_RHO = 'rho'
+    AR_COEF = 'rho'
     AR_HAT = 'arhat'
 
 
@@ -56,7 +56,7 @@ class MASamplingParameters(Enum):
     """
     regression component related parameters in posteriors sampling
     """
-    MA_THETA = 'theta'
+    MA_COEF = 'theta'
     MA_HAT = 'mahat'
     MA_ERROR = 'err'
 
@@ -129,8 +129,6 @@ class ARMAModel(ModelTemplate):
         -----
         Overriding :func: `~orbit.models.BaseTemplate._set_model_param_names`
         """
-        print("_set_model_param_names")
-        print(self.level_first)
         self._model_param_names += [param.value for param in BaseSamplingParameters]
 
         # append ar if any
@@ -212,7 +210,7 @@ class ARMAModel(ModelTemplate):
         # ar terms coef
         pred_ar = torch.zeros((num_sample, full_len), dtype=torch.double) # this is always 
         if self.num_of_ar_lags > 0:
-            regressor_rho = model.get(ARSamplingParameters.AR_RHO.value)
+            ar_coef = model.get(ARSamplingParameters.AR_COEF.value)
             # output may not consume the full length, but it is cleaner to align every term with full length
             pred_ar_train = model.get(ARSamplingParameters.AR_HAT.value)
             pred_ar[:, :trained_len] = pred_ar_train[:, :trained_len]
@@ -223,7 +221,7 @@ class ARMAModel(ModelTemplate):
         # ma terms coef
         pred_ma = torch.zeros((num_sample, full_len), dtype=torch.double)
         if self.num_of_ma_lags > 0:
-            regressor_theta = model.get(MASamplingParameters.MA_THETA.value)
+            ma_coef = model.get(MASamplingParameters.MA_COEF.value)
             # ma error
             ma_error_train = model.get(MASamplingParameters.MA_ERROR.value)
             ma_error = torch.zeros((num_sample, full_len), dtype=torch.double)
@@ -259,11 +257,11 @@ class ARMAModel(ModelTemplate):
             if self.num_of_ar_lags > 0:  # ar process
                 for p in range(self.num_of_ar_lags):
                     if self.ar_lags[p] < idx:
-                        pred_ar[:, idx] = pred_ar[:, idx] + regressor_rho[:, p] * reduced_obs[:, idx - self.ar_lags[p]]
+                        pred_ar[:, idx] = pred_ar[:, idx] + ar_coef[:, p] * reduced_obs[:, idx - self.ar_lags[p]]
             if self.num_of_ma_lags > 0:  # ma process
                 for q in range(self.num_of_ma_lags):
                     if self.ma_lags[q] < idx:
-                        pred_ma[:, idx] = pred_ma[:, idx] + regressor_theta[:, q] * ma_error[:, idx - self.ma_lags[q]]
+                        pred_ma[:, idx] = pred_ma[:, idx] + ma_coef[:, q] * ma_error[:, idx - self.ma_lags[q]]
 
             # update step 
             reduced_obs[:, idx] = pred_mu[:, idx] + pred_ar[:, idx] + pred_ma[:, idx]
