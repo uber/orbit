@@ -86,7 +86,7 @@ class ARMAInitializer(object):
             init_ma = np.clip(np.random.normal(loc=0, scale=1.0 / self.num_of_ma_lags, size=self.num_of_ma_lags), -1.0,
                               1.0)
             init_values[LatentSamplingParameters.REGRESSION_MA_COEFFICIENTS.value] = init_ma
-        
+
         return init_values
 
 
