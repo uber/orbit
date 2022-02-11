@@ -44,7 +44,6 @@ class MUSamplingParameters(Enum):
     SIGNAL_MU = 'mu'
 
 
-
 class ARSamplingParameters(Enum):
     """
     regression component related parameters in posteriors sampling
@@ -88,7 +87,6 @@ class ARMAInitializer(object):
                               1.0)
             init_values[LatentSamplingParameters.REGRESSION_MA_COEFFICIENTS.value] = init_ma
         
-
         return init_values
 
 
@@ -110,38 +108,28 @@ class ARMAModel(ModelTemplate):
         super().__init__(**kwargs)
         self._init_values = None
 
-
         # set by _set_model_param_names()
         self._rho = list()  # AR
         self._theta = list()  # MA
         self._mu = list()  # mean
-        
 
         # the arma stuff 
         self.num_of_ar_lags = num_of_ar_lags
         self.num_of_ma_lags = num_of_ma_lags
         self.ar_lags = np.array(ar_lags).astype(np.int64)
         self.ma_lags = np.array(ma_lags).astype(np.int64)
-        self.lm_first = 0
         self._set_model_param_names()
         
         self.num_of_regressors = 0
 
     def _set_model_param_names(self):
-
-        # these lines can be dropped 
-        #self.num_of_regressors = 0
-        #self.regressor_matrix = []
-        
         """Set posteriors keys to extract from sampling/optimization api
         Notes
         -----
         Overriding :func: `~orbit.models.BaseTemplate._set_model_param_names`
-        It sets additional required attributes related to trend and regression
         """
         self._model_param_names += [param.value for param in BaseSamplingParameters]
 
-       
         # append ar if any
         if self.num_of_ar_lags > 0:
             self._model_param_names += [param.value for param in ARSamplingParameters]
@@ -149,9 +137,6 @@ class ARMAModel(ModelTemplate):
         # append ma if any
         if self.num_of_ma_lags > 0:
             self._model_param_names += [param.value for param in MASamplingParameters]
-            
-
-
 
     def predict(self, posterior_estimates, df, training_meta, prediction_meta, include_error=False, **kwargs):
         # this is currently only going to use the mu
@@ -206,10 +191,9 @@ class ARMAModel(ModelTemplate):
                 size=pred_mu.shape)
         else:
             error_value = torch.zeros_like(pred_mu)
-        
-        
+
         ################################################################
-        # the obsservations 
+        # the observations
         # this block is need if there is either an AR or MA term 
         if (self.num_of_ar_lags > 0) | (self.num_of_ma_lags > 0):
             obs = torch.zeros((1, full_len), dtype=torch.double)
@@ -243,8 +227,6 @@ class ARMAModel(ModelTemplate):
             # output may not consume the full length, but it is cleaner to align every term with full length
             pred_ma_train = model.get(MASamplingParameters.MA_HAT.value)
             pred_ma[:, :trained_len] = pred_ma_train[:, :trained_len]
-
-
 
         ################################################################
         # ARMA terms definition:
@@ -319,40 +301,9 @@ class ARMAModel(ModelTemplate):
 
         return out
 
-    def get_regression_coefs(self, training_meta, point_method, point_posteriors, posterior_samples,
-                             include_ci=False, lower=0.05, upper=0.95):
-        print("----------------------")
-        print("----------------------")
-        print("-get_regression_coefs-")
-        print("----------------------")
-        print("----------------------")
-
-        """Return DataFrame regression coefficients.
-          If point_method is None when fitting, return the median of coefficients.
-
-        Parameters
-        -----------
-        include_ci : bool
-            if including the confidence intervals for the regression coefficients
-        lower : float between (0, 1). default to be 0.05
-            lower bound for the CI
-        upper : float between (0, 1). default to be 0.95.
-            upper bound for the CI
-
-        Returns
-        -------
-        pandas data frame holding the regression coefficients
-        """
-        # init dataframe
-        coef_df = pd.DataFrame()
-
-        return coef_df
-
-
     def set_dynamic_attributes(self, df, training_meta):
         """Overriding: func: `~orbit.models.BaseETS._set_dynamic_attributes"""
         super().set_dynamic_attributes(df, training_meta)
-
 
     def set_init_values(self):
         """Override function from Base Template
