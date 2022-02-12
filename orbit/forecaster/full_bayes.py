@@ -28,7 +28,6 @@ class FullBayesianForecaster(Forecaster):
         return data_input
 
     def fit(self, df, point_method=None, keep_samples=True, sampling_temperature=1.0):
-        
         super().fit(df,  sampling_temperature=sampling_temperature)
         self._point_method = point_method
 
