@@ -201,7 +201,6 @@ class ARMAModel(ModelTemplate):
             obs[0, :trained_len] = torch.from_numpy(training_meta[TrainingMetaKeys.RESPONSE.value][:trained_len])
             # expand dimension to fit sample size dimension into first dimension
             obs = torch.tile(obs, (num_sample,1))
-            print(obs.shape)
         ################################################################        
         
         ################################################################
