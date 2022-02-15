@@ -21,7 +21,8 @@ def ARMA(response_col,
     ar_lags : int; this is a list of the lags used in the ar model. 
         Note that these do not need to be a full list; e.g., it could be [1,7, 365] and does not need to be 1 to 365!
     ma_lags : int; this is a list of the lags used in the ma model. 
-        Note that these do not need to be a full list; e.g., it could be [1,7, 365] and does not need to be 1 to 365!    
+        Note that these do not need to be a full list; e.g., it could be [1,7, 365] and does not need to be 1 to 365!
+    level_first: int; 1 or 0 to indicate if the mean should be removed from the signal before ARMA.    
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator
     """
