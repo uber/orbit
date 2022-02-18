@@ -221,6 +221,13 @@ class StanEstimatorMAP(StanEstimator):
         # filter out unnecessary keys
         posteriors = {param: stan_extract[param] for param in model_param_names}
         training_metrics = dict()
+        
+        # extract `log_prob` in addition to defined model params
+        # this is for the BIC calculation 
+        log_p = stan_extract['log_prob']
+        training_metrics = {'log_probability': log_p}
+        training_metrics.update({'log_posterior': sum(log_p)})
+        training_metrics.update({'number_parameters' : len(model_param_names)})
 
         return posteriors, training_metrics
 
