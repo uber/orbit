@@ -3,7 +3,6 @@ import torch
 
 import pyro
 import pyro.distributions as dist
-from orbit.utils.at_temp_dist import StudentTAT
 
 # FIXME: this is sort of dangerous; consider better implementation later
 torch.set_default_tensor_type('torch.DoubleTensor')
