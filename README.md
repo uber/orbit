@@ -4,8 +4,9 @@
   &emsp; | &emsp;
   <a href="https://orbit-ml.readthedocs.io/en/stable/">Documentation</a>
   &emsp; | &emsp;
-  <a href="https://eng.uber.com/orbit/">Blog</a>
-  &emsp;
+  <a href="https://eng.uber.com/orbit/">Blog - Intro</a>
+  &emsp; | &emsp;
+  <a href="https://eng.uber.com/the-new-version-of-orbit-v1-1-is-released/">Blog - v1.1</a>
 </p>
 
 ![Orbit banner](https://raw.githubusercontent.com/uber/orbit/dev/docs/img/orbit-banner.png)
