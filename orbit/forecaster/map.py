@@ -114,3 +114,12 @@ class MAPForecaster(Forecaster):
                         self.get_point_posteriors(),
                         self.get_posterior_samples()
                     ))
+
+    def get_bic_value(self):
+        # This function calculates the BIC given for a model that was fit with MAP
+        training_metrics = self.get_training_metrics()
+        log_likelihood = training_metrics[ 'log_posterior']
+        n = len(training_metrics['log_probability'])
+        k = training_metrics['number_parameters']
+        return  -2.0*log_likelihood + k*np.log(n)
+        
