@@ -211,7 +211,6 @@ class Model:
 
         pyro.sample("response",
                     dist.StudentT(dof, yhat[..., which_valid], obs_scale).to_event(1),
-                    #StudentTAT(dof, yhat[..., which_valid], obs_scale, t_star = 100.0).to_event(1),
                     obs=response_tran[which_valid])
 
         lev_knot = lev_knot_tran + meany
