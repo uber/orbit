@@ -33,6 +33,8 @@ class DataInputMapper(Enum):
     _SLOPE_SM_INPUT = 'SLP_SM_INPUT'
     # ---------- Global Trend ---------- #
     _GLOBAL_TREND_OPTION = 'GLOBAL_TREND_OPTION'
+    GLOBAL_CAP = 'G_CAP'
+    GLOBAL_FLOOR = 'G_FLOOR'
     _TIME_DELTA = 'TIME_DELTA'
     # ---------- Damped Trend ---------- #
     DAMPED_FACTOR = 'DAMPED_FACTOR'
@@ -194,7 +196,9 @@ class DLTModel(ETSModel):
                  regressor_beta_prior=None, regressor_sigma_prior=None,
                  regression_penalty='fixed_ridge', lasso_scale=0.5, auto_ridge_scale=0.5,
                  slope_sm_input=None,
-                 period=1, damped_factor=0.8, global_trend_option='linear', **kwargs):
+                 period=1, damped_factor=0.8,
+                 global_trend_option='linear', global_cap=1.0, global_floor=0.0,
+                 **kwargs):
 
         self.damped_factor = damped_factor
         self.global_trend_option = global_trend_option
@@ -220,6 +224,8 @@ class DLTModel(ETSModel):
 
         self._global_trend_option = None
         self._time_delta = 1
+        self.global_cap = global_cap
+        self.global_floor = global_floor
 
         # _regressor_sign stores final values after internal process of regressor_sign
         # similar to other values start with prefix _
@@ -278,6 +284,11 @@ class DLTModel(ETSModel):
         if self.global_trend_option not in ['flat', 'linear', 'loglinear', 'logistic']:
             raise IllegalArgument("{} is not one of 'flat', 'linear', 'loglinear', or 'logistic'".
                                   format(self.global_trend_option))
+        if self.global_trend_option == 'logistic':
+            if self.global_cap <= self.global_floor:
+                raise IllegalArgument(
+                    "In logistic global trend option, global cap{:.5f} must be greater than global floor{:.5f}.".format(
+                        self.global_cap, self.global_floor))
 
     def _validate_regression_penalties(self):
         if self.regression_penalty not in ['fixed_ridge', 'lasso', 'auto_ridge']:
@@ -393,11 +404,13 @@ class DLTModel(ETSModel):
 
         # append regressors if any
         if self.num_of_regressors > 0:
-            self._model_param_names += [
-                RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value]
+            self._model_param_names += [RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value]
 
         if self._global_trend_option != GlobalTrendOption.flat.value:
             self._model_param_names += [param.value for param in GlobalTrendSamplingParameters]
+        else:
+            self._model_param_names += [GlobalTrendSamplingParameters.GLOBAL_TREND_LEVEL.value]
+            self._model_param_names += [GlobalTrendSamplingParameters.GLOBAL_TREND.value]
 
     def _validate_training_df_with_regression(self, df):
         df_columns = df.columns
@@ -405,7 +418,7 @@ class DLTModel(ETSModel):
         if self.regressor_col is not None and \
                 not set(self.regressor_col).issubset(df_columns):
             raise ModelException(
-                "DataFrame does not contain specified regressor colummn(s)."
+                "DataFrame does not contain specified regressor column(s)."
             )
 
     def _set_regressor_matrix(self, df, num_of_observations):
@@ -504,9 +517,9 @@ class DLTModel(ETSModel):
                 num_sample, )
             global_trend = model.get(GlobalTrendSamplingParameters.GLOBAL_TREND.value)
         else:
-            global_trend = torch.zeros(local_trend.shape, dtype=torch.double)
-            global_trend_level = torch.zeros(local_trend.shape, dtype=torch.double)
-            global_trend_slope = torch.zeros(local_trend.shape, dtype=torch.double)
+            global_trend_level = model.get(GlobalTrendSamplingParameters.GLOBAL_TREND_LEVEL.value).view(
+                num_sample, )
+            global_trend = model.get(GlobalTrendSamplingParameters.GLOBAL_TREND.value)
 
         # regression components
         regressor_beta = model.get(RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
@@ -605,12 +618,14 @@ class DLTModel(ETSModel):
                         global_trend_level + global_trend_slope * idx * self._time_delta
                 elif self.global_trend_option == GlobalTrendOption.loglinear.name:
                     full_global_trend[:, idx] = \
-                        global_trend_level + torch.log(1 + global_trend_slope * idx * self._time_delta)
+                        global_trend_level + global_trend_slope * np.log(1 + idx * self._time_delta)
                 elif self.global_trend_option == GlobalTrendOption.logistic.name:
                     full_global_trend[:, idx] = \
-                        global_trend_level / (1 + torch.exp(-1 * global_trend_slope * idx * self._time_delta))
-                elif self._global_trend_option == GlobalTrendOption.flat.name:
-                    full_global_trend[:, idx] = 0
+                        self.global_floor + (self.global_cap - self.global_floor) / (
+                                1 + torch.exp(-1 * (global_trend_level + global_trend_slope * idx * self._time_delta))
+                        )
+                elif self.global_trend_option == GlobalTrendOption.flat.name:
+                    full_global_trend[:, idx] = global_trend_level
 
                 if include_error:
                     error_value = nct.rvs(

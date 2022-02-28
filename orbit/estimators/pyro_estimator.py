@@ -2,8 +2,6 @@ from abc import abstractmethod
 import numpy as np
 import logging
 
-logger = logging.getLogger('orbit')
-
 import pyro
 from pyro.infer import SVI, Trace_ELBO
 from pyro.infer.autoguide import AutoLowRankMultivariateNormal, AutoDelta
@@ -12,6 +10,8 @@ from pyro.optim import ClippedAdam
 from .base_estimator import BaseEstimator
 from ..exceptions import EstimatorException
 from ..utils.pyro import get_pyro_model
+
+logger = logging.getLogger('orbit')
 
 
 class PyroEstimator(BaseEstimator):
