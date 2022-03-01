@@ -317,7 +317,6 @@ transformed parameters {
         s[t + SEASONALITY] = sea_sm * (yhat[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm) * s_t;
       }
     }
-
   }
 
   if (WITH_MCMC) {
