@@ -9,7 +9,7 @@ STYLE_FILE_NAME = 'plot_style'
 def get_orbit_style():
     path = pkg_resources.resource_filename(
         'orbit',
-        'utils/{}.mplstyle'.format(STYLE_FILE_NAME)
+        'stylelib/{}.mplstyle'.format(STYLE_FILE_NAME)
     )
     return path
 
