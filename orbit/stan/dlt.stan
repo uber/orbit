@@ -111,36 +111,6 @@ transformed data {
   if (SLP_SM_INPUT < 0) SLP_SM_SIZE = 1;
   if (SEA_SM_INPUT < 0) SEA_SM_SIZE = 1 * IS_SEASONAL;
 
-  // if (GLOBAL_TREND_OPTION == 0) {
-  //   // linear
-  //   // GL_LOWER = negative_infinity();
-  //   // GL_UPPER = positive_infinity();
-  //   // GB_LOWER = negative_infinity();
-  //   // GB_UPPER = positive_infinity();
-  //   GL_SIZE = 1;
-  //   GB_SIZE = 1;
-  // } else if (GLOBAL_TREND_OPTION == 1) {
-  //   // log-linear
-  //   // GL_LOWER = 0;
-  //   // GB_LOWER = -1.0 / (NUM_OF_OBS + 10);
-  //   // GB_UPPER = 1.0 / (NUM_OF_OBS + 10);
-  //   // GL_SIZE = 1;
-  //   // GB_SIZE = 1;
-  //   // GL_LOWER = negative_infinity();
-  //   // GL_UPPER = positive_infinity();
-  //   // GB_LOWER = negative_infinity();
-  //   // GB_UPPER = positive_infinity();
-  //   GL_SIZE = 1;
-  //   GB_SIZE = 1;
-  // } else if (GLOBAL_TREND_OPTION == 2) {
-  //   // GL_LOWER = negative_infinity();
-  //   // GL_UPPER = positive_infinity();
-  //   // GB_LOWER = negative_infinity();
-  //   // GB_UPPER = positive_infinity();
-  //   // logistic trend does not fit upper bound anymore
-  //   GL_SIZE = 1;
-  //   GB_SIZE = 1;
-  // }
   if (GLOBAL_TREND_OPTION != 3) {
     GL_SIZE = 1;
     GB_SIZE = 1;
