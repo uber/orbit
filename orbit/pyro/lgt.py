@@ -189,9 +189,16 @@ class Model:
         with pyro.plate("response_plate", num_of_obs - 1):
             pyro.sample("response", dist.StudentT(nu, yhat[..., 1:], obs_sigma),
                         obs=response[1:])
+        
+        log_prob =  dist.StudentT(nu, yhat[..., 1:], obs_sigma).log_prob(response[1:])
+            
 
         # we care beta not the pr_beta, nr_beta, ...
         extra_out['beta'] = torch.cat([pr_beta, nr_beta, rr_beta], dim=-1)
 
-        extra_out.update({'b': b, 'l': l, 's': s, 'lgt_sum': lgt_sum})
+        extra_out.update({'b': b, 
+                          'l': l, 
+                          's': s, 
+                          'lgt_sum': lgt_sum,
+                          'log_prob': log_prob})
         return extra_out
