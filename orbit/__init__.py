@@ -1,3 +1,3 @@
 name = 'orbit'
-__version__ = '1.1.1alpha'
+__version__ = '1.1.1'
 
