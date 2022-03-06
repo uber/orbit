@@ -30,6 +30,9 @@ data {
   int<lower=1> NUM_OF_OBS; // number of observations
   vector[NUM_OF_OBS] RESPONSE;
   int IS_VALID_RES[NUM_OF_OBS];
+  real RESPONSE_MEAN;
+  real<lower=0> RESPONSE_SD;
+
   // Regression Data
   int<lower=0> NUM_OF_RR; // number of regular regressors
   matrix[NUM_OF_OBS, NUM_OF_RR] RR_MAT; // regular coef regressors, more volatile range
@@ -336,11 +339,11 @@ model {
   //   gb[1] ~ normal(0, 1);
   // }
   if (GLOBAL_TREND_OPTION != 3) {
-    gl[1] ~ normal(0, 10);
-    gb[1] ~ normal(0, 1);
+    gl[1] ~ normal(RESPONSE[1], 0.1 * RESPONSE_SD);
+    gb[1] ~ normal(0, 0.1 * RESPONSE_SD / sqrt(NUM_OF_OBS));
   } else {
     // flat global trend
-    gl[1] ~ normal(0, 10);
+    gl[1] ~ normal(RESPONSE_MEAN, RESPONSE_SD);
   }
 
   // regression prior

@@ -164,6 +164,7 @@ class Forecaster(object):
         training_meta[TrainingMetaKeys.DATE_ARRAY.value] = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
         training_meta[TrainingMetaKeys.NUM_OF_OBS.value] = len(response)
         training_meta[TrainingMetaKeys.RESPONSE_SD.value] = np.nanstd(response)
+        training_meta[TrainingMetaKeys.RESPONSE_MEAN.value] = np.nanmean(response)
         training_meta[TrainingMetaKeys.START.value] = df[self.date_col].iloc[0]
         training_meta[TrainingMetaKeys.END.value] = df[self.date_col].iloc[-1]
         training_meta[TrainingMetaKeys.DATE_COL.value] = self.date_col
@@ -199,6 +200,7 @@ class Forecaster(object):
         training_data_input = {
             TrainingMetaKeys.RESPONSE.value.upper(): training_meta[TrainingMetaKeys.RESPONSE.value],
             TrainingMetaKeys.RESPONSE_SD.value.upper(): training_meta[TrainingMetaKeys.RESPONSE_SD.value],
+            TrainingMetaKeys.RESPONSE_MEAN.value.upper(): training_meta[TrainingMetaKeys.RESPONSE_MEAN.value],
             TrainingMetaKeys.NUM_OF_OBS.value.upper(): training_meta[TrainingMetaKeys.NUM_OF_OBS.value],
         }
 
