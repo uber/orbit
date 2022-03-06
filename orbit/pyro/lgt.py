@@ -25,6 +25,9 @@ class Model:
         response = self.response
         num_of_obs = self.num_of_obs
         extra_out = {}
+        
+        # added for tempured sampling 
+        T = self.t_star
 
         # smoothing params
         if self.lev_sm_input < 0:
@@ -187,7 +190,8 @@ class Model:
         yhat = lgt_sum + s[..., :num_of_obs] + r
 
         with pyro.plate("response_plate", num_of_obs - 1):
-            pyro.sample("response", dist.StudentT(nu, yhat[..., 1:], obs_sigma),
+            with pyro.poutine.scale(scale=1.0/T):
+                pyro.sample("response", dist.StudentT(nu, yhat[..., 1:], obs_sigma),
                         obs=response[1:])
         
         log_prob =  dist.StudentT(nu, yhat[..., 1:], obs_sigma).log_prob(response[1:])
