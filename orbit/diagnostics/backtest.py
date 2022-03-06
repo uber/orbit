@@ -120,7 +120,7 @@ class TimeSeriesSplitter(object):
         self.n_splits = len(split_scheme)
 
     def get_scheme(self):
-        return self._split_scheme
+        return deepcopy(self._split_scheme)
 
     def split(self):
         """
@@ -165,7 +165,7 @@ class TimeSeriesSplitter(object):
         return message
 
     @orbit_style_decorator
-    def plot(self, lw=20, fig_width=20):
+    def plot(self, fig_width=20):
         _, ax = plt.subplots(figsize=(fig_width, self.n_splits))
         # visualize the train/test windows for each split
         tr_start = list()
@@ -253,7 +253,7 @@ class BackTester(object):
         self._splitter = self._make_splitter()
 
     def get_splitter(self):
-        return self._splitter
+        return deepcopy(self._splitter)
 
     def _set_n_splits(self):
         split_scheme = self._splitter.get_scheme()
@@ -317,13 +317,17 @@ class BackTester(object):
                 self._predicted_df[BacktestFitKeys.SPLIT_KEY.value].astype('int16')
 
     def get_predicted_df(self):
-        return self._predicted_df
+        return self._predicted_df.copy()
 
     def get_fitted_models(self):
-        return self._fitted_models
+        return deepcopy(self._fitted_models)
 
     def get_scheme(self):
-        return self._splitter_scheme
+        return deepcopy(self._splitter_scheme)
+
+    def plot_scheme(self, **kwargs):
+        """ Plot embedded scheme within the backtester object"""
+        self._splitter.plot(**kwargs)
 
     @staticmethod
     def _get_metric_callable_signature(metric_callable):
@@ -425,4 +429,4 @@ class BackTester(object):
 
             self._score_df = pd.concat((self._score_df, train_score_df), axis=0).reset_index(drop=True)
 
-        return self._score_df
+        return self._score_df.copy()
