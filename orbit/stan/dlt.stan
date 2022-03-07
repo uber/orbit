@@ -338,9 +338,14 @@ model {
   //   gl[1] ~ normal(0, 10);
   //   gb[1] ~ normal(0, 1);
   // }
-  if (GLOBAL_TREND_OPTION != 3) {
+
+  // linear and log-linear
+  if ((GLOBAL_TREND_OPTION == 0 ) || (GLOBAL_TREND_OPTION == 1) {
     gl[1] ~ normal(RESPONSE[1], 0.1 * RESPONSE_SD);
-    gb[1] ~ normal(0, 0.1 * RESPONSE_SD / sqrt(NUM_OF_OBS));
+    gb[1] ~ normal(0, 0.1 * RESPONSE_SD);
+  } else if (GLOBAL_TREND_OPTION == 2) {
+    gl[1] ~ normal(0, 10);
+    gb[1] ~ double_exponential(0, 1);
   } else {
     // flat global trend
     gl[1] ~ normal(RESPONSE_MEAN, RESPONSE_SD);
