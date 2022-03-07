@@ -340,7 +340,7 @@ model {
   // }
 
   // linear and log-linear
-  if ((GLOBAL_TREND_OPTION == 0 ) || (GLOBAL_TREND_OPTION == 1) {
+  if ((GLOBAL_TREND_OPTION == 0 ) || (GLOBAL_TREND_OPTION == 1)) {
     gl[1] ~ normal(RESPONSE[1], 0.1 * RESPONSE_SD);
     gb[1] ~ normal(0, 0.1 * RESPONSE_SD);
   } else if (GLOBAL_TREND_OPTION == 2) {
