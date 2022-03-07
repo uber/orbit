@@ -3,13 +3,13 @@ import functools
 import logging
 from matplotlib import pyplot as plt
 
-STYLE_FILE_NAME = 'plot_style.mplstyle'
+STYLE_FILE_NAME = 'plot_style'
 
 
 def get_orbit_style():
     path = pkg_resources.resource_filename(
         'orbit',
-        STYLE_FILE_NAME
+        'stylelib/{}.mplstyle'.format(STYLE_FILE_NAME)
     )
     return path
 

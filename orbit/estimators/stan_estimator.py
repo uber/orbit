@@ -103,8 +103,8 @@ class StanEstimatorMCMC(StanEstimator):
         data_input.update({'T_STAR': sampling_temperature})
 
         if self.verbose:
-            msg_template = "Sampling(PyStan) with chains:{}, cores:{}, temperature:{}, " \
-                           "warmups(per chain):{} and samples(per chain):{}."
+            msg_template = "Sampling(PyStan) with chains:{:d}, cores:{:d}, temperature:{:.3f}, " \
+                           "warmups(per chain):{:d} and samples(per chain):{:d}."
             msg = msg_template.format(
                 self.chains, self.cores, sampling_temperature,
                 self._num_warmup_per_chain, self._num_sample_per_chain)
@@ -221,6 +221,13 @@ class StanEstimatorMAP(StanEstimator):
         # filter out unnecessary keys
         posteriors = {param: stan_extract[param] for param in model_param_names}
         training_metrics = dict()
+
+        # extract `log_prob` in addition to defined model params
+        # this is for the BIC calculation
+        log_p = stan_extract['log_prob']
+        training_metrics.update({'log_probability': log_p})
+        training_metrics.update({'log_posterior': sum(log_p)})
+        training_metrics.update({'number_parameters' : len(model_param_names)})
 
         return posteriors, training_metrics
 
