@@ -36,7 +36,7 @@ class MAPForecaster(Forecaster):
 
         return self
 
-    def predict(self, df, decompose=False, seed=None, **kwargs):
+    def predict(self, df, decompose=False, store_prediction_array=False, seed=None, **kwargs):
         # raise if model is not fitted
         if not self.is_fitted():
             raise ForecasterException("Model is not fitted yet.")
@@ -76,6 +76,8 @@ class MAPForecaster(Forecaster):
                 include_error=True,
                 **kwargs
             )
+            if store_prediction_array:
+                self.prediction_array = predicted_dict[PredictionKeys.PREDICTION.value]
             percentiles_dict = compute_percentiles(predicted_dict, self._prediction_percentiles)
             # replace mid point prediction by point estimate
             percentiles_dict.update(point_predicted_dict)
