@@ -30,7 +30,6 @@ data {
   int<lower=1> NUM_OF_OBS; // number of observations
   vector[NUM_OF_OBS] RESPONSE;
   int IS_VALID_RES[NUM_OF_OBS];
-  real RESPONSE_MEAN;
   real<lower=0> RESPONSE_SD;
 
   // Regression Data
@@ -65,6 +64,8 @@ data {
   real<lower=0> CAUCHY_SD; // derived by MAX(RESPONSE)/constant
   real<lower=1> MIN_NU; real<lower=1> MAX_NU;
 
+
+
   // Damped Trend Hyper-Params
   real<lower=0,upper=1> DAMPED_FACTOR;
 
@@ -72,6 +73,9 @@ data {
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
   real<lower=0> SEASONALITY_SD;
 
+  // Global Trend Hyper-Params
+  // real GL_PRIOR;
+  // real GB_PRIOR;
   // 0 As linear, 1 As log-linear, 2 As logistic, 3 As flat
   int <lower=0,upper=3> GLOBAL_TREND_OPTION;
   // used in logistic trend
@@ -251,15 +255,25 @@ transformed parameters {
 
   b[1] = 0;
   if (IS_SEASONAL) {
-    l[1] = 0;
-    // degeneracy problem with below logic
-    // l[1] = RESPONSE[1] - gt_sum[1] - s[1] - r[1];
+    // if we want to solve for a global logistic trend
+    // we need to solve the degeneracy problem with by assuming local trend
+    // to be zero at the beginning
+    if (GLOBAL_TREND_OPTION == 2) {
+      l[1] = 0;
+    } else {
+      l[1] = RESPONSE[1] - gt_sum[1] - s[1] - r[1];
+    }
+    lt_sum[1] = l[1];
+    yhat[1] = gt_sum[1] + lt_sum[1] + s[1] + r[1];
   } else {
-    l[1] = 0;
-    // l[1] = RESPONSE[1] - gt_sum[1] - r[1];
+    if (GLOBAL_TREND_OPTION == 2) {
+      l[1] = 0;
+    } else {
+      l[1] = RESPONSE[1] - gt_sum[1] - r[1];
+    }
+    lt_sum[1] = l[1];
+    yhat[1] = gt_sum[1] + lt_sum[1] + r[1];
   }
-  lt_sum[1] = l[1];
-  yhat[1] = RESPONSE[1];
 
   for (t in 2:NUM_OF_OBS) {
     real s_t; // a transformed variable of seasonal component at time t
@@ -341,14 +355,15 @@ model {
 
   // linear and log-linear
   if ((GLOBAL_TREND_OPTION == 0 ) || (GLOBAL_TREND_OPTION == 1)) {
-    gl[1] ~ normal(RESPONSE[1], 0.1 * RESPONSE_SD);
-    gb[1] ~ normal(0, 0.1 * RESPONSE_SD);
+    gl[1] ~ normal(0, RESPONSE_SD);
+    gb[1] ~ normal(0, RESPONSE_SD);
   } else if (GLOBAL_TREND_OPTION == 2) {
+    // make some data-driven prior for logistic curve
     gl[1] ~ normal(0, 10);
     gb[1] ~ double_exponential(0, 1);
   } else {
     // flat global trend
-    gl[1] ~ normal(RESPONSE_MEAN, RESPONSE_SD);
+    gl[1] ~ normal(0, RESPONSE_SD);
   }
 
   // regression prior

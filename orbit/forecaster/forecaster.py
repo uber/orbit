@@ -197,6 +197,7 @@ class Forecaster(object):
 
         # always get standard input from training
         training_meta = self.get_training_meta()
+
         training_data_input = {
             TrainingMetaKeys.RESPONSE.value.upper(): training_meta[TrainingMetaKeys.RESPONSE.value],
             TrainingMetaKeys.RESPONSE_SD.value.upper(): training_meta[TrainingMetaKeys.RESPONSE_SD.value],

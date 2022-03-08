@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import nct
+from statsmodels.api import OLS
 from copy import deepcopy
 import torch
 from enum import Enum
@@ -35,6 +36,8 @@ class DataInputMapper(Enum):
     _GLOBAL_TREND_OPTION = 'GLOBAL_TREND_OPTION'
     GLOBAL_CAP = 'G_CAP'
     GLOBAL_FLOOR = 'G_FLOOR'
+    # GLOBAL_LEVEL_PRIOR = 'GL_PRIOR'
+    # GLOBAL_SLOPE_PRIOR = 'GB_PRIOR'
     _TIME_DELTA = 'TIME_DELTA'
     # ---------- Damped Trend ---------- #
     DAMPED_FACTOR = 'DAMPED_FACTOR'
@@ -226,6 +229,8 @@ class DLTModel(ETSModel):
         self._time_delta = 1
         self.global_cap = global_cap
         self.global_floor = global_floor
+        # self.global_level_prior = None
+        # self.global_slope_prior = None
 
         # _regressor_sign stores final values after internal process of regressor_sign
         # similar to other values start with prefix _
@@ -451,11 +456,36 @@ class DLTModel(ETSModel):
             if not np.all(np.isfinite(self.regular_regressor_matrix)):
                 raise ModelException("Invalid regressors values. They must be all not missing and finite.")
 
+    # def _set_global_trend_priors(self, training_meta):
+    #     if self.global_trend_option != GlobalTrendOption.logistic.value:
+    #         # intercept
+    #         x = np.ones(training_meta[TrainingMetaKeys.NUM_OF_OBS.value]).reshape(-1, 1)
+    #         # add slope if needed
+    #         if self.global_trend_option == GlobalTrendOption.linear.value:
+    #             x1 = (np.arange(training_meta[TrainingMetaKeys.NUM_OF_OBS.value]) * self._time_delta).reshape(-1, 1)
+    #             x = np.concatenate([x, x1], axis=-1)
+    #         if self.global_trend_option == GlobalTrendOption.loglinear.value:
+    #             x1 = (np.arange(training_meta[TrainingMetaKeys.NUM_OF_OBS.value]) * self._time_delta).reshape(-1, 1)
+    #             x1 = np.log1p(x1)
+    #             x = np.concatenate([x, x1], axis=-1)
+    #
+    #         y = training_meta[TrainingMetaKeys.RESPONSE.value]
+    #         model = OLS(y, x)
+    #         results = model.fit()
+    #         self.global_level_prior = results.params[0]
+    #         self.global_slope_prior = 0.0
+    #         if len(results.params) > 1:
+    #             self.global_slope_prior = results.params[1]
+    #     else:
+    #         self.global_level_prior = 0
+    #         self.global_slope_prior = 0
+
     def set_dynamic_attributes(self, df, training_meta):
         """Overriding: func: `~orbit.models.BaseETS._set_dynamic_attributes"""
         super().set_dynamic_attributes(df, training_meta)
         # scalar value is suggested by the author of Rlgt
         self.cauchy_sd = max(np.abs(training_meta[TrainingMetaKeys.RESPONSE.value])) / 30.0
+        # self._set_global_trend_priors(training_meta)
         # extra validation and settings for regression
         self._validate_training_df_with_regression(df)
         # depends on num_of_observations

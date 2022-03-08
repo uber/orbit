@@ -150,8 +150,8 @@ class ETSModel(ModelTemplate):
         self.is_valid_response = (~np.isnan(response)).astype(int)
         # raise exception if the first response value is missing
         if self.is_valid_response[0] == 0:
-            raise DataInputException('The first value of response column {} cannot be missing..'.\
-                format(training_meta[TrainingMetaKeys.RESPONSE_COL.value]))
+            raise DataInputException('The first value of response column {} cannot be missing..'.
+                                     format(training_meta[TrainingMetaKeys.RESPONSE_COL.value]))
 
     def set_init_values(self):
         """Override function from Base Template
