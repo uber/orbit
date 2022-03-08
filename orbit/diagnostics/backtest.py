@@ -280,6 +280,7 @@ class BackTester(object):
             model_copy.fit(train_df)
             train_predictions = model_copy.predict(train_df)
             test_predictions = model_copy.predict(test_df)
+            all_pred_cols = [x for x in train_predictions.columns if x!= date_col]
 
             # set attributes
             self._fitted_models.append(model_copy)
@@ -297,13 +298,13 @@ class BackTester(object):
             train_dates = train_df[date_col].rename(BacktestFitKeys.DATE.value, axis='columns')
             train_response = train_df[response_col].rename(BacktestFitKeys.ACTUAL.value, axis='columns')
             train_values = pd.concat(
-                (train_dates, train_response, train_predictions[BacktestFitKeys.PREDICTED.value]), axis=1)
+                (train_dates, train_response, train_predictions[all_pred_cols]), axis=1)
             train_values[BacktestFitKeys.TRAIN_FLAG.value] = True
             # join test
             test_dates = test_df[date_col].rename(BacktestFitKeys.DATE.value, axis='columns')
             test_response = test_df[response_col].rename(BacktestFitKeys.ACTUAL.value, axis='columns')
             test_values = pd.concat(
-                (test_dates, test_response, test_predictions[BacktestFitKeys.PREDICTED.value]), axis=1)
+                (test_dates, test_response, test_predictions[all_pred_cols]), axis=1)
             test_values[BacktestFitKeys.TRAIN_FLAG.value] = False
             # union train/test
             both_values = pd.concat((train_values, test_values), axis=0)
@@ -341,9 +342,9 @@ class BackTester(object):
             if metric_signature == {BacktestFitKeys.ACTUAL.value, BacktestFitKeys.PREDICTED.value}:
                 continue
             elif metric_signature.issubset({
-                BacktestFitKeys.TEST_ACTUAL.value, 
+                BacktestFitKeys.TEST_ACTUAL.value,
                 BacktestFitKeys.TEST_PREDICTED.value,
-                BacktestFitKeys.TRAIN_ACTUAL.value, 
+                BacktestFitKeys.TRAIN_ACTUAL.value,
                 BacktestFitKeys.TRAIN_PREDICTED.value
             }):
                 continue

@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 from orbit.diagnostics.backtest import TimeSeriesSplitter, BackTester
-from orbit.diagnostics.metrics import smape, wmape, mape, mse, mae, rmsse
+from orbit.diagnostics.metrics import smape, wmape, mae
 from orbit.models import LGT, KTRLite
 
 @pytest.mark.parametrize(
@@ -189,6 +189,8 @@ def test_backtester_with_training_data(iclaims_training_data):
         date_col='week',
         seasonality=1,
         verbose=False,
+        n_bootstrap_draws=100,
+        prediction_percentiles=[10, 90],
         estimator='stan-map'
     )
 
@@ -201,12 +203,16 @@ def test_backtester_with_training_data(iclaims_training_data):
     )
 
     backtester.fit_predict()
+    out = backtester.get_predicted_df()
     eval_out = backtester.score(include_training_metrics=True)
+
+    expected_out_columns = ['date', 'split_key', 'training_data', 'actual',
+                            'prediction', 'prediction_10', 'prediction_90']
+    assert set(out.columns.tolist()) == set(expected_out_columns)
+
     evaluated_test_metrics = set(eval_out.loc[~eval_out['is_training_metric'], 'metric_name'].tolist())
     evaluated_train_metrics = set(eval_out.loc[eval_out['is_training_metric'], 'metric_name'].tolist())
-
     expected_test_metrics = [x.__name__ for x in backtester._default_metrics]
-
     expected_train_metrics = list(filter(
         lambda x: backtester._get_metric_callable_signature(x) == {'actual', 'prediction'}, backtester._default_metrics)
     )
