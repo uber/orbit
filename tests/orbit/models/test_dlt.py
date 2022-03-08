@@ -345,60 +345,79 @@ def test_dlt_map_global_trend(make_weekly_data, global_trend_option):
 
 
 @pytest.mark.parametrize(
+    # true signs
+    # coef=[0.2, 0.1, 0.3, 0.15, -0.2, -0.1]
     "regressor_signs",
     [
-        ['=', '=', '+'],
-        ['=', '=', '-'],
-        ['+', '-', '+'],
-        ['+', '-', '=']
+        ["+", "+", "+", "+", "=", "="],
+        ["=", "=", "=", "=", "-", "-"],
+        ["+", "+", "+", "+", "-", "-"],
+        ["+", "+", "+", "=", "=", "-"]
     ],
     ids=['positive_mixed', 'negative_mixed', 'positive_negative', 'mixed']
 )
-def test_dlt_mixed_signs_and_order(iclaims_training_data, regressor_signs):
-    df = iclaims_training_data
-    df['claims'] = np.log(df['claims'])
-    raw_regressor_col = ['trend.unemploy', 'trend.filling', 'trend.job']
-    new_regressor_col = [raw_regressor_col[idx] for idx in [1, 2, 0]]
-    new_regressor_signs = [regressor_signs[idx] for idx in [1, 2, 0]]
-    # mixiing ordering of cols in df of prediction
-    new_df = df[['claims', 'week'] + new_regressor_col]
+def test_dlt_mixed_signs_and_order(make_weekly_data, regressor_signs):
+    df, _, _ = make_weekly_data
+    raw_regressor_col = ['a', 'b', 'c', 'd', 'e', 'f']
+    new_regressor_col = [raw_regressor_col[idx] for idx in [1, 2, 0, 5, 3, 4]]
+    new_regressor_signs = [regressor_signs[idx] for idx in [1, 2, 0, 5, 3, 4]]
+
+    # mixing ordering of cols in df of prediction
+    new_df = df[['response', 'week'] + new_regressor_col]
 
     dlt = DLT(
-        response_col='claims',
+        response_col='response',
         date_col='week',
         regressor_col=raw_regressor_col,
         regressor_sign=regressor_signs,
         seasonality=52,
         seed=8888,
-        estimator='stan-map'
+        num_warmup=4000,
+        num_sample=4000,
+        estimator='stan-mcmc'
     )
     dlt.fit(df)
-    predicted_df_v1 = dlt.predict(df)
-    predicted_df_v2 = dlt.predict(new_df)
+    coef_df = dlt.get_regression_coefs().set_index('regressor')
+    coefs = coef_df.loc[raw_regressor_col, 'coefficient'].values
+
+    predicted_df_v1 = dlt.predict(df, decompose=True)
+    predicted_df_v2 = dlt.predict(new_df, decompose=True)
 
     # mixing ordering of signs
     dlt_new = DLT(
-        response_col='claims',
+        response_col='response',
         date_col='week',
         regressor_col=new_regressor_col,
         regressor_sign=new_regressor_signs,
         seasonality=52,
         seed=8888,
-        estimator='stan-map'
+        num_warmup=4000,
+        num_sample=500,
+        estimator='stan-mcmc'
     )
     dlt_new.fit(df)
-    predicted_df_v3 = dlt_new.predict(df)
-    predicted_df_v4 = dlt_new.predict(new_df)
+    new_coef_df = dlt_new.get_regression_coefs().set_index('regressor')
+    new_coefs = new_coef_df.loc[raw_regressor_col, 'coefficient'].values
 
-    pred_v1 = predicted_df_v1['prediction'].values
-    pred_v2 = predicted_df_v2['prediction'].values
-    pred_v3 = predicted_df_v3['prediction'].values
-    pred_v4 = predicted_df_v4['prediction'].values
+    # coefficients should be as close as  <= 0.01
+    assert np.allclose(coefs, new_coefs, atol=1e-2)
 
-    # they should be all identical; ordering of signs or columns in prediction show not matter
-    assert np.allclose(pred_v1, pred_v2, atol=1e-2)
-    assert np.allclose(pred_v1, pred_v3, atol=1e-2)
-    assert np.allclose(pred_v1, pred_v4, atol=1e-2)
+    predicted_df_v3 = dlt_new.predict(df, decompose=True)
+    predicted_df_v4 = dlt_new.predict(new_df, decompose=True)
+
+    # relative ratio of regression comp to acutal
+    pred_v1 = predicted_df_v1['regression'].values / df['response'].values
+    pred_v2 = predicted_df_v2['regression'].values / df['response'].values
+    pred_v3 = predicted_df_v3['regression'].values / df['response'].values
+    pred_v4 = predicted_df_v4['regression'].values / df['response'].values
+
+    # they should be all identical; ordering of signs or columns in prediction df should show not material difference
+    # exclude the first one which is used for initialization and hence more unstable
+    # exchange columns in prediction should have minimal variance
+    assert np.allclose(pred_v1[1:], pred_v2[1:], atol=1e-3)
+    assert np.allclose(pred_v3[1:], pred_v4[1:], atol=1e-3)
+    # exchange columns in input of fitting should have less variance
+    assert np.allclose(pred_v1[1:], pred_v3[1:], atol=1e-1)
 
 
 @pytest.mark.parametrize("prediction_percentiles", [None, [5, 10, 95]])

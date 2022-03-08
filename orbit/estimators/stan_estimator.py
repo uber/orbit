@@ -1,17 +1,18 @@
 from abc import abstractmethod
 from copy import copy
 import logging
-logger = logging.getLogger('orbit')
-
 import multiprocessing
 from sys import platform, version_info
-if platform == 'darwin' and version_info[0] == 3 and version_info[1] == 9:
-    # fix issue in Python 3.9
-    multiprocessing.set_start_method("fork", force=True)
+
 from .base_estimator import BaseEstimator
 from ..exceptions import EstimatorException
 from ..utils.stan import get_compiled_stan_model, suppress_stdout_stderr
 from ..utils.general import update_dict
+
+if platform == 'darwin' and version_info[0] == 3 and version_info[1] == 9:
+    # fix issue in Python 3.9
+    multiprocessing.set_start_method("fork", force=True)
+logger = logging.getLogger('orbit')
 
 
 class StanEstimator(BaseEstimator):
@@ -33,6 +34,7 @@ class StanEstimator(BaseEstimator):
         Additional `BaseEstimator` class args
 
     """
+
     def __init__(self, num_warmup=900, num_sample=100, chains=4, cores=8, algorithm=None, **kwargs):
         super().__init__(**kwargs)
         self.num_warmup = num_warmup
@@ -78,6 +80,7 @@ class StanEstimatorMCMC(StanEstimator):
         Supplemental stan mcmc args to pass to PyStan.sampling()
 
     """
+
     def __init__(self, stan_mcmc_control=None, stan_mcmc_args=None, **kwargs):
         super().__init__(**kwargs)
         self.stan_mcmc_control = stan_mcmc_control
@@ -161,6 +164,7 @@ class StanEstimatorMAP(StanEstimator):
         Supplemental stan vi args to pass to PyStan.optimizing()
 
     """
+
     def __init__(self, stan_map_args=None, **kwargs):
         super().__init__(**kwargs)
         self.stan_map_args = stan_map_args
@@ -227,7 +231,6 @@ class StanEstimatorMAP(StanEstimator):
         log_p = stan_extract['log_prob']
         training_metrics.update({'log_probability': log_p})
         training_metrics.update({'log_posterior': sum(log_p)})
-        training_metrics.update({'number_parameters' : len(model_param_names)})
+        training_metrics.update({'number_parameters': len(model_param_names)})
 
         return posteriors, training_metrics
-

@@ -40,6 +40,7 @@ class TrainingMetaKeys(Enum):
     DATE_ARRAY = 'date_array'
     NUM_OF_OBS = 'num_of_obs'
     RESPONSE_SD = 'response_sd'
+    RESPONSE_MEAN = 'response_mean'
     START = 'training_start'
     END = 'training_end'
     RESPONSE_COL = 'response_col'

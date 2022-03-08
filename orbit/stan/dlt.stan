@@ -30,6 +30,8 @@ data {
   int<lower=1> NUM_OF_OBS; // number of observations
   vector[NUM_OF_OBS] RESPONSE;
   int IS_VALID_RES[NUM_OF_OBS];
+  real<lower=0> RESPONSE_SD;
+
   // Regression Data
   int<lower=0> NUM_OF_RR; // number of regular regressors
   matrix[NUM_OF_OBS, NUM_OF_RR] RR_MAT; // regular coef regressors, more volatile range
@@ -58,9 +60,11 @@ data {
   // step size
   real<lower=0> TIME_DELTA;
 
-  // Residuals Tuning Hyper-Params
+  // Residuals Hyper-Params
   real<lower=0> CAUCHY_SD; // derived by MAX(RESPONSE)/constant
   real<lower=1> MIN_NU; real<lower=1> MAX_NU;
+
+
 
   // Damped Trend Hyper-Params
   real<lower=0,upper=1> DAMPED_FACTOR;
@@ -69,14 +73,21 @@ data {
   int SEASONALITY;// 4 for quarterly, 12 for monthly, 52 for weekly
   real<lower=0> SEASONALITY_SD;
 
+  // Global Trend Hyper-Params
+  // real GL_PRIOR;
+  // real GB_PRIOR;
   // 0 As linear, 1 As log-linear, 2 As logistic, 3 As flat
   int <lower=0,upper=3> GLOBAL_TREND_OPTION;
+  // used in logistic trend
+  real G_CAP;
+  real G_FLOOR;
 }
 transformed data {
   int IS_SEASONAL;
   // SIGMA_EPS is a offset to dodge lower boundary case;
   real SIGMA_EPS;
   real GL_LOWER;
+  real GL_UPPER;
   real GB_LOWER;
   real GB_UPPER;
   int GL_SIZE;
@@ -107,24 +118,13 @@ transformed data {
   if (SLP_SM_INPUT < 0) SLP_SM_SIZE = 1;
   if (SEA_SM_INPUT < 0) SEA_SM_SIZE = 1 * IS_SEASONAL;
 
-  if (GLOBAL_TREND_OPTION == 0) {
-      GL_LOWER = negative_infinity();
-      GB_LOWER = negative_infinity();
-      GB_UPPER = positive_infinity();
-      GL_SIZE = 1;
-      GB_SIZE = 1;
-  } else if (GLOBAL_TREND_OPTION == 1) {
-    GL_LOWER = 0;
-    GB_LOWER = -1.0 / (NUM_OF_OBS + 10);
-    GB_UPPER = 1.0 / (NUM_OF_OBS + 10);
+  if (GLOBAL_TREND_OPTION != 3) {
     GL_SIZE = 1;
     GB_SIZE = 1;
-  } else if (GLOBAL_TREND_OPTION == 2) {
-    GL_LOWER = negative_infinity();
-    GB_LOWER = -1;
-    GB_UPPER = 1;
+  } else {
+    // flat trend
     GL_SIZE = 1;
-    GB_SIZE = 1;
+    GB_SIZE = 0;
   }
 
   if (REG_PENALTY_TYPE == 2) USE_VARY_SIGMA = 1;
@@ -157,8 +157,8 @@ parameters {
   real<lower=MIN_NU,upper=MAX_NU> nu;
 
   // global trend parameters
-  real<lower=GL_LOWER> gl[GL_SIZE]; // global level
-  real<lower=GB_LOWER,upper=GB_UPPER> gb[GB_SIZE]; // global slope
+  real gl[GL_SIZE]; // global level
+  real gb[GB_SIZE]; // global slope
 
   // initial seasonality
   vector<lower=-1,upper=1>[IS_SEASONAL ? SEASONALITY - 1:0] init_sea;
@@ -243,30 +243,44 @@ transformed parameters {
     if (GLOBAL_TREND_OPTION == 0) {
       gt_sum[t] = gl[1] + gb[1] * (t - 1) * TIME_DELTA;
     } else if (GLOBAL_TREND_OPTION == 1)  {
-      gt_sum[t] = gl[1] + log(1 + gb[1] * (t - 1) * TIME_DELTA);
+      gt_sum[t] = gl[1] + gb[1] * log(1 + (t - 1) * TIME_DELTA);
     } else if (GLOBAL_TREND_OPTION == 2) {
-      gt_sum[t] = gl[1] / (1 + exp(-1 * gb[1] * (t - 1) * TIME_DELTA));
+      gt_sum[t] = G_FLOOR + (G_CAP - G_FLOOR) / (
+        1 + exp(-1 * (gl[1] +  gb[1] * (t - 1) * TIME_DELTA)));
       // gt_sum[t]  = gl[1] * inv_logit(gb[1] * (t - 1));
     } if (GLOBAL_TREND_OPTION == 3) {
-      gt_sum[t] = 0.0;
+      gt_sum[t] = gl[1];
     }
   }
 
   b[1] = 0;
   if (IS_SEASONAL) {
-    l[1] = RESPONSE[1] - gt_sum[1] - s[1] - r[1];
+    // if we want to solve for a global logistic trend
+    // we need to solve the degeneracy problem with by assuming local trend
+    // to be zero at the beginning
+    if (GLOBAL_TREND_OPTION == 2) {
+      l[1] = 0;
+    } else {
+      l[1] = RESPONSE[1] - gt_sum[1] - s[1] - r[1];
+    }
+    lt_sum[1] = l[1];
+    yhat[1] = gt_sum[1] + lt_sum[1] + s[1] + r[1];
   } else {
-    l[1] = RESPONSE[1] - gt_sum[1] - r[1];
+    if (GLOBAL_TREND_OPTION == 2) {
+      l[1] = 0;
+    } else {
+      l[1] = RESPONSE[1] - gt_sum[1] - r[1];
+    }
+    lt_sum[1] = l[1];
+    yhat[1] = gt_sum[1] + lt_sum[1] + r[1];
   }
-  lt_sum[1] = l[1];
-  yhat[1] = RESPONSE[1];
 
   for (t in 2:NUM_OF_OBS) {
     real s_t; // a transformed variable of seasonal component at time t
     if (IS_SEASONAL) {
       s_t = s[t];
     } else {
-        s_t = 0.0;
+      s_t = 0.0;
     }
     // forecast process
     lt_sum[t] = l[t-1] + DAMPED_FACTOR * b[t-1];
@@ -290,7 +304,6 @@ transformed parameters {
         s[t + SEASONALITY] = sea_sm * (yhat[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm) * s_t;
       }
     }
-
   }
 
   if (WITH_MCMC) {
@@ -320,23 +333,37 @@ model {
     if (IS_VALID_RES[t]) {
         target += t_star_inv * log_prob[t];
     }
-
   }
 
   // prior for seasonality
   for (i in 1:(SEASONALITY - 1))
-    init_sea[i] ~ normal(0, SEASONALITY_SD); // 33% lift is with 1 sd prob.
+    // SEASONALITY_SD controls the amplitude of seasonality
+    init_sea[i] ~ normal(0, SEASONALITY_SD); 
+  // // global trend prior
+  // if (GLOBAL_TREND_OPTION == 0) {
+  //   gl[1] ~ normal(0, 10);
+  //   gb[1] ~ normal(0, 1);
+  // } else if (GLOBAL_TREND_OPTION == 1) {
+  //   gl[1] ~ normal(0, 10);
+  //   gb[1] ~ normal(0, 1);
+  //   // gl[1] ~ lognormal(0, 2.303);
+  //   // gb[1] ~ normal(0, 1)T[-1.0 / (NUM_OF_OBS + 10), ];
+  // } else if (GLOBAL_TREND_OPTION == 2) {
+  //   gl[1] ~ normal(0, 10);
+  //   gb[1] ~ normal(0, 1);
+  // }
 
-  // global trend prior
-  if (GLOBAL_TREND_OPTION == 0) {
-    gl[1] ~ normal(0, 10);
-    gb[1] ~ normal(0, 1);
-  } else if (GLOBAL_TREND_OPTION == 1) {
-    gl[1] ~ lognormal(0, 2.303);
-    gb[1] ~ normal(0, 1)T[-1.0 / (NUM_OF_OBS + 10), ];
+  // linear and log-linear
+  if ((GLOBAL_TREND_OPTION == 0 ) || (GLOBAL_TREND_OPTION == 1)) {
+    gl[1] ~ normal(0, RESPONSE_SD);
+    gb[1] ~ normal(0, RESPONSE_SD);
   } else if (GLOBAL_TREND_OPTION == 2) {
+    // make some data-driven prior for logistic curve
     gl[1] ~ normal(0, 10);
     gb[1] ~ double_exponential(0, 1);
+  } else {
+    // flat global trend
+    gl[1] ~ normal(0, RESPONSE_SD);
   }
 
   // regression prior

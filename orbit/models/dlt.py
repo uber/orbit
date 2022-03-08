@@ -20,6 +20,8 @@ def DLT(seasonality=None,
         period=1,
         damped_factor=0.8,
         global_trend_option='linear',
+        global_cap=1.0,
+        global_floor=0.0,
         estimator='stan-mcmc',
         **kwargs):
     """
@@ -64,8 +66,14 @@ def DLT(seasonality=None,
     damped_factor : float
         Hyperparameter float value between [0, 1]. A smaller value further dampens the previous
         global trend value. Default, 0.8
-    global_trend_option : { 'flat', 'linear', 'loglinear', 'logistic' }
+    global_trend_option : { 'linear', 'loglinear', 'logistic', 'flat'}
         Transformation function for the shape of the forecasted global trend.
+    global_cap : float
+        Maximum value of global logistic trend. Default is set to 1.0. This value is used only when
+        `global_trend_option` = 'logistic'
+    global_floor : float
+        Minimum value of global logistic trend. Default is set to 0.0. This value is used only when
+        `global_trend_option` = 'logistic'
     estimator : string; {'stan-mcmc', 'stan-map'}
         default to be 'stan-mcmc'.
 
@@ -105,6 +113,8 @@ def DLT(seasonality=None,
         period=period,
         damped_factor=damped_factor,
         global_trend_option=global_trend_option,
+        global_cap=global_cap,
+        global_floor=global_floor,
     )
     if estimator == EstimatorsKeys.StanMAP.value:
         dlt_forecaster = MAPForecaster(
