@@ -8,6 +8,8 @@ from ..diagnostics.metrics import smape, wmape, mape, mse, mae, rmsse
 from ..diagnostics.backtest import BackTester
 from collections.abc import Mapping, Iterable
 
+import logging
+logger = logging.getLogger('orbit')
 
 def grid_search_orbit(param_grid, model, df, min_train_len=None,
                       incremental_len=None, forecast_len=None, n_splits=None,
@@ -112,7 +114,7 @@ def grid_search_orbit(param_grid, model, df, min_train_len=None,
 
     for tuned_param_dict in tqdm.tqdm(param_list_dict):
         if verbose:
-            print("tuning hyper-params {}".format(tuned_param_dict))
+            logger.info("tuning hyper-params {}".format(tuned_param_dict))
 
         params_ = params.copy()
         params_tmpl_ = params_tmpl.copy()
@@ -143,7 +145,7 @@ def grid_search_orbit(param_grid, model, df, min_train_len=None,
             metrics = smape
         metric_val = bt.score(metrics=[metrics]).metric_values[0]
         if verbose:
-            print("tuning metric:{:-.5g}".format(metric_val))
+            logger.info("tuning metric:{:-.5g}".format(metric_val))
         metric_values.append(metric_val)
     res['metrics'] = metric_values
     if criteria is None:
