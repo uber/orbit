@@ -48,7 +48,13 @@ class TimeSeriesSplitter(object):
         self.forecast_len = forecast_len
         self.n_splits = n_splits
         self.window_type = window_type
-        self.date_col = date_col
+        self.date_col = None
+        self.dt_array = None
+
+        if date_col is not None:
+            self.date_col = date_col
+            # support cases for multiple observations
+            self.dt_array = pd.to_datetime(np.sort(self.df[self.date_col].unique()))
 
         self._set_defaults()
 
@@ -62,16 +68,21 @@ class TimeSeriesSplitter(object):
         self._set_split_scheme()
 
     def _set_defaults(self):
-        self._df_length = self.df.shape[0]
+        if self.date_col is None:
+            self._full_len = self.df.shape[0]
+        else:
+            self._full_len = len(self.dt_array)
+
         if self.incremental_len is None:
             self.incremental_len = self.forecast_len
+
         # if n_splits is specified, set min_train_len internally
         if self.n_splits:
             # if self.n_splits == 1:
             #     # set incremental_len internally if it's None
             #     # this is just to dodge error and it's not used actually
             self.min_train_len = \
-                self._df_length - self.forecast_len - (self.n_splits - 1) * self.incremental_len
+                self._full_len - self.forecast_len - (self.n_splits - 1) * self.incremental_len
 
     def _validate_params(self):
         if self.min_train_len is None and self.n_splits is None:
@@ -88,7 +99,7 @@ class TimeSeriesSplitter(object):
             raise BacktestException('holdout period length must be positive...')
 
         # train + test length cannot be longer than df length
-        if self.min_train_len + self.forecast_len > self._df_length:
+        if self.min_train_len + self.forecast_len > self._full_len:
             raise BacktestException('required time span is more than the full data frame...')
 
         if self.n_splits is not None and self.n_splits < 1:
@@ -102,7 +113,7 @@ class TimeSeriesSplitter(object):
         """ set meta data of ways to split train and test set
         """
         test_end_min = self.min_train_len - 1
-        test_end_max = self._df_length - self.forecast_len
+        test_end_max = self._full_len - self.forecast_len
         test_seq = range(test_end_min, test_end_max, self.incremental_len)
 
         split_scheme = {}
@@ -114,6 +125,12 @@ class TimeSeriesSplitter(object):
                 train_start_idx, train_end_idx + 1)
             split_scheme[i][TimeSeriesSplitSchemeKeys.TEST_IDX.value] = range(
                 train_end_idx + 1, train_end_idx + self.forecast_len + 1)
+
+            if self.date_col is not None:
+                split_scheme[i]['train_period'] = (
+                    self.dt_array[train_start_idx], self.dt_array[train_end_idx])
+                split_scheme[i]['test_period'] = (
+                    self.dt_array[train_end_idx], self.dt_array[train_end_idx + self.forecast_len])
 
         self._split_scheme = split_scheme
         # enforce n_splits to match scheme in case scheme is determined by min_train_len
@@ -136,14 +153,18 @@ class TimeSeriesSplitter(object):
         split_key : int
              index of the iteration
         """
-        for split_key, scheme in self._split_scheme.items():
-            train_df = self.df.iloc[scheme[TimeSeriesSplitSchemeKeys.TRAIN_IDX.value], :] \
-                .reset_index(drop=True)
-            test_df = self.df.iloc[scheme[TimeSeriesSplitSchemeKeys.TEST_IDX.value], :] \
-                .reset_index(drop=True)
+        if self.date_col is None:
+            for split_key, scheme in self._split_scheme.items():
+                train_df = self.df.iloc[scheme[TimeSeriesSplitSchemeKeys.TRAIN_IDX.value], :] \
+                    .reset_index(drop=True)
+                test_df = self.df.iloc[scheme[TimeSeriesSplitSchemeKeys.TEST_IDX.value], :] \
+                    .reset_index(drop=True)
 
-            yield train_df, test_df, scheme, split_key
+                yield train_df, test_df, scheme, split_key
+        else:
+            pass
 
+    # TODO: adapt to date col if provided
     def __str__(self):
         message = ""
         for idx, scheme in self._split_scheme.items():
