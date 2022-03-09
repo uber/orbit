@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import math
 import os
+import pkg_resources
 
 from ..constants.constants import PredictionKeys
 from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
@@ -16,7 +17,8 @@ from orbit.diagnostics.metrics import smape
 from orbit.utils.plot import orbit_style_decorator
 
 from ..exceptions import PlotException
-
+import logging
+logger = logging.getLogger('orbit')
 
 @orbit_style_decorator
 def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
@@ -321,7 +323,7 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
 @orbit_style_decorator
 def plot_bt_predictions2(bt_pred_df, metrics=smape, split_key_list=None, figsize=None, include_vline=True,
                          title="", fontsize=20, markersize=50, lw=2, fig_dir=None, is_visible=True, fix_xylim=True,
-                         export_gif=False, imageio_args=None):
+                         export_gif=False):
     """ a different style backtest plot compare to `plot_bt_prediction` where it writes separate plot for each split;
     this is also used to produce an animation to summarize every split
     """
@@ -394,13 +396,17 @@ def plot_bt_predictions2(bt_pred_df, metrics=smape, split_key_list=None, figsize
         else:
             plt.close()
 
-    if fig_paths and export_gif:
-        # TODO: provide a message if user did not install imageio
-        import imageio
-        with imageio.get_writer('{}/orbit-backtest.gif'.format(fig_dir), mode='I', **imageio_args) as writer:
-            for fig_path in fig_paths:
-                image = imageio.imread(fig_path)
-                writer.append_data(image)
+    if fig_dir and export_gif:
+        package_name = 'imageio'
+        try:
+            pkg_resources.get_distribution(package_name)
+            import imageio
+            with imageio.get_writer('{}/orbit-backtest.gif'.format(fig_dir), mode='I') as writer:
+                for fig_path in fig_paths:
+                    image = imageio.imread(fig_path)
+                    writer.append_data(image)
+        except pkg_resources.DistributionNotFound:
+            logger.error(('{} not installed, which is necessary for gif animation'.format(package_name)))
 
 
 # TODO: update palatte
