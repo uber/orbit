@@ -392,7 +392,7 @@ def test_dlt_mixed_signs_and_order(make_weekly_data, regressor_signs):
         seasonality=52,
         seed=8888,
         num_warmup=4000,
-        num_sample=500,
+        num_sample=4000,
         estimator='stan-mcmc'
     )
     dlt_new.fit(df)
