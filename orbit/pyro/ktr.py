@@ -4,6 +4,7 @@ import torch
 import pyro
 import pyro.distributions as dist
 
+
 # FIXME: this is sort of dangerous; consider better implementation later
 torch.set_default_tensor_type('torch.DoubleTensor')
 pyro.enable_validation(True)
@@ -28,6 +29,7 @@ class Model:
                     value = torch.tensor(value, dtype=torch.double)
             self.__dict__[key] = value
 
+            
     def __call__(self):
         """
         Notes
@@ -51,6 +53,8 @@ class Model:
         dof = self.dof
         lev_knot_loc = self.lev_knot_loc
         seas_term = self.seas_term
+        # added for tempured sampling 
+        T = self.t_star
 
         pr = self.pr
         nr = self.nr
@@ -209,10 +213,15 @@ class Model:
         obs_scale_base = pyro.sample("obs_scale_base", dist.Beta(5, 1)).unsqueeze(-1)
         obs_scale = obs_scale_base * resid_scale_ub
 
-        pyro.sample("response",
+        #this line addes a tempurature to the obs fit 
+        with pyro.poutine.scale(scale=1.0/T):
+            pyro.sample("response",
                     dist.StudentT(dof, yhat[..., which_valid], obs_scale).to_event(1),
                     obs=response_tran[which_valid])
+        
 
+        log_prob = dist.StudentT(dof, yhat[..., which_valid], obs_scale).log_prob(response_tran[which_valid])
+        
         lev_knot = lev_knot_tran + meany
 
         extra_out.update({
@@ -223,5 +232,6 @@ class Model:
             'coef_knot': coef_knot,
             'coef_init_knot': coef_init_knot,
             'obs_scale': obs_scale,
+            'log_prob': log_prob,
         })
         return extra_out

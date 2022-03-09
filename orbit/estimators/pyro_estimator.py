@@ -73,7 +73,8 @@ class PyroEstimatorSVI(PyroEstimator):
         self.num_particles = num_particles
         self.init_scale = init_scale
 
-    def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
+    def fit(self, model_name, model_param_names, data_input, sampling_temperature, fitter=None, init_values=None):
+        data_input.update({'T_STAR': sampling_temperature})
         # verbose is passed through from orbit.template.base_estimator
         verbose = self.verbose
         message = self.message
@@ -133,5 +134,11 @@ class PyroEstimatorSVI(PyroEstimator):
         # filter out unnecessary keys
         posteriors = {param: extract[param] for param in model_param_names}
         training_metrics = {'loss_elbo': np.array(loss_elbo)}
+        
+        log_p = extract['log_prob']
+        training_metrics.update({'log_probability': log_p})
+        training_metrics.update({'sampling_temperature': sampling_temperature})
+        
+        
 
         return posteriors, training_metrics
