@@ -200,6 +200,17 @@ class TimeSeriesSplitter(object):
 
     @orbit_style_decorator
     def plot(self, fig_width=20, show_index=False, strftime_fmt="%Y-%m-%d"):
+        """
+        Parameters
+        ----------
+        fig_width : float
+        show_index : bool
+        strftime_fmt : str
+
+        Returns
+        -------
+        matplotlib axes object
+        """
         _, ax = plt.subplots(figsize=(fig_width, self.n_splits))
         # visualize the train/test windows for each split
         tr_start = list()
