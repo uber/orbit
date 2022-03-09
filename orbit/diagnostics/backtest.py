@@ -117,6 +117,9 @@ class TimeSeriesSplitter(object):
         test_seq = range(test_end_min, test_end_max, self.incremental_len)
 
         split_scheme = {}
+        # note that
+        # in range representation, inclusive bound on the left and exclusive bound on the right is used
+        # in date periods representation, both bound are inclusive to work around limitation on df[date_col][idx]
         for i, train_end_idx in enumerate(test_seq):
             split_scheme[i] = {}
             train_start_idx = train_end_idx - self.min_train_len + 1 \
@@ -130,7 +133,7 @@ class TimeSeriesSplitter(object):
                 split_scheme[i]['train_period'] = (
                     self.dt_array[train_start_idx], self.dt_array[train_end_idx])
                 split_scheme[i]['test_period'] = (
-                    self.dt_array[train_end_idx], self.dt_array[train_end_idx + self.forecast_len])
+                    self.dt_array[train_end_idx + 1], self.dt_array[train_end_idx + self.forecast_len])
 
         self._split_scheme = split_scheme
         # enforce n_splits to match scheme in case scheme is determined by min_train_len
@@ -162,7 +165,15 @@ class TimeSeriesSplitter(object):
 
                 yield train_df, test_df, scheme, split_key
         else:
-            pass
+            for split_key, scheme in self._split_scheme.items():
+                train_df = self.df.loc[
+                           (self.df[self.date_col] >= scheme['train_period'][0]) &
+                           (self.df[self.date_col] <= scheme['train_period'][1]), :].reset_index(drop=True)
+                test_df = self.df.loc[
+                           (self.df[self.date_col] >= scheme['test_period'][0]) &
+                           (self.df[self.date_col] <= scheme['test_period'][1]), :].reset_index(drop=True)
+
+                yield train_df, test_df, scheme, split_key
 
     # TODO: adapt to date col if provided
     def __str__(self):
@@ -174,19 +185,21 @@ class TimeSeriesSplitter(object):
             tt_start = list(scheme[TimeSeriesSplitSchemeKeys.TEST_IDX.value])[0]
             tt_end = list(scheme[TimeSeriesSplitSchemeKeys.TEST_IDX.value])[-1]
             message += f"\n------------ Fold: ({idx + 1} / {self.n_splits})------------\n"
-            message += f"Train start index: {tr_start} Train end index: {tr_end}\n"
-            message += f"Test start index: {tt_start} Test end index: {tt_end}\n"
-            if self.date_col is not None:
-                tr_start_date = self.df[self.date_col][tr_start]
-                tr_end_date = self.df[self.date_col][tr_end]
-                tt_start_date = self.df[self.date_col][tt_start]
-                tt_end_date = self.df[self.date_col][tt_end]
+            if self.date_col is None:
+                message += f"Train start index: {tr_start} Train end index: {tr_end}\n"
+                message += f"Test start index: {tt_start} Test end index: {tt_end}\n"
+            else:
+                tr_start_date = scheme['train_period'][0]
+                tr_end_date = scheme['train_period'][1]
+                tt_start_date = scheme['test_period'][0]
+                tt_end_date = scheme['test_period'][1]
+
                 message += f"Train start date: {tr_start_date} Train end date: {tr_end_date}\n"
                 message += f"Test start date: {tt_start_date} Test end date: {tt_end_date}\n"
         return message
 
     @orbit_style_decorator
-    def plot(self, fig_width=20):
+    def plot(self, fig_width=20, show_index=False, strftime_fmt="%Y-%m-%d"):
         _, ax = plt.subplots(figsize=(fig_width, self.n_splits))
         # visualize the train/test windows for each split
         tr_start = list()
@@ -206,12 +219,22 @@ class TimeSeriesSplitter(object):
 
         tr_start = np.array(tr_start)
         tr_len = np.array(tr_len)
-        ax.barh(yticks, tr_start, align='center', height=.5, color='white', alpha=0)
-        ax.barh(yticks, tr_len, align='center', height=.5, left=tr_start, color=OrbitPal.BLUE.value, label='train')
-        ax.barh(yticks, tt_len, align='center', height=.5, left=tr_start + tr_len, color=OrbitPal.ORANGE.value, label='test')
 
-        # Formatting
-        # TODO: do a date_col style if date_col is available
+        # ax.barh(yticks, tr_start, align='center', height=.5, color='black', alpha=0.5)
+        ax.barh(yticks, tr_len, align='center', height=.5, left=tr_start, color=OrbitPal.BLUE.value,
+                label='train')
+        ax.barh(yticks, tt_len, align='center', height=.5, left=tr_start + tr_len, color=OrbitPal.ORANGE.value,
+                label='test')
+
+        if not show_index and self.date_col is not None:
+            xticks_loc = np.array(ax.get_xticks(), dtype=int)
+            new_xticks_loc = np.linspace(0, len(self.dt_array) - 1, num=len(xticks_loc)).astype(int)
+            dt_xticks = self.dt_array[new_xticks_loc]
+            dt_xticks = dt_xticks.strftime(strftime_fmt)
+            ax.set_xticks(new_xticks_loc)
+            ax.set_xticklabels(dt_xticks)
+
+        # some formatting parameters
         middle = 15
         large = 20
 
