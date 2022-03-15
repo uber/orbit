@@ -4,6 +4,19 @@ import pickle
 import pkg_resources
 import os
 
+from orbit.constants.constants import CompiledStanModelPath
+
+
+def set_compiled_stan_path(parent, child='stan_compiled'):
+    """
+    Set the path for compiled stan models.
+
+    parent: the primary directory level
+    child: the secondary directory level
+    """
+    CompiledStanModelPath.PARENT = parent
+    CompiledStanModelPath.CHILD = child
+
 
 def compile_stan_model(stan_model_name):
     """
@@ -13,10 +26,16 @@ def compile_stan_model(stan_model_name):
         'orbit',
         'stan/{}.stan'.format(stan_model_name)
     )
-    compiled_model = pkg_resources.resource_filename(
-        'orbit',
-        'stan_compiled/{}.pkl'.format(stan_model_name)
-    )
+    if CompiledStanModelPath.PARENT == 'orbit':
+        compiled_model = pkg_resources.resource_filename(
+            'orbit',
+            '{}/{}.pkl'.format(CompiledStanModelPath.CHILD, stan_model_name)
+        )
+    else:
+        compiled_model = os.path.join(
+            CompiledStanModelPath.PARENT,
+            '{}/{}.pkl'.format(CompiledStanModelPath.CHILD, stan_model_name)
+        )
 
     # updated for py3
     os.makedirs(os.path.dirname(compiled_model), exist_ok=True)
@@ -33,7 +52,7 @@ def compile_stan_model(stan_model_name):
         with open(compiled_model, 'wb') as f:
             pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    return None
+    return compiled_model
 
 
 def get_compiled_stan_model(stan_model_name):
@@ -41,13 +60,9 @@ def get_compiled_stan_model(stan_model_name):
     Load compiled Stan model
     """
 
-    compile_stan_model(stan_model_name)
+    compiled_model = compile_stan_model(stan_model_name)
 
-    model_file = pkg_resources.resource_filename(
-        'orbit',
-        'stan_compiled/{}.pkl'.format(stan_model_name)
-    )
-    with open(model_file, 'rb') as f:
+    with open(compiled_model, 'rb') as f:
         return pickle.load(f)
 
 
