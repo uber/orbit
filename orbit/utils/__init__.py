@@ -1,1 +1,0 @@
-from .stan import set_compiled_stan_path
