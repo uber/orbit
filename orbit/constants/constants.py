@@ -125,3 +125,11 @@ COEFFICIENT_DF_COLS = namedtuple(
     'coefficients_df_cols',
     ['REGRESSOR', 'REGRESSOR_SIGN', 'COEFFICIENT']
 )('regressor', 'regressor_sign', 'coefficient')
+
+
+class CompiledStanModelPath:
+    """
+    the directory path for compliled stan models
+    """
+    PARENT = 'orbit'
+    CHILD = 'stan_compiled'
