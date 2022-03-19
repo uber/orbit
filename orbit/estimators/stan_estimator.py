@@ -117,7 +117,7 @@ class StanEstimatorMCMC(StanEstimator):
         with suppress_stdout_stderr():
             stan_mcmc_fit = compiled_stan_file.sampling(
                 data=data_input,
-                pars=model_param_names + ['log_prob'],
+                pars=model_param_names + ['loglk'],
                 iter=self._num_iter_per_chain,
                 warmup=self._num_warmup_per_chain,
                 chains=self.chains,
