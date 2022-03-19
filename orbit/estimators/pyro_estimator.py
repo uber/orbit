@@ -134,11 +134,7 @@ class PyroEstimatorSVI(PyroEstimator):
         # filter out unnecessary keys
         posteriors = {param: extract[param] for param in model_param_names}
         training_metrics = {'loss_elbo': np.array(loss_elbo)}
-        
-        log_p = extract['log_prob']
-        training_metrics.update({'log_probability': log_p})
+        training_metrics.update({'loglk': extract['log_prob']})
         training_metrics.update({'sampling_temperature': sampling_temperature})
-        
-        
 
         return posteriors, training_metrics
