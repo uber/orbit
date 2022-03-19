@@ -147,8 +147,8 @@ class StanEstimatorMCMC(StanEstimator):
         # extract `log_prob` in addition to defined model params
         # to make naming consistent across api; we move lp along with warm up lp to `training_metrics`
         # model_param_names_with_lp = model_param_names[:] + ['lp__']
-        log_p = stan_mcmc_fit.extract(pars=['log_prob'], permuted=True)['log_prob']
-        training_metrics = {'log_probability': log_p}
+        loglk = stan_mcmc_fit.extract(pars=['loglk'], permuted=True)['loglk']
+        training_metrics = {'loglk': loglk}
         training_metrics.update({'log_posterior': stan_mcmc_fit.get_logposterior(inc_warmup=True)})
         training_metrics.update({'sampling_temperature': sampling_temperature})
 
@@ -228,9 +228,9 @@ class StanEstimatorMAP(StanEstimator):
 
         # extract `log_prob` in addition to defined model params
         # this is for the BIC calculation
-        log_p = stan_extract['log_prob']
-        training_metrics.update({'log_probability': log_p})
-        training_metrics.update({'log_posterior': sum(log_p)})
-        training_metrics.update({'number_parameters': len(model_param_names)})
+        training_metrics.update({'loglk': stan_extract['loglk']})
+        # FIXME: this needs to be the full length of all parameters instead of the one we sampled?
+        # FIXME: or it should be not include latent varaibles / derive variables?
+        training_metrics.update({'num_of_params': len(model_param_names)})
 
         return posteriors, training_metrics

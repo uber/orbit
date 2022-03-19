@@ -63,7 +63,7 @@ data {
   // Residuals Hyper-Params
   real<lower=0> CAUCHY_SD; // derived by MAX(RESPONSE)/constant
   real<lower=1> MIN_NU; real<lower=1> MAX_NU;
-
+  int<lower=1> FORECAST_HORIZON;
 
 
   // Damped Trend Hyper-Params
@@ -183,10 +183,9 @@ transformed parameters {
   real<lower=0,upper=1> slp_sm;
   real<lower=0,upper=1> sea_sm;
 
-  // Tempature based sampling
-  // log probability of each observation
-  vector[NUM_OF_OBS] log_prob;
-  log_prob = rep_vector(0, NUM_OF_OBS);
+  // log likelihood of observations ~ 1-step ahead forecast
+  vector[NUM_OF_OBS] loglk_1step;
+  loglk_1step = rep_vector(0, NUM_OF_OBS);
 
   if (LEV_SM_SIZE > 0) {
     lev_sm = lev_sm_dummy[1];
@@ -237,8 +236,6 @@ transformed parameters {
   }
 
   // global trend is deterministic
-  // we generate the entire series here
-  // gt_sum[1] = gl;
   for (t in 1:NUM_OF_OBS) {
     if (GLOBAL_TREND_OPTION == 0) {
       gt_sum[t] = gl[1] + gb[1] * (t - 1) * TIME_DELTA;
@@ -314,9 +311,9 @@ transformed parameters {
   }
 
   // tempature based sampling and log probs used for WBIC
-  for (t in 2:NUM_OF_OBS) {
+  for (t in 1:NUM_OF_OBS) {
     if (IS_VALID_RES[t]) {
-      log_prob[t] = student_t_lpdf(RESPONSE[t] | nu, yhat[t], obs_sigma);
+      loglk_1step[t] = student_t_lpdf(RESPONSE[t] | nu, yhat[t], obs_sigma);
     }
   }
 }
@@ -326,12 +323,12 @@ model {
     // reparameterize for MAP only to set finite boundary
     obs_sigma_dummy[1] ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, 5 * CAUCHY_SD];
   }
-  // likelihood
+
+  // likelihood; skipped the first observation for degree of freedom used
+  // to estimate l[1]
   for (t in 2:NUM_OF_OBS) {
-    // target += t_star_inv*log_prob[t]；
-    // the gate here is to see if this fixes a unit test issue. this might make the code slower
     if (IS_VALID_RES[t]) {
-        target += t_star_inv * log_prob[t];
+        target += t_star_inv * loglk_1step[t];
     }
   }
 
@@ -339,19 +336,6 @@ model {
   for (i in 1:(SEASONALITY - 1))
     // SEASONALITY_SD controls the amplitude of seasonality
     init_sea[i] ~ normal(0, SEASONALITY_SD); 
-  // // global trend prior
-  // if (GLOBAL_TREND_OPTION == 0) {
-  //   gl[1] ~ normal(0, 10);
-  //   gb[1] ~ normal(0, 1);
-  // } else if (GLOBAL_TREND_OPTION == 1) {
-  //   gl[1] ~ normal(0, 10);
-  //   gb[1] ~ normal(0, 1);
-  //   // gl[1] ~ lognormal(0, 2.303);
-  //   // gb[1] ~ normal(0, 1)T[-1.0 / (NUM_OF_OBS + 10), ];
-  // } else if (GLOBAL_TREND_OPTION == 2) {
-  //   gl[1] ~ normal(0, 10);
-  //   gb[1] ~ normal(0, 1);
-  // }
 
   // linear and log-linear
   if ((GLOBAL_TREND_OPTION == 0 ) || (GLOBAL_TREND_OPTION == 1)) {
@@ -420,6 +404,7 @@ model {
 }
 generated quantities {
   vector[NUM_OF_PR + NUM_OF_NR + NUM_OF_RR] beta;
+  matrix[NUM_OF_OBS - FORECAST_HORIZON, FORECAST_HORIZON] loglk; 
   int idx;
   idx = 1;
   // compute regression
@@ -439,5 +424,21 @@ generated quantities {
     for(iidx in 1:NUM_OF_PR + NUM_OF_NR + NUM_OF_RR) {
       if (fabs(beta[iidx]) <= 1e-5) beta[iidx] = 0;
     }
+  }
+
+  if (FORECAST_HORIZON > 1) {
+    for (t in 1:NUM_OF_OBS - FORECAST_HORIZON) {
+      for (h in 1:FORECAST_HORIZON) {
+        real temp_yhat;
+        if (IS_SEASONAL) {
+          temp_yhat = gt_sum[t+h-1] + lt_sum[t] + s[t+h-1] + r[t+h-1];
+        } else {
+          temp_yhat = gt_sum[t+h-1] + lt_sum[t] + r[t+h-1];
+        }
+        loglk[t, h] = student_t_lpdf(RESPONSE[t+h] | nu, temp_yhat, obs_sigma);
+      }
+    }
+  } else {
+    loglk[:, 1] = loglk_1step[2:];
   }
 }

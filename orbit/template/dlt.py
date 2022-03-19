@@ -63,6 +63,7 @@ class DataInputMapper(Enum):
     LASSO_SCALE = 'LASSO_SCALE'
     # handle missing values
     IS_VALID_RESPONSE = 'IS_VALID_RES'
+    FORECAST_HORIZON = 'FORECAST_HORIZON'
 
 
 class GlobalTrendOption(Enum):
@@ -201,6 +202,7 @@ class DLTModel(ETSModel):
                  slope_sm_input=None,
                  period=1, damped_factor=0.8,
                  global_trend_option='linear', global_cap=1.0, global_floor=0.0,
+                 forecast_horizon=1,
                  **kwargs):
 
         self.damped_factor = damped_factor
@@ -229,8 +231,7 @@ class DLTModel(ETSModel):
         self._time_delta = 1
         self.global_cap = global_cap
         self.global_floor = global_floor
-        # self.global_level_prior = None
-        # self.global_slope_prior = None
+        self.forecast_horizon = forecast_horizon
 
         # _regressor_sign stores final values after internal process of regressor_sign
         # similar to other values start with prefix _

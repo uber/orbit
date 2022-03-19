@@ -55,10 +55,9 @@ transformed parameters {
   real<lower=0,upper=1> lev_sm;
   real<lower=0,upper=1> sea_sm;
 
-  // Tempature based sampling
-  // log probability of each observation
-  vector[NUM_OF_OBS] log_prob;
-  log_prob = rep_vector(0, NUM_OF_OBS);
+  // log likelihood of observations ~ 1-step ahead forecast
+  vector[NUM_OF_OBS] loglk_1step;
+  loglk_1step = rep_vector(0, NUM_OF_OBS);
 
   if (LEV_SM_SIZE > 0) {
     lev_sm = lev_sm_dummy[1];
@@ -141,4 +140,9 @@ model {
       target += t_star_inv * log_prob[t];
     }
   }
+}
+
+generated quantities {
+  matrix[NUM_OF_OBS - 1, 1] loglk;
+  loglk[:, 1] = loglk_1step[2:];
 }
