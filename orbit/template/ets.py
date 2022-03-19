@@ -121,8 +121,8 @@ class ETSModel(ModelTemplate):
             self._seasonality_sm_input = -1
         if self.level_sm_input is None:
             self._level_sm_input = -1
-        elif self.level_sm_input < 0.0001 or self.level_sm_input > 1:
-            raise IllegalArgument('only values between [0.0001, 1] are supported for level_sm_input '
+        elif self.level_sm_input < 0 or self.level_sm_input > 1:
+            raise IllegalArgument('only values between [0, 1] are supported for level_sm_input '
                                   'to build a model with meaningful trend.')
         if self.seasonality is None:
             self._seasonality = -1

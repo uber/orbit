@@ -105,7 +105,7 @@ transformed parameters {
     yhat[t] = l[t-1] + s_t;
     // the log probs of each overservation for WBIC
     if (IS_VALID_RES[t]) {
-        log_prob[t] = normal_lpdf(RESPONSE[t]|yhat[t], obs_sigma);
+        loglk_1step[t] = normal_lpdf(RESPONSE[t]|yhat[t], obs_sigma);
     }
 
     // update process
@@ -135,14 +135,13 @@ model {
     init_sea[i] ~ normal(0, SEASONALITY_SD);
   // Likelihood
   for (t in 2:NUM_OF_OBS) {
-    //target += t_star_inv*log_prob[t];
     if (IS_VALID_RES[t]) {
-      target += t_star_inv * log_prob[t];
+      target += t_star_inv * loglk_1step[t];
     }
   }
 }
 
 generated quantities {
-  matrix[NUM_OF_OBS - 1, 1] loglk;
-  loglk[:, 1] = loglk_1step[2:];
+  matrix[NUM_OF_OBS, 1] loglk;
+  loglk[:, 1] = loglk_1step;
 }

@@ -51,8 +51,8 @@ transformed parameters {
 
   // Tempature based sampling
   // log probability of each observation
-  vector[NUM_OF_OBS] log_prob;
-  log_prob = rep_vector(0, NUM_OF_OBS);
+  matrix[NUM_OF_OBS, 1] loglk;
+  loglk[:, 1] = rep_vector(0, NUM_OF_OBS);
 
   // levels
   if (N_KNOTS_LEV > 1) {
@@ -85,7 +85,7 @@ transformed parameters {
 
   for (t in WHICH_VALID_RES2) {
     // the log probs of each overservation for WBIC
-    log_prob[t] = student_t_lpdf(RESPONSE[t]|DOF, yhat[t], obs_scale);
+    loglk[t, 1] = student_t_lpdf(RESPONSE[t]|DOF, yhat[t], obs_scale);
   }
 
 }
