@@ -185,7 +185,7 @@ class FullBayesianForecaster(Forecaster):
                         self.get_posterior_samples()
                     ))
 
-    def get_wbic_value(self):
+    def get_wbic(self):
         # This function calculates the WBIC given that MCMC sampling happened with sampling_temperature = log(n)
         training_metrics = self.get_training_metrics() # get the training metrics
         training_meta = self.get_training_meta() # get the meta data
@@ -202,4 +202,4 @@ class FullBayesianForecaster(Forecaster):
         """
         nobs = df.shape[0]
         self.fit(df, sampling_temperature=np.log(nobs))
-        return self.get_wbic_value()
+        return self.get_wbic()

@@ -20,11 +20,11 @@ def test_wbic_dlt(make_weekly_data, estimator):
 
     if estimator == 'stan-mcmc':
         wbic_val = dlt.fit_wbic(df=train_df)
-        assert np.isclose(wbic_val, dlt.get_wbic_value())
+        assert np.isclose(wbic_val, dlt.get_wbic())
 
     elif estimator == 'stan-map':
         dlt.fit(df=train_df)
-        bic_val = dlt.get_bic_value()
+        dlt.get_bic()
 
 
 def test_wbic_lgt(make_weekly_data):
@@ -65,7 +65,7 @@ def test_wbic_lgt(make_weekly_data):
         estimator='stan-map',
     )
     lgt3.fit(df=train_df)
-    bic_val = lgt3.get_bic_value()
+    bic_val = lgt3.get_bic()
 
 
 def test_wbic_ktr(make_weekly_data):
@@ -83,7 +83,7 @@ def test_wbic_ktr(make_weekly_data):
     )
 
     wbic_val = ktr.fit_wbic(df=train_df)
-    assert np.isclose(wbic_val, ktr.get_wbic_value())
+    assert np.isclose(wbic_val, ktr.get_wbic())
 
 
 def test_wbic_ktrlite(make_weekly_data):
@@ -98,4 +98,4 @@ def test_wbic_ktrlite(make_weekly_data):
     )
 
     ktrlite.fit(df=train_df)
-    bic_val = ktrlite.get_bic_value()
+    ktrlite.get_bic()
