@@ -343,7 +343,7 @@ class Forecaster(object):
             default as true where chain information will be masked and the chain dimension will be collapsed; when
         it is set to false, additional chain dimension will be introduced at front before batch / sample dimension
         this is useful for arviz plotting. This argument is only effective for stan-mcmc estimator.
-        
+
         Returns
         -------
         OrderedDict
