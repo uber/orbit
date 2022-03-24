@@ -4,3 +4,4 @@ sphinx-rtd-theme
 matplotlib
 nbsphinx
 IPython
+Jinja2==3.0.3
