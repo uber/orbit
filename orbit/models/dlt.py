@@ -22,6 +22,7 @@ def DLT(seasonality=None,
         global_trend_option='linear',
         global_cap=1.0,
         global_floor=0.0,
+        forecast_horizon=1,
         estimator='stan-mcmc',
         **kwargs):
     """
@@ -115,6 +116,7 @@ def DLT(seasonality=None,
         global_trend_option=global_trend_option,
         global_cap=global_cap,
         global_floor=global_floor,
+        forecast_horizon=forecast_horizon,
     )
     if estimator == EstimatorsKeys.StanMAP.value:
         dlt_forecaster = MAPForecaster(

@@ -1,15 +1,15 @@
 import pandas as pd
-from copy import deepcopy
 import inspect
 import tqdm
 from itertools import product
 
-from ..diagnostics.metrics import smape, wmape, mape, mse, mae, rmsse
+from ..diagnostics.metrics import smape
 from ..diagnostics.backtest import BackTester
 from collections.abc import Mapping, Iterable
 
 import logging
 logger = logging.getLogger('orbit')
+
 
 def grid_search_orbit(param_grid, model, df, min_train_len=None,
                       incremental_len=None, forecast_len=None, n_splits=None,
@@ -85,29 +85,7 @@ def grid_search_orbit(param_grid, model, df, min_train_len=None,
 
         return init_args_tmpl.copy(), init_args.copy()
 
-    def _yield_param_grid(param_grid):
-        # an internal function to mimic the ParameterGrid from scikit-learn
-        if not isinstance(param_grid, (Mapping, Iterable)):
-            raise TypeError('Parameter grid is not a dict or '
-                                'a list ({!r})'.format(param_grid))
-
-        if isinstance(param_grid, Mapping):
-            # wrap dictionary in a singleton list to support either dict
-            # or list of dicts
-            param_grid = [param_grid]
-
-        for p in param_grid:
-            # Always sort the keys of a dictionary, for reproducibility
-            items = sorted(p.items())
-            if not items:
-                yield {}
-            else:
-                keys, values = zip(*items)
-                for v in product(*values):
-                    params = dict(zip(keys, v))
-                    yield params
-
-    param_list_dict = list(_yield_param_grid(param_grid))
+    param_list_dict = generate_param_args_list(param_grid)
     params_tmpl, params = _get_params(model)
     res = pd.DataFrame(param_list_dict)
     metric_values = list()
@@ -153,3 +131,40 @@ def grid_search_orbit(param_grid, model, df, min_train_len=None,
     best_params = res[res['metrics'] == res['metrics'].apply(criteria)].drop('metrics', axis=1).to_dict('records')
 
     return best_params, res
+
+
+def generate_param_args_list(param_grid):
+    """"
+    Parameters
+    ----------
+    param_grid: dict of list
+    dictionary where key represents the arg and value represents the list of values proposed for the grid
+
+    Returns
+    -------
+    list of dict
+    the iterated products of all combinations of params generated based on the input param grid
+    """
+    # an internal function to mimic the ParameterGrid from scikit-learn
+
+    def _yield_param_grid(param_grid):
+        if not isinstance(param_grid, (Mapping, Iterable)):
+            raise TypeError("Parameter grid is not a dict or a list ({!r})".format(param_grid))
+
+        if isinstance(param_grid, Mapping):
+            # wrap dictionary in a singleton list to support either dict
+            # or list of dicts
+            param_grid = [param_grid]
+
+        for p in param_grid:
+            # Always sort the keys of a dictionary, for reproducibility
+            items = sorted(p.items())
+            if not items:
+                yield {}
+            else:
+                keys, values = zip(*items)
+                for v in product(*values):
+                    params = dict(zip(keys, v))
+                    yield params
+
+    return list(_yield_param_grid(param_grid))

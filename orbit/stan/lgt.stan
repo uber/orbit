@@ -141,10 +141,9 @@ transformed parameters {
   real<lower=0,upper=1> slp_sm;
   real<lower=0,upper=1> sea_sm;
 
-  // Tempature based sampling
-  // log probability of each observation
-  vector[NUM_OF_OBS] log_prob;
-  log_prob = rep_vector(0, NUM_OF_OBS);
+  // log likelihood of observations ~ 1-step ahead forecast
+  vector[NUM_OF_OBS] loglk_1step;
+  loglk_1step = rep_vector(0, NUM_OF_OBS);
 
   if (LEV_SM_SIZE > 0) {
     lev_sm = lev_sm_dummy[1];
@@ -242,7 +241,7 @@ transformed parameters {
   // the log probs of each overservation for WBIC
   for (t in 2:NUM_OF_OBS) {
       if (IS_VALID_RES[t]) {
-          log_prob[t] = student_t_lpdf(RESPONSE[t]|nu, yhat[t], obs_sigma);
+          loglk_1step[t] = student_t_lpdf(RESPONSE[t]|nu, yhat[t], obs_sigma);
       }
   }
 }
@@ -253,12 +252,8 @@ model {
     obs_sigma_dummy[1] ~ cauchy(SIGMA_EPS, CAUCHY_SD) T[SIGMA_EPS, 5 * CAUCHY_SD];
   }
   for (t in 2:NUM_OF_OBS) {
-    // old way
-    // RESPONSE[t] ~ student_t(nu, yhat[t], obs_sigma);
-    // new way
-    // target += t_star_inv * log_prob[t];
     if (IS_VALID_RES[t]) {
-      target += t_star_inv * log_prob[t];
+      target += t_star_inv * loglk_1step[t];
     }
   }
 
@@ -320,6 +315,8 @@ model {
 }
 generated quantities {
   vector[NUM_OF_PR + NUM_OF_NR + NUM_OF_RR] beta;
+  matrix[NUM_OF_OBS - 1, 1] loglk;
+
   int idx;
   idx = 1;
   // compute regression
@@ -340,4 +337,5 @@ generated quantities {
       if (fabs(beta[iidx]) <= 1e-5) beta[iidx] = 0;
     }
   }
+  loglk[:, 1] = loglk_1step[2:];
 }

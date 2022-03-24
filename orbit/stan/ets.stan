@@ -55,10 +55,9 @@ transformed parameters {
   real<lower=0,upper=1> lev_sm;
   real<lower=0,upper=1> sea_sm;
 
-  // Tempature based sampling
-  // log probability of each observation
-  vector[NUM_OF_OBS] log_prob;
-  log_prob = rep_vector(0, NUM_OF_OBS);
+  // log likelihood of observations ~ 1-step ahead forecast
+  vector[NUM_OF_OBS] loglk_1step;
+  loglk_1step = rep_vector(0, NUM_OF_OBS);
 
   if (LEV_SM_SIZE > 0) {
     lev_sm = lev_sm_dummy[1];
@@ -106,7 +105,7 @@ transformed parameters {
     yhat[t] = l[t-1] + s_t;
     // the log probs of each overservation for WBIC
     if (IS_VALID_RES[t]) {
-        log_prob[t] = normal_lpdf(RESPONSE[t]|yhat[t], obs_sigma);
+        loglk_1step[t] = normal_lpdf(RESPONSE[t]|yhat[t], obs_sigma);
     }
 
     // update process
@@ -136,9 +135,13 @@ model {
     init_sea[i] ~ normal(0, SEASONALITY_SD);
   // Likelihood
   for (t in 2:NUM_OF_OBS) {
-    //target += t_star_inv*log_prob[t];
     if (IS_VALID_RES[t]) {
-      target += t_star_inv * log_prob[t];
+      target += t_star_inv * loglk_1step[t];
     }
   }
+}
+
+generated quantities {
+  matrix[NUM_OF_OBS, 1] loglk;
+  loglk[:, 1] = loglk_1step;
 }
