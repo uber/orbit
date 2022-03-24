@@ -15,7 +15,8 @@ Welcome to Orbit's Documentation!
    about
    installation
    tutorials/quick_start
-   tutorials/model_estimations
+   tutorials/model_estimations_predictions
+   tutorials/set_random_seed
    tutorials/pyro_basic
 
 .. toctree::
@@ -25,7 +26,8 @@ Welcome to Orbit's Documentation!
 
    tutorials/dlt
    tutorials/lgt
-   tutorials/regression
+   tutorials/regression_prior
+   tutorials/regression_penalty
    tutorials/ets_lgt_dlt_missing_response
 
 .. toctree::
