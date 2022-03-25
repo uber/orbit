@@ -193,7 +193,7 @@ class FullBayesianForecaster(Forecaster):
         nobs = training_meta['num_of_obs'] # the number of observations
         if sampling_temp != np.log(nobs):
             raise ForecasterException('Sampling temperature is not log(n); WBIC calculation is not valid!')
-        return -2 * np.nanmean(training_metrics['log_probability']) * nobs
+        return -2 * np.nanmean(training_metrics['loglk']) * nobs
 
     def fit_wbic(self, df):
         """This function calculates the WBIC for a Orbit model
