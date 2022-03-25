@@ -42,8 +42,8 @@ def gauss_kernel(x, x_i, rho=0.1, alpha=1.0, n_reduce=-1, point_to_flatten=1):
     N = len(x)
     M = len(x_i)
     k = np.zeros((N, M), np.double)
-    alpha_sq = alpha ** 2
-    rho_sq_t2 = 2 * rho ** 2
+    alpha_sq = alpha**2
+    rho_sq_t2 = 2 * rho**2
     for n in range(N):
         if x[n] <= point_to_flatten:
             k[n, :] = alpha_sq * np.exp(-1 * (x[n] - x_i) ** 2 / rho_sq_t2)
@@ -52,7 +52,7 @@ def gauss_kernel(x, x_i, rho=0.1, alpha=1.0, n_reduce=-1, point_to_flatten=1):
             k[n, :] = alpha_sq * np.exp(-1 * (point_to_flatten - x_i) ** 2 / rho_sq_t2)
 
     if n_reduce > 0:
-       k = np.apply_along_axis(reduce_by_max, axis=1, arr=k, n=n_reduce)
+        k = np.apply_along_axis(reduce_by_max, axis=1, arr=k, n=n_reduce)
 
     k = k / np.sum(k, axis=1, keepdims=True)
 

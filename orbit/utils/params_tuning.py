@@ -8,12 +8,23 @@ from ..diagnostics.backtest import BackTester
 from collections.abc import Mapping, Iterable
 
 import logging
-logger = logging.getLogger('orbit')
+
+logger = logging.getLogger("orbit")
 
 
-def grid_search_orbit(param_grid, model, df, min_train_len=None,
-                      incremental_len=None, forecast_len=None, n_splits=None,
-                      metrics=None, criteria=None, verbose=True, **kwargs):
+def grid_search_orbit(
+    param_grid,
+    model,
+    df,
+    min_train_len=None,
+    incremental_len=None,
+    forecast_len=None,
+    n_splits=None,
+    metrics=None,
+    criteria=None,
+    verbose=True,
+    **kwargs,
+):
     """A gird search unitlity to tune the hyperparameters for orbit template using the orbit.diagnostics.backtest modules.
     Parameters
     ----------
@@ -65,21 +76,21 @@ def grid_search_orbit(param_grid, model, df, min_train_len=None,
         for cls in inspect.getmro(model._model.__class__):
             sig = inspect.signature(cls)
             for key in sig.parameters.keys():
-                if key != 'kwargs':
+                if key != "kwargs":
                     if hasattr(model._model, key):
                         init_args_tmpl[key] = getattr(model._model, key)
         # get all the signatures in the hierarchy of forecaster
         for cls in inspect.getmro(model.__class__):
             sig = inspect.signature(cls)
             for key in sig.parameters.keys():
-                if key != 'kwargs':
+                if key != "kwargs":
                     if hasattr(model, key):
                         init_args[key] = getattr(model, key)
         # deal with the estimator separately
         for cls in inspect.getmro(model.estimator_type):
             sig = inspect.signature(cls)
             for key in sig.parameters.keys():
-                if key != 'kwargs':
+                if key != "kwargs":
                     if hasattr(model.estimator, key):
                         init_args[key] = getattr(model.estimator, key)
 
@@ -102,7 +113,9 @@ def grid_search_orbit(param_grid, model, df, min_train_len=None,
             elif key in params_.keys():
                 params_[key] = val
             else:
-                raise Exception("tuned hyper-param {} is not in the model's parameters".format(key))
+                raise Exception(
+                    "tuned hyper-param {} is not in the model's parameters".format(key)
+                )
 
         # it is safer to reinstantiate a model object than using deepcopy...
         new_model_template = model._model.__class__(**params_tmpl_)
@@ -115,7 +128,7 @@ def grid_search_orbit(param_grid, model, df, min_train_len=None,
             n_splits=n_splits,
             incremental_len=incremental_len,
             forecast_len=forecast_len,
-            **kwargs
+            **kwargs,
         )
         bt.fit_predict()
         # TODO: should we assert len(metrics) == 1?
@@ -125,16 +138,20 @@ def grid_search_orbit(param_grid, model, df, min_train_len=None,
         if verbose:
             logger.info("tuning metric:{:-.5g}".format(metric_val))
         metric_values.append(metric_val)
-    res['metrics'] = metric_values
+    res["metrics"] = metric_values
     if criteria is None:
-        criteria = 'min'
-    best_params = res[res['metrics'] == res['metrics'].apply(criteria)].drop('metrics', axis=1).to_dict('records')
+        criteria = "min"
+    best_params = (
+        res[res["metrics"] == res["metrics"].apply(criteria)]
+        .drop("metrics", axis=1)
+        .to_dict("records")
+    )
 
     return best_params, res
 
 
 def generate_param_args_list(param_grid):
-    """"
+    """ "
     Parameters
     ----------
     param_grid: dict of list
@@ -149,7 +166,9 @@ def generate_param_args_list(param_grid):
 
     def _yield_param_grid(param_grid):
         if not isinstance(param_grid, (Mapping, Iterable)):
-            raise TypeError("Parameter grid is not a dict or a list ({!r})".format(param_grid))
+            raise TypeError(
+                "Parameter grid is not a dict or a list ({!r})".format(param_grid)
+            )
 
         if isinstance(param_grid, Mapping):
             # wrap dictionary in a singleton list to support either dict

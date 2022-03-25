@@ -6,11 +6,13 @@ from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
 from ..constants.constants import EstimatorsKeys
 
 
-def ETS(seasonality=None,
-        seasonality_sm_input=None,
-        level_sm_input=None,
-        estimator='stan-mcmc',
-        **kwargs):
+def ETS(
+    seasonality=None,
+    seasonality_sm_input=None,
+    level_sm_input=None,
+    estimator="stan-mcmc",
+    **kwargs,
+):
     """
     Args
     ----------
@@ -45,26 +47,27 @@ def ETS(seasonality=None,
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator
     """
-    _supported_estimators = [EstimatorsKeys.StanMAP.value, EstimatorsKeys.StanMCMC.value]
+    _supported_estimators = [
+        EstimatorsKeys.StanMAP.value,
+        EstimatorsKeys.StanMCMC.value,
+    ]
 
     ets = ETSModel(
         seasonality=seasonality,
         seasonality_sm_input=seasonality_sm_input,
-        level_sm_input=level_sm_input
+        level_sm_input=level_sm_input,
     )
     if estimator == EstimatorsKeys.StanMAP.value:
         ets_forecaster = MAPForecaster(
-            model=ets,
-            estimator_type=StanEstimatorMAP,
-            **kwargs
+            model=ets, estimator_type=StanEstimatorMAP, **kwargs
         )
     elif estimator == EstimatorsKeys.StanMCMC.value:
         ets_forecaster = FullBayesianForecaster(
-            model=ets,
-            estimator_type=StanEstimatorMCMC,
-            **kwargs
+            model=ets, estimator_type=StanEstimatorMCMC, **kwargs
         )
     else:
-        raise IllegalArgument('Invalid estimator. Must be one of {}'.format(_supported_estimators))
+        raise IllegalArgument(
+            "Invalid estimator. Must be one of {}".format(_supported_estimators)
+        )
 
     return ets_forecaster

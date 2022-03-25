@@ -6,8 +6,10 @@ from math import pi
 from orbit.exceptions import IllegalArgument
 
 
-def make_trend(series_len,  method='rw', arma=[.25, .6], rw_loc=0.0, rw_scale=0.1, seed=1):
-    """ Module to generate time-series trend with different methods
+def make_trend(
+    series_len, method="rw", arma=[0.25, 0.6], rw_loc=0.0, rw_scale=0.1, seed=1
+):
+    """Module to generate time-series trend with different methods
     Parameters
     ----------
     series_len: int
@@ -51,8 +53,10 @@ def make_trend(series_len,  method='rw', arma=[.25, .6], rw_loc=0.0, rw_scale=0.
     return trend
 
 
-def make_seasonality(series_len, seasonality, method='discrete', order=3, duration=1, scale=.05, seed=1):
-    """ Module to generate time-series seasonality with different methods
+def make_seasonality(
+    series_len, seasonality, method="discrete", order=3, duration=1, scale=0.05, seed=1
+):
+    """Module to generate time-series seasonality with different methods
     series_len: int
         Total length of series
     seasonality: int
@@ -80,7 +84,7 @@ def make_seasonality(series_len, seasonality, method='discrete', order=3, durati
       2.  In case of method = 'fourier', see https://otexts.com/fpp2/complexseasonality.html
     """
     if seasonality > 1:
-        if method == 'fourier':
+        if method == "fourier":
             t = np.arange(0, series_len)
             out = []
             for i in range(1, order + 1):
@@ -96,7 +100,9 @@ def make_seasonality(series_len, seasonality, method='discrete', order=3, durati
             iterations = math.ceil(series_len / duration)
             # initialize vector to be repeated
             init_seas = np.zeros(seasonality)
-            init_seas[:-1] = np.random.default_rng(seed).normal(0, scale, seasonality - 1)
+            init_seas[:-1] = np.random.default_rng(seed).normal(
+                0, scale, seasonality - 1
+            )
             init_seas[seasonality - 1] = -1 * np.sum(init_seas)
             for idx in range(iterations):
                 seas += [init_seas[idx % seasonality]] * duration
@@ -106,9 +112,19 @@ def make_seasonality(series_len, seasonality, method='discrete', order=3, durati
     return seas
 
 
-def make_regression(series_len, coefs, loc=0.0, scale=0.5, cov=None, noise_scale=1.0, bias=None,
-                    relevance=1.0, sparsity=0.2, seed=1):
-    """ Module to generate multiplicative time-series with trend, seasonality and regression components
+def make_regression(
+    series_len,
+    coefs,
+    loc=0.0,
+    scale=0.5,
+    cov=None,
+    noise_scale=1.0,
+    bias=None,
+    relevance=1.0,
+    sparsity=0.2,
+    seed=1,
+):
+    """Module to generate multiplicative time-series with trend, seasonality and regression components
     Parameters
     ----------
     series_len: int
@@ -151,24 +167,22 @@ def make_regression(series_len, coefs, loc=0.0, scale=0.5, cov=None, noise_scale
         coefs[irr_idx] = 0.0
 
     if cov is None:
-        x = np.random.default_rng(seed).normal(
-            loc,
-            scale,
-            series_len * num_of_regressors
-        ).reshape(series_len, -1)
+        x = (
+            np.random.default_rng(seed)
+            .normal(loc, scale, series_len * num_of_regressors)
+            .reshape(series_len, -1)
+        )
     else:
         x = np.random.default_rng(seed).multivariate_normal(
-            np.array([loc] * num_of_regressors, dtype=np.float64),
-            cov,
-            series_len
+            np.array([loc] * num_of_regressors, dtype=np.float64), cov, series_len
         )
     # control probability of regression kick-in
     if (sparsity > 0.0) and (sparsity < 1.0):
-        z = np.random.default_rng(seed).binomial(
-            1,
-            1 - sparsity,
-            series_len * num_of_regressors
-        ).reshape(series_len, -1)
+        z = (
+            np.random.default_rng(seed)
+            .binomial(1, 1 - sparsity, series_len * num_of_regressors)
+            .reshape(series_len, -1)
+        )
         x = x * z
 
     noise = np.random.default_rng(seed).normal(0, noise_scale, series_len)
@@ -225,31 +239,34 @@ def sim_stepwise_coef_data(n, RS, p=3, n_jump=2):
     # observation with noise
     y = lev + (covariates * beta).sum(-1) + 0.3 * np.random.normal(0, 1, n)
 
-    regressor_col = ['x{}'.format(pp) for pp in range(1, p + 1)]
+    regressor_col = ["x{}".format(pp) for pp in range(1, p + 1)]
     data = pd.DataFrame(covariates, columns=regressor_col)
-    data['y'] = y
-    data['date'] = pd.date_range(start='1/1/2018', periods=len(y))
+    data["y"] = y
+    data["date"] = pd.date_range(start="1/1/2018", periods=len(y))
 
     # hack for p = 3
-    data['beta1'] = beta[:, 0]
-    data['beta2'] = beta[:, 1]
-    data['beta3'] = beta[:, 2]
+    data["beta1"] = beta[:, 0]
+    data["beta2"] = beta[:, 1]
+    data["beta3"] = beta[:, 2]
 
     return data
 
 
 def sim_data_grw(n, RS, p=3):
-    """ coefficients curve are geometric random walk like
+    """coefficients curve are geometric random walk like
 
     Notes
     -----
     This code is purely experimental
     """
     np.random.seed(RS)
-    beta_init = np.concatenate((
-        np.random.normal(2.0, 1.0, size=(1, 1)),  # leves
-        np.random.normal(-3.0, 0.05, size=(1, p))  # regression coefficients
-    ), axis=-1)
+    beta_init = np.concatenate(
+        (
+            np.random.normal(2.0, 1.0, size=(1, 1)),  # leves
+            np.random.normal(-3.0, 0.05, size=(1, p)),  # regression coefficients
+        ),
+        axis=-1,
+    )
 
     beta_drift = np.random.normal(0.0, 0.05, size=(n - 1, p + 1))  # drift
 
@@ -265,30 +282,32 @@ def sim_data_grw(n, RS, p=3):
     # observation with noise
     y = (covar * beta).sum(-1) + 0.3 * np.random.normal(0, 1, n)
 
-    regressor_col = ['x{}'.format(pp) for pp in range(1, p + 1)]
+    regressor_col = ["x{}".format(pp) for pp in range(1, p + 1)]
     regressor_col
     data = pd.DataFrame(covar[:, 1:], columns=regressor_col)
-    beta_col = ['beta{}'.format(pp) for pp in range(1, p + 1)]
+    beta_col = ["beta{}".format(pp) for pp in range(1, p + 1)]
     beta_data = pd.DataFrame(beta[:, 1:], columns=beta_col)
     data = pd.concat([data, beta_data], axis=1)
 
-    data['y'] = y
-    data['date'] = pd.date_range(start='1/1/2018', periods=len(y))
+    data["y"] = y
+    data["date"] = pd.date_range(start="1/1/2018", periods=len(y))
 
     return data
 
 
 def sim_data_rw(n, RS, p=3):
-    """ coefficients curve are random walk like
-    """
+    """coefficients curve are random walk like"""
     np.random.seed(RS)
 
     # initializing coefficients at zeros, simulate all coefficient values
     lev = np.cumsum(np.concatenate((np.array([5.0]), np.random.normal(0, 0.01, n - 1))))
     beta = np.concatenate(
-        [np.random.uniform(0.05, 0.12, size=(1, p)),
-         np.random.normal(0.0, 0.01, size=(n - 1, p))],
-        axis=0)
+        [
+            np.random.uniform(0.05, 0.12, size=(1, p)),
+            np.random.normal(0.0, 0.01, size=(n - 1, p)),
+        ],
+        axis=0,
+    )
     beta = np.cumsum(beta, 0)
 
     # simulate regressors
@@ -297,36 +316,41 @@ def sim_data_rw(n, RS, p=3):
     # observation with noise
     y = lev + (covariates * beta).sum(-1) + 0.3 * np.random.normal(0, 1, n)
 
-    regressor_col = ['x{}'.format(pp) for pp in range(1, p + 1)]
+    regressor_col = ["x{}".format(pp) for pp in range(1, p + 1)]
     data = pd.DataFrame(covariates, columns=regressor_col)
-    beta_col = ['beta{}'.format(pp) for pp in range(1, p + 1)]
+    beta_col = ["beta{}".format(pp) for pp in range(1, p + 1)]
     beta_data = pd.DataFrame(beta, columns=beta_col)
     data = pd.concat([data, beta_data], axis=1)
 
-    data['y'] = y
-    data['date'] = pd.date_range(start='1/1/2018', periods=len(y))
+    data["y"] = y
+    data["date"] = pd.date_range(start="1/1/2018", periods=len(y))
 
     return data
 
 
 def sim_data_seasonal(n, RS):
-    """ coefficients curve are sine-cosine like
-    """
+    """coefficients curve are sine-cosine like"""
     np.random.seed(RS)
     # make the time varing coefs
     tau = np.arange(1, n + 1) / n
-    data = pd.DataFrame({
-        'tau': tau,
-        'date': pd.date_range(start='1/1/2018', periods=n),
-        'beta1': 2 * tau,
-        'beta2': 1.01 + np.sin(2 * pi * tau),
-        'beta3': 1.01 + np.sin(4 * pi * (tau - 1 / 8)),
-        'x1': np.random.normal(0, 10, size=n),
-        'x2': np.random.normal(0, 10, size=n),
-        'x3': np.random.normal(0, 10, size=n),
-        'trend': np.cumsum(np.concatenate((np.array([1]), np.random.normal(0, 0.1, n - 1)))),
-        'error': np.random.normal(0, 1, size=n)  # stats.t.rvs(30, size=n),#
-    })
+    data = pd.DataFrame(
+        {
+            "tau": tau,
+            "date": pd.date_range(start="1/1/2018", periods=n),
+            "beta1": 2 * tau,
+            "beta2": 1.01 + np.sin(2 * pi * tau),
+            "beta3": 1.01 + np.sin(4 * pi * (tau - 1 / 8)),
+            "x1": np.random.normal(0, 10, size=n),
+            "x2": np.random.normal(0, 10, size=n),
+            "x3": np.random.normal(0, 10, size=n),
+            "trend": np.cumsum(
+                np.concatenate((np.array([1]), np.random.normal(0, 0.1, n - 1)))
+            ),
+            "error": np.random.normal(0, 1, size=n),  # stats.t.rvs(30, size=n),#
+        }
+    )
 
-    data['y'] = data.x1 * data.beta1 + data.x2 * data.beta2 + data.x3 * data.beta3 + data.error
+    data["y"] = (
+        data.x1 * data.beta1 + data.x2 * data.beta2 + data.x3 * data.beta3 + data.error
+    )
     return data

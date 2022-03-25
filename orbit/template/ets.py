@@ -3,11 +3,7 @@ from copy import deepcopy
 import torch
 from enum import Enum
 
-from ..constants.constants import (
-    PredictionKeys,
-    TrainingMetaKeys,
-    PredictionMetaKeys
-)
+from ..constants.constants import PredictionKeys, TrainingMetaKeys, PredictionMetaKeys
 from ..exceptions import IllegalArgument, DataInputException
 from .model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
@@ -19,40 +15,44 @@ class DataInputMapper(Enum):
     """
     mapping from object input to sampler
     """
+
     # ---------- Seasonality ---------- #
-    _SEASONALITY = 'SEASONALITY'
-    SEASONALITY_SD = 'SEASONALITY_SD'
-    _SEASONALITY_SM_INPUT = 'SEA_SM_INPUT'
+    _SEASONALITY = "SEASONALITY"
+    SEASONALITY_SD = "SEASONALITY_SD"
+    _SEASONALITY_SM_INPUT = "SEA_SM_INPUT"
     # ---------- Common Local Trend ---------- #
-    _LEVEL_SM_INPUT = 'LEV_SM_INPUT'
+    _LEVEL_SM_INPUT = "LEV_SM_INPUT"
     # handle missing values
-    IS_VALID_RESPONSE = 'IS_VALID_RES'
+    IS_VALID_RESPONSE = "IS_VALID_RES"
 
 
 class BaseSamplingParameters(Enum):
     """
     base parameters in posteriors sampling
     """
+
     # ---------- Common Local Trend ---------- #
-    LOCAL_TREND_LEVELS = 'l'
-    LEVEL_SMOOTHING_FACTOR = 'lev_sm'
+    LOCAL_TREND_LEVELS = "l"
+    LEVEL_SMOOTHING_FACTOR = "lev_sm"
     # ---------- Noise Trend ---------- #
-    RESIDUAL_SIGMA = 'obs_sigma'
+    RESIDUAL_SIGMA = "obs_sigma"
 
 
 class SeasonalitySamplingParameters(Enum):
     """
     seasonality component related parameters in posteriors sampling
     """
-    SEASONALITY_LEVELS = 's'
-    SEASONALITY_SMOOTHING_FACTOR = 'sea_sm'
+
+    SEASONALITY_LEVELS = "s"
+    SEASONALITY_SMOOTHING_FACTOR = "sea_sm"
 
 
 class LatentSamplingParameters(Enum):
     """
     latent variables to be sampled
     """
-    INITIAL_SEASONALITY = 'init_sea'
+
+    INITIAL_SEASONALITY = "init_sea"
 
 
 # a callable object for generating initial values in sampling/optimization
@@ -62,7 +62,9 @@ class ETSInitializer(object):
 
     def __call__(self):
         init_values = dict()
-        init_sea = np.clip(np.random.normal(loc=0, scale=0.05, size=self.s - 1), -1.0, 1.0)
+        init_sea = np.clip(
+            np.random.normal(loc=0, scale=0.05, size=self.s - 1), -1.0, 1.0
+        )
         init_values[LatentSamplingParameters.INITIAL_SEASONALITY.value] = init_sea
         return init_values
 
@@ -81,18 +83,15 @@ class ETSModel(ModelTemplate):
         float value between [0.0001, 1]. A larger value puts more weight on the current level.
         If None, the model will estimate this value.
     """
+
     # data labels for sampler
     _data_input_mapper = DataInputMapper
     # used to match name of `*.stan` or `*.pyro` file to look for the model
-    _model_name = 'ets'
+    _model_name = "ets"
     _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC]
 
     def __init__(
-            self,
-            seasonality=None,
-            seasonality_sm_input=None,
-            level_sm_input=None,
-            **kwargs
+        self, seasonality=None, seasonality_sm_input=None, level_sm_input=None, **kwargs
     ):
         # estimator is created in base class
         super().__init__(**kwargs)
@@ -122,8 +121,10 @@ class ETSModel(ModelTemplate):
         if self.level_sm_input is None:
             self._level_sm_input = -1
         elif self.level_sm_input < 0 or self.level_sm_input > 1:
-            raise IllegalArgument('only values between [0, 1] are supported for level_sm_input '
-                                  'to build a model with meaningful trend.')
+            raise IllegalArgument(
+                "only values between [0, 1] are supported for level_sm_input "
+                "to build a model with meaningful trend."
+            )
         if self.seasonality is None:
             self._seasonality = -1
 
@@ -132,12 +133,14 @@ class ETSModel(ModelTemplate):
         # compute data-driven prior for seasonality
         if self._seasonality > 1:
             response = training_meta[TrainingMetaKeys.RESPONSE.value]
-            response_ma = moving_average(response, window=self._seasonality, mode='same')
+            response_ma = moving_average(
+                response, window=self._seasonality, mode="same"
+            )
             adjusted_response = response - response_ma
             # to estimate the "across-group" s.d. as a seasonality prior
             ss = np.zeros(self._seasonality)
             for idx in range(self._seasonality):
-                ss[idx] = np.nanmean(adjusted_response[idx::self._seasonality])
+                ss[idx] = np.nanmean(adjusted_response[idx :: self._seasonality])
             self.seasonality_sd = np.nanstd(ss)
         else:
             # should not be used anyway; just a placeholder
@@ -150,12 +153,14 @@ class ETSModel(ModelTemplate):
         self.is_valid_response = (~np.isnan(response)).astype(int)
         # raise exception if the first response value is missing
         if self.is_valid_response[0] == 0:
-            raise DataInputException('The first value of response column {} cannot be missing..'.
-                                     format(training_meta[TrainingMetaKeys.RESPONSE_COL.value]))
+            raise DataInputException(
+                "The first value of response column {} cannot be missing..".format(
+                    training_meta[TrainingMetaKeys.RESPONSE_COL.value]
+                )
+            )
 
     def set_init_values(self):
-        """Override function from Base Template
-        """
+        """Override function from Base Template"""
         # init_values_partial = partial(init_values_callable, seasonality=seasonality)
         # partialfunc does not work when passed to PyStan because PyStan uses
         # inspect.getargspec(func) which seems to raise an exception with keyword-only args
@@ -163,9 +168,7 @@ class ETSModel(ModelTemplate):
         # lambda does not work in serialization in pickle
         # callable object as an alternative workaround
         if self._seasonality > 1:
-            init_values_callable = ETSInitializer(
-                self._seasonality
-            )
+            init_values_callable = ETSInitializer(self._seasonality)
             self._init_values = init_values_callable
 
     def _set_model_param_names(self):
@@ -174,9 +177,19 @@ class ETSModel(ModelTemplate):
 
         # append seasonality param names
         if self._seasonality > 1:
-            self._model_param_names += [param.value for param in SeasonalitySamplingParameters]
+            self._model_param_names += [
+                param.value for param in SeasonalitySamplingParameters
+            ]
 
-    def predict(self, posterior_estimates, df, training_meta, prediction_meta, include_error=False, **kwargs):
+    def predict(
+        self,
+        posterior_estimates,
+        df,
+        training_meta,
+        prediction_meta,
+        include_error=False,
+        **kwargs,
+    ):
         """Vectorized version of prediction math"""
         ################################################################
         # Prediction Attributes
@@ -202,14 +215,16 @@ class ETSModel(ModelTemplate):
 
         # seasonality components
         seasonality_levels = model.get(
-            SeasonalitySamplingParameters.SEASONALITY_LEVELS.value)
+            SeasonalitySamplingParameters.SEASONALITY_LEVELS.value
+        )
         seasonality_smoothing_factor = model.get(
             SeasonalitySamplingParameters.SEASONALITY_SMOOTHING_FACTOR.value
         )
 
         # trend components
         level_smoothing_factor = model.get(
-            BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR.value)
+            BaseSamplingParameters.LEVEL_SMOOTHING_FACTOR.value
+        )
         local_trend_levels = model.get(BaseSamplingParameters.LOCAL_TREND_LEVELS.value)
         residual_sigma = model.get(BaseSamplingParameters.RESIDUAL_SIGMA.value)
 
@@ -223,10 +238,12 @@ class ETSModel(ModelTemplate):
                 seasonal_component = seasonality_levels[:, :full_len]
             else:
                 seasonality_forecast_length = full_len - seasonality_levels.shape[1]
-                seasonality_forecast_matrix \
-                    = torch.zeros((num_sample, seasonality_forecast_length), dtype=torch.double)
+                seasonality_forecast_matrix = torch.zeros(
+                    (num_sample, seasonality_forecast_length), dtype=torch.double
+                )
                 seasonal_component = torch.cat(
-                    (seasonality_levels, seasonality_forecast_matrix), dim=1)
+                    (seasonality_levels, seasonality_forecast_matrix), dim=1
+                )
         else:
             seasonal_component = torch.zeros((num_sample, full_len), dtype=torch.double)
 
@@ -243,7 +260,7 @@ class ETSModel(ModelTemplate):
                 error_value = np.random.normal(
                     loc=0,
                     scale=residual_sigma.unsqueeze(-1),
-                    size=trend_component.shape
+                    size=trend_component.shape,
                 )
 
                 error_value = torch.from_numpy(error_value).double()
@@ -255,13 +272,15 @@ class ETSModel(ModelTemplate):
                 error_value = np.random.normal(
                     loc=0,
                     scale=residual_sigma.unsqueeze(-1),
-                    size=trend_component.shape
+                    size=trend_component.shape,
                 )
 
                 error_value = torch.from_numpy(error_value).double()
                 trend_component += error_value
 
-            trend_forecast_matrix = torch.zeros((num_sample, n_forecast_steps), dtype=torch.double)
+            trend_forecast_matrix = torch.zeros(
+                (num_sample, n_forecast_steps), dtype=torch.double
+            )
             trend_component = torch.cat((trend_component, trend_forecast_matrix), dim=1)
 
             last_local_trend_level = local_trend_levels[:, -1]
@@ -271,22 +290,27 @@ class ETSModel(ModelTemplate):
 
                 if include_error:
                     error_value = np.random.normal(
-                        scale=residual_sigma,
-                        size=num_sample
+                        scale=residual_sigma, size=num_sample
                     )
                     error_value = torch.from_numpy(error_value).double()
                     trend_component[:, idx] += error_value
 
-                new_local_trend_level = \
-                    level_smoothing_factor * trend_component[:, idx] \
+                new_local_trend_level = (
+                    level_smoothing_factor * trend_component[:, idx]
                     + (1 - level_smoothing_factor) * last_local_trend_level
+                )
 
                 if self._seasonality > 1 and idx + self._seasonality < full_len:
-                    seasonal_component[:, idx + self._seasonality] = \
-                        seasonality_smoothing_factor.flatten() \
-                        * (trend_component[:, idx] + seasonal_component[:, idx] -
-                           new_local_trend_level) \
-                        + (1 - seasonality_smoothing_factor.flatten()) * seasonal_component[:, idx]
+                    seasonal_component[:, idx + self._seasonality] = (
+                        seasonality_smoothing_factor.flatten()
+                        * (
+                            trend_component[:, idx]
+                            + seasonal_component[:, idx]
+                            - new_local_trend_level
+                        )
+                        + (1 - seasonality_smoothing_factor.flatten())
+                        * seasonal_component[:, idx]
+                    )
 
                 last_local_trend_level = new_local_trend_level
 
@@ -308,7 +332,7 @@ class ETSModel(ModelTemplate):
         out = {
             PredictionKeys.PREDICTION.value: pred_array,
             PredictionKeys.TREND.value: trend_component,
-            PredictionKeys.SEASONALITY.value: seasonal_component
+            PredictionKeys.SEASONALITY.value: seasonal_component,
         }
 
         return out

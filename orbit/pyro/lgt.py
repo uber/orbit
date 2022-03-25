@@ -4,7 +4,7 @@ import torch
 import pyro
 import pyro.distributions as dist
 
-torch.set_default_tensor_type('torch.DoubleTensor')
+torch.set_default_tensor_type("torch.DoubleTensor")
 
 
 class Model:
@@ -18,15 +18,15 @@ class Model:
             self.__dict__[key] = value
 
         # transformed data
-        self.is_seasonal = (self.seasonality > 1)
+        self.is_seasonal = self.seasonality > 1
         self.lev_lower_bound = 0
 
     def __call__(self):
         response = self.response
         num_of_obs = self.num_of_obs
         extra_out = {}
-        
-        # added for tempured sampling 
+
+        # added for tempured sampling
         T = self.t_star
 
         # smoothing params
@@ -34,12 +34,12 @@ class Model:
             lev_sm = pyro.sample("lev_sm", dist.Uniform(0, 1))
         else:
             lev_sm = torch.tensor(self.lev_sm_input, dtype=torch.double)
-            extra_out['lev_sm'] = lev_sm
+            extra_out["lev_sm"] = lev_sm
         if self.slp_sm_input < 0:
             slp_sm = pyro.sample("slp_sm", dist.Uniform(0, 1))
         else:
             slp_sm = torch.tensor(self.slp_sm_input, dtype=torch.double)
-            extra_out['slp_sm'] = slp_sm
+            extra_out["slp_sm"] = slp_sm
 
         # residual tuning parameters
         nu = pyro.sample("nu", dist.Uniform(self.min_nu, self.max_nu))
@@ -59,16 +59,25 @@ class Model:
                 # auto scale ridge
                 elif self.reg_penalty_type == 2:
                     # weak prior for sigma
-                    pr_sigma = pyro.sample("pr_sigma", dist.HalfCauchy(self.auto_ridge_scale))
+                    pr_sigma = pyro.sample(
+                        "pr_sigma", dist.HalfCauchy(self.auto_ridge_scale)
+                    )
                 # case when it is not lasso
                 if self.reg_penalty_type != 1:
                     # weak prior for betas
-                    pr_beta = pyro.sample("pr_beta", dist.FoldedDistribution(
-                        dist.Normal(self.pr_beta_prior, pr_sigma)))
+                    pr_beta = pyro.sample(
+                        "pr_beta",
+                        dist.FoldedDistribution(
+                            dist.Normal(self.pr_beta_prior, pr_sigma)
+                        ),
+                    )
                 else:
-                    pr_beta = pyro.sample("pr_beta",
-                                          dist.FoldedDistribution(
-                                              dist.Laplace(self.pr_beta_prior, self.lasso_scale)))
+                    pr_beta = pyro.sample(
+                        "pr_beta",
+                        dist.FoldedDistribution(
+                            dist.Laplace(self.pr_beta_prior, self.lasso_scale)
+                        ),
+                    )
             pr = pr_beta @ self.pr_mat.transpose(-1, -2)
 
         if self.num_of_nr == 0:
@@ -82,16 +91,25 @@ class Model:
                 # auto scale ridge
                 elif self.reg_penalty_type == 2:
                     # weak prior for sigma
-                    nr_sigma = pyro.sample("nr_sigma", dist.HalfCauchy(self.auto_ridge_scale))
+                    nr_sigma = pyro.sample(
+                        "nr_sigma", dist.HalfCauchy(self.auto_ridge_scale)
+                    )
                 # case when it is not lasso
                 if self.reg_penalty_type != 1:
                     # weak prior for betas
-                    nr_beta = -1.0 * pyro.sample("nr_beta", dist.FoldedDistribution(
-                        dist.Normal(self.nr_beta_prior, nr_sigma)))
+                    nr_beta = -1.0 * pyro.sample(
+                        "nr_beta",
+                        dist.FoldedDistribution(
+                            dist.Normal(self.nr_beta_prior, nr_sigma)
+                        ),
+                    )
                 else:
-                    nr_beta = -1.0 * pyro.sample("nr_beta",
-                                          dist.FoldedDistribution(
-                                              dist.Laplace(self.nr_beta_prior, self.lasso_scale)))
+                    nr_beta = -1.0 * pyro.sample(
+                        "nr_beta",
+                        dist.FoldedDistribution(
+                            dist.Laplace(self.nr_beta_prior, self.lasso_scale)
+                        ),
+                    )
             nr = nr_beta @ self.nr_mat.transpose(-1, -2)
 
         if self.num_of_rr == 0:
@@ -105,13 +123,19 @@ class Model:
                 # auto scale ridge
                 elif self.reg_penalty_type == 2:
                     # weak prior for sigma
-                    rr_sigma = pyro.sample("rr_sigma", dist.HalfCauchy(self.auto_ridge_scale))
+                    rr_sigma = pyro.sample(
+                        "rr_sigma", dist.HalfCauchy(self.auto_ridge_scale)
+                    )
                 # case when it is not lasso
                 if self.reg_penalty_type != 1:
                     # weak prior for betas
-                    rr_beta = pyro.sample("rr_beta", dist.Normal(self.rr_beta_prior, rr_sigma))
+                    rr_beta = pyro.sample(
+                        "rr_beta", dist.Normal(self.rr_beta_prior, rr_sigma)
+                    )
                 else:
-                    rr_beta = pyro.sample("rr_beta", dist.Laplace(self.rr_beta_prior, self.lasso_scale))
+                    rr_beta = pyro.sample(
+                        "rr_beta", dist.Laplace(self.rr_beta_prior, self.lasso_scale)
+                    )
             rr = rr_beta @ self.rr_mat.transpose(-1, -2)
 
         # a hack to make sure we don't use a dimension "1" due to rr_beta and pr_beta sampling
@@ -134,14 +158,13 @@ class Model:
                 sea_sm = pyro.sample("sea_sm", dist.Uniform(0, 1))
             else:
                 sea_sm = torch.tensor(self.sea_sm_input, dtype=torch.double)
-                extra_out['sea_sm'] = sea_sm
+                extra_out["sea_sm"] = sea_sm
 
             # initial seasonality
             # 33% lift is with 1 sd prob.
-            init_sea = pyro.sample("init_sea",
-                                   dist.Normal(0, 0.33)
-                                       .expand([self.seasonality])
-                                       .to_event(1))
+            init_sea = pyro.sample(
+                "init_sea", dist.Normal(0, 0.33).expand([self.seasonality]).to_event(1)
+            )
             init_sea = init_sea - init_sea.mean(-1, keepdim=True)
 
         b = [None] * num_of_obs  # slope
@@ -152,7 +175,7 @@ class Model:
                 s[t] = init_sea[..., t]
             s[self.seasonality] = init_sea[..., 0]
         else:
-            s = [torch.tensor(0.)] * num_of_obs
+            s = [torch.tensor(0.0)] * num_of_obs
 
         # states initial condition
         b[0] = torch.zeros_like(slp_sm)
@@ -169,8 +192,9 @@ class Model:
             l[t] = lev_sm * (response[t] - s[t] - r[..., t]) + (1 - lev_sm) * l[t - 1]
             b[t] = slp_sm * (l[t] - l[t - 1]) + (1 - slp_sm) * b[t - 1]
             if self.is_seasonal:
-                s[t + self.seasonality] = \
+                s[t + self.seasonality] = (
                     sea_sm * (response[t] - l[t] - r[..., t]) + (1 - sea_sm) * s[t]
+                )
 
         # evaluation process
         # vectorize as much math as possible
@@ -190,19 +214,19 @@ class Model:
         yhat = lgt_sum + s[..., :num_of_obs] + r
 
         with pyro.plate("response_plate", num_of_obs - 1):
-            with pyro.poutine.scale(scale=1.0/T):
-                pyro.sample("response", dist.StudentT(nu, yhat[..., 1:], obs_sigma),
-                        obs=response[1:])
-        
-        log_prob =  dist.StudentT(nu, yhat[..., 1:], obs_sigma).log_prob(response[1:])
-            
+            with pyro.poutine.scale(scale=1.0 / T):
+                pyro.sample(
+                    "response",
+                    dist.StudentT(nu, yhat[..., 1:], obs_sigma),
+                    obs=response[1:],
+                )
+
+        log_prob = dist.StudentT(nu, yhat[..., 1:], obs_sigma).log_prob(response[1:])
 
         # we care beta not the pr_beta, nr_beta, ...
-        extra_out['beta'] = torch.cat([pr_beta, nr_beta, rr_beta], dim=-1)
+        extra_out["beta"] = torch.cat([pr_beta, nr_beta, rr_beta], dim=-1)
 
-        extra_out.update({'b': b, 
-                          'l': l, 
-                          's': s, 
-                          'lgt_sum': lgt_sum,
-                          'log_prob': log_prob})
+        extra_out.update(
+            {"b": b, "l": l, "s": s, "lgt_sum": lgt_sum, "log_prob": log_prob}
+        )
         return extra_out

@@ -6,21 +6,22 @@ from ..constants.constants import EstimatorsKeys
 
 
 def KTRLite(
-        # level
-        level_knot_scale=0.1,
-        level_segments=10,
-        level_knot_distance=None,
-        level_knot_dates=None,
-        # seasonality
-        seasonality=None,
-        seasonality_fs_order=None,
-        seasonality_segments=2,
-        seasonal_initial_knot_scale=1.0,
-        seasonal_knot_scale=0.1,
-        degree_of_freedom=30,
-        date_freq=None,
-        estimator='stan-map',
-        **kwargs):
+    # level
+    level_knot_scale=0.1,
+    level_segments=10,
+    level_knot_distance=None,
+    level_knot_dates=None,
+    # seasonality
+    seasonality=None,
+    seasonality_fs_order=None,
+    seasonality_segments=2,
+    seasonal_initial_knot_scale=1.0,
+    seasonal_knot_scale=0.1,
+    degree_of_freedom=30,
+    date_freq=None,
+    estimator="stan-map",
+    **kwargs,
+):
     """
     Parameters
     ----------
@@ -85,12 +86,11 @@ def KTRLite(
     )
     if estimator == EstimatorsKeys.StanMAP.value:
         ktrlite_forecaster = MAPForecaster(
-            model=ktrlite,
-            estimator_type=StanEstimatorMAP,
-            **kwargs
+            model=ktrlite, estimator_type=StanEstimatorMAP, **kwargs
         )
     else:
-        raise IllegalArgument('Invalid estimator. Must be one of {}'.format(_supported_estimators))
+        raise IllegalArgument(
+            "Invalid estimator. Must be one of {}".format(_supported_estimators)
+        )
 
     return ktrlite_forecaster
-

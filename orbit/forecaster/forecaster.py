@@ -10,22 +10,31 @@ from ..template.model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMCMC
 from ..constants.constants import TrainingMetaKeys, PredictionMetaKeys
 
-COMMON_MODEL_CALLABLES = ['get_data_input_mapper', 'get_fitter', 'get_init_values', 'get_model_name',
-                          'get_model_param_names', 'get_supported_estimator_types', 'predict',
-                          'set_dynamic_attributes', 'set_init_values']
+COMMON_MODEL_CALLABLES = [
+    "get_data_input_mapper",
+    "get_fitter",
+    "get_init_values",
+    "get_model_name",
+    "get_model_param_names",
+    "get_supported_estimator_types",
+    "predict",
+    "set_dynamic_attributes",
+    "set_init_values",
+]
 
 
 class Forecaster(object):
-
-    def __init__(self,
-                 model,
-                 estimator_type,
-                 response_col='y',
-                 date_col='ds',
-                 n_bootstrap_draws=-1,
-                 prediction_percentiles=None,
-                 **kwargs):
-        """ Abstract class for providing template of how a forecaster works by containing a model under `ModelTemplate`
+    def __init__(
+        self,
+        model,
+        estimator_type,
+        response_col="y",
+        date_col="ds",
+        n_bootstrap_draws=-1,
+        prediction_percentiles=None,
+        **kwargs,
+    ):
+        """Abstract class for providing template of how a forecaster works by containing a model under `ModelTemplate`
 
         Parameters
         ----------
@@ -52,15 +61,18 @@ class Forecaster(object):
 
         # general fields
         if not isinstance(model, ModelTemplate):
-            raise ForecasterException('Invalid class of model argument supplied.')
+            raise ForecasterException("Invalid class of model argument supplied.")
         self._model = model
         method_list = [
-            attr for attr in dir(model)
+            attr
+            for attr in dir(model)
             # only load public methods
-            if (callable(getattr(model, attr))
-                and not attr.startswith('__')
-                and not attr.startswith('_')
-                and attr not in COMMON_MODEL_CALLABLES)
+            if (
+                callable(getattr(model, attr))
+                and not attr.startswith("__")
+                and not attr.startswith("_")
+                and attr not in COMMON_MODEL_CALLABLES
+            )
         ]
         self.extra_methods = method_list
         self.response_col = response_col
@@ -87,7 +99,9 @@ class Forecaster(object):
             self._prediction_percentiles = deepcopy(self.prediction_percentiles)
 
         self._prediction_percentiles += [50]  # always find median
-        self._prediction_percentiles = list(set(self._prediction_percentiles))  # avoid duplicates
+        self._prediction_percentiles = list(
+            set(self._prediction_percentiles)
+        )  # avoid duplicates
         self._prediction_percentiles.sort()
 
         # fields from fit and predict process
@@ -114,7 +128,9 @@ class Forecaster(object):
             model_class = type(self._model)
             estimator_type = estimator_type
             raise ForecasterException(
-                msg_template.format(model_class, estimator_type, str(supported_estimator_types))
+                msg_template.format(
+                    model_class, estimator_type, str(supported_estimator_types)
+                )
             )
 
     def fit(self, df, **kwargs):
@@ -128,7 +144,9 @@ class Forecaster(object):
         # extract standard training metadata
         self._set_training_meta(df)
         # customize module
-        self._model.set_dynamic_attributes(df=df, training_meta=self.get_training_meta())
+        self._model.set_dynamic_attributes(
+            df=df, training_meta=self.get_training_meta()
+        )
         # based on the model and df, set training input
         self.set_training_data_input()
         # if model provide initial values, set it
@@ -148,7 +166,7 @@ class Forecaster(object):
             data_input=data_input,
             fitter=self._model.get_fitter(),
             init_values=init_values,
-            **kwargs
+            **kwargs,
         )
 
         self._posterior_samples = _posterior_samples
@@ -161,7 +179,9 @@ class Forecaster(object):
         training_meta = dict()
         response = df[self.response_col].values
         training_meta[TrainingMetaKeys.RESPONSE.value] = response
-        training_meta[TrainingMetaKeys.DATE_ARRAY.value] = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
+        training_meta[TrainingMetaKeys.DATE_ARRAY.value] = pd.to_datetime(
+            df[self.date_col]
+        ).reset_index(drop=True)
         training_meta[TrainingMetaKeys.NUM_OF_OBS.value] = len(response)
         training_meta[TrainingMetaKeys.RESPONSE_SD.value] = np.nanstd(response)
         training_meta[TrainingMetaKeys.RESPONSE_MEAN.value] = np.nanmean(response)
@@ -193,19 +213,29 @@ class Forecaster(object):
         # refresh a clean dict
         data_input_mapper = self._model.get_data_input_mapper()
         if not data_input_mapper:
-            raise ForecasterException('Empty or invalid data_input_mapper')
+            raise ForecasterException("Empty or invalid data_input_mapper")
 
         # always get standard input from training
         training_meta = self.get_training_meta()
 
         training_data_input = {
-            TrainingMetaKeys.RESPONSE.value.upper(): training_meta[TrainingMetaKeys.RESPONSE.value],
-            TrainingMetaKeys.RESPONSE_SD.value.upper(): training_meta[TrainingMetaKeys.RESPONSE_SD.value],
-            TrainingMetaKeys.RESPONSE_MEAN.value.upper(): training_meta[TrainingMetaKeys.RESPONSE_MEAN.value],
-            TrainingMetaKeys.NUM_OF_OBS.value.upper(): training_meta[TrainingMetaKeys.NUM_OF_OBS.value],
+            TrainingMetaKeys.RESPONSE.value.upper(): training_meta[
+                TrainingMetaKeys.RESPONSE.value
+            ],
+            TrainingMetaKeys.RESPONSE_SD.value.upper(): training_meta[
+                TrainingMetaKeys.RESPONSE_SD.value
+            ],
+            TrainingMetaKeys.RESPONSE_MEAN.value.upper(): training_meta[
+                TrainingMetaKeys.RESPONSE_MEAN.value
+            ],
+            TrainingMetaKeys.NUM_OF_OBS.value.upper(): training_meta[
+                TrainingMetaKeys.NUM_OF_OBS.value
+            ],
         }
 
-        training_data_input = self.set_forecaster_training_meta(data_input=training_data_input)
+        training_data_input = self.set_forecaster_training_meta(
+            data_input=training_data_input
+        )
 
         if isinstance(data_input_mapper, list):
             # if a list is provided, we assume an upper case in the mapper and reuse as the input value
@@ -213,7 +243,9 @@ class Forecaster(object):
                 key_lower = key.lower()
                 input_value = getattr(self._model, key_lower, None)
                 if input_value is None:
-                    raise ForecasterException('{} is missing from data input'.format(key_lower))
+                    raise ForecasterException(
+                        "{} is missing from data input".format(key_lower)
+                    )
                 # stan accepts bool as int only
                 if isinstance(input_value, bool):
                     input_value = int(input_value)
@@ -225,13 +257,17 @@ class Forecaster(object):
                 key_lower = key.name.lower()
                 input_value = getattr(self._model, key_lower, None)
                 if input_value is None:
-                    raise ForecasterException('{} is missing from data input'.format(key_lower))
+                    raise ForecasterException(
+                        "{} is missing from data input".format(key_lower)
+                    )
                 if isinstance(input_value, bool):
                     # stan accepts bool as int only
                     input_value = int(input_value)
                 training_data_input[key.value] = input_value
         else:
-            raise Exception('Invalid type: data_input_mapper needs to be either an Enum or list.')
+            raise Exception(
+                "Invalid type: data_input_mapper needs to be either an Enum or list."
+            )
 
         self._training_data_input = training_data_input
 
@@ -243,19 +279,25 @@ class Forecaster(object):
 
         # validate date_col
         if self.date_col not in df_columns:
-            raise ForecasterException("DataFrame does not contain `date_col`: {}".format(self.date_col))
+            raise ForecasterException(
+                "DataFrame does not contain `date_col`: {}".format(self.date_col)
+            )
 
         # validate ordering of time series
         date_array = pd.to_datetime(df[self.date_col]).reset_index(drop=True)
         if not is_ordered_datetime(date_array):
-            raise ForecasterException('Datetime index must be ordered and not repeat')
+            raise ForecasterException("Datetime index must be ordered and not repeat")
 
         if not is_even_gap_datetime(date_array):
-            warnings.warn('Datetime index is not evenly distributed')
+            warnings.warn("Datetime index is not evenly distributed")
 
         # validate response variable is in df
         if self.response_col not in df_columns:
-            raise ForecasterException("DataFrame does not contain `response_col`: {}".format(self.response_col))
+            raise ForecasterException(
+                "DataFrame does not contain `response_col`: {}".format(
+                    self.response_col
+                )
+            )
 
     def is_fitted(self):
         # if either point posterior or posterior_samples are non-empty, claim it as fitted model (true),
@@ -269,7 +311,9 @@ class Forecaster(object):
 
     def predict(self, df, **kwargs):
         """Predict interface requires concrete implementation from child class"""
-        raise AbstractMethodException("Abstract method.  Model should implement concrete .predict().")
+        raise AbstractMethodException(
+            "Abstract method.  Model should implement concrete .predict()."
+        )
 
     def _set_prediction_meta(self, df):
         """A default pre-processing and information gathering from prediction input dataframe"""
@@ -278,52 +322,64 @@ class Forecaster(object):
 
         # get prediction df meta
         prediction_meta = {
-            PredictionMetaKeys.DATE_ARRAY.value: pd.to_datetime(df[self.date_col]).reset_index(drop=True),
+            PredictionMetaKeys.DATE_ARRAY.value: pd.to_datetime(
+                df[self.date_col]
+            ).reset_index(drop=True),
             PredictionMetaKeys.PREDICTION_DF_LEN.value: len(df.index),
             PredictionMetaKeys.START.value: df[self.date_col].iloc[0],
             PredictionMetaKeys.END.value: df[self.date_col].iloc[-1],
         }
 
         if not is_ordered_datetime(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]):
-            raise ForecasterException('Datetime index must be ordered and not repeat')
+            raise ForecasterException("Datetime index must be ordered and not repeat")
 
         if not is_even_gap_datetime(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]):
-            warnings.warn('Datetime index is not evenly distributed')
+            warnings.warn("Datetime index is not evenly distributed")
 
         # TODO: validate that all regressor columns are present, if any
 
-        if prediction_meta[PredictionMetaKeys.START.value] < self._training_meta[TrainingMetaKeys.START.value]:
-            raise ForecasterException('Prediction start must be after training start.')
+        if (
+            prediction_meta[PredictionMetaKeys.START.value]
+            < self._training_meta[TrainingMetaKeys.START.value]
+        ):
+            raise ForecasterException("Prediction start must be after training start.")
 
         trained_len = self._training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
 
         # If we cannot find a match of prediction range, assume prediction starts right after train
         # end
-        if prediction_meta[PredictionMetaKeys.START.value] > self._training_meta[TrainingMetaKeys.END.value]:
+        if (
+            prediction_meta[PredictionMetaKeys.START.value]
+            > self._training_meta[TrainingMetaKeys.END.value]
+        ):
             forecast_dates = set(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value])
             n_forecast_steps = len(forecast_dates)
             # time index for prediction start
             start = trained_len
         else:
             # compute how many steps to forecast
-            forecast_dates = \
-                set(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]) - \
-                set(self._training_meta[TrainingMetaKeys.DATE_ARRAY.value])
+            forecast_dates = set(
+                prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]
+            ) - set(self._training_meta[TrainingMetaKeys.DATE_ARRAY.value])
             # check if prediction df is a subset of training df
             # e.g. "negative" forecast steps
-            n_forecast_steps = len(forecast_dates) or - (
-                len(set(self._training_meta[TrainingMetaKeys.DATE_ARRAY.value]) -
-                    set(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]))
+            n_forecast_steps = len(forecast_dates) or -(
+                len(
+                    set(self._training_meta[TrainingMetaKeys.DATE_ARRAY.value])
+                    - set(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value])
+                )
             )
             # time index for prediction start
             start = pd.Index(
-                self._training_meta[TrainingMetaKeys.DATE_ARRAY.value]).get_loc(
-                prediction_meta[PredictionMetaKeys.START.value])
+                self._training_meta[TrainingMetaKeys.DATE_ARRAY.value]
+            ).get_loc(prediction_meta[PredictionMetaKeys.START.value])
 
-        prediction_meta.update({
-            PredictionMetaKeys.START_INDEX.value: start,
-            PredictionMetaKeys.FUTURE_STEPS.value: n_forecast_steps,
-        })
+        prediction_meta.update(
+            {
+                PredictionMetaKeys.START_INDEX.value: start,
+                PredictionMetaKeys.FUTURE_STEPS.value: n_forecast_steps,
+            }
+        )
 
         self._prediction_meta = prediction_meta
 
@@ -354,18 +410,22 @@ class Forecaster(object):
             regressors = self.get_regressors()
             if len(regressors) > 0:
                 if len(regressors) == 1:
-                    posterior_samples[regressors[0]] = posterior_samples['beta']
+                    posterior_samples[regressors[0]] = posterior_samples["beta"]
                 else:
                     for i, regressor in enumerate(regressors):
-                        posterior_samples[regressor] = posterior_samples['beta'][:, i]
-                del posterior_samples['beta']
+                        posterior_samples[regressor] = posterior_samples["beta"][:, i]
+                del posterior_samples["beta"]
 
         if not permute:
             if self.estimator_type == StanEstimatorMCMC:
                 for key, val in posterior_samples.items():
-                    posterior_samples[key] = val.reshape((self.estimator.chains,
-                                                          self.estimator._num_sample_per_chain,
-                                                          *val.shape[1:]))
+                    posterior_samples[key] = val.reshape(
+                        (
+                            self.estimator.chains,
+                            self.estimator._num_sample_per_chain,
+                            *val.shape[1:],
+                        )
+                    )
         return posterior_samples
 
     def get_point_posteriors(self):
@@ -375,7 +435,7 @@ class Forecaster(object):
         pass
 
     def get_regressors(self):
-        if hasattr(self._model, '_regressor_col'):
+        if hasattr(self._model, "_regressor_col"):
             return deepcopy(self._model._regressor_col)
         else:
             return list()
@@ -404,7 +464,9 @@ class Forecaster(object):
         date_col = train_meta[TrainingMetaKeys.DATE_COL.value]
         train_end = date_array[len(date_array) - 1]
         freq = pd.infer_freq(date_array)
-        future_date_array = pd.date_range(start=train_end, periods=periods + 1, freq=freq)[1:]
+        future_date_array = pd.date_range(
+            start=train_end, periods=periods + 1, freq=freq
+        )[1:]
         future_df = pd.DataFrame(future_date_array).rename(columns={0: date_col})
 
         return future_df

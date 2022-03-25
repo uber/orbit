@@ -7,6 +7,7 @@ class ModelTemplate(object):
     -----
     contain data structure ; specify what need to fill from abstract to turn a model concrete
     """
+
     # class attributes
     _data_input_mapper = None
     _model_name = None
@@ -21,9 +22,19 @@ class ModelTemplate(object):
         # set by _set_model_param_names()
         self._model_param_names = list()
 
-    def predict(self, posterior_estimates, df, training_meta, prediction_meta, include_error=False, **kwargs):
+    def predict(
+        self,
+        posterior_estimates,
+        df,
+        training_meta,
+        prediction_meta,
+        include_error=False,
+        **kwargs,
+    ):
         """Predict interface for users"""
-        raise AbstractMethodException("Abstract method.  Model should implement concrete .predict().")
+        raise AbstractMethodException(
+            "Abstract method.  Model should implement concrete .predict()."
+        )
 
     def set_dynamic_attributes(self, df, training_meta):
         """Optional; set dynamic fitting input based on input DataFrame, rather than at object instantiation"""
@@ -52,4 +63,3 @@ class ModelTemplate(object):
 
     def get_supported_estimator_types(self):
         return self._supported_estimator_types
-

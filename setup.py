@@ -14,11 +14,11 @@ from setuptools.command.test import test as test_command
 # dist.Distribution().fetch_build_eggs(['cython'])
 
 DESCRIPTION = "Orbit is a package for bayesian time series modeling and inference."
-AUTHOR = '''
+AUTHOR = """
     Edwin Ng <edwinng@uber.com>, Steve Yang <steve.yang@uber.com>,
     Zhishi Wang <zhishiw@uber.com>, Yifeng Wu <yifeng.wu@uber.com>,  
     Jing Pan <jing.pan@uber.com>
-    '''
+    """
 
 
 def read_long_description(filename="README.md"):
@@ -35,39 +35,40 @@ def requirements(filename="requirements.txt"):
 class PyTest(test_command):
     def finalize_options(self):
         test_command.finalize_options(self)
-        self.test_args = ['-v']  # test args
+        self.test_args = ["-v"]  # test args
         self.test_suite = True
 
     def run_tests(self):
         import pytest
+
         errcode = pytest.main(self.test_args)
         sys.exit(errcode)
 
 
 setup(
     author=AUTHOR,
-    author_email='edwinng@uber.com',
+    author_email="edwinng@uber.com",
     description=DESCRIPTION,
     include_package_data=True,
-    install_requires=requirements('requirements.txt'),
-    tests_require=requirements('requirements-test.txt'),
+    install_requires=requirements("requirements.txt"),
+    tests_require=requirements("requirements-test.txt"),
     cmdclass={
-        'build_py': build_py,
-        'develop': develop,
-        'test': PyTest,
+        "build_py": build_py,
+        "develop": develop,
+        "test": PyTest,
     },
-    test_suite='orbit.tests',
-    license='Apache License 2.0',
+    test_suite="orbit.tests",
+    license="Apache License 2.0",
     long_description=read_long_description(),
-    long_description_content_type='text/markdown',
-    name='orbit-ml',
+    long_description_content_type="text/markdown",
+    name="orbit-ml",
     packages=find_packages(),
-    url='https://orbit-ml.readthedocs.io/en/stable/',
+    url="https://orbit-ml.readthedocs.io/en/stable/",
     # version=VERSION, # being maintained by source module
     zip_safe=False,
     classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-    ]
+        "Development Status :: 3 - Alpha",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+    ],
 )

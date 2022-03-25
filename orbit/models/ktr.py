@@ -6,38 +6,39 @@ from ..constants.constants import EstimatorsKeys
 
 
 def KTR(
-        level_knot_scale=0.1,
-        level_segments=10,
-        level_knot_distance=None,
-        level_knot_dates=None,
-        # seasonality
-        seasonality=None,
-        seasonality_fs_order=None,
-        seasonality_segments=3,
-        seasonal_initial_knot_scale=1.0,
-        seasonal_knot_scale=0.1,
-        # regression
-        regressor_col=None,
-        regressor_sign=None,
-        regressor_init_knot_loc=None,
-        regressor_init_knot_scale=None,
-        regressor_knot_scale=None,
-        regression_segments=5,
-        regression_knot_distance=None,
-        regression_knot_dates=None,
-        # different from seasonality
-        regression_rho=0.15,
-        # shared
-        degree_of_freedom=30,
-        date_freq=None,
-        # time-based coefficient priors
-        coef_prior_list=None,
-        flat_multiplier=True,
-        # TODO: rename to residuals upper bound
-        residuals_scale_upper=None,
-        ktrlite_optim_args=dict(),
-        estimator='pyro-svi',
-        **kwargs):
+    level_knot_scale=0.1,
+    level_segments=10,
+    level_knot_distance=None,
+    level_knot_dates=None,
+    # seasonality
+    seasonality=None,
+    seasonality_fs_order=None,
+    seasonality_segments=3,
+    seasonal_initial_knot_scale=1.0,
+    seasonal_knot_scale=0.1,
+    # regression
+    regressor_col=None,
+    regressor_sign=None,
+    regressor_init_knot_loc=None,
+    regressor_init_knot_scale=None,
+    regressor_knot_scale=None,
+    regression_segments=5,
+    regression_knot_distance=None,
+    regression_knot_dates=None,
+    # different from seasonality
+    regression_rho=0.15,
+    # shared
+    degree_of_freedom=30,
+    date_freq=None,
+    # time-based coefficient priors
+    coef_prior_list=None,
+    flat_multiplier=True,
+    # TODO: rename to residuals upper bound
+    residuals_scale_upper=None,
+    ktrlite_optim_args=dict(),
+    estimator="pyro-svi",
+    **kwargs,
+):
     """
     Parameters
     ----------
@@ -139,15 +140,15 @@ def KTR(
         date_freq=date_freq,
         flat_multiplier=flat_multiplier,
         residuals_scale_upper=residuals_scale_upper,
-        ktrlite_optim_args=ktrlite_optim_args
+        ktrlite_optim_args=ktrlite_optim_args,
     )
     if estimator == EstimatorsKeys.PyroSVI.value:
         ktr_forecaster = SVIForecaster(
-            model=ktr,
-            estimator_type=PyroEstimatorSVI,
-            **kwargs
+            model=ktr, estimator_type=PyroEstimatorSVI, **kwargs
         )
     else:
-        raise IllegalArgument('Invalid estimator. Must be one of {}'.format(_supported_estimators))
+        raise IllegalArgument(
+            "Invalid estimator. Must be one of {}".format(_supported_estimators)
+        )
 
     return ktr_forecaster

@@ -1,4 +1,5 @@
 import numpy as np
+
 EPS = 1e-5
 
 
@@ -6,7 +7,9 @@ def smape(actual, prediction):
     filtered = np.abs(actual) > EPS
     actual = actual[filtered]
     prediction = prediction[filtered]
-    return 2 * np.mean(np.abs(actual - prediction) / (np.abs(actual) + np.abs(prediction)))
+    return 2 * np.mean(
+        np.abs(actual - prediction) / (np.abs(actual) + np.abs(prediction))
+    )
 
 
 def mape(actual, prediction):
@@ -29,7 +32,9 @@ def wsmape(actual, prediction):
     actual = actual[filtered]
     prediction = prediction[filtered]
     weights = np.abs(actual) / np.sum(np.abs(actual))
-    return 2 * np.sum(weights * np.abs(actual - prediction) / (np.abs(actual) + np.abs(prediction)))
+    return 2 * np.sum(
+        weights * np.abs(actual - prediction) / (np.abs(actual) + np.abs(prediction))
+    )
 
 
 def mae(actual, prediction):

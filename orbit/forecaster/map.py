@@ -16,7 +16,7 @@ class MAPForecaster(Forecaster):
 
     def set_forecaster_training_meta(self, data_input):
         # MCMC flag to be true
-        data_input.update({'WITH_MCMC': 0})
+        data_input.update({"WITH_MCMC": 0})
         return data_input
 
     def fit(self, df):
@@ -36,7 +36,9 @@ class MAPForecaster(Forecaster):
 
         return self
 
-    def predict(self, df, decompose=False, store_prediction_array=False, seed=None, **kwargs):
+    def predict(
+        self, df, decompose=False, store_prediction_array=False, seed=None, **kwargs
+    ):
         # raise if model is not fitted
         if not self.is_fitted():
             raise ForecasterException("Model is not fitted yet.")
@@ -57,7 +59,7 @@ class MAPForecaster(Forecaster):
             prediction_meta=prediction_meta,
             # false for point estimate
             include_error=False,
-            **kwargs
+            **kwargs,
         )
         for k, v in point_predicted_dict.items():
             point_predicted_dict[k] = np.squeeze(v, 0)
@@ -74,30 +76,42 @@ class MAPForecaster(Forecaster):
                 training_meta=training_meta,
                 prediction_meta=prediction_meta,
                 include_error=True,
-                **kwargs
+                **kwargs,
             )
             if store_prediction_array:
                 self.prediction_array = predicted_dict[PredictionKeys.PREDICTION.value]
-            percentiles_dict = compute_percentiles(predicted_dict, self._prediction_percentiles)
+            percentiles_dict = compute_percentiles(
+                predicted_dict, self._prediction_percentiles
+            )
             # replace mid point prediction by point estimate
             percentiles_dict.update(point_predicted_dict)
 
             if PredictionKeys.PREDICTION.value not in percentiles_dict.keys():
-                raise ForecasterException("cannot find the key:'{}' from return of _predict()".format(
-                    PredictionKeys.PREDICTION.value))
+                raise ForecasterException(
+                    "cannot find the key:'{}' from return of _predict()".format(
+                        PredictionKeys.PREDICTION.value
+                    )
+                )
 
             # since we always assume to have decompose from .predict() at first,
             # here it reduces to prediction when decompose is not requested
             if not decompose:
                 k = PredictionKeys.PREDICTION.value
-                reduced_keys = [k + "_" + str(p) if p != 50 else k for p in self._prediction_percentiles]
-                percentiles_dict = {k: v for k, v in percentiles_dict.items() if k in reduced_keys}
+                reduced_keys = [
+                    k + "_" + str(p) if p != 50 else k
+                    for p in self._prediction_percentiles
+                ]
+                percentiles_dict = {
+                    k: v for k, v in percentiles_dict.items() if k in reduced_keys
+                }
             predicted_df = pd.DataFrame(percentiles_dict)
         else:
             if not decompose:
                 # reduce to prediction only if decompose is not requested
                 point_predicted_dict = {
-                    k: v for k, v in point_predicted_dict.items() if k == PredictionKeys.PREDICTION.value
+                    k: v
+                    for k, v in point_predicted_dict.items()
+                    if k == PredictionKeys.PREDICTION.value
                 }
             predicted_df = pd.DataFrame(point_predicted_dict)
 
@@ -107,19 +121,21 @@ class MAPForecaster(Forecaster):
     # TODO: should be private
     def load_extra_methods(self):
         for method in self.extra_methods:
-            setattr(self,
-                    method,
-                    partial(
-                        getattr(self._model, method),
-                        self.get_training_meta(),
-                        PredictMethod.MAP.value,
-                        self.get_point_posteriors(),
-                        self.get_posterior_samples()
-                    ))
+            setattr(
+                self,
+                method,
+                partial(
+                    getattr(self._model, method),
+                    self.get_training_meta(),
+                    PredictMethod.MAP.value,
+                    self.get_point_posteriors(),
+                    self.get_posterior_samples(),
+                ),
+            )
 
     def get_bic(self):
         training_metrics = self.get_training_metrics()
-        loglk = training_metrics['loglk']
+        loglk = training_metrics["loglk"]
         n = loglk.shape[0] * loglk.shape[1]
-        k = training_metrics['num_of_params']
+        k = training_metrics["num_of_params"]
         return -2.0 * np.sum(loglk) + k * np.log(n)

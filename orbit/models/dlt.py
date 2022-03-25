@@ -6,25 +6,27 @@ from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
 from ..constants.constants import EstimatorsKeys
 
 
-def DLT(seasonality=None,
-        seasonality_sm_input=None,
-        level_sm_input=None,
-        regressor_col=None,
-        regressor_sign=None,
-        regressor_beta_prior=None,
-        regressor_sigma_prior=None,
-        regression_penalty='fixed_ridge',
-        lasso_scale=0.5,
-        auto_ridge_scale=0.5,
-        slope_sm_input=None,
-        period=1,
-        damped_factor=0.8,
-        global_trend_option='linear',
-        global_cap=1.0,
-        global_floor=0.0,
-        forecast_horizon=1,
-        estimator='stan-mcmc',
-        **kwargs):
+def DLT(
+    seasonality=None,
+    seasonality_sm_input=None,
+    level_sm_input=None,
+    regressor_col=None,
+    regressor_sign=None,
+    regressor_beta_prior=None,
+    regressor_sigma_prior=None,
+    regression_penalty="fixed_ridge",
+    lasso_scale=0.5,
+    auto_ridge_scale=0.5,
+    slope_sm_input=None,
+    period=1,
+    damped_factor=0.8,
+    global_trend_option="linear",
+    global_cap=1.0,
+    global_floor=0.0,
+    forecast_horizon=1,
+    estimator="stan-mcmc",
+    **kwargs,
+):
     """
     Args
     ----------
@@ -97,7 +99,10 @@ def DLT(seasonality=None,
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator
     """
-    _supported_estimators = [EstimatorsKeys.StanMAP.value, EstimatorsKeys.StanMCMC.value]
+    _supported_estimators = [
+        EstimatorsKeys.StanMAP.value,
+        EstimatorsKeys.StanMCMC.value,
+    ]
 
     dlt = DLTModel(
         seasonality=seasonality,
@@ -120,17 +125,15 @@ def DLT(seasonality=None,
     )
     if estimator == EstimatorsKeys.StanMAP.value:
         dlt_forecaster = MAPForecaster(
-            model=dlt,
-            estimator_type=StanEstimatorMAP,
-            **kwargs
+            model=dlt, estimator_type=StanEstimatorMAP, **kwargs
         )
     elif estimator == EstimatorsKeys.StanMCMC.value:
         dlt_forecaster = FullBayesianForecaster(
-            model=dlt,
-            estimator_type=StanEstimatorMCMC,
-            **kwargs
+            model=dlt, estimator_type=StanEstimatorMCMC, **kwargs
         )
     else:
-        raise IllegalArgument('Invalid estimator. Must be one of {}'.format(_supported_estimators))
+        raise IllegalArgument(
+            "Invalid estimator. Must be one of {}".format(_supported_estimators)
+        )
 
     return dlt_forecaster
