@@ -84,8 +84,8 @@ class PyroEstimatorSVI(PyroEstimator):
         seed = self.seed
         num_steps = self.num_steps
         if self.verbose:
-            msg_template = "Using SVI(Pyro) with steps:{} , samples:{} , learning rate:{}, learning_rate_total_decay:{}" \
-                           " and particles:{}."
+            msg_template = "Using SVI (Pyro) with steps: {}, samples: {}, learning rate: {}," \
+                           " learning_rate_total_decay: {} and particles: {}."
             msg = msg_template.format(
                 self.num_steps, self.num_sample, self.learning_rate, self.learning_rate_total_decay, self.num_particles)
             logger.info(msg)
