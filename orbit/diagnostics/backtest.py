@@ -280,16 +280,16 @@ class BackTester(object):
         self._train_actual = []
         self._train_prediction = []
 
-        # init df for actual and predictions
-        self._predicted_df = pd.DataFrame(
-            {}, columns=[
-                BacktestFitKeys.DATE.value,
-                BacktestFitKeys.SPLIT_KEY.value,
-                BacktestFitKeys.TRAIN_FLAG.value,
-                BacktestFitKeys.ACTUAL.value,
-                BacktestFitKeys.PREDICTED.value
-            ]
-        )
+        # # init df for actual and predictions
+        # self._predicted_df = pd.DataFrame(
+        #     {}, columns=[
+        #         BacktestFitKeys.DATE.value,
+        #         BacktestFitKeys.SPLIT_KEY.value,
+        #         BacktestFitKeys.TRAIN_FLAG.value,
+        #         BacktestFitKeys.ACTUAL.value,
+        #         BacktestFitKeys.PREDICTED.value
+        #     ]
+        # )
 
         # score df
         self._score_df = pd.DataFrame()
@@ -330,6 +330,7 @@ class BackTester(object):
         model = self.model
         response_col = model.response_col
         date_col = model.date_col
+        output_res = list()
         for train_df, test_df, scheme, key in splitter.split():
             model_copy = deepcopy(model)
             model_copy.fit(train_df)
@@ -350,27 +351,28 @@ class BackTester(object):
 
             # set df attribute
             # join train
-            train_dates = train_df[date_col].rename(BacktestFitKeys.DATE.value, axis='columns')
-            train_response = train_df[response_col].rename(BacktestFitKeys.ACTUAL.value, axis='columns')
+            train_dates = train_df[date_col].rename(BacktestFitKeys.DATE.value)
+            train_response = train_df[response_col].rename(BacktestFitKeys.ACTUAL.value)
             train_values = pd.concat(
                 (train_dates, train_response, train_predictions[all_pred_cols]), axis=1)
             train_values[BacktestFitKeys.TRAIN_FLAG.value] = True
             # join test
-            test_dates = test_df[date_col].rename(BacktestFitKeys.DATE.value, axis='columns')
-            test_response = test_df[response_col].rename(BacktestFitKeys.ACTUAL.value, axis='columns')
+            test_dates = test_df[date_col].rename(BacktestFitKeys.DATE.value)
+            test_response = test_df[response_col].rename(BacktestFitKeys.ACTUAL.value)
             test_values = pd.concat(
                 (test_dates, test_response, test_predictions[all_pred_cols]), axis=1)
             test_values[BacktestFitKeys.TRAIN_FLAG.value] = False
             # union train/test
             both_values = pd.concat((train_values, test_values), axis=0)
             both_values[BacktestFitKeys.SPLIT_KEY.value] = key
-            # union each splits
-            self._predicted_df = pd.concat((self._predicted_df, both_values), axis=0).reset_index(drop=True)
-            # recast to expected dtype
-            self._predicted_df[BacktestFitKeys.TRAIN_FLAG.value] = \
-                self._predicted_df[BacktestFitKeys.TRAIN_FLAG.value].astype('bool')
-            self._predicted_df[BacktestFitKeys.SPLIT_KEY.value] = \
-                self._predicted_df[BacktestFitKeys.SPLIT_KEY.value].astype('int16')
+            output_res.append(both_values)
+        # union each splits
+        self._predicted_df = pd.concat(output_res, axis=0).reset_index(drop=True)
+        # # recast to expected dtype
+        # self._predicted_df[BacktestFitKeys.TRAIN_FLAG.value] = \
+        #     self._predicted_df[BacktestFitKeys.TRAIN_FLAG.value].astype('bool')
+        # self._predicted_df[BacktestFitKeys.SPLIT_KEY.value] = \
+        #     self._predicted_df[BacktestFitKeys.SPLIT_KEY.value].astype('int16')
 
     def get_predicted_df(self):
         return self._predicted_df.copy()
