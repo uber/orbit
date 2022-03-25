@@ -451,3 +451,57 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
         plt.show()
     else:
         plt.close()
+
+@orbit_style_decorator
+def params_comparison_boxplot(model_list, data_list, label_list, color_list = sns.color_palette(),
+                                title='Params Comparison', fig_size=(10, 6),
+                                box_width=0.1, box_distance=0.2, showfliers=False):
+    '''
+    compare the distribution of parameters from different models uisng a boxplot
+    input:
+        model_list: a list of strings, the names of models
+        data_list: a list of np.arrays, the distributions of parameters to compare
+        label_list: a list of strings, the labels of the parameters to compare
+                    (the order of labels must match the order of the data in the data_list)
+        color_list: a list of strings, the color to use for differentiating models
+        title: string, the title of the chart
+        fig_size: figure size
+        box_width: width of the boxes in the boxplot
+        box_distance: the distance between each boxes in the boxplot
+        showfliers: show outliers in the chart if set as True
+    output:
+        a boxplot comparing parameter distributions from different models side by side
+    '''
+
+
+    fig, ax = plt.subplots(1, 1, figsize=fig_size)
+    handles = []
+    n_models = len(model_list)
+    pos = []
+
+    if n_models % 2 == 0:
+        for n in range(1, int(n_models / 2) + 1):
+            pos.append(round(box_distance * (-1) ** (n_models - 1) * n, 1))
+            pos.append(round(box_distance * (-1) ** (n_models) * n, 1))
+
+    else:
+        for n in range(1, int((n_models - 1) / 2) + 1):
+            pos.append(0)
+            pos.append(round(box_distance * (-1) ** (n_models - 1) * n, 1))
+            pos.append(round(box_distance * (-1) ** (n_models) * n, 1))
+
+    pos = sorted(pos)
+
+    for i in range(len(data_list)):
+        globals()[f'bp{i}'] = ax.boxplot(data_list[i], positions=np.arange(data_list[i].shape[1]) + pos[i],
+                                         widths=box_width, patch_artist=True, manage_ticks=False,
+                                         boxprops=dict(facecolor=color_list[i]), medianprops=dict(color='black'),
+                                         showfliers= showfliers)
+        handles.append(globals()[f"bp{i}"]['boxes'][0])
+
+    plt.xticks(np.arange(len(label_list)), label_list)
+    ax.legend(handles, model_list)
+    plt.xlabel('params')
+    plt.ylabel('value')
+    plt.title(title)
+    plt.show()
