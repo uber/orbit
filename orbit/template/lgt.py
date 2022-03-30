@@ -602,14 +602,12 @@ class LGTModel(ETSModel):
         return out
 
     def get_regression_coefs(self, training_meta, point_method, point_posteriors, posterior_samples,
-                             include_ci=False, lower=0.05, upper=0.95):
+                             lower=0.05, upper=0.95):
         """Return DataFrame regression coefficients.
           If point_method is None when fitting, return the median of coefficients.
 
         Parameters
         -----------
-        include_ci : bool
-            if including the confidence intervals for the regression coefficients
         lower : float between (0, 1). default to be 0.05
             lower bound for the CI
         upper : float between (0, 1). default to be 0.95.
@@ -652,15 +650,15 @@ class LGTModel(ETSModel):
         coef_df[COEFFICIENT_DF_COLS.COEFFICIENT] = coef.flatten()
 
         # if we have posteriors distribution and also include ci
-        if point_method is None and include_ci:
+        if point_method in [None, PredictMethod.MEAN.value, PredictMethod.MEDIAN.value]:
             coef_samples = posterior_samples.get(RegressionSamplingParameters.REGRESSION_COEFFICIENTS.value)
             coef_lower = np.quantile(coef_samples, lower, axis=0)
             coef_upper = np.quantile(coef_samples, upper, axis=0)
-            coef_df_lower = coef_df.copy()
-            coef_df_upper = coef_df.copy()
-            coef_df_lower[COEFFICIENT_DF_COLS.COEFFICIENT] = coef_lower
-            coef_df_upper[COEFFICIENT_DF_COLS.COEFFICIENT] = coef_upper
+            coef_df[COEFFICIENT_DF_COLS.COEFFICIENT + '_lower'] = coef_lower
+            coef_df[COEFFICIENT_DF_COLS.COEFFICIENT + '_upper'] = coef_upper
+            n_pos = np.apply_along_axis(lambda x: np.sum(x >= 0), 0, coef_samples)
+            n_total = coef_samples.shape[0]
+            coef_df[COEFFICIENT_DF_COLS.PROB_COEF_POS] = n_pos / n_total
+            coef_df[COEFFICIENT_DF_COLS.PROB_COEF_NEG] = 1 - n_pos / n_total
 
-            return coef_df, coef_df_lower, coef_df_upper
-        else:
-            return coef_df
+        return coef_df
