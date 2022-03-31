@@ -265,7 +265,7 @@ def test_dlt_full_with_regression(make_weekly_data, regressor_signs):
 
     expected_columns = ['week', 'prediction_5', 'prediction', 'prediction_95']
     expected_shape = (51, len(expected_columns))
-    expected_regression_shape = (6, 3)
+    expected_regression_shape = (6, 7)
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -312,7 +312,7 @@ def test_dlt_aggregated_with_regression(make_weekly_data, estimator, regressor_s
 
     expected_columns = ['week', 'prediction']
     expected_shape = (51, len(expected_columns))
-    expected_regression_shape = (6, 3)
+    expected_regression_shape = (6, 7)
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
