@@ -123,8 +123,8 @@ DEFAULT_REGRESSOR_SIGMA = 1.0
 # beta coef columns
 COEFFICIENT_DF_COLS = namedtuple(
     'coefficients_df_cols',
-    ['REGRESSOR', 'REGRESSOR_SIGN', 'COEFFICIENT']
-)('regressor', 'regressor_sign', 'coefficient')
+    ['REGRESSOR', 'REGRESSOR_SIGN', 'COEFFICIENT', 'PROB_COEF_POS', 'PROB_COEF_NEG']
+)('regressor', 'regressor_sign', 'coefficient', 'Pr(coef >= 0)', 'Pr(coef < 0)')
 
 
 class CompiledStanModelPath:
