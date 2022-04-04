@@ -639,10 +639,19 @@ def metric_horizon_barplot(
     else:
         plt.close()
 
+
 @orbit_style_decorator
-def params_comparison_boxplot(model_name_list, data_list, label_list, color_list = sns.color_palette(),
-                                title="Params Comparison", fig_size=(10, 6),
-                                box_width=0.1, box_distance=0.2, showfliers=False):
+def params_comparison_boxplot(
+    model_name_list,
+    data_list,
+    label_list,
+    color_list=sns.color_palette(),
+    title="Params Comparison",
+    fig_size=(10, 6),
+    box_width=0.1,
+    box_distance=0.2,
+    showfliers=False,
+):
     """compare the distribution of parameters from different models uisng a boxplot.
     Parameters:
         model_name_list : a list of strings, the names of models
@@ -665,7 +674,6 @@ def params_comparison_boxplot(model_name_list, data_list, label_list, color_list
         a boxplot comparing parameter distributions from different models side by side
     """
 
-
     fig, ax = plt.subplots(1, 1, figsize=fig_size)
     handles = []
     n_models = len(model_name_list)
@@ -685,16 +693,22 @@ def params_comparison_boxplot(model_name_list, data_list, label_list, color_list
     pos = sorted(pos)
 
     for i in range(len(data_list)):
-        globals()[f'bp{i}'] = ax.boxplot(data_list[i], positions=np.arange(data_list[i].shape[1]) + pos[i],
-                                         widths=box_width, patch_artist=True, manage_ticks=False,
-                                         boxprops=dict(facecolor=color_list[i]), medianprops=dict(color='black'),
-                                         showfliers= showfliers)
-        handles.append(globals()[f"bp{i}"]['boxes'][0])
+        globals()[f"bp{i}"] = ax.boxplot(
+            data_list[i],
+            positions=np.arange(data_list[i].shape[1]) + pos[i],
+            widths=box_width,
+            patch_artist=True,
+            manage_ticks=False,
+            boxprops=dict(facecolor=color_list[i]),
+            medianprops=dict(color="black"),
+            showfliers=showfliers,
+        )
+        handles.append(globals()[f"bp{i}"]["boxes"][0])
 
     plt.xticks(np.arange(len(label_list)), label_list)
     ax.legend(handles, model_name_list)
-    plt.xlabel('params')
-    plt.ylabel('value')
+    plt.xlabel("params")
+    plt.ylabel("value")
     plt.title(title)
 
     return ax
