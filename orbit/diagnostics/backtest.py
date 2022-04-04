@@ -14,16 +14,8 @@ from orbit.utils.plot import orbit_style_decorator
 class TimeSeriesSplitter(object):
     """Cross validation splitter for time series data"""
 
-    def __init__(
-        self,
-        df,
-        forecast_len=1,
-        incremental_len=None,
-        n_splits=None,
-        min_train_len=None,
-        window_type="expanding",
-        date_col=None,
-    ):
+    def __init__(self, df, forecast_len=1, incremental_len=None, n_splits=None, min_train_len=None,
+                 window_type='expanding', date_col=None):
         """Initializes object with DataFrame and splits data
 
         Parameters
@@ -89,41 +81,37 @@ class TimeSeriesSplitter(object):
             # if self.n_splits == 1:
             #     # set incremental_len internally if it's None
             #     # this is just to dodge error and it's not used actually
-            self.min_train_len = (
-                self._full_len
-                - self.forecast_len
-                - (self.n_splits - 1) * self.incremental_len
-            )
+            self.min_train_len = \
+                self._full_len - self.forecast_len - (self.n_splits - 1) * self.incremental_len
 
     def _validate_params(self):
         if self.min_train_len is None and self.n_splits is None:
-            raise BacktestException("min_train_len and n_splits cannot both be None...")
+            raise BacktestException('min_train_len and n_splits cannot both be None...')
 
         if self.window_type not in [
             TimeSeriesSplitSchemeKeys.SPLIT_TYPE_EXPANDING.value,
-            TimeSeriesSplitSchemeKeys.SPLIT_TYPE_ROLLING.value,
+            TimeSeriesSplitSchemeKeys.SPLIT_TYPE_ROLLING.value
         ]:
-            raise BacktestException("unknown window type...")
+            raise BacktestException('unknown window type...')
 
         # forecast length invalid
         if self.forecast_len <= 0:
-            raise BacktestException("holdout period length must be positive...")
+            raise BacktestException('holdout period length must be positive...')
 
         # train + test length cannot be longer than df length
         if self.min_train_len + self.forecast_len > self._full_len:
-            raise BacktestException(
-                "required time span is more than the full data frame..."
-            )
+            raise BacktestException('required time span is more than the full data frame...')
 
         if self.n_splits is not None and self.n_splits < 1:
-            raise BacktestException("n_split must be a positive number")
+            raise BacktestException('n_split must be a positive number')
 
         if self.date_col:
             if self.date_col not in self.df.columns:
-                raise BacktestException("date_col not found in df provided.")
+                raise BacktestException('date_col not found in df provided.')
 
     def _set_split_scheme(self):
-        """set meta data of ways to split train and test set"""
+        """ set meta data of ways to split train and test set
+        """
         test_end_min = self.min_train_len - 1
         test_end_max = self._full_len - self.forecast_len
         test_seq = range(test_end_min, test_end_max, self.incremental_len)
@@ -134,28 +122,18 @@ class TimeSeriesSplitter(object):
         # in date periods representation, both bound are inclusive to work around limitation on df[date_col][idx]
         for i, train_end_idx in enumerate(test_seq):
             split_scheme[i] = {}
-            train_start_idx = (
-                train_end_idx - self.min_train_len + 1
-                if self.window_type
-                == TimeSeriesSplitSchemeKeys.SPLIT_TYPE_ROLLING.value
-                else 0
-            )
+            train_start_idx = train_end_idx - self.min_train_len + 1 \
+                if self.window_type == TimeSeriesSplitSchemeKeys.SPLIT_TYPE_ROLLING.value else 0
             split_scheme[i][TimeSeriesSplitSchemeKeys.TRAIN_IDX.value] = range(
-                train_start_idx, train_end_idx + 1
-            )
+                train_start_idx, train_end_idx + 1)
             split_scheme[i][TimeSeriesSplitSchemeKeys.TEST_IDX.value] = range(
-                train_end_idx + 1, train_end_idx + self.forecast_len + 1
-            )
+                train_end_idx + 1, train_end_idx + self.forecast_len + 1)
 
             if self.date_col is not None:
-                split_scheme[i]["train_period"] = (
-                    self.dt_array[train_start_idx],
-                    self.dt_array[train_end_idx],
-                )
-                split_scheme[i]["test_period"] = (
-                    self.dt_array[train_end_idx + 1],
-                    self.dt_array[train_end_idx + self.forecast_len],
-                )
+                split_scheme[i]['train_period'] = (
+                    self.dt_array[train_start_idx], self.dt_array[train_end_idx])
+                split_scheme[i]['test_period'] = (
+                    self.dt_array[train_end_idx + 1], self.dt_array[train_end_idx + self.forecast_len])
 
         self._split_scheme = split_scheme
         # enforce n_splits to match scheme in case scheme is determined by min_train_len
@@ -180,26 +158,20 @@ class TimeSeriesSplitter(object):
         """
         if self.date_col is None:
             for split_key, scheme in self._split_scheme.items():
-                train_df = self.df.iloc[
-                    scheme[TimeSeriesSplitSchemeKeys.TRAIN_IDX.value], :
-                ].reset_index(drop=True)
-                test_df = self.df.iloc[
-                    scheme[TimeSeriesSplitSchemeKeys.TEST_IDX.value], :
-                ].reset_index(drop=True)
+                train_df = self.df.iloc[scheme[TimeSeriesSplitSchemeKeys.TRAIN_IDX.value], :] \
+                    .reset_index(drop=True)
+                test_df = self.df.iloc[scheme[TimeSeriesSplitSchemeKeys.TEST_IDX.value], :] \
+                    .reset_index(drop=True)
 
                 yield train_df, test_df, scheme, split_key
         else:
             for split_key, scheme in self._split_scheme.items():
                 train_df = self.df.loc[
-                    (self.df[self.date_col] >= scheme["train_period"][0])
-                    & (self.df[self.date_col] <= scheme["train_period"][1]),
-                    :,
-                ].reset_index(drop=True)
+                           (self.df[self.date_col] >= scheme['train_period'][0]) &
+                           (self.df[self.date_col] <= scheme['train_period'][1]), :].reset_index(drop=True)
                 test_df = self.df.loc[
-                    (self.df[self.date_col] >= scheme["test_period"][0])
-                    & (self.df[self.date_col] <= scheme["test_period"][1]),
-                    :,
-                ].reset_index(drop=True)
+                           (self.df[self.date_col] >= scheme['test_period'][0]) &
+                           (self.df[self.date_col] <= scheme['test_period'][1]), :].reset_index(drop=True)
 
                 yield train_df, test_df, scheme, split_key
 
@@ -212,24 +184,18 @@ class TimeSeriesSplitter(object):
             tr_end = list(scheme[TimeSeriesSplitSchemeKeys.TRAIN_IDX.value])[-1]
             tt_start = list(scheme[TimeSeriesSplitSchemeKeys.TEST_IDX.value])[0]
             tt_end = list(scheme[TimeSeriesSplitSchemeKeys.TEST_IDX.value])[-1]
-            message += (
-                f"\n------------ Fold: ({idx + 1} / {self.n_splits})------------\n"
-            )
+            message += f"\n------------ Fold: ({idx + 1} / {self.n_splits})------------\n"
             if self.date_col is None:
                 message += f"Train start index: {tr_start} Train end index: {tr_end}\n"
                 message += f"Test start index: {tt_start} Test end index: {tt_end}\n"
             else:
-                tr_start_date = scheme["train_period"][0]
-                tr_end_date = scheme["train_period"][1]
-                tt_start_date = scheme["test_period"][0]
-                tt_end_date = scheme["test_period"][1]
+                tr_start_date = scheme['train_period'][0]
+                tr_end_date = scheme['train_period'][1]
+                tt_start_date = scheme['test_period'][0]
+                tt_end_date = scheme['test_period'][1]
 
-                message += (
-                    f"Train start date: {tr_start_date} Train end date: {tr_end_date}\n"
-                )
-                message += (
-                    f"Test start date: {tt_start_date} Test end date: {tt_end_date}\n"
-                )
+                message += f"Train start date: {tr_start_date} Train end date: {tr_end_date}\n"
+                message += f"Test start date: {tt_start_date} Test end date: {tt_end_date}\n"
         return message
 
     @orbit_style_decorator
@@ -254,38 +220,26 @@ class TimeSeriesSplitter(object):
         yticks = list(range(self.n_splits))
         for idx, scheme in self._split_scheme.items():
             # fill in indices with the training/test groups
-            tr_start.append(list(scheme[TimeSeriesSplitSchemeKeys.TRAIN_IDX.value])[0])
-            tr_len.append(len(list(scheme[TimeSeriesSplitSchemeKeys.TRAIN_IDX.value])))
+            tr_start.append(
+                list(scheme[TimeSeriesSplitSchemeKeys.TRAIN_IDX.value])[0]
+            )
+            tr_len.append(len(
+                list(scheme[TimeSeriesSplitSchemeKeys.TRAIN_IDX.value]))
+            )
             tt_len.append(self.forecast_len)
 
         tr_start = np.array(tr_start)
         tr_len = np.array(tr_len)
 
         # ax.barh(yticks, tr_start, align='center', height=.5, color='black', alpha=0.5)
-        ax.barh(
-            yticks,
-            tr_len,
-            align="center",
-            height=0.5,
-            left=tr_start,
-            color=OrbitPal.BLUE.value,
-            label="train",
-        )
-        ax.barh(
-            yticks,
-            tt_len,
-            align="center",
-            height=0.5,
-            left=tr_start + tr_len,
-            color=OrbitPal.ORANGE.value,
-            label="test",
-        )
+        ax.barh(yticks, tr_len, align='center', height=.5, left=tr_start, color=OrbitPal.BLUE.value,
+                label='train')
+        ax.barh(yticks, tt_len, align='center', height=.5, left=tr_start + tr_len, color=OrbitPal.ORANGE.value,
+                label='test')
 
         if not show_index and self.date_col is not None:
             xticks_loc = np.array(ax.get_xticks(), dtype=int)
-            new_xticks_loc = np.linspace(
-                0, len(self.dt_array) - 1, num=len(xticks_loc)
-            ).astype(int)
+            new_xticks_loc = np.linspace(0, len(self.dt_array) - 1, num=len(xticks_loc)).astype(int)
             dt_xticks = self.dt_array[new_xticks_loc]
             dt_xticks = dt_xticks.strftime(strftime_fmt)
             ax.set_xticks(new_xticks_loc)
@@ -306,7 +260,6 @@ class TimeSeriesSplitter(object):
 
 class BackTester(object):
     """Used to iteratively fit model on a given data splitter"""
-
     _default_metrics = [smape, wmape, mape, mse, mae, rmsse]
 
     def __init__(self, model, df, **splitter_kwargs):
@@ -327,17 +280,16 @@ class BackTester(object):
         self._train_actual = []
         self._train_prediction = []
 
-        # init df for actual and predictions
-        self._predicted_df = pd.DataFrame(
-            {},
-            columns=[
-                BacktestFitKeys.DATE.value,
-                BacktestFitKeys.SPLIT_KEY.value,
-                BacktestFitKeys.TRAIN_FLAG.value,
-                BacktestFitKeys.ACTUAL.value,
-                BacktestFitKeys.PREDICTED.value,
-            ],
-        )
+        # # init df for actual and predictions
+        # self._predicted_df = pd.DataFrame(
+        #     {}, columns=[
+        #         BacktestFitKeys.DATE.value,
+        #         BacktestFitKeys.SPLIT_KEY.value,
+        #         BacktestFitKeys.TRAIN_FLAG.value,
+        #         BacktestFitKeys.ACTUAL.value,
+        #         BacktestFitKeys.PREDICTED.value
+        #     ]
+        # )
 
         # score df
         self._score_df = pd.DataFrame()
@@ -378,72 +330,49 @@ class BackTester(object):
         model = self.model
         response_col = model.response_col
         date_col = model.date_col
+        output_res = list()
         for train_df, test_df, scheme, key in splitter.split():
             model_copy = deepcopy(model)
             model_copy.fit(train_df)
             train_predictions = model_copy.predict(train_df)
             test_predictions = model_copy.predict(test_df)
-            all_pred_cols = [x for x in train_predictions.columns if x != date_col]
+            all_pred_cols = [x for x in train_predictions.columns if x!= date_col]
 
             # set attributes
             self._fitted_models.append(model_copy)
             self._splitter_scheme.append(scheme)
-            self._test_actual = np.concatenate(
-                (self._test_actual, test_df[response_col].to_numpy())
-            )
+            self._test_actual = np.concatenate((self._test_actual, test_df[response_col].to_numpy()))
             self._test_prediction = np.concatenate(
-                (
-                    self._test_prediction,
-                    test_predictions[BacktestFitKeys.PREDICTED.value].to_numpy(),
-                )
-            )
+                (self._test_prediction, test_predictions[BacktestFitKeys.PREDICTED.value].to_numpy()))
             self._train_actual = np.concatenate(
-                (self._train_actual, train_df[response_col].to_numpy())
-            )
+                (self._train_actual, train_df[response_col].to_numpy()))
             self._train_prediction = np.concatenate(
-                (
-                    self._train_prediction,
-                    train_predictions[BacktestFitKeys.PREDICTED.value].to_numpy(),
-                )
-            )
+                (self._train_prediction, train_predictions[BacktestFitKeys.PREDICTED.value].to_numpy()))
 
             # set df attribute
             # join train
-            train_dates = train_df[date_col].rename(
-                BacktestFitKeys.DATE.value, axis="columns"
-            )
-            train_response = train_df[response_col].rename(
-                BacktestFitKeys.ACTUAL.value, axis="columns"
-            )
+            train_dates = train_df[date_col].rename(BacktestFitKeys.DATE.value)
+            train_response = train_df[response_col].rename(BacktestFitKeys.ACTUAL.value)
             train_values = pd.concat(
-                (train_dates, train_response, train_predictions[all_pred_cols]), axis=1
-            )
+                (train_dates, train_response, train_predictions[all_pred_cols]), axis=1)
             train_values[BacktestFitKeys.TRAIN_FLAG.value] = True
             # join test
-            test_dates = test_df[date_col].rename(
-                BacktestFitKeys.DATE.value, axis="columns"
-            )
-            test_response = test_df[response_col].rename(
-                BacktestFitKeys.ACTUAL.value, axis="columns"
-            )
+            test_dates = test_df[date_col].rename(BacktestFitKeys.DATE.value)
+            test_response = test_df[response_col].rename(BacktestFitKeys.ACTUAL.value)
             test_values = pd.concat(
-                (test_dates, test_response, test_predictions[all_pred_cols]), axis=1
-            )
+                (test_dates, test_response, test_predictions[all_pred_cols]), axis=1)
             test_values[BacktestFitKeys.TRAIN_FLAG.value] = False
             # union train/test
             both_values = pd.concat((train_values, test_values), axis=0)
             both_values[BacktestFitKeys.SPLIT_KEY.value] = key
-            # union each splits
-            self._predicted_df = pd.concat(
-                (self._predicted_df, both_values), axis=0
-            ).reset_index(drop=True)
-            # recast to expected dtype
-            self._predicted_df[BacktestFitKeys.TRAIN_FLAG.value] = self._predicted_df[
-                BacktestFitKeys.TRAIN_FLAG.value
-            ].astype("bool")
-            self._predicted_df[BacktestFitKeys.SPLIT_KEY.value] = self._predicted_df[
-                BacktestFitKeys.SPLIT_KEY.value
-            ].astype("int16")
+            output_res.append(both_values)
+        # union each splits
+        self._predicted_df = pd.concat(output_res, axis=0).reset_index(drop=True)
+        # # recast to expected dtype
+        # self._predicted_df[BacktestFitKeys.TRAIN_FLAG.value] = \
+        #     self._predicted_df[BacktestFitKeys.TRAIN_FLAG.value].astype('bool')
+        # self._predicted_df[BacktestFitKeys.SPLIT_KEY.value] = \
+        #     self._predicted_df[BacktestFitKeys.SPLIT_KEY.value].astype('int16')
 
     def get_predicted_df(self):
         return self._predicted_df.copy()
@@ -455,7 +384,7 @@ class BackTester(object):
         return deepcopy(self._splitter_scheme)
 
     def plot_scheme(self, **kwargs):
-        """Plot embedded scheme within the backtester object"""
+        """ Plot embedded scheme within the backtester object"""
         self._splitter.plot(**kwargs)
 
     @staticmethod
@@ -467,46 +396,30 @@ class BackTester(object):
     def _validate_metric_callables(self, metrics):
         for metric in metrics:
             metric_signature = self._get_metric_callable_signature(metric)
-            if metric_signature == {
-                BacktestFitKeys.ACTUAL.value,
-                BacktestFitKeys.PREDICTED.value,
-            }:
+            if metric_signature == {BacktestFitKeys.ACTUAL.value, BacktestFitKeys.PREDICTED.value}:
                 continue
-            elif metric_signature.issubset(
-                {
-                    BacktestFitKeys.TEST_ACTUAL.value,
-                    BacktestFitKeys.TEST_PREDICTED.value,
-                    BacktestFitKeys.TRAIN_ACTUAL.value,
-                    BacktestFitKeys.TRAIN_PREDICTED.value,
-                }
-            ):
+            elif metric_signature.issubset({
+                BacktestFitKeys.TEST_ACTUAL.value,
+                BacktestFitKeys.TEST_PREDICTED.value,
+                BacktestFitKeys.TRAIN_ACTUAL.value,
+                BacktestFitKeys.TRAIN_PREDICTED.value
+            }):
                 continue
             else:
-                raise BacktestException(
-                    "metric callable does not have a supported function signature"
-                )
+                raise BacktestException("metric callable does not have a supported function signature")
 
     def _evaluate_test_metric(self, metric):
         # signature already validated in `self._validate_metric_callable()` so the following
         # values for metric_signature already are only for valid signatures
         metric_signature = self._get_metric_callable_signature(metric)
-        if metric_signature == {
-            BacktestFitKeys.ACTUAL.value,
-            BacktestFitKeys.PREDICTED.value,
-        }:
-            eval_out = metric(
-                actual=self._test_actual, prediction=self._test_prediction
-            )
+        if metric_signature == {BacktestFitKeys.ACTUAL.value, BacktestFitKeys.PREDICTED.value}:
+            eval_out = metric(actual=self._test_actual, prediction=self._test_prediction)
         else:
             # get signature and match with the private attributes respectively
             # mainly used for cases we need training data into test metrics
             # such as rmsse etc.
-            _valid_args = [
-                "_" + x for x in metric_signature
-            ]  # add leading underscore to found signatures
-            valid_arg_vals = [
-                getattr(self, x) for x in _valid_args
-            ]  # get private variable eg `self._test_actual`
+            _valid_args = ['_' + x for x in metric_signature]  # add leading underscore to found signatures
+            valid_arg_vals = [getattr(self, x) for x in _valid_args]  # get private variable eg `self._test_actual`
             # dictionary of metric args and arg value
             valid_kwargs = {k: v for k, v in zip(metric_signature, valid_arg_vals)}
             eval_out = metric(**valid_kwargs)
@@ -550,38 +463,28 @@ class BackTester(object):
             eval_out_list.append(eval_out)
 
         metrics_str = [x.__name__ for x in metrics]  # metric names string
-        self._score_df = pd.DataFrame(
-            metrics_str, columns=[BacktestFitKeys.METRIC_NAME.value]
-        )
+        self._score_df = pd.DataFrame(metrics_str, columns=[BacktestFitKeys.METRIC_NAME.value])
         self._score_df[BacktestFitKeys.METRIC_VALUES.value] = eval_out_list
         self._score_df[BacktestFitKeys.TRAIN_METRIC_FLAG.value] = False
 
         # for metric evaluation with combined train and test
         if include_training_metrics:
             # only supports simple metrics function signature
-            metrics = list(
-                filter(
-                    lambda x: self._get_metric_callable_signature(x)
-                    == {BacktestFitKeys.ACTUAL.value, BacktestFitKeys.PREDICTED.value},
-                    metrics,
-                )
-            )
+            metrics = list(filter(
+                lambda x: self._get_metric_callable_signature(x) == {
+                    BacktestFitKeys.ACTUAL.value, BacktestFitKeys.PREDICTED.value},
+                metrics
+            ))
             train_eval_out_list = list()
             for metric in metrics:
-                eval_out = metric(
-                    actual=self._train_actual, prediction=self._train_prediction
-                )
+                eval_out = metric(actual=self._train_actual, prediction=self._train_prediction)
                 train_eval_out_list.append(eval_out)
 
             metrics_str = [x.__name__ for x in metrics]  # metric names string
-            train_score_df = pd.DataFrame(
-                metrics_str, columns=[BacktestFitKeys.METRIC_NAME.value]
-            )
+            train_score_df = pd.DataFrame(metrics_str, columns=[BacktestFitKeys.METRIC_NAME.value])
             train_score_df[BacktestFitKeys.METRIC_VALUES.value] = train_eval_out_list
             train_score_df[BacktestFitKeys.TRAIN_METRIC_FLAG.value] = True
 
-            self._score_df = pd.concat(
-                (self._score_df, train_score_df), axis=0
-            ).reset_index(drop=True)
+            self._score_df = pd.concat((self._score_df, train_score_df), axis=0).reset_index(drop=True)
 
         return self._score_df.copy()
