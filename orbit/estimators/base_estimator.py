@@ -1,5 +1,6 @@
 from abc import abstractmethod
 import numpy as np
+
 # from ..utils.docstring_style import merge_numpy_docs_dedup
 # import custom_inherit as ci
 # ci.store["numpy_with_merge_dedup"] = merge_numpy_docs_dedup
@@ -26,7 +27,9 @@ class BaseEstimator(object):
         np.random.seed(self.seed)
 
     @abstractmethod
-    def fit(self, model_name, model_param_names, data_input, fitter=None, init_values=None):
+    def fit(
+        self, model_name, model_param_names, data_input, fitter=None, init_values=None
+    ):
         """
 
         Parameters
@@ -50,6 +53,4 @@ class BaseEstimator(object):
         training_metrics : dict
             metrics and meta data related to the training process
         """
-        raise NotImplementedError('Concrete fit() method must be implemented')
-
-
+        raise NotImplementedError("Concrete fit() method must be implemented")

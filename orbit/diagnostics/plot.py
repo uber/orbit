@@ -18,14 +18,29 @@ from orbit.utils.plot import orbit_style_decorator
 
 from ..exceptions import PlotException
 import logging
-logger = logging.getLogger('orbit')
+
+logger = logging.getLogger("orbit")
+
 
 @orbit_style_decorator
-def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
-                        pred_col=PredictionKeys.PREDICTION.value, prediction_percentiles=None,
-                        title="", test_actual_df=None, is_visible=True,
-                        figsize=None, path=None, fontsize=None,
-                        line_plot=False, markersize=50, lw=2, linestyle='-'):
+def plot_predicted_data(
+    training_actual_df,
+    predicted_df,
+    date_col,
+    actual_col,
+    pred_col=PredictionKeys.PREDICTION.value,
+    prediction_percentiles=None,
+    title="",
+    test_actual_df=None,
+    is_visible=True,
+    figsize=None,
+    path=None,
+    fontsize=None,
+    line_plot=False,
+    markersize=50,
+    lw=2,
+    linestyle="-",
+):
     """plot training actual response together with predicted data; if actual response of predicted
     data is there, plot it too.
 
@@ -82,10 +97,14 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
         _pred_percentiles = prediction_percentiles
 
     if len(_pred_percentiles) != 2:
-        raise ValueError("prediction_percentiles has to be None or a list with length=2.")
+        raise ValueError(
+            "prediction_percentiles has to be None or a list with length=2."
+        )
 
-    confid_cols = ['prediction_{}'.format(_pred_percentiles[0]),
-                   'prediction_{}'.format(_pred_percentiles[1])]
+    confid_cols = [
+        "prediction_{}".format(_pred_percentiles[0]),
+        "prediction_{}".format(_pred_percentiles[1]),
+    ]
 
     if set(confid_cols).issubset(predicted_df.columns):
         plot_confid = True
@@ -101,47 +120,80 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
     _training_actual_df[date_col] = pd.to_datetime(_training_actual_df[date_col])
     _predicted_df[date_col] = pd.to_datetime(_predicted_df[date_col])
 
-    fig, ax = plt.subplots(facecolor='w', figsize=figsize)
+    fig, ax = plt.subplots(facecolor="w", figsize=figsize)
 
     if line_plot:
-        ax.plot(_training_actual_df[date_col].values,
-                _training_actual_df[actual_col].values,
-                marker=None, color=PredPal.ACTUAL_OBS.value, lw=lw, label='train response', linestyle=linestyle)
+        ax.plot(
+            _training_actual_df[date_col].values,
+            _training_actual_df[actual_col].values,
+            marker=None,
+            color=PredPal.ACTUAL_OBS.value,
+            lw=lw,
+            label="train response",
+            linestyle=linestyle,
+        )
     else:
-        ax.scatter(_training_actual_df[date_col].values,
-                   _training_actual_df[actual_col].values,
-                   marker='.', color=PredPal.ACTUAL_OBS.value, alpha=0.8, s=markersize,
-                   label='train response')
+        ax.scatter(
+            _training_actual_df[date_col].values,
+            _training_actual_df[actual_col].values,
+            marker=".",
+            color=PredPal.ACTUAL_OBS.value,
+            alpha=0.8,
+            s=markersize,
+            label="train response",
+        )
 
-    ax.plot(_predicted_df[date_col].values,
-            _predicted_df[pred_col].values,
-            marker=None, color=PredPal.PREDICTION_LINE.value, lw=lw,
-            label=PredictionKeys.PREDICTION.value, linestyle=linestyle)
+    ax.plot(
+        _predicted_df[date_col].values,
+        _predicted_df[pred_col].values,
+        marker=None,
+        color=PredPal.PREDICTION_LINE.value,
+        lw=lw,
+        label=PredictionKeys.PREDICTION.value,
+        linestyle=linestyle,
+    )
 
     # vertical line separate training and prediction
     if _training_actual_df[date_col].values[-1] < _predicted_df[date_col].values[-1]:
-        ax.axvline(x=_training_actual_df[date_col].values[-1],
-                   color=PredPal.HOLDOUT_VERTICAL_LINE.value, alpha=0.5, linestyle='--')
+        ax.axvline(
+            x=_training_actual_df[date_col].values[-1],
+            color=PredPal.HOLDOUT_VERTICAL_LINE.value,
+            alpha=0.5,
+            linestyle="--",
+        )
 
     if test_actual_df is not None:
         test_actual_df = test_actual_df.copy()
         test_actual_df[date_col] = pd.to_datetime(test_actual_df[date_col])
         if line_plot:
-            ax.plot(test_actual_df[date_col].values,
-                    test_actual_df[actual_col].values,
-                    marker=None, color=PredPal.TEST_OBS.value, lw=lw, label='train response', linestyle=linestyle)
+            ax.plot(
+                test_actual_df[date_col].values,
+                test_actual_df[actual_col].values,
+                marker=None,
+                color=PredPal.TEST_OBS.value,
+                lw=lw,
+                label="train response",
+                linestyle=linestyle,
+            )
         else:
-            ax.scatter(test_actual_df[date_col].values,
-                       test_actual_df[actual_col].values,
-                       marker='.', color=PredPal.TEST_OBS.value, s=markersize,
-                       label='test response')
+            ax.scatter(
+                test_actual_df[date_col].values,
+                test_actual_df[actual_col].values,
+                marker=".",
+                color=PredPal.TEST_OBS.value,
+                s=markersize,
+                label="test response",
+            )
 
     # prediction intervals
     if plot_confid:
-        ax.fill_between(_predicted_df[date_col].values,
-                        _predicted_df[confid_cols[0]],
-                        _predicted_df[confid_cols[1]],
-                        facecolor=PredPal.PREDICTION_INTERVAL.value, alpha=0.3)
+        ax.fill_between(
+            _predicted_df[date_col].values,
+            _predicted_df[confid_cols[0]],
+            _predicted_df[confid_cols[1]],
+            facecolor=PredPal.PREDICTION_INTERVAL.value,
+            alpha=0.3,
+        )
 
     ax.set_title(title, fontsize=fontsize)
     # ax.grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.5) --comment out since we have orbit style
@@ -157,48 +209,61 @@ def plot_predicted_data(training_actual_df, predicted_df, date_col, actual_col,
 
 
 @orbit_style_decorator
-def plot_predicted_components(predicted_df, date_col, prediction_percentiles=None, plot_components=None,
-                              title="", figsize=None, path=None, fontsize=None, is_visible=True):
-    """ Plot predicted components with the data frame of decomposed prediction where components
-    has been pre-defined as `trend`, `seasonality` and `regression`.
+def plot_predicted_components(
+    predicted_df,
+    date_col,
+    prediction_percentiles=None,
+    plot_components=None,
+    title="",
+    figsize=None,
+    path=None,
+    fontsize=None,
+    is_visible=True,
+):
+    """Plot predicted components with the data frame of decomposed prediction where components
+     has been pre-defined as `trend`, `seasonality` and `regression`.
 
-    Parameters
-    ----------
-    predicted_df : pd.DataFrame
-        predicted data response data frame. two columns required: actual_col and pred_col. If
-        user provide pred_percentiles_col, it needs to include them as well.
-    date_col : str
-        the date column name
-    prediction_percentiles : list
-        a list should consist exact two elements which will be used to plot as lower and upper bound of
-        confidence interval
-    plot_components : list
-        a list of strings to show the label of components to be plotted; by default, it uses values in
-        `orbit.constants.constants.PredictedComponents`.
-    title : str; optional
-        title of the plot
-    figsize : tuple; optional
-        figsize pass through to `matplotlib.pyplot.figure()`
-    path : str; optional
-        path to save the figure
-    fontsize : int; optional
-        fontsize of the title
-    is_visible : boolean
-        whether we want to show the plot. If called from unittest, is_visible might = False.
+     Parameters
+     ----------
+     predicted_df : pd.DataFrame
+         predicted data response data frame. two columns required: actual_col and pred_col. If
+         user provide pred_percentiles_col, it needs to include them as well.
+     date_col : str
+         the date column name
+     prediction_percentiles : list
+         a list should consist exact two elements which will be used to plot as lower and upper bound of
+         confidence interval
+     plot_components : list
+         a list of strings to show the label of components to be plotted; by default, it uses values in
+         `orbit.constants.constants.PredictedComponents`.
+     title : str; optional
+         title of the plot
+     figsize : tuple; optional
+         figsize pass through to `matplotlib.pyplot.figure()`
+     path : str; optional
+         path to save the figure
+     fontsize : int; optional
+         fontsize of the title
+     is_visible : boolean
+         whether we want to show the plot. If called from unittest, is_visible might = False.
 
-   Returns
-   -------
-        matplotlib axes object
+    Returns
+    -------
+         matplotlib axes object
     """
 
     _predicted_df = predicted_df.copy()
     _predicted_df[date_col] = pd.to_datetime(_predicted_df[date_col])
     if plot_components is None:
-        plot_components = [PredictionKeys.TREND.value,
-                           PredictionKeys.SEASONALITY.value,
-                           PredictionKeys.REGRESSION.value]
+        plot_components = [
+            PredictionKeys.TREND.value,
+            PredictionKeys.SEASONALITY.value,
+            PredictionKeys.REGRESSION.value,
+        ]
 
-    plot_components = [p for p in plot_components if p in _predicted_df.columns.tolist()]
+    plot_components = [
+        p for p in plot_components if p in _predicted_df.columns.tolist()
+    ]
     nrows = len(plot_components)
     if not figsize:
         figsize = (16, 8)
@@ -212,19 +277,32 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
         _pred_percentiles = prediction_percentiles
 
     if len(_pred_percentiles) != 2:
-        raise ValueError("prediction_percentiles has to be None or a list with length=2.")
+        raise ValueError(
+            "prediction_percentiles has to be None or a list with length=2."
+        )
 
     fig, axes = plt.subplots(nrows=nrows, ncols=1, figsize=figsize, squeeze=False)
     axes = axes.flatten()
     for ax, comp in zip(axes, plot_components):
         y = predicted_df[comp].values
-        ax.plot(_predicted_df[date_col], y, marker=None, color=PredPal.PREDICTION_INTERVAL.value)
-        confid_cols = ["{}_{}".format(comp, _pred_percentiles[0]), "{}_{}".format(comp, _pred_percentiles[1])]
+        ax.plot(
+            _predicted_df[date_col],
+            y,
+            marker=None,
+            color=PredPal.PREDICTION_INTERVAL.value,
+        )
+        confid_cols = [
+            "{}_{}".format(comp, _pred_percentiles[0]),
+            "{}_{}".format(comp, _pred_percentiles[1]),
+        ]
         if set(confid_cols).issubset(predicted_df.columns):
-            ax.fill_between(_predicted_df[date_col].values,
-                            _predicted_df[confid_cols[0]],
-                            _predicted_df[confid_cols[1]],
-                            facecolor=PredPal.PREDICTION_INTERVAL.value, alpha=0.3)
+            ax.fill_between(
+                _predicted_df[date_col].values,
+                _predicted_df[confid_cols[0]],
+                _predicted_df[confid_cols[1]],
+                facecolor=PredPal.PREDICTION_INTERVAL.value,
+                alpha=0.3,
+            )
         ax.set_title(comp, fontsize=fontsize)
 
     plt.suptitle(title, fontsize=fontsize)
@@ -241,9 +319,18 @@ def plot_predicted_components(predicted_df, date_col, prediction_percentiles=Non
 
 
 @orbit_style_decorator
-def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
-                        ncol=2, figsize=None, include_vline=True,
-                        title="", fontsize=20, path=None, is_visible=True):
+def plot_bt_predictions(
+    bt_pred_df,
+    metrics=smape,
+    split_key_list=None,
+    ncol=2,
+    figsize=None,
+    include_vline=True,
+    title="",
+    fontsize=20,
+    path=None,
+    is_visible=True,
+):
     """function to plot and visualize the prediction results from back testing.
 
     bt_pred_df : data frame
@@ -271,12 +358,12 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
     if figsize is None:
         figsize = (16, 8)
 
-    metric_vals = bt_pred_df.groupby(BacktestFitKeys.SPLIT_KEY.value).apply(lambda x:
-                                                                            metrics(
-                                                                                x[~x[BacktestFitKeys.TRAIN_FLAG.value]][
-                                                                                    BacktestFitKeys.ACTUAL.value],
-                                                                                x[~x[BacktestFitKeys.TRAIN_FLAG.value]][
-                                                                                    BacktestFitKeys.PREDICTED.value]))
+    metric_vals = bt_pred_df.groupby(BacktestFitKeys.SPLIT_KEY.value).apply(
+        lambda x: metrics(
+            x[~x[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.ACTUAL.value],
+            x[~x[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.PREDICTED.value],
+        )
+    )
 
     if split_key_list is None:
         split_key_list_ = bt_pred_df[BacktestFitKeys.SPLIT_KEY.value].unique()
@@ -285,28 +372,53 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
 
     num_splits = len(split_key_list_)
     nrow = math.ceil(num_splits / ncol)
-    fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False, facecolor='w', constrained_layout=False)
+    fig, axes = plt.subplots(
+        nrow,
+        ncol,
+        figsize=figsize,
+        squeeze=False,
+        facecolor="w",
+        constrained_layout=False,
+    )
 
     for idx, split_key in enumerate(split_key_list_):
         row_idx = idx // ncol
         col_idx = idx % ncol
-        tmp = bt_pred_df[bt_pred_df[BacktestFitKeys.SPLIT_KEY.value] == split_key].copy()
-        axes[row_idx, col_idx].plot(tmp[BacktestFitKeys.DATE.value], tmp[BacktestFitKeys.PREDICTED.value],
-                                    # linewidth=2,
-                                    color=PredPal.PREDICTION_LINE.value)
-        axes[row_idx, col_idx].scatter(tmp[BacktestFitKeys.DATE.value], tmp[BacktestFitKeys.ACTUAL.value],
-                                       label=BacktestFitKeys.ACTUAL.value,
-                                       color=PredPal.ACTUAL_OBS.value, alpha=.6, s=8)
+        tmp = bt_pred_df[
+            bt_pred_df[BacktestFitKeys.SPLIT_KEY.value] == split_key
+        ].copy()
+        axes[row_idx, col_idx].plot(
+            tmp[BacktestFitKeys.DATE.value],
+            tmp[BacktestFitKeys.PREDICTED.value],
+            # linewidth=2,
+            color=PredPal.PREDICTION_LINE.value,
+        )
+        axes[row_idx, col_idx].scatter(
+            tmp[BacktestFitKeys.DATE.value],
+            tmp[BacktestFitKeys.ACTUAL.value],
+            label=BacktestFitKeys.ACTUAL.value,
+            color=PredPal.ACTUAL_OBS.value,
+            alpha=0.6,
+            s=8,
+        )
         # axes[row_idx, col_idx].grid(True, which='major', c='gray', ls='-', lw=1, alpha=0.4)
 
-        axes[row_idx, col_idx].set_title(label='split {}; {} {:.3f}'. \
-                                         format(split_key, metrics.__name__, metric_vals[split_key]))
+        axes[row_idx, col_idx].set_title(
+            label="split {}; {} {:.3f}".format(
+                split_key, metrics.__name__, metric_vals[split_key]
+            )
+        )
         if include_vline:
-            cutoff_date = tmp[~tmp[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.DATE.value].min()
-            axes[row_idx, col_idx].axvline(x=cutoff_date, linestyle='--',
-                                           color=PredPal.HOLDOUT_VERTICAL_LINE.value,
-                                           # linewidth=4,
-                                           alpha=.8)
+            cutoff_date = tmp[~tmp[BacktestFitKeys.TRAIN_FLAG.value]][
+                BacktestFitKeys.DATE.value
+            ].min()
+            axes[row_idx, col_idx].axvline(
+                x=cutoff_date,
+                linestyle="--",
+                color=PredPal.HOLDOUT_VERTICAL_LINE.value,
+                # linewidth=4,
+                alpha=0.8,
+            )
 
     plt.suptitle(title, fontsize=fontsize)
     fig.tight_layout()
@@ -321,10 +433,22 @@ def plot_bt_predictions(bt_pred_df, metrics=smape, split_key_list=None,
 
 
 @orbit_style_decorator
-def plot_bt_predictions2(bt_pred_df, metrics=smape, split_key_list=None, figsize=None, include_vline=True,
-                         title="", fontsize=20, markersize=50, lw=2, fig_dir=None, is_visible=True, fix_xylim=True,
-                         export_gif=False):
-    """ a different style backtest plot compare to `plot_bt_prediction` where it writes separate plot for each split;
+def plot_bt_predictions2(
+    bt_pred_df,
+    metrics=smape,
+    split_key_list=None,
+    figsize=None,
+    include_vline=True,
+    title="",
+    fontsize=20,
+    markersize=50,
+    lw=2,
+    fig_dir=None,
+    is_visible=True,
+    fix_xylim=True,
+    export_gif=False,
+):
+    """a different style backtest plot compare to `plot_bt_prediction` where it writes separate plot for each split;
     this is also used to produce an animation to summarize every split
     """
     if figsize is None:
@@ -332,15 +456,19 @@ def plot_bt_predictions2(bt_pred_df, metrics=smape, split_key_list=None, figsize
 
     if fig_dir:
         if not os.path.isdir(fig_dir) or not os.path.exists(fig_dir):
-            raise PlotException('Invalid or non-existing directory use specified: {}.'.format(
-                os.path.abspath(fig_dir)
-            ))
+            raise PlotException(
+                "Invalid or non-existing directory use specified: {}.".format(
+                    os.path.abspath(fig_dir)
+                )
+            )
         fig_paths = list()
 
     metric_vals = bt_pred_df.groupby(BacktestFitKeys.SPLIT_KEY.value).apply(
-        lambda x:
-        metrics(x[~x[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.ACTUAL.value],
-                x[~x[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.PREDICTED.value]))
+        lambda x: metrics(
+            x[~x[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.ACTUAL.value],
+            x[~x[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.PREDICTED.value],
+        )
+    )
 
     if split_key_list is None:
         split_key_list_ = bt_pred_df[BacktestFitKeys.SPLIT_KEY.value].unique()
@@ -348,37 +476,67 @@ def plot_bt_predictions2(bt_pred_df, metrics=smape, split_key_list=None, figsize
         split_key_list_ = split_key_list
 
     if fix_xylim:
-        all_values = np.concatenate((
-            bt_pred_df[BacktestFitKeys.ACTUAL.value].values, bt_pred_df[BacktestFitKeys.PREDICTED.value].values
-        ))
+        all_values = np.concatenate(
+            (
+                bt_pred_df[BacktestFitKeys.ACTUAL.value].values,
+                bt_pred_df[BacktestFitKeys.PREDICTED.value].values,
+            )
+        )
         ylim = (np.min(all_values) * 0.99, np.max(all_values) * 1.01)
-        xlim = (bt_pred_df[BacktestFitKeys.DATE.value].values[0], bt_pred_df[BacktestFitKeys.DATE.value].values[-1])
+        xlim = (
+            bt_pred_df[BacktestFitKeys.DATE.value].values[0],
+            bt_pred_df[BacktestFitKeys.DATE.value].values[-1],
+        )
 
     for idx, split_key in enumerate(split_key_list_):
         fig, ax = plt.subplots(1, 1, figsize=figsize)
-        tmp = bt_pred_df[bt_pred_df[BacktestFitKeys.SPLIT_KEY.value] == split_key].copy()
-        ax.plot(tmp[BacktestFitKeys.DATE.value], tmp[BacktestFitKeys.PREDICTED.value],
-                color=PredPal.PREDICTION_LINE.value, lw=lw)
+        tmp = bt_pred_df[
+            bt_pred_df[BacktestFitKeys.SPLIT_KEY.value] == split_key
+        ].copy()
+        ax.plot(
+            tmp[BacktestFitKeys.DATE.value],
+            tmp[BacktestFitKeys.PREDICTED.value],
+            color=PredPal.PREDICTION_LINE.value,
+            lw=lw,
+        )
 
         train_df = tmp.loc[tmp[BacktestFitKeys.TRAIN_FLAG.value], :]
-        ax.scatter(train_df[BacktestFitKeys.DATE.value],
-                   train_df[BacktestFitKeys.ACTUAL.value],
-                   marker='.', color=PredPal.ACTUAL_OBS.value, alpha=0.8, s=markersize,
-                   label='train response')
+        ax.scatter(
+            train_df[BacktestFitKeys.DATE.value],
+            train_df[BacktestFitKeys.ACTUAL.value],
+            marker=".",
+            color=PredPal.ACTUAL_OBS.value,
+            alpha=0.8,
+            s=markersize,
+            label="train response",
+        )
 
         test_df = tmp.loc[~tmp[BacktestFitKeys.TRAIN_FLAG.value], :]
-        ax.scatter(test_df[BacktestFitKeys.DATE.value],
-                   test_df[BacktestFitKeys.ACTUAL.value],
-                   marker='.', color=PredPal.TEST_OBS.value, alpha=0.8, s=markersize,
-                   label='test response')
+        ax.scatter(
+            test_df[BacktestFitKeys.DATE.value],
+            test_df[BacktestFitKeys.ACTUAL.value],
+            marker=".",
+            color=PredPal.TEST_OBS.value,
+            alpha=0.8,
+            s=markersize,
+            label="test response",
+        )
 
-        ax.set_title(label='split {}; {} {:.3f}'. \
-                     format(split_key, metrics.__name__, metric_vals[split_key]))
+        ax.set_title(
+            label="split {}; {} {:.3f}".format(
+                split_key, metrics.__name__, metric_vals[split_key]
+            )
+        )
         if include_vline:
-            cutoff_date = tmp[~tmp[BacktestFitKeys.TRAIN_FLAG.value]][BacktestFitKeys.DATE.value].min()
-            ax.axvline(x=cutoff_date, linestyle='--',
-                       color=PredPal.HOLDOUT_VERTICAL_LINE.value,
-                       alpha=.8)
+            cutoff_date = tmp[~tmp[BacktestFitKeys.TRAIN_FLAG.value]][
+                BacktestFitKeys.DATE.value
+            ].min()
+            ax.axvline(
+                x=cutoff_date,
+                linestyle="--",
+                color=PredPal.HOLDOUT_VERTICAL_LINE.value,
+                alpha=0.8,
+            )
         if fix_xylim:
             ax.set_xlim(xlim)
             ax.set_ylim(ylim)
@@ -388,7 +546,7 @@ def plot_bt_predictions2(bt_pred_df, metrics=smape, split_key_list=None, figsize
         fig.tight_layout()
 
         if fig_dir:
-            fig_path = '{}/splits_{}.png'.format(fig_dir, idx)
+            fig_path = "{}/splits_{}.png".format(fig_dir, idx)
             fig_paths.append(fig_path)
             fig.savefig(fig_path)
         if is_visible:
@@ -397,30 +555,47 @@ def plot_bt_predictions2(bt_pred_df, metrics=smape, split_key_list=None, figsize
             plt.close()
 
     if fig_dir and export_gif:
-        package_name = 'imageio'
+        package_name = "imageio"
         try:
             pkg_resources.get_distribution(package_name)
             import imageio
-            with imageio.get_writer('{}/orbit-backtest.gif'.format(fig_dir), mode='I') as writer:
+
+            with imageio.get_writer(
+                "{}/orbit-backtest.gif".format(fig_dir), mode="I"
+            ) as writer:
                 for fig_path in fig_paths:
                     image = imageio.imread(fig_path)
                     writer.append_data(image)
         except pkg_resources.DistributionNotFound:
-            logger.error(('{} not installed, which is necessary for gif animation'.format(package_name)))
+            logger.error(
+                (
+                    "{} not installed, which is necessary for gif animation".format(
+                        package_name
+                    )
+                )
+            )
 
 
 # TODO: update palatte
 @orbit_style_decorator
-def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon',
-                           metric_col='smape', bar_width=0.1, path=None,
-                           figsize=None, fontsize=None, is_visible=False):
+def metric_horizon_barplot(
+    df,
+    model_col="model",
+    pred_horizon_col="pred_horizon",
+    metric_col="smape",
+    bar_width=0.1,
+    path=None,
+    figsize=None,
+    fontsize=None,
+    is_visible=False,
+):
     if not figsize:
         figsize = [20, 6]
 
     if not fontsize:
         fontsize = 10
 
-    plt.rcParams['figure.figsize'] = figsize
+    plt.rcParams["figure.figsize"] = figsize
     models = df[model_col].unique()
     metric_horizons = df[pred_horizon_col].unique()
     n_models = len(models)
@@ -439,11 +614,17 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
 
     # make the plot
     for idx in range(n_models):
-        plt.bar(r[idx], bars[idx], color=palette[idx], width=bar_width, edgecolor='white',
-                label=models[idx])
+        plt.bar(
+            r[idx],
+            bars[idx],
+            color=palette[idx],
+            width=bar_width,
+            edgecolor="white",
+            label=models[idx],
+        )
 
     # add xticks on the middle of the group bars
-    plt.xlabel('predict-horizon', fontweight='bold')
+    plt.xlabel("predict-horizon", fontweight="bold")
     plt.xticks([x + bar_width for x in range(len(bars[0]))], metric_horizons)
 
     # create legend & show graphic
@@ -458,10 +639,19 @@ def metric_horizon_barplot(df, model_col='model', pred_horizon_col='pred_horizon
     else:
         plt.close()
 
+
 @orbit_style_decorator
-def params_comparison_boxplot(model_name_list, data_list, label_list, color_list = sns.color_palette(),
-                                title="Params Comparison", fig_size=(10, 6),
-                                box_width=0.1, box_distance=0.2, showfliers=False):
+def params_comparison_boxplot(
+    model_name_list,
+    data_list,
+    label_list,
+    color_list=sns.color_palette(),
+    title="Params Comparison",
+    fig_size=(10, 6),
+    box_width=0.1,
+    box_distance=0.2,
+    showfliers=False,
+):
     """compare the distribution of parameters from different models uisng a boxplot.
     Parameters:
         model_name_list : a list of strings, the names of models
@@ -484,7 +674,6 @@ def params_comparison_boxplot(model_name_list, data_list, label_list, color_list
         a boxplot comparing parameter distributions from different models side by side
     """
 
-
     fig, ax = plt.subplots(1, 1, figsize=fig_size)
     handles = []
     n_models = len(model_name_list)
@@ -504,16 +693,22 @@ def params_comparison_boxplot(model_name_list, data_list, label_list, color_list
     pos = sorted(pos)
 
     for i in range(len(data_list)):
-        globals()[f'bp{i}'] = ax.boxplot(data_list[i], positions=np.arange(data_list[i].shape[1]) + pos[i],
-                                         widths=box_width, patch_artist=True, manage_ticks=False,
-                                         boxprops=dict(facecolor=color_list[i]), medianprops=dict(color='black'),
-                                         showfliers= showfliers)
-        handles.append(globals()[f"bp{i}"]['boxes'][0])
+        globals()[f"bp{i}"] = ax.boxplot(
+            data_list[i],
+            positions=np.arange(data_list[i].shape[1]) + pos[i],
+            widths=box_width,
+            patch_artist=True,
+            manage_ticks=False,
+            boxprops=dict(facecolor=color_list[i]),
+            medianprops=dict(color="black"),
+            showfliers=showfliers,
+        )
+        handles.append(globals()[f"bp{i}"]["boxes"][0])
 
     plt.xticks(np.arange(len(label_list)), label_list)
     ax.legend(handles, model_name_list)
-    plt.xlabel('params')
-    plt.ylabel('value')
+    plt.xlabel("params")
+    plt.ylabel("value")
     plt.title(title)
 
     return ax

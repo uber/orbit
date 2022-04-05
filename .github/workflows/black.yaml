@@ -1,0 +1,12 @@
+name: Lint
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+#      Currently only checking instead of auto formatting
+      - uses: jpetrucciani/black-check@master
+#      - uses: psf/black@stable

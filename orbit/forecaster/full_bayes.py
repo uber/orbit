@@ -22,18 +22,19 @@ class FullBayesianForecaster(Forecaster):
 
     def set_forecaster_training_meta(self, data_input):
         # MCMC flag to be true
-        data_input.update(
-            {'WITH_MCMC': 1}
-        )
+        data_input.update({"WITH_MCMC": 1})
         return data_input
 
     def fit(self, df, point_method=None, keep_samples=True, sampling_temperature=1.0):
-        super().fit(df,  sampling_temperature=sampling_temperature)
+        super().fit(df, sampling_temperature=sampling_temperature)
         self._point_method = point_method
 
         if point_method is not None:
-            if point_method not in [PredictMethod.MEAN.value, PredictMethod.MEDIAN.value]:
-                raise ForecasterException('Invalid point estimate method.')
+            if point_method not in [
+                PredictMethod.MEAN.value,
+                PredictMethod.MEDIAN.value,
+            ]:
+                raise ForecasterException("Invalid point estimate method.")
 
         mean_posteriors = {}
         median_posteriors = {}
@@ -67,7 +68,9 @@ class FullBayesianForecaster(Forecaster):
             The number of bootstrap samples to draw
         """
         if n < 2:
-            raise ForecasterException("Error: Number of bootstrap draws must be at least 2")
+            raise ForecasterException(
+                "Error: Number of bootstrap draws must be at least 2"
+            )
 
         sample_idx = np.random.choice(range(num_samples), size=n, replace=True)
         bootstrap_samples_dict = {}
@@ -76,7 +79,9 @@ class FullBayesianForecaster(Forecaster):
 
         return bootstrap_samples_dict
 
-    def predict(self, df, decompose=False, store_prediction_array=False, seed=None, **kwargs):
+    def predict(
+        self, df, decompose=False, store_prediction_array=False, seed=None, **kwargs
+    ):
         # raise if model is not fitted
         if not self.is_fitted():
             raise ForecasterException("Model is not fitted yet.")
@@ -91,11 +96,15 @@ class FullBayesianForecaster(Forecaster):
         if self._point_method is None:
             # full posteriors prediction
             # if bootstrap draws, replace posterior samples with bootstrap
-            posterior_samples = self._bootstrap(
-                num_samples=self.estimator.num_sample,
-                posterior_samples=self._posterior_samples,
-                n=self._n_bootstrap_draws
-            ) if self._n_bootstrap_draws > 1 else self._posterior_samples
+            posterior_samples = (
+                self._bootstrap(
+                    num_samples=self.estimator.num_sample,
+                    posterior_samples=self._posterior_samples,
+                    n=self._n_bootstrap_draws,
+                )
+                if self._n_bootstrap_draws > 1
+                else self._posterior_samples
+            )
 
             predicted_dict = self._model.predict(
                 posterior_estimates=posterior_samples,
@@ -103,20 +112,29 @@ class FullBayesianForecaster(Forecaster):
                 training_meta=training_meta,
                 prediction_meta=prediction_meta,
                 include_error=True,
-                **kwargs
+                **kwargs,
             )
 
             if PredictionKeys.PREDICTION.value not in predicted_dict.keys():
-                raise ForecasterException("cannot find the key:'{}' from return of _predict()".format(
-                    PredictionKeys.PREDICTION.value))
+                raise ForecasterException(
+                    "cannot find the key:'{}' from return of _predict()".format(
+                        PredictionKeys.PREDICTION.value
+                    )
+                )
 
             # reduce to prediction only if decompose is not requested
             if not decompose:
-                predicted_dict = {k: v for k, v in predicted_dict.items() if k == PredictionKeys.PREDICTION.value}
+                predicted_dict = {
+                    k: v
+                    for k, v in predicted_dict.items()
+                    if k == PredictionKeys.PREDICTION.value
+                }
 
             if store_prediction_array:
                 self.prediction_array = predicted_dict[PredictionKeys.PREDICTION.value]
-            percentiles_dict = compute_percentiles(predicted_dict, self._prediction_percentiles)
+            percentiles_dict = compute_percentiles(
+                predicted_dict, self._prediction_percentiles
+            )
             predicted_df = pd.DataFrame(percentiles_dict)
             predicted_df = prepend_date_column(predicted_df, df, self.date_col)
             return predicted_df
@@ -129,7 +147,7 @@ class FullBayesianForecaster(Forecaster):
                 training_meta=training_meta,
                 prediction_meta=prediction_meta,
                 include_error=False,
-                **kwargs
+                **kwargs,
             )
             for k, v in point_predicted_dict.items():
                 point_predicted_dict[k] = np.squeeze(v, 0)
@@ -146,27 +164,39 @@ class FullBayesianForecaster(Forecaster):
                     training_meta=training_meta,
                     prediction_meta=prediction_meta,
                     include_error=True,
-                    **kwargs
+                    **kwargs,
                 )
-                percentiles_dict = compute_percentiles(predicted_dict, self._prediction_percentiles)
+                percentiles_dict = compute_percentiles(
+                    predicted_dict, self._prediction_percentiles
+                )
                 # replace mid point prediction by point estimate
                 percentiles_dict.update(point_predicted_dict)
 
                 if PredictionKeys.PREDICTION.value not in percentiles_dict.keys():
-                    raise ForecasterException("cannot find the key:'{}' from return of _predict()".format(
-                        PredictionKeys.PREDICTION.value))
+                    raise ForecasterException(
+                        "cannot find the key:'{}' from return of _predict()".format(
+                            PredictionKeys.PREDICTION.value
+                        )
+                    )
 
                 # reduce to prediction only if decompose is not requested
                 if not decompose:
                     k = PredictionKeys.PREDICTION.value
-                    reduced_keys = [k + "_" + str(p) if p != 50 else k for p in self._prediction_percentiles]
-                    percentiles_dict = {k: v for k, v in percentiles_dict.items() if k in reduced_keys}
+                    reduced_keys = [
+                        k + "_" + str(p) if p != 50 else k
+                        for p in self._prediction_percentiles
+                    ]
+                    percentiles_dict = {
+                        k: v for k, v in percentiles_dict.items() if k in reduced_keys
+                    }
                 predicted_df = pd.DataFrame(percentiles_dict)
             else:
                 if not decompose:
                     # reduce to prediction only if decompose is not requested
                     point_predicted_dict = {
-                        k: v for k, v in point_predicted_dict.items() if k == PredictionKeys.PREDICTION.value
+                        k: v
+                        for k, v in point_predicted_dict.items()
+                        if k == PredictionKeys.PREDICTION.value
                     }
                 predicted_df = pd.DataFrame(point_predicted_dict)
 
@@ -175,25 +205,31 @@ class FullBayesianForecaster(Forecaster):
 
     def load_extra_methods(self):
         for method in self.extra_methods:
-            setattr(self,
-                    method,
-                    partial(
-                        getattr(self._model, method),
-                        self.get_training_meta(),
-                        self._point_method,
-                        self.get_point_posteriors(),
-                        self.get_posterior_samples()
-                    ))
+            setattr(
+                self,
+                method,
+                partial(
+                    getattr(self._model, method),
+                    self.get_training_meta(),
+                    self._point_method,
+                    self.get_point_posteriors(),
+                    self.get_posterior_samples(),
+                ),
+            )
 
     def get_wbic(self):
         # This function calculates the WBIC given that MCMC sampling happened with sampling_temperature = log(n)
-        training_metrics = self.get_training_metrics() # get the training metrics
-        training_meta = self.get_training_meta() # get the meta data
-        sampling_temp = training_metrics['sampling_temperature'] # get the sampling temperature
-        nobs = training_meta['num_of_obs'] # the number of observations
+        training_metrics = self.get_training_metrics()  # get the training metrics
+        training_meta = self.get_training_meta()  # get the meta data
+        sampling_temp = training_metrics[
+            "sampling_temperature"
+        ]  # get the sampling temperature
+        nobs = training_meta["num_of_obs"]  # the number of observations
         if sampling_temp != np.log(nobs):
-            raise ForecasterException('Sampling temperature is not log(n); WBIC calculation is not valid!')
-        return -2 * np.nanmean(training_metrics['loglk']) * nobs
+            raise ForecasterException(
+                "Sampling temperature is not log(n); WBIC calculation is not valid!"
+            )
+        return -2 * np.nanmean(training_metrics["loglk"]) * nobs
 
     def fit_wbic(self, df):
         """This function calculates the WBIC for a Orbit model

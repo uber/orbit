@@ -3,8 +3,8 @@ import pandas as pd
 from orbit.exceptions import IllegalArgument
 
 
-def make_fourier_series(n, period, order=3,  shift=0):
-    """ Given time series length, cyclical period and order, return a set of fourier series.
+def make_fourier_series(n, period, order=3, shift=0):
+    """Given time series length, cyclical period and order, return a set of fourier series.
 
     Parameters
     ----------
@@ -35,8 +35,8 @@ def make_fourier_series(n, period, order=3,  shift=0):
     return out
 
 
-def make_fourier_series_df(df, period, order=3, prefix='', suffix='', shift=0):
-    """ Given a data-frame, cyclical period and order, return a set of fourier series in a dataframe.
+def make_fourier_series_df(df, period, order=3, prefix="", suffix="", shift=0):
+    """Given a data-frame, cyclical period and order, return a set of fourier series in a dataframe.
 
     Parameters
     ----------
@@ -65,15 +65,15 @@ def make_fourier_series_df(df, period, order=3, prefix='', suffix='', shift=0):
     fs = make_fourier_series(df.shape[0], period, order=order, shift=shift)
     fs_cols = []
     for i in range(1, order + 1):
-        fs_cols.append('{}fs_cos{}{}'.format(prefix, i, suffix))
-        fs_cols.append('{}fs_sin{}{}'.format(prefix, i, suffix))
+        fs_cols.append("{}fs_cos{}{}".format(prefix, i, suffix))
+        fs_cols.append("{}fs_sin{}{}".format(prefix, i, suffix))
     fs_df = pd.DataFrame(fs, columns=fs_cols)
     out = pd.concat([df.reset_index(drop=True), fs_df], axis=1)
     return out, fs_cols
 
 
 def make_seasonal_dummies(df, date_col, freq, sparse=True, drop_first=True):
-    """ Based on the frequency input (in pandas.DataFrame style), provide dummies indicator for regression type of
+    """Based on the frequency input (in pandas.DataFrame style), provide dummies indicator for regression type of
     purpose.
 
     Parameters
@@ -98,12 +98,18 @@ def make_seasonal_dummies(df, date_col, freq, sparse=True, drop_first=True):
     -----
         This is calling :func:`pd.get_dummies`
     """
-    if freq == 'weekday':
-        dummies = pd.get_dummies(df[date_col].dt.weekday, prefix='wd', sparse=sparse, drop_first=drop_first)
-    elif freq == 'month':
-        dummies = pd.get_dummies(df[date_col].dt.month, prefix='m', sparse=sparse, drop_first=drop_first)
-    elif freq == 'week':
-        dummies = pd.get_dummies(df[date_col].dt.week, prefix='w', sparse=sparse, drop_first=drop_first)
+    if freq == "weekday":
+        dummies = pd.get_dummies(
+            df[date_col].dt.weekday, prefix="wd", sparse=sparse, drop_first=drop_first
+        )
+    elif freq == "month":
+        dummies = pd.get_dummies(
+            df[date_col].dt.month, prefix="m", sparse=sparse, drop_first=drop_first
+        )
+    elif freq == "week":
+        dummies = pd.get_dummies(
+            df[date_col].dt.week, prefix="w", sparse=sparse, drop_first=drop_first
+        )
     else:
         raise IllegalArgument("Invalid argument of freq.")
 
@@ -143,8 +149,8 @@ def make_seasonal_regressors(n, periods, orders, labels, shift=0):
     return out
 
 
-def moving_average(x, window=1, mode='same'):
-    """ Compute moving average of a 1-D numpy array
+def moving_average(x, window=1, mode="same"):
+    """Compute moving average of a 1-D numpy array
 
     Parameters
     ----------

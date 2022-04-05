@@ -50,6 +50,25 @@ to be at least 70%.
 $ pytest -vs tests/ --cov orbit/
 ```
 
+## Linting
+
+You can run black linting to lint the code style.
+
+####Linting one single file
+```bash
+$ black <file path>
+```
+
+####Linting every file under the current directory
+```bash
+$ black .
+```
+
+####Outputting the code change black would have done without actually making change
+```bash
+$ black --diff <file path>
+```
+
 # Submission
 
 In your PR, please include:

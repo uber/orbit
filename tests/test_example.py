@@ -2,7 +2,6 @@ import unittest
 
 
 class TestExample(unittest.TestCase):
-
     def test(self):
         pass
 

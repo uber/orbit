@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 
-def load_iclaims(end_date='2018-06-24', transform=True):
+def load_iclaims(end_date="2018-06-24", transform=True):
     """Load iclaims dataset
 
     Returns
@@ -23,12 +23,12 @@ def load_iclaims(end_date='2018-06-24', transform=True):
     https://trends.google.com/trends/?geo=US
     https://finance.yahoo.com/
     """
-    url = 'https://raw.githubusercontent.com/uber/orbit/master/examples/data/iclaims_example.csv'
-    df = pd.read_csv(url, parse_dates=['week'])
-    df = df[df['week'] <= end_date]
+    url = "https://raw.githubusercontent.com/uber/orbit/master/examples/data/iclaims_example.csv"
+    df = pd.read_csv(url, parse_dates=["week"])
+    df = df[df["week"] <= end_date]
 
     # standardize the regressors by mean; equivalent to subtracting mean after np.log
-    regressors = ['trend.unemploy', 'trend.filling', 'trend.job', 'sp500', 'vix']
+    regressors = ["trend.unemploy", "trend.filling", "trend.job", "sp500", "vix"]
 
     # convert to float
     for col in regressors:
@@ -36,7 +36,7 @@ def load_iclaims(end_date='2018-06-24', transform=True):
 
     if transform:
         # log transfer
-        df[['claims'] + regressors] = df[['claims'] + regressors].apply(np.log)
+        df[["claims"] + regressors] = df[["claims"] + regressors].apply(np.log)
         # de-mean
         df[regressors] = df[regressors] - df[regressors].apply(np.mean)
 
@@ -54,8 +54,8 @@ def load_m4weekly():
     -----
     https://forecasters.org/resources/time-series-data/m4-competition/
     """
-    url = 'https://raw.githubusercontent.com/uber/orbit/master/examples/data/m4_weekly.csv'
-    df = pd.read_csv(url, parse_dates=['date'])
+    url = "https://raw.githubusercontent.com/uber/orbit/master/examples/data/m4_weekly.csv"
+    df = pd.read_csv(url, parse_dates=["date"])
 
     return df
 
@@ -71,8 +71,8 @@ def load_m5daily():
     -----
     https://www.kaggle.com/c/m5-forecasting-accuracy
     """
-    url = 'https://raw.githubusercontent.com/uber/orbit/master/examples/data/m5_agg_demand_full.csv'
-    df = pd.read_csv(url, parse_dates=['date'])
+    url = "https://raw.githubusercontent.com/uber/orbit/master/examples/data/m5_agg_demand_full.csv"
+    df = pd.read_csv(url, parse_dates=["date"])
 
     return df
 
@@ -88,8 +88,8 @@ def load_m3monthly():
     -----
     https://forecasters.org/resources/time-series-data/m3-competition/
     """
-    url = 'https://raw.githubusercontent.com/uber/orbit/master/examples/data/m3_monthly.csv'
-    df = pd.read_csv(url, parse_dates=['date'])
+    url = "https://raw.githubusercontent.com/uber/orbit/master/examples/data/m3_monthly.csv"
+    df = pd.read_csv(url, parse_dates=["date"])
 
     return df
 
@@ -107,11 +107,11 @@ def load_electricity_demand():
     :return:
     """
 
-    url = 'https://robjhyndman.com/data/turkey_elec.csv'
-    df = pd.read_csv(url, header=None, names=['electricity'])
-    df['date'] = pd.date_range(start='1/1/2000', end='31/12/2008', freq='D')
+    url = "https://robjhyndman.com/data/turkey_elec.csv"
+    df = pd.read_csv(url, header=None, names=["electricity"])
+    df["date"] = pd.date_range(start="1/1/2000", end="31/12/2008", freq="D")
     # re-arrange columns
-    df = df[['date', 'electricity']]
+    df = df[["date", "electricity"]]
 
     return df
 
@@ -129,14 +129,14 @@ def load_air_passengers():
     :return:
     """
 
-    url = 'https://raw.githubusercontent.com/facebook/prophet/master/examples/example_air_passengers.csv'
-    df = pd.read_csv(url, parse_dates=['ds'])
+    url = "https://raw.githubusercontent.com/facebook/prophet/master/examples/example_air_passengers.csv"
+    df = pd.read_csv(url, parse_dates=["ds"])
 
     return df
 
 
 def load_energy_hourly():
-    """ Load Historical hourly load data from EMS for September 2021
+    """Load Historical hourly load data from EMS for September 2021
     Returns
     -------
         pandas DataFrame
@@ -147,9 +147,9 @@ def load_energy_hourly():
     :return:
     """
 
-    url = 'https://raw.githubusercontent.com/uber/orbit/dev/examples/data/energy_data_hourly.csv'
+    url = "https://raw.githubusercontent.com/uber/orbit/dev/examples/data/energy_data_hourly.csv"
     df = pd.read_csv(url)
-    df['hour'] = pd.to_datetime(df['Date'] + ' ' + df['hour'])
-    df.drop(['Date', 'HR'], axis=1, inplace=True)
+    df["hour"] = pd.to_datetime(df["Date"] + " " + df["hour"])
+    df.drop(["Date", "HR"], axis=1, inplace=True)
 
     return df

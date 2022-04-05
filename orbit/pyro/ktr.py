@@ -6,7 +6,7 @@ import pyro.distributions as dist
 
 
 # FIXME: this is sort of dangerous; consider better implementation later
-torch.set_default_tensor_type('torch.DoubleTensor')
+torch.set_default_tensor_type("torch.DoubleTensor")
 pyro.enable_validation(True)
 
 
@@ -18,10 +18,10 @@ class Model:
             key = key.lower()
             if isinstance(value, (list, np.ndarray)):
                 # TODO: this is hackk way; please fix this later
-                if key in ['which_valid_res']:
+                if key in ["which_valid_res"]:
                     # to use as index, tensor type has to be long or int
                     value = torch.tensor(value)
-                elif key in ['coef_prior_list']:
+                elif key in ["coef_prior_list"]:
                     pass
                 else:
                     # loc/scale cannot be in long format
@@ -29,7 +29,6 @@ class Model:
                     value = torch.tensor(value, dtype=torch.double)
             self.__dict__[key] = value
 
-            
     def __call__(self):
         """
         Notes
@@ -53,7 +52,7 @@ class Model:
         dof = self.dof
         lev_knot_loc = self.lev_knot_loc
         seas_term = self.seas_term
-        # added for tempured sampling 
+        # added for tempured sampling
         T = self.t_star
 
         pr = self.pr
@@ -106,22 +105,24 @@ class Model:
         # levels sampling
         lev_knot_tran = pyro.sample(
             "lev_knot_tran",
-            dist.Normal(lev_knot_loc - meany, lev_knot_scale).expand([n_knots_lev]).to_event(1)
+            dist.Normal(lev_knot_loc - meany, lev_knot_scale)
+            .expand([n_knots_lev])
+            .to_event(1),
         )
-        lev = (lev_knot_tran @ k_lev.transpose(-2, -1))
+        lev = lev_knot_tran @ k_lev.transpose(-2, -1)
         # regular regressor sampling
         if n_rr > 0:
             # pooling latent variables
             rr_init_knot = pyro.sample(
-                "rr_init_knot", dist.Normal(
-                    rr_init_knot_loc,
-                    rr_init_knot_scale).to_event(1)
+                "rr_init_knot",
+                dist.Normal(rr_init_knot_loc, rr_init_knot_scale).to_event(1),
             )
             rr_knot = pyro.sample(
                 "rr_knot",
                 dist.Normal(
                     rr_init_knot.unsqueeze(-1) * torch.ones(n_rr, n_knots_coef),
-                    rr_knot_scale).to_event(2)
+                    rr_knot_scale,
+                ).to_event(2),
             )
             rr_coef = (rr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
 
@@ -131,9 +132,8 @@ class Model:
             pr_init_knot = pyro.sample(
                 "pr_knot_loc",
                 dist.FoldedDistribution(
-                    dist.Normal(pr_init_knot_loc,
-                                pr_init_knot_scale)
-                ).to_event(1)
+                    dist.Normal(pr_init_knot_loc, pr_init_knot_scale)
+                ).to_event(1),
             )
 
             pr_knot = pyro.sample(
@@ -141,8 +141,9 @@ class Model:
                 dist.FoldedDistribution(
                     dist.Normal(
                         pr_init_knot.unsqueeze(-1) * torch.ones(n_pr, n_knots_coef),
-                        pr_knot_scale)
-                ).to_event(2)
+                        pr_knot_scale,
+                    )
+                ).to_event(2),
             )
             pr_coef = (pr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
 
@@ -152,9 +153,8 @@ class Model:
             nr_init_knot = -1.0 * pyro.sample(
                 "nr_knot_loc",
                 dist.FoldedDistribution(
-                    dist.Normal(nr_init_knot_loc,
-                                nr_init_knot_scale)
-                ).to_event(1)
+                    dist.Normal(nr_init_knot_loc, nr_init_knot_scale)
+                ).to_event(1),
             )
 
             nr_knot = -1.0 * pyro.sample(
@@ -162,8 +162,9 @@ class Model:
                 dist.FoldedDistribution(
                     dist.Normal(
                         nr_init_knot.unsqueeze(-1) * torch.ones(n_nr, n_knots_coef),
-                        nr_knot_scale)
-                ).to_event(2)
+                        nr_knot_scale,
+                    )
+                ).to_event(2),
             )
             nr_coef = (nr_knot @ k_coef.transpose(-2, -1)).transpose(-2, -1)
 
@@ -191,19 +192,19 @@ class Model:
         coef_prior_list = self.coef_prior_list
         if coef_prior_list:
             for x in coef_prior_list:
-                name = x['name']
+                name = x["name"]
                 # TODO: we can move torch conversion to init to enhance speed
-                m = torch.tensor(x['prior_mean'])
-                sd = torch.tensor(x['prior_sd'])
+                m = torch.tensor(x["prior_mean"])
+                sd = torch.tensor(x["prior_sd"])
                 # tp = torch.tensor(x['prior_tp_idx'])
                 # idx = torch.tensor(x['prior_regressor_col_idx'])
-                start_tp_idx = x['prior_start_tp_idx']
-                end_tp_idx = x['prior_end_tp_idx']
-                idx = x['prior_regressor_col_idx']
+                start_tp_idx = x["prior_start_tp_idx"]
+                end_tp_idx = x["prior_end_tp_idx"]
+                idx = x["prior_regressor_col_idx"]
                 pyro.sample(
                     "prior_{}".format(name),
                     dist.Normal(m, sd).to_event(2),
-                    obs=coef[..., start_tp_idx:end_tp_idx, idx]
+                    obs=coef[..., start_tp_idx:end_tp_idx, idx],
                 )
 
         # observation likelihood
@@ -213,25 +214,30 @@ class Model:
         obs_scale_base = pyro.sample("obs_scale_base", dist.Beta(5, 1)).unsqueeze(-1)
         obs_scale = obs_scale_base * resid_scale_ub
 
-        #this line addes a tempurature to the obs fit 
-        with pyro.poutine.scale(scale=1.0/T):
-            pyro.sample("response",
-                    dist.StudentT(dof, yhat[..., which_valid], obs_scale).to_event(1),
-                    obs=response_tran[which_valid])
-        
+        # this line addes a tempurature to the obs fit
+        with pyro.poutine.scale(scale=1.0 / T):
+            pyro.sample(
+                "response",
+                dist.StudentT(dof, yhat[..., which_valid], obs_scale).to_event(1),
+                obs=response_tran[which_valid],
+            )
 
-        log_prob = dist.StudentT(dof, yhat[..., which_valid], obs_scale).log_prob(response_tran[which_valid])
-        
+        log_prob = dist.StudentT(dof, yhat[..., which_valid], obs_scale).log_prob(
+            response_tran[which_valid]
+        )
+
         lev_knot = lev_knot_tran + meany
 
-        extra_out.update({
-            'yhat': yhat + seas_term + meany,
-            'lev': lev + meany,
-            'lev_knot': lev_knot,
-            'coef': coef,
-            'coef_knot': coef_knot,
-            'coef_init_knot': coef_init_knot,
-            'obs_scale': obs_scale,
-            'log_prob': log_prob,
-        })
+        extra_out.update(
+            {
+                "yhat": yhat + seas_term + meany,
+                "lev": lev + meany,
+                "lev_knot": lev_knot,
+                "coef": coef,
+                "coef_knot": coef_knot,
+                "coef_init_knot": coef_init_knot,
+                "obs_scale": obs_scale,
+                "log_prob": log_prob,
+            }
+        )
         return extra_out
