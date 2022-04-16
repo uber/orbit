@@ -6,6 +6,7 @@ from itertools import product
 from ..diagnostics.metrics import smape
 from ..diagnostics.backtest import BackTester
 from collections.abc import Mapping, Iterable
+from ..exceptions import IllegalArgument
 
 import logging
 
@@ -16,23 +17,26 @@ def grid_search_orbit(
     param_grid,
     model,
     df,
+    eval_method="backtest",
     min_train_len=None,
     incremental_len=None,
     forecast_len=None,
     n_splits=None,
     metrics=None,
     criteria=None,
-    verbose=True,
+    verbose=False,
     **kwargs,
 ):
-    """A gird search unitlity to tune the hyperparameters for orbit template using the orbit.diagnostics.backtest modules.
+    """A gird search utility to tune the hyperparameters for orbit template using the orbit.diagnostics.backtest modules.
     Parameters
     ----------
-    param_gird : dict
+    param_grid : dict
         a dict with candidate values for hyper-params to be tuned
     model : object
         model object
     df : pd.DataFrame
+    eval_method : str
+        "backtest" or "bic"
     min_train_len : int
         scheduling parameter in backtest
     incremental_len : int
@@ -41,10 +45,10 @@ def grid_search_orbit(
         scheduling parameter in backtest
     n_splits : int
         scheduling parameter in backtest
-    metrics : function
-        metric function, defaul smape defined in orbit.diagnostics.metrics
+    metrics : callable
+        metric function, if not provided, default will be set as smape defined in orbit.diagnostics.metrics
     criteria : str
-        "min" or "max"; defatul is None ("min")
+        "min" or "max"; if None, default will be set as "min"
     verbose : bool
 
     Return
@@ -67,6 +71,11 @@ def grid_search_orbit(
     #             params[key] = val
 
     #     return params.copy()
+    if eval_method not in ['backtest', 'bic']:
+        raise IllegalArgument("Invalid input of eval_method. Argument not in ['backtest', 'bic']")
+
+    if criteria not in ['min', 'max']:
+        raise IllegalArgument("Invalid input of criteria. Argument not in ['min', 'max']")
 
     def _get_params(model):
         init_args_tmpl = dict()
@@ -113,32 +122,38 @@ def grid_search_orbit(
             elif key in params_.keys():
                 params_[key] = val
             else:
-                raise Exception(
-                    "tuned hyper-param {} is not in the model's parameters".format(key)
-                )
+                raise Exception("tuned hyper-param {} is not in the model's parameters".format(key))
 
-        # it is safer to reinstantiate a model object than using deepcopy...
+        # it is safer to re-instantiate a model object than using deepcopy...
         new_model_template = model._model.__class__(**params_tmpl_)
         new_model = model.__class__(model=new_model_template, **params_)
 
-        bt = BackTester(
-            model=new_model,
-            df=df,
-            min_train_len=min_train_len,
-            n_splits=n_splits,
-            incremental_len=incremental_len,
-            forecast_len=forecast_len,
-            **kwargs,
-        )
-        bt.fit_predict()
-        # TODO: should we assert len(metrics) == 1?
-        if metrics is None:
-            metrics = smape
-        metric_val = bt.score(metrics=[metrics]).metric_values[0]
-        if verbose:
-            logger.info("tuning metric:{:-.5g}".format(metric_val))
-        metric_values.append(metric_val)
+        if eval_method == 'backtest':
+            bt = BackTester(
+                model=new_model,
+                df=df,
+                min_train_len=min_train_len,
+                n_splits=n_splits,
+                incremental_len=incremental_len,
+                forecast_len=forecast_len,
+                **kwargs,
+            )
+            bt.fit_predict()
+            # TODO: should we assert len(metrics) == 1?
+            if metrics is None:
+                metrics = smape
+            metric_val = bt.score(metrics=[metrics]).metric_values[0]
+            if verbose:
+                logger.info("tuning metric:{:-.5g}".format(metric_val))
+            metric_values.append(metric_val)
+        elif eval_method == 'bic':
+            new_model.fit(df)
+            metric_values.append(new_model.get_bic())
+        else:
+            pass
+
     res["metrics"] = metric_values
+
     if criteria is None:
         criteria = "min"
     best_params = (

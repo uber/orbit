@@ -65,12 +65,12 @@ def get_knot_idx(
     This function will be used in KTRLite and KTRX model.
 
     There are three ways to get the knot index:
-    1. With number of observations supplied, calculate knot location and indices based on
+    1. With number of observations supplied, calculate the knots location and indices based on
     number of segments specified and knot indices will be evenly distributed
-    2. With number of observations supplied, calculate knot location and indices based on
+    2. With number of observations supplied, calculate the knots location and indices based on
     knot distance specified such that there will be additional knots in the first and end provided
     3. With observations date array and knot dates provided, derive knots location directly based on the
-    implied observations frequency provided.
+    implied observation frequency provided.
 
     Parameters
     ----------

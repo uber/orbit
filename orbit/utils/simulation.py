@@ -195,162 +195,161 @@ def make_regression(
     return x, y, coefs
 
 
-def sim_stepwise_coef_data(n, RS, p=3, n_jump=2):
-    """
-    Parameters
-    ----------
-    n : int
-        number of obseravtions
-    RS : int
-        seed
-    p : int
-        number of predictors
-    n_jump
-        number of jumps
-    Returns
-    -------
-    np.ndarray
-
-    Notes
-    -----
-    This code is purely experimental
-
-    """
-    np.random.seed(RS)
-
-    # initializing coefficients at zeros, simulate all coefficient values
-    lev = np.cumsum(np.concatenate((np.array([5.0]), np.random.normal(0, 0.01, n - 1))))
-
-    jump_tp = np.round(np.random.uniform(0, n, (p, n_jump)), 0).astype(np.int32)
-    jump_amp = np.random.normal(0, 0.05, (p, n_jump))
-
-    beta = np.zeros((n, p))
-    beta[0, :] = -2
-    for idx in range(p):
-        beta[jump_tp[idx], idx] = jump_amp[idx]
-    beta = np.cumsum(beta, 0)
-    #     beta += np.random.normal(0, 1e-2, (n, p))
-    # strictly positive coefficients
-    beta = np.exp(beta)
-
-    # simulate regressors
-    covariates = np.random.normal(0, 10, (n, p))
-
-    # observation with noise
-    y = lev + (covariates * beta).sum(-1) + 0.3 * np.random.normal(0, 1, n)
-
-    regressor_col = ["x{}".format(pp) for pp in range(1, p + 1)]
-    data = pd.DataFrame(covariates, columns=regressor_col)
-    data["y"] = y
-    data["date"] = pd.date_range(start="1/1/2018", periods=len(y))
-
-    # hack for p = 3
-    data["beta1"] = beta[:, 0]
-    data["beta2"] = beta[:, 1]
-    data["beta3"] = beta[:, 2]
-
-    return data
-
-
-def sim_data_grw(n, RS, p=3):
-    """coefficients curve are geometric random walk like
-
-    Notes
-    -----
-    This code is purely experimental
-    """
-    np.random.seed(RS)
-    beta_init = np.concatenate(
-        (
-            np.random.normal(2.0, 1.0, size=(1, 1)),  # leves
-            np.random.normal(-3.0, 0.05, size=(1, p)),  # regression coefficients
-        ),
-        axis=-1,
-    )
-
-    beta_drift = np.random.normal(0.0, 0.05, size=(n - 1, p + 1))  # drift
-
-    beta = np.concatenate((beta_init, beta_drift), axis=0)
-
-    # geometric random walk
-    beta = np.exp(np.cumsum(beta, 0))
-
-    # simulate regressors
-    covar_lev = np.ones((n, 1))
-    covar = np.concatenate((covar_lev, np.random.normal(0, 10.0, (n, p))), axis=1)
-
-    # observation with noise
-    y = (covar * beta).sum(-1) + 0.3 * np.random.normal(0, 1, n)
-
-    regressor_col = ["x{}".format(pp) for pp in range(1, p + 1)]
-    regressor_col
-    data = pd.DataFrame(covar[:, 1:], columns=regressor_col)
-    beta_col = ["beta{}".format(pp) for pp in range(1, p + 1)]
-    beta_data = pd.DataFrame(beta[:, 1:], columns=beta_col)
-    data = pd.concat([data, beta_data], axis=1)
-
-    data["y"] = y
-    data["date"] = pd.date_range(start="1/1/2018", periods=len(y))
-
-    return data
+# def sim_stepwise_coef_data(n, RS, p=3, n_jump=2):
+#     """
+#     Parameters
+#     ----------
+#     n : int
+#         number of obseravtions
+#     RS : int
+#         seed
+#     p : int
+#         number of predictors
+#     n_jump
+#         number of jumps
+#     Returns
+#     -------
+#     np.ndarray
+#
+#     Notes
+#     -----
+#     This code is purely experimental
+#
+#     """
+#     np.random.seed(RS)
+#
+#     # initializing coefficients at zeros, simulate all coefficient values
+#     lev = np.cumsum(np.concatenate((np.array([5.0]), np.random.normal(0, 0.01, n - 1))))
+#
+#     jump_tp = np.round(np.random.uniform(0, n, (p, n_jump)), 0).astype(np.int32)
+#     jump_amp = np.random.normal(0, 0.05, (p, n_jump))
+#
+#     beta = np.zeros((n, p))
+#     beta[0, :] = -2
+#     for idx in range(p):
+#         beta[jump_tp[idx], idx] = jump_amp[idx]
+#     beta = np.cumsum(beta, 0)
+#     #     beta += np.random.normal(0, 1e-2, (n, p))
+#     # strictly positive coefficients
+#     beta = np.exp(beta)
+#
+#     # simulate regressors
+#     covariates = np.random.normal(0, 10, (n, p))
+#
+#     # observation with noise
+#     y = lev + (covariates * beta).sum(-1) + 0.3 * np.random.normal(0, 1, n)
+#
+#     regressor_col = ["x{}".format(pp) for pp in range(1, p + 1)]
+#     data = pd.DataFrame(covariates, columns=regressor_col)
+#     data["y"] = y
+#     data["date"] = pd.date_range(start="1/1/2018", periods=len(y))
+#
+#     # hack for p = 3
+#     data["beta1"] = beta[:, 0]
+#     data["beta2"] = beta[:, 1]
+#     data["beta3"] = beta[:, 2]
+#
+#     return data
 
 
-def sim_data_rw(n, RS, p=3):
-    """coefficients curve are random walk like"""
-    np.random.seed(RS)
-
-    # initializing coefficients at zeros, simulate all coefficient values
-    lev = np.cumsum(np.concatenate((np.array([5.0]), np.random.normal(0, 0.01, n - 1))))
-    beta = np.concatenate(
-        [
-            np.random.uniform(0.05, 0.12, size=(1, p)),
-            np.random.normal(0.0, 0.01, size=(n - 1, p)),
-        ],
-        axis=0,
-    )
-    beta = np.cumsum(beta, 0)
-
-    # simulate regressors
-    covariates = np.random.normal(0, 10, (n, p))
-
-    # observation with noise
-    y = lev + (covariates * beta).sum(-1) + 0.3 * np.random.normal(0, 1, n)
-
-    regressor_col = ["x{}".format(pp) for pp in range(1, p + 1)]
-    data = pd.DataFrame(covariates, columns=regressor_col)
-    beta_col = ["beta{}".format(pp) for pp in range(1, p + 1)]
-    beta_data = pd.DataFrame(beta, columns=beta_col)
-    data = pd.concat([data, beta_data], axis=1)
-
-    data["y"] = y
-    data["date"] = pd.date_range(start="1/1/2018", periods=len(y))
-
-    return data
-
-
-def sim_data_seasonal(n, RS):
-    """coefficients curve are sine-cosine like"""
-    np.random.seed(RS)
-    # make the time varing coefs
-    tau = np.arange(1, n + 1) / n
-    data = pd.DataFrame(
-        {
-            "tau": tau,
-            "date": pd.date_range(start="1/1/2018", periods=n),
-            "beta1": 2 * tau,
-            "beta2": 1.01 + np.sin(2 * pi * tau),
-            "beta3": 1.01 + np.sin(4 * pi * (tau - 1 / 8)),
-            "x1": np.random.normal(0, 10, size=n),
-            "x2": np.random.normal(0, 10, size=n),
-            "x3": np.random.normal(0, 10, size=n),
-            "trend": np.cumsum(
-                np.concatenate((np.array([1]), np.random.normal(0, 0.1, n - 1)))
-            ),
-            "error": np.random.normal(0, 1, size=n),  # stats.t.rvs(30, size=n),#
-        }
-    )
-
-    data["y"] = (
-        data.x1 * data.beta1 + data.x2 * data.beta2 + data.x3 * data.beta3 + data.error
-    )
-    return data
+# def sim_data_grw(n, RS, p=3):
+#     """coefficients curve are geometric random walk like
+#
+#     Notes
+#     -----
+#     This code is purely experimental
+#     """
+#     np.random.seed(RS)
+#     beta_init = np.concatenate(
+#         (
+#             np.random.normal(2.0, 1.0, size=(1, 1)),  # leves
+#             np.random.normal(-3.0, 0.05, size=(1, p)),  # regression coefficients
+#         ),
+#         axis=-1,
+#     )
+#
+#     beta_drift = np.random.normal(0.0, 0.05, size=(n - 1, p + 1))  # drift
+#
+#     beta = np.concatenate((beta_init, beta_drift), axis=0)
+#
+#     # geometric random walk
+#     beta = np.exp(np.cumsum(beta, 0))
+#
+#     # simulate regressors
+#     covar_lev = np.ones((n, 1))
+#     covar = np.concatenate((covar_lev, np.random.normal(0, 10.0, (n, p))), axis=1)
+#
+#     # observation with noise
+#     y = (covar * beta).sum(-1) + 0.3 * np.random.normal(0, 1, n)
+#
+#     regressor_col = ["x{}".format(pp) for pp in range(1, p + 1)]
+#     data = pd.DataFrame(covar[:, 1:], columns=regressor_col)
+#     beta_col = ["beta{}".format(pp) for pp in range(1, p + 1)]
+#     beta_data = pd.DataFrame(beta[:, 1:], columns=beta_col)
+#     data = pd.concat([data, beta_data], axis=1)
+#
+#     data["y"] = y
+#     data["date"] = pd.date_range(start="1/1/2018", periods=len(y))
+#
+#     return data
+#
+#
+# def sim_data_rw(n, RS, p=3):
+#     """coefficients curve are random walk like"""
+#     np.random.seed(RS)
+#
+#     # initializing coefficients at zeros, simulate all coefficient values
+#     lev = np.cumsum(np.concatenate((np.array([5.0]), np.random.normal(0, 0.01, n - 1))))
+#     beta = np.concatenate(
+#         [
+#             np.random.uniform(0.05, 0.12, size=(1, p)),
+#             np.random.normal(0.0, 0.01, size=(n - 1, p)),
+#         ],
+#         axis=0,
+#     )
+#     beta = np.cumsum(beta, 0)
+#
+#     # simulate regressors
+#     covariates = np.random.normal(0, 10, (n, p))
+#
+#     # observation with noise
+#     y = lev + (covariates * beta).sum(-1) + 0.3 * np.random.normal(0, 1, n)
+#
+#     regressor_col = ["x{}".format(pp) for pp in range(1, p + 1)]
+#     data = pd.DataFrame(covariates, columns=regressor_col)
+#     beta_col = ["beta{}".format(pp) for pp in range(1, p + 1)]
+#     beta_data = pd.DataFrame(beta, columns=beta_col)
+#     data = pd.concat([data, beta_data], axis=1)
+#
+#     data["y"] = y
+#     data["date"] = pd.date_range(start="1/1/2018", periods=len(y))
+#
+#     return data
+#
+# 
+# def sim_data_seasonal(n, RS):
+#     """coefficients curve are sine-cosine like"""
+#     np.random.seed(RS)
+#     # make the time varying coefs
+#     tau = np.arange(1, n + 1) / n
+#     data = pd.DataFrame(
+#         {
+#             "tau": tau,
+#             "date": pd.date_range(start="1/1/2018", periods=n),
+#             "beta1": 2 * tau,
+#             "beta2": 1.01 + np.sin(2 * pi * tau),
+#             "beta3": 1.01 + np.sin(4 * pi * (tau - 1 / 8)),
+#             "x1": np.random.normal(0, 10, size=n),
+#             "x2": np.random.normal(0, 10, size=n),
+#             "x3": np.random.normal(0, 10, size=n),
+#             "trend": np.cumsum(
+#                 np.concatenate((np.array([1]), np.random.normal(0, 0.1, n - 1)))
+#             ),
+#             "error": np.random.normal(0, 1, size=n),  # stats.t.rvs(30, size=n),#
+#         }
+#     )
+#
+#     data["y"] = (
+#         data.x1 * data.beta1 + data.x2 * data.beta2 + data.x3 * data.beta3 + data.error
+#     )
+#     return data
