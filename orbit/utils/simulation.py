@@ -326,7 +326,7 @@ def make_regression(
 #
 #     return data
 #
-# 
+#
 # def sim_data_seasonal(n, RS):
 #     """coefficients curve are sine-cosine like"""
 #     np.random.seed(RS)

@@ -17,13 +17,13 @@ def grid_search_orbit(
     param_grid,
     model,
     df,
-    eval_method='backtest',
+    eval_method="backtest",
     min_train_len=None,
     incremental_len=None,
     forecast_len=None,
     n_splits=None,
     metrics=None,
-    criteria='min',
+    criteria="min",
     verbose=False,
     **kwargs,
 ):
@@ -71,11 +71,15 @@ def grid_search_orbit(
     #             params[key] = val
 
     #     return params.copy()
-    if eval_method not in ['backtest', 'bic']:
-        raise IllegalArgument("Invalid input of eval_method. Argument not in ['backtest', 'bic']")
+    if eval_method not in ["backtest", "bic"]:
+        raise IllegalArgument(
+            "Invalid input of eval_method. Argument not in ['backtest', 'bic']"
+        )
 
-    if criteria not in ['min', 'max']:
-        raise IllegalArgument("Invalid input of criteria. Argument not in ['min', 'max']")
+    if criteria not in ["min", "max"]:
+        raise IllegalArgument(
+            "Invalid input of criteria. Argument not in ['min', 'max']"
+        )
 
     def _get_params(model):
         init_args_tmpl = dict()
@@ -122,13 +126,15 @@ def grid_search_orbit(
             elif key in params_.keys():
                 params_[key] = val
             else:
-                raise Exception("tuned hyper-param {} is not in the model's parameters".format(key))
+                raise Exception(
+                    "tuned hyper-param {} is not in the model's parameters".format(key)
+                )
 
         # it is safer to re-instantiate a model object than using deepcopy...
         new_model_template = model._model.__class__(**params_tmpl_)
         new_model = model.__class__(model=new_model_template, **params_)
 
-        if eval_method == 'backtest':
+        if eval_method == "backtest":
             bt = BackTester(
                 model=new_model,
                 df=df,
@@ -146,7 +152,7 @@ def grid_search_orbit(
             if verbose:
                 logger.info("tuning metric:{:-.5g}".format(metric_val))
             metric_values.append(metric_val)
-        elif eval_method == 'bic':
+        elif eval_method == "bic":
             new_model.fit(df)
             metric_values.append(new_model.get_bic())
         else:
