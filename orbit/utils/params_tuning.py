@@ -17,13 +17,13 @@ def grid_search_orbit(
     param_grid,
     model,
     df,
-    eval_method="backtest",
+    eval_method='backtest',
     min_train_len=None,
     incremental_len=None,
     forecast_len=None,
     n_splits=None,
     metrics=None,
-    criteria=None,
+    criteria='min',
     verbose=False,
     **kwargs,
 ):
@@ -154,8 +154,6 @@ def grid_search_orbit(
 
     res["metrics"] = metric_values
 
-    if criteria is None:
-        criteria = "min"
     best_params = (
         res[res["metrics"] == res["metrics"].apply(criteria)]
         .drop("metrics", axis=1)
