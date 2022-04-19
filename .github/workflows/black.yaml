@@ -10,3 +10,7 @@ jobs:
 #      Currently only checking instead of auto formatting
       - uses: jpetrucciani/black-check@master
 #      - uses: psf/black@stable
+      - name: Install Dependencies
+        run: pip install -r requirements-test.txt
+      - name: black check diff
+        run: black --diff .
