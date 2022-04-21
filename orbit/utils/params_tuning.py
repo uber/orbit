@@ -47,9 +47,10 @@ def grid_search_orbit(
     n_splits : int
         scheduling parameter in backtest
     metrics : callable
-        metric function, if not provided, default will be set as smape defined in orbit.diagnostics.metrics
+        metric function in use when evel_method is "backtest";
+        if not provided, default will be set as smape defined in orbit.diagnostics.metrics
     criteria : str
-        "min" or "max"; if None, default will be set as "min"
+        "min" or "max"
     verbose : bool
 
     Return
@@ -77,8 +78,8 @@ def grid_search_orbit(
             "Invalid input of eval_method. Argument not in ['backtest', 'bic']"
         )
 
-    if eval_method == "bic":
-        logger.info("To use BIC, crtieria is enforced to be min.")
+    if eval_method == "bic" and criteria != "min":
+        logger.info("crtieria is enforced to be min when using 'bic' as eval_method.")
         criteria = "min"
 
     if criteria not in ["min", "max"]:
@@ -152,18 +153,16 @@ def grid_search_orbit(
             if metrics is None:
                 metrics = smape
             metric_val = bt.score(metrics=[metrics]).metric_values[0]
-            if verbose:
-                logger.info("tuning metric:{:-.5g}".format(metric_val))
         elif eval_method == "bic":
-            new_model.fit(df)
             if isinstance(new_model, MAPForecaster):
+                new_model.fit(df)
                 metric_val = new_model.get_bic()
             else:
-                raise IllegalArgument("Model object is not MAPForecaster which does not support .get_bic().")
-        else:
-            logger.info("Warning: eval_method does not inform any valid actions.")
+                raise IllegalArgument("eval_method 'bic' only supports 'stan-map' estimator for now.")
+        if verbose:
+            logger.info("tuning metric:{:-.5g}".format(metric_val))
+        metric_values.append(metric_val)
 
-    metric_values.append(metric_val)
     res["metrics"] = metric_values
 
     best_params = (
