@@ -15,18 +15,18 @@ logger = logging.getLogger("orbit")
 
 
 def grid_search_orbit(
-        param_grid,
-        model,
-        df,
-        eval_method="backtest",
-        min_train_len=None,
-        incremental_len=None,
-        forecast_len=None,
-        n_splits=None,
-        metrics=None,
-        criteria="min",
-        verbose=False,
-        **kwargs,
+    param_grid,
+    model,
+    df,
+    eval_method="backtest",
+    min_train_len=None,
+    incremental_len=None,
+    forecast_len=None,
+    n_splits=None,
+    metrics=None,
+    criteria="min",
+    verbose=False,
+    **kwargs,
 ):
     """A gird search utility to tune the hyperparameters for orbit template using the orbit.diagnostics.backtest modules.
     Parameters
@@ -132,7 +132,9 @@ def grid_search_orbit(
             elif key in params_.keys():
                 params_[key] = val
             else:
-                raise IllegalArgument("tuned hyper-param {} is not in the model's parameters".format(key))
+                raise IllegalArgument(
+                    "tuned hyper-param {} is not in the model's parameters".format(key)
+                )
 
         # it is safer to re-instantiate a model object than using deepcopy...
         new_model_template = model._model.__class__(**params_tmpl_)
@@ -158,7 +160,9 @@ def grid_search_orbit(
                 new_model.fit(df)
                 metric_val = new_model.get_bic()
             else:
-                raise IllegalArgument("eval_method 'bic' only supports 'stan-map' estimator for now.")
+                raise IllegalArgument(
+                    "eval_method 'bic' only supports 'stan-map' estimator for now."
+                )
         if verbose:
             logger.info("tuning metric:{:-.5g}".format(metric_val))
         metric_values.append(metric_val)
@@ -167,8 +171,8 @@ def grid_search_orbit(
 
     best_params = (
         res[res["metrics"] == res["metrics"].apply(criteria)]
-            .drop("metrics", axis=1)
-            .to_dict("records")
+        .drop("metrics", axis=1)
+        .to_dict("records")
     )
 
     return best_params, res
