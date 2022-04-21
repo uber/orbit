@@ -5,7 +5,7 @@ To contribute to it, please follow guidelines here.
 
 The codebase is hosted on Github at https://github.com/uber/orbit.
 
-All code need to follow the [PEP8 style guide](https://www.python.org/dev/peps/pep-0008/) with a few exceptions listed 
+All code need to follow the [PEP8 style guide](https://www.python.org/dev/peps/pep-0008/) with a few exceptions listed
 in [tox.ini](./tox.ini).
 
 Before contributing, please review [outstanding issues](https://github.com/uber/orbit/issues).
@@ -43,7 +43,7 @@ $ python setup.py build_ext --inplace
 
 ## Testing
 
-After your changes and before submitting a pull request, make sure the change to pass all tests and test coverage 
+After your changes and before submitting a pull request, make sure the change to pass all tests and test coverage
 to be at least 70%.
 
 ```bash
@@ -54,17 +54,17 @@ $ pytest -vs tests/ --cov orbit/
 
 You can run black linting to lint the code style.
 
-####Linting one single file
+### Linting one single file
 ```bash
 $ black <file path>
 ```
 
-####Linting every file under the current directory
+### Linting every file under the current directory
 ```bash
 $ black .
 ```
 
-####Outputting the code change black would have done without actually making change
+### Outputting the code change black would have done without actually making change
 ```bash
 $ black --diff <file path>
 ```
@@ -81,5 +81,5 @@ In your PR, please include:
 Please add the core Orbit contributors as reviewers.
 
 ## Merging and Releasing versions
-We use squash and merge for changes onto `dev` branch.  However, due to history comparison, from `dev` to `release` 
+We use squash and merge for changes onto `dev` branch.  However, due to history comparison, from `dev` to `release`
 and `master`, we use rebase and merge.  For release details, please refer to [RELEASE.md](./RELEASE.md)
