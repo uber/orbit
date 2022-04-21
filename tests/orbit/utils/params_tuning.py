@@ -12,8 +12,8 @@ from orbit.utils.params_tuning import grid_search_orbit
             "seasonality_sm_input": [0.3, 0.5, 0.8],
         },
         {
-            "damped_factor": [0.3, 0.8],
-            "slope_sm_input": [0.3, 0.8],
+            "damped_factor": [0.3, 0.5, 0.8],
+            "slope_sm_input": [0.3, 0.5, 0.8],
         },
     ],
 )
@@ -39,7 +39,6 @@ def test_dlt_grid_tuning(make_weekly_data, param_grid, eval_method):
         min_train_len=80,
         incremental_len=20,
         forecast_len=20,
-        verbose=True,
     )
 
     assert best_params[0].keys() == param_grid.keys()
@@ -55,10 +54,14 @@ def test_dlt_grid_tuning(make_weekly_data, param_grid, eval_method):
             "seasonality_sm_input": [0.3, 0.5, 0.8],
         },
         {
-            "level_sm_input": [0.3, 0.8],
-            "slope_sm_input": [0.3, 0.8],
+            "level_sm_input": [0.3, 0.5, 0.8],
+            "slope_sm_input": [0.3, 0.5, 0.8],
         },
     ],
+)
+@pytest.mark.parametrize(
+    "eval_method",
+    ["backtest", "bic"]
 )
 def test_lgt_grid_tuning(make_weekly_data, param_grid, eval_method):
     train_df, test_df, coef = make_weekly_data
@@ -78,7 +81,6 @@ def test_lgt_grid_tuning(make_weekly_data, param_grid, eval_method):
         min_train_len=80,
         incremental_len=20,
         forecast_len=20,
-        verbose=True,
     )
 
     assert best_params[0].keys() == param_grid.keys()
