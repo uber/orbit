@@ -2,11 +2,14 @@ import pandas as pd
 import inspect
 import tqdm
 from itertools import product
+from collections.abc import Mapping, Iterable
+
 
 from ..diagnostics.metrics import smape
 from ..diagnostics.backtest import BackTester
-from collections.abc import Mapping, Iterable
 from ..exceptions import IllegalArgument
+from ..forecaster import MAPForecaster
+
 
 import logging
 
@@ -76,6 +79,10 @@ def grid_search_orbit(
             "Invalid input of eval_method. Argument not in ['backtest', 'bic']"
         )
 
+    if eval_method == "bic":
+        logger.info("To use BIC, crtieria is enforced to be min.")
+        criteria = "min"
+
     if criteria not in ["min", "max"]:
         raise IllegalArgument(
             "Invalid input of criteria. Argument not in ['min', 'max']"
@@ -126,9 +133,7 @@ def grid_search_orbit(
             elif key in params_.keys():
                 params_[key] = val
             else:
-                raise Exception(
-                    "tuned hyper-param {} is not in the model's parameters".format(key)
-                )
+                raise IllegalArgument("tuned hyper-param {} is not in the model's parameters".format(key))
 
         # it is safer to re-instantiate a model object than using deepcopy...
         new_model_template = model._model.__class__(**params_tmpl_)
@@ -151,13 +156,16 @@ def grid_search_orbit(
             metric_val = bt.score(metrics=[metrics]).metric_values[0]
             if verbose:
                 logger.info("tuning metric:{:-.5g}".format(metric_val))
-            metric_values.append(metric_val)
         elif eval_method == "bic":
             new_model.fit(df)
-            metric_values.append(new_model.get_bic())
+            if isinstance(new_model, MAPForecaster):
+                metric_val = new_model.get_bic()
+            else:
+                raise IllegalArgument("Model object is not MAPForecaster which does not support .get_bic().")
         else:
-            pass
+            logger.info("Warning: eval_method does not inform any valid actions.")
 
+    metric_values.append(metric_val)
     res["metrics"] = metric_values
 
     best_params = (
@@ -170,7 +178,10 @@ def grid_search_orbit(
 
 
 def generate_param_args_list(param_grid):
-    """ "
+    """An utils similar to sci-kit learn package to generate combinations of args based on spaces of parameters
+    provided from users in a dictionary of list format.
+
+
     Parameters
     ----------
     param_grid: dict of list
