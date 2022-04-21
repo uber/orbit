@@ -12,12 +12,16 @@ from orbit.utils.params_tuning import grid_search_orbit
             "seasonality_sm_input": [0.3, 0.5, 0.8],
         },
         {
-            "damped_factor": [0.3, 0.5, 0.8],
-            "slope_sm_input": [0.3, 0.5, 0.8],
+            "damped_factor": [0.3, 0.8],
+            "slope_sm_input": [0.3, 0.8],
         },
     ],
 )
-def test_dlt_grid_tuning(make_weekly_data, param_grid):
+@pytest.mark.parametrize(
+    "eval_method",
+    ["backtest", "bic"]
+)
+def test_dlt_grid_tuning(make_weekly_data, param_grid, eval_method):
     train_df, test_df, coef = make_weekly_data
     args = {
         "response_col": "response",
@@ -25,13 +29,13 @@ def test_dlt_grid_tuning(make_weekly_data, param_grid):
         "seasonality": 52,
         "estimator": "stan-map",
     }
-
     dlt = DLT(**args)
 
     best_params, tuned_df = grid_search_orbit(
         param_grid,
         model=dlt,
         df=train_df,
+        eval_method=eval_method,
         min_train_len=80,
         incremental_len=20,
         forecast_len=20,
@@ -51,12 +55,12 @@ def test_dlt_grid_tuning(make_weekly_data, param_grid):
             "seasonality_sm_input": [0.3, 0.5, 0.8],
         },
         {
-            "level_sm_input": [0.3, 0.5, 0.8],
-            "slope_sm_input": [0.3, 0.5, 0.8],
+            "level_sm_input": [0.3, 0.8],
+            "slope_sm_input": [0.3, 0.8],
         },
     ],
 )
-def test_lgt_grid_tuning(make_weekly_data, param_grid):
+def test_lgt_grid_tuning(make_weekly_data, param_grid, eval_method):
     train_df, test_df, coef = make_weekly_data
     args = {
         "response_col": "response",
@@ -64,13 +68,13 @@ def test_lgt_grid_tuning(make_weekly_data, param_grid):
         "seasonality": 52,
         "estimator": "stan-map",
     }
-
     lgt = LGT(**args)
 
     best_params, tuned_df = grid_search_orbit(
         param_grid,
         model=lgt,
         df=train_df,
+        eval_method=eval_method,
         min_train_len=80,
         incremental_len=20,
         forecast_len=20,

@@ -4,12 +4,10 @@ import tqdm
 from itertools import product
 from collections.abc import Mapping, Iterable
 
-
 from ..diagnostics.metrics import smape
 from ..diagnostics.backtest import BackTester
 from ..exceptions import IllegalArgument
 from ..forecaster import MAPForecaster
-
 
 import logging
 
@@ -17,18 +15,18 @@ logger = logging.getLogger("orbit")
 
 
 def grid_search_orbit(
-    param_grid,
-    model,
-    df,
-    eval_method="backtest",
-    min_train_len=None,
-    incremental_len=None,
-    forecast_len=None,
-    n_splits=None,
-    metrics=None,
-    criteria="min",
-    verbose=False,
-    **kwargs,
+        param_grid,
+        model,
+        df,
+        eval_method="backtest",
+        min_train_len=None,
+        incremental_len=None,
+        forecast_len=None,
+        n_splits=None,
+        metrics=None,
+        criteria="min",
+        verbose=False,
+        **kwargs,
 ):
     """A gird search utility to tune the hyperparameters for orbit template using the orbit.diagnostics.backtest modules.
     Parameters
@@ -170,8 +168,8 @@ def grid_search_orbit(
 
     best_params = (
         res[res["metrics"] == res["metrics"].apply(criteria)]
-        .drop("metrics", axis=1)
-        .to_dict("records")
+            .drop("metrics", axis=1)
+            .to_dict("records")
     )
 
     return best_params, res
@@ -192,6 +190,7 @@ def generate_param_args_list(param_grid):
     list of dict
     the iterated products of all combinations of params generated based on the input param grid
     """
+
     # an internal function to mimic the ParameterGrid from scikit-learn
 
     def _yield_param_grid(param_grid):
