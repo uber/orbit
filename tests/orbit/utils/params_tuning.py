@@ -17,10 +17,7 @@ from orbit.utils.params_tuning import grid_search_orbit
         },
     ],
 )
-@pytest.mark.parametrize(
-    "eval_method",
-    ["backtest", "bic"]
-)
+@pytest.mark.parametrize("eval_method", ["backtest", "bic"])
 def test_dlt_grid_tuning(make_weekly_data, param_grid, eval_method):
     train_df, test_df, coef = make_weekly_data
     args = {
@@ -59,10 +56,7 @@ def test_dlt_grid_tuning(make_weekly_data, param_grid, eval_method):
         },
     ],
 )
-@pytest.mark.parametrize(
-    "eval_method",
-    ["backtest", "bic"]
-)
+@pytest.mark.parametrize("eval_method", ["backtest", "bic"])
 def test_lgt_grid_tuning(make_weekly_data, param_grid, eval_method):
     train_df, test_df, coef = make_weekly_data
     args = {
