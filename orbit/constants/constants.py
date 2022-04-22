@@ -65,6 +65,7 @@ class PredictionMetaKeys(Enum):
     START = "prediction_start"
     END = "prediction_end"
     START_INDEX = "start"
+    END_INDEX = "end"
     PREDICTION_DF_LEN = "df_length"
 
 

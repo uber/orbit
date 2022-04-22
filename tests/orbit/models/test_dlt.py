@@ -795,9 +795,42 @@ def test_dlt_predict_seed(make_weekly_data, estimator, random_seed):
     elif estimator == "pyro-svi":
         args.update({"num_steps": 10})
 
-    lgt = DLT(**args)
-    lgt.fit(train_df)
-    predict_df1 = lgt.predict(test_df, seed=random_seed)
-    predict_df2 = lgt.predict(test_df, seed=random_seed)
+    dlt = DLT(**args)
+    dlt.fit(train_df)
+    predict_df1 = dlt.predict(test_df, seed=random_seed)
+    predict_df2 = dlt.predict(test_df, seed=random_seed)
 
     assert all(predict_df1["prediction"].values == predict_df2["prediction"].values)
+
+
+@pytest.mark.parametrize(
+    "idx_range",
+    [
+        [0, 100],
+        [52, 78],
+        [52, 120],
+        [100, 157],
+    ],
+    ids = [
+              "train-start-to-train-end",
+              "train-period-subset",
+              "train-test-period-cross",
+              "completely-test-period",
+          ],
+)
+def test_dlt_predict_range(make_weekly_data, idx_range):
+    train_cut_off = 100
+    base_df, _, _ = make_weekly_data
+    train_df = base_df[:100].reset_index(drop=True)
+    predict_df = base_df[idx_range[0]:idx_range[1]].reset_index(drop=True)
+
+    dlt = DLT(
+        response_col="response",
+        date_col="week",
+        regressor_col=train_df.columns.tolist()[2:],
+        seasonality=52,
+        verbose=False,
+        estimator='stan-map',
+    )
+    dlt.fit(train_df)
+    dlt.predict(predict_df)

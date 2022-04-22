@@ -355,7 +355,7 @@ class Forecaster(object):
             forecast_dates = set(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value])
             n_forecast_steps = len(forecast_dates)
             # time index for prediction start
-            start = trained_len
+            start_idx = trained_len
         else:
             # # compute how many steps to forecast
             # forecast_dates = set(
@@ -375,12 +375,13 @@ class Forecaster(object):
                 self._training_meta[TrainingMetaKeys.DATE_ARRAY.value]
             ).get_loc(prediction_meta[PredictionMetaKeys.START.value])
 
-            in_sample_steps = trained_len - start_idx
-            n_forecast_steps = df.shape[0] - in_sample_steps
+            n_forecast_steps = end_idx - trained_len
 
+        end_idx = start_idx + df.shape[0]
         prediction_meta.update(
             {
                 PredictionMetaKeys.START_INDEX.value: start_idx,
+                PredictionMetaKeys.END_INDEX.value: end_idx,
                 PredictionMetaKeys.FUTURE_STEPS.value: n_forecast_steps,
             }
         )

@@ -475,11 +475,11 @@ class LGTModel(ETSModel):
         ################################################################
         # Prediction Attributes
         ################################################################
-        n_forecast_steps = prediction_meta[PredictionMetaKeys.FUTURE_STEPS.value]
+        # n_forecast_steps = prediction_meta[PredictionMetaKeys.FUTURE_STEPS.value]
         start = prediction_meta[PredictionMetaKeys.START_INDEX.value]
         trained_len = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
         output_len = prediction_meta[PredictionMetaKeys.PREDICTION_DF_LEN.value]
-        full_len = trained_len + n_forecast_steps
+        full_len = prediction_meta[PredictionMetaKeys.END_INDEX.value]
 
         ################################################################
         # Model Attributes
