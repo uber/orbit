@@ -39,7 +39,7 @@ def test_time_series_splitter(scheduler_args):
     ],
     ids=["use_min_train_len", "use_n_splits", "single_split", "one_forecast_len"],
 )
-def test_backtester_sceduler_args(iclaims_training_data, scheduler_args):
+def test_backtester_scheduler_args(iclaims_training_data, scheduler_args):
     df = iclaims_training_data
 
     lgt = LGT(

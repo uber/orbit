@@ -589,6 +589,10 @@ class LGTModel(ETSModel):
                 ).double()
                 trend_component += error_value
         else:
+            trend_forecast_length = full_len - trained_len
+            trend_forecast_init = torch.zeros(
+                (num_sample, trend_forecast_length), dtype=torch.double
+            )
             trend_component = local_global_trend_sums
             # in-sample error are iids
             if include_error:
@@ -605,10 +609,7 @@ class LGTModel(ETSModel):
                 ).double()
                 trend_component += error_value
 
-            trend_forecast_matrix = torch.zeros(
-                (num_sample, n_forecast_steps), dtype=torch.double
-            )
-            trend_component = torch.cat((trend_component, trend_forecast_matrix), dim=1)
+            trend_component = torch.cat((trend_component, trend_forecast_init), dim=1)
 
             last_local_trend_level = local_trend_levels[:, -1]
             last_local_trend_slope = local_trend_slopes[:, -1]
