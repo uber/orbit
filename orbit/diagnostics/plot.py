@@ -576,7 +576,7 @@ def plot_bt_predictions2(
             )
 
 
-# TODO: update palatte
+# TODO: update palette
 @orbit_style_decorator
 def metric_horizon_barplot(
     df,

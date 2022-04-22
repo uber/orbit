@@ -2,10 +2,12 @@ import pandas as pd
 import inspect
 import tqdm
 from itertools import product
+from collections.abc import Mapping, Iterable
 
 from ..diagnostics.metrics import smape
 from ..diagnostics.backtest import BackTester
-from collections.abc import Mapping, Iterable
+from ..exceptions import IllegalArgument
+from ..forecaster import MAPForecaster
 
 import logging
 
@@ -16,23 +18,26 @@ def grid_search_orbit(
     param_grid,
     model,
     df,
+    eval_method="backtest",
     min_train_len=None,
     incremental_len=None,
     forecast_len=None,
     n_splits=None,
     metrics=None,
-    criteria=None,
-    verbose=True,
+    criteria="min",
+    verbose=False,
     **kwargs,
 ):
-    """A gird search unitlity to tune the hyperparameters for orbit template using the orbit.diagnostics.backtest modules.
+    """A gird search utility to tune the hyperparameters for orbit template using the orbit.diagnostics.backtest modules.
     Parameters
     ----------
-    param_gird : dict
+    param_grid : dict
         a dict with candidate values for hyper-params to be tuned
     model : object
         model object
     df : pd.DataFrame
+    eval_method : str
+        "backtest" or "bic"
     min_train_len : int
         scheduling parameter in backtest
     incremental_len : int
@@ -41,10 +46,11 @@ def grid_search_orbit(
         scheduling parameter in backtest
     n_splits : int
         scheduling parameter in backtest
-    metrics : function
-        metric function, defaul smape defined in orbit.diagnostics.metrics
+    metrics : callable
+        metric function in use when evel_method is "backtest";
+        if not provided, default will be set as smape defined in orbit.diagnostics.metrics
     criteria : str
-        "min" or "max"; defatul is None ("min")
+        "min" or "max"
     verbose : bool
 
     Return
@@ -67,6 +73,19 @@ def grid_search_orbit(
     #             params[key] = val
 
     #     return params.copy()
+    if eval_method not in ["backtest", "bic"]:
+        raise IllegalArgument(
+            "Invalid input of eval_method. Argument not in ['backtest', 'bic']"
+        )
+
+    if eval_method == "bic" and criteria != "min":
+        logger.info("crtieria is enforced to be min when using 'bic' as eval_method.")
+        criteria = "min"
+
+    if criteria not in ["min", "max"]:
+        raise IllegalArgument(
+            "Invalid input of criteria. Argument not in ['min', 'max']"
+        )
 
     def _get_params(model):
         init_args_tmpl = dict()
@@ -113,34 +132,43 @@ def grid_search_orbit(
             elif key in params_.keys():
                 params_[key] = val
             else:
-                raise Exception(
+                raise IllegalArgument(
                     "tuned hyper-param {} is not in the model's parameters".format(key)
                 )
 
-        # it is safer to reinstantiate a model object than using deepcopy...
+        # it is safer to re-instantiate a model object than using deepcopy...
         new_model_template = model._model.__class__(**params_tmpl_)
         new_model = model.__class__(model=new_model_template, **params_)
 
-        bt = BackTester(
-            model=new_model,
-            df=df,
-            min_train_len=min_train_len,
-            n_splits=n_splits,
-            incremental_len=incremental_len,
-            forecast_len=forecast_len,
-            **kwargs,
-        )
-        bt.fit_predict()
-        # TODO: should we assert len(metrics) == 1?
-        if metrics is None:
-            metrics = smape
-        metric_val = bt.score(metrics=[metrics]).metric_values[0]
+        if eval_method == "backtest":
+            bt = BackTester(
+                model=new_model,
+                df=df,
+                min_train_len=min_train_len,
+                n_splits=n_splits,
+                incremental_len=incremental_len,
+                forecast_len=forecast_len,
+                **kwargs,
+            )
+            bt.fit_predict()
+            # TODO: should we assert len(metrics) == 1?
+            if metrics is None:
+                metrics = smape
+            metric_val = bt.score(metrics=[metrics]).metric_values[0]
+        elif eval_method == "bic":
+            if isinstance(new_model, MAPForecaster):
+                new_model.fit(df)
+                metric_val = new_model.get_bic()
+            else:
+                raise IllegalArgument(
+                    "eval_method 'bic' only supports 'stan-map' estimator for now."
+                )
         if verbose:
             logger.info("tuning metric:{:-.5g}".format(metric_val))
         metric_values.append(metric_val)
+
     res["metrics"] = metric_values
-    if criteria is None:
-        criteria = "min"
+
     best_params = (
         res[res["metrics"] == res["metrics"].apply(criteria)]
         .drop("metrics", axis=1)
@@ -151,7 +179,10 @@ def grid_search_orbit(
 
 
 def generate_param_args_list(param_grid):
-    """ "
+    """An utils similar to sci-kit learn package to generate combinations of args based on spaces of parameters
+    provided from users in a dictionary of list format.
+
+
     Parameters
     ----------
     param_grid: dict of list
@@ -162,6 +193,7 @@ def generate_param_args_list(param_grid):
     list of dict
     the iterated products of all combinations of params generated based on the input param grid
     """
+
     # an internal function to mimic the ParameterGrid from scikit-learn
 
     def _yield_param_grid(param_grid):
