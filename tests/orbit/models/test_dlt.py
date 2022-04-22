@@ -811,18 +811,18 @@ def test_dlt_predict_seed(make_weekly_data, estimator, random_seed):
         [52, 120],
         [100, 157],
     ],
-    ids = [
-              "train-start-to-train-end",
-              "train-period-subset",
-              "train-test-period-cross",
-              "completely-test-period",
-          ],
+    ids=[
+        "train-start-to-train-end",
+        "train-period-subset",
+        "train-test-period-cross",
+        "completely-test-period",
+    ],
 )
 def test_dlt_predict_range(make_weekly_data, idx_range):
     train_cut_off = 100
     base_df, _, _ = make_weekly_data
     train_df = base_df[:100].reset_index(drop=True)
-    predict_df = base_df[idx_range[0]:idx_range[1]].reset_index(drop=True)
+    predict_df = base_df[idx_range[0] : idx_range[1]].reset_index(drop=True)
 
     dlt = DLT(
         response_col="response",
@@ -830,7 +830,7 @@ def test_dlt_predict_range(make_weekly_data, idx_range):
         regressor_col=train_df.columns.tolist()[2:],
         seasonality=52,
         verbose=False,
-        estimator='stan-map',
+        estimator="stan-map",
     )
     dlt.fit(train_df)
     dlt.predict(predict_df)
