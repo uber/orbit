@@ -398,7 +398,7 @@ def test_ets_predict_seed(make_weekly_data, estimator, random_seed):
         "completely-test-period",
     ],
 )
-def test_lgt_predict_range(make_weekly_data, idx_range):
+def test_ets_predict_range(make_weekly_data, idx_range):
     train_cut_off = 100
     base_df, _, _ = make_weekly_data
     train_df = base_df[:100].reset_index(drop=True)
