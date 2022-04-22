@@ -325,7 +325,7 @@ class Forecaster(object):
             PredictionMetaKeys.DATE_ARRAY.value: pd.to_datetime(
                 df[self.date_col]
             ).reset_index(drop=True),
-            PredictionMetaKeys.PREDICTION_DF_LEN.value: len(df.index),
+            PredictionMetaKeys.PREDICTION_DF_LEN.value: df.shape[0],
             PredictionMetaKeys.START.value: df[self.date_col].iloc[0],
             PredictionMetaKeys.END.value: df[self.date_col].iloc[-1],
         }
@@ -357,26 +357,30 @@ class Forecaster(object):
             # time index for prediction start
             start = trained_len
         else:
-            # compute how many steps to forecast
-            forecast_dates = set(
-                prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]
-            ) - set(self._training_meta[TrainingMetaKeys.DATE_ARRAY.value])
-            # check if prediction df is a subset of training df
-            # e.g. "negative" forecast steps
-            n_forecast_steps = len(forecast_dates) or -(
-                len(
-                    set(self._training_meta[TrainingMetaKeys.DATE_ARRAY.value])
-                    - set(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value])
-                )
-            )
+            # # compute how many steps to forecast
+            # forecast_dates = set(
+            #     prediction_meta[TrainingMetaKeys.DATE_ARRAY.value]
+            # ) - set(self._training_meta[TrainingMetaKeys.DATE_ARRAY.value])
+            # # check if prediction df is a subset of training df
+            # # e.g. "negative" forecast steps
+            # n_forecast_steps = len(forecast_dates) or -(
+            #     len(
+            #         set(self._training_meta[TrainingMetaKeys.DATE_ARRAY.value])
+            #         - set(prediction_meta[TrainingMetaKeys.DATE_ARRAY.value])
+            #     )
+            # )
+
             # time index for prediction start
-            start = pd.Index(
+            start_idx = pd.Index(
                 self._training_meta[TrainingMetaKeys.DATE_ARRAY.value]
             ).get_loc(prediction_meta[PredictionMetaKeys.START.value])
 
+            in_sample_steps = trained_len - start_idx
+            n_forecast_steps = df.shape[0] - in_sample_steps
+
         prediction_meta.update(
             {
-                PredictionMetaKeys.START_INDEX.value: start,
+                PredictionMetaKeys.START_INDEX.value: start_idx,
                 PredictionMetaKeys.FUTURE_STEPS.value: n_forecast_steps,
             }
         )
