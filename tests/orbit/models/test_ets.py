@@ -375,9 +375,45 @@ def test_ets_predict_seed(make_weekly_data, estimator, random_seed):
     elif estimator == "pyro-svi":
         args.update({"num_steps": 10})
 
-    lgt = ETS(**args)
-    lgt.fit(train_df)
-    predict_df1 = lgt.predict(test_df, seed=random_seed)
-    predict_df2 = lgt.predict(test_df, seed=random_seed)
+    ets = ETS(**args)
+    ets.fit(train_df)
+    predict_df1 = ets.predict(test_df, seed=random_seed)
+    predict_df2 = ets.predict(test_df, seed=random_seed)
 
     assert all(predict_df1["prediction"].values == predict_df2["prediction"].values)
+
+
+@pytest.mark.parametrize(
+    "idx_range",
+    [
+        [0, 100],
+        [0, 50],
+        [50, 100],
+        [50, 80],
+        [50, 120],
+        [100, 150],
+    ],
+    ids=[
+        "train-start-to-train-end",
+        "train-start-to-middle",
+        "middle-to-train-end",
+        "train-period-subset",
+        "train-test-period-cross",
+        "completely-test-period",
+    ],
+)
+def test_ets_predict_range(make_weekly_data, idx_range):
+    train_cut_off = 100
+    base_df, _, _ = make_weekly_data
+    train_df = base_df[:train_cut_off].reset_index(drop=True)
+    predict_df = base_df[idx_range[0] : idx_range[1]].reset_index(drop=True)
+
+    ets = ETS(
+        response_col="response",
+        date_col="week",
+        seasonality=52,
+        verbose=False,
+        estimator="stan-map",
+    )
+    ets.fit(train_df)
+    ets.predict(predict_df)

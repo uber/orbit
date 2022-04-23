@@ -194,10 +194,10 @@ class ETSModel(ModelTemplate):
         ################################################################
         # Prediction Attributes
         ################################################################
-        n_forecast_steps = prediction_meta[PredictionMetaKeys.FUTURE_STEPS.value]
+        # n_forecast_steps = prediction_meta[PredictionMetaKeys.FUTURE_STEPS.value]
         start = prediction_meta[PredictionMetaKeys.START_INDEX.value]
         trained_len = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
-        full_len = trained_len + n_forecast_steps
+        full_len = prediction_meta[PredictionMetaKeys.END_INDEX.value]
 
         ################################################################
         # Model Attributes
@@ -267,6 +267,10 @@ class ETSModel(ModelTemplate):
                 trend_component += error_value
         else:
             trend_component = local_trend_levels
+            trend_forecast_length = full_len - trained_len
+            trend_forecast_init = torch.zeros(
+                (num_sample, trend_forecast_length), dtype=torch.double
+            )
             # in-sample error are iids
             if include_error:
                 error_value = np.random.normal(
@@ -278,10 +282,7 @@ class ETSModel(ModelTemplate):
                 error_value = torch.from_numpy(error_value).double()
                 trend_component += error_value
 
-            trend_forecast_matrix = torch.zeros(
-                (num_sample, n_forecast_steps), dtype=torch.double
-            )
-            trend_component = torch.cat((trend_component, trend_forecast_matrix), dim=1)
+            trend_component = torch.cat((trend_component, trend_forecast_init), dim=1)
 
             last_local_trend_level = local_trend_levels[:, -1]
 

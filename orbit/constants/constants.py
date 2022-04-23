@@ -45,6 +45,7 @@ class TrainingMetaKeys(Enum):
     NUM_OF_OBS = "num_of_obs"
     RESPONSE_SD = "response_sd"
     RESPONSE_MEAN = "response_mean"
+    # START and END are in date-time format
     START = "training_start"
     END = "training_end"
     RESPONSE_COL = "response_col"
@@ -57,10 +58,14 @@ class PredictionMetaKeys(Enum):
     """
 
     DATE_ARRAY = "date_array"
+    # FIXME: seems this is redudant? we can derive forecast range by input of data frame?
+    # FIXME: or shall we cast this as zero when it is within training
     FUTURE_STEPS = "n_forecast_steps"
+    # START and END are in date-time format
     START = "prediction_start"
     END = "prediction_end"
     START_INDEX = "start"
+    END_INDEX = "end"
     PREDICTION_DF_LEN = "df_length"
 
 
