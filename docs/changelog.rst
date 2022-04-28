@@ -2,6 +2,25 @@
 
 Changelog
 =========
+1.1.2 (2022-04-28) (`release notes <https://github.com/uber/orbit/releases/tag/v1.1.2>`__)
+-------------------------------------------------------------------------------------------------
+:Core changes:
+  - Add Conda installation option (#679)
+  - Suppress the lengthy Stan logging message (#696)
+  - WBIC for pyro SVI sampling and BIC for MAP optimization (#719, #710)
+  - Backtest module to include confidence intervals (#724)
+  - Allow configuration for compiled Stan model path (#713)
+  - Box plot for regression coefficient comparison (#737)
+  - Bounded logistic growth for DLT model (#712)
+  - Enhance regression output reporting (#739)
+
+:Documentation:
+  - Add blacking linting to Github action workflow (#708)
+  - Tutorial enhancement
+
+:Utilities:
+  - Add a new method `make_future_df` to prepare data frame for forecasting (#695)
+
 1.1.2alpha (2022-04-06) (`release notes <https://github.com/uber/orbit/releases/tag/v1.1.2alpha>`__)
 -------------------------------------------------------------------------------------------------
 :Core changes:
