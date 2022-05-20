@@ -19,6 +19,9 @@ from orbit.utils.plot import orbit_style_decorator
 from ..exceptions import PlotException
 import logging
 
+import statsmodels.api as sm
+from orbit.constants import palette
+
 logger = logging.getLogger("orbit")
 
 
@@ -712,3 +715,45 @@ def params_comparison_boxplot(
     plt.title(title)
 
     return ax
+
+
+@orbit_style_decorator
+def residual_diganostic_plot(df, date_col='week', residual_col='residual', fitted_col='prediction'):
+    '''
+    residual diganostic plots
+    INPUT:
+        df: Data Frame
+        date_col: column name of date
+        residual_col: column name of residual
+        fitted_col: column name of fitted value from model
+
+    OUTPUT: produces four residual plots:
+    1. residual by time
+    2. residual histogram with vertical line as mean
+    3. residual vs fitted
+    4. residual ACF
+    '''
+    fig, ax = plt.subplots(2,2, figsize=(15,8))
+    # plot 1 residual by time
+    sns.lineplot(x=date_col, y=residual_col, data=df, ax=ax[0,0], color=palette.OrbitPalette.BLUE.value, alpha=0.8, label='residual')
+    ax[0,0].set_title('Residual by Time')
+    ax[0,0].legend()
+    # plot 2 residual histogram with vertical line as mean
+    sns.distplot(df[residual_col], hist=True, kde=True, ax=ax[0,1], color=palette.OrbitPalette.BLUE.value, label='residual',
+                 hist_kws={'edgecolor': 'white', 'alpha':0.5, 'facecolor': palette.OrbitPalette.BLUE.value})
+    ax[0,1].set_title('Residual Distribution')
+    ax[0,1].axvline(df[residual_col].mean(), color=palette.OrbitPalette.ORANGE.value, linestyle='--', alpha=0.9, label = 'residual mean')
+    ax[0,1].set_ylabel('density')
+    ax[0,1].legend()
+    # plot 3 residual vs fitted
+    sns.scatterplot(x=fitted_col, y=residual_col, data=df, ax=ax[1,0], color=palette.OrbitPalette.BLUE.value, alpha=0.8, label='residual')
+    ax[1,0].axhline(y=0, linestyle = '--', color=palette.OrbitPalette.BLACK.value, alpha=0.5, label = '0')
+    ax[1,0].set_title('Residual vs Fitted')
+    ax[1,0].set_xlabel('fitted')
+    ax[1,0].legend()
+    # plot 4 residual ACF
+    sm.graphics.tsa.plot_acf(df[residual_col], ax=ax[1,1], title='Residual ACF', color=palette.OrbitPalette.BLUE.value)
+    ax[1,1].set_xlabel('lag')
+    ax[1,1].set_ylabel('acf')
+    plt.tight_layout()
+
