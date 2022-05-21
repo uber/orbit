@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import nct
-from statsmodels.api import OLS
 from copy import deepcopy
 import torch
 from enum import Enum
@@ -19,7 +18,6 @@ from ..constants.constants import (
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .ets import ETSModel
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
-from ..estimators.pyro_estimator import PyroEstimatorSVI
 
 
 class DataInputMapper(Enum):
