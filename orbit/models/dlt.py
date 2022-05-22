@@ -77,6 +77,8 @@ def DLT(
     global_floor : float
         Minimum value of global logistic trend. Default is set to 0.0. This value is used only when
         `global_trend_option` = 'logistic'
+    forecast_horizon : int
+        forecast_horizon will be used only when users want to specify optimization forecast horizon > 1
     estimator : string; {'stan-mcmc', 'stan-map'}
         default to be 'stan-mcmc'.
 
@@ -123,6 +125,7 @@ def DLT(
         global_floor=global_floor,
         forecast_horizon=forecast_horizon,
     )
+
     if estimator == EstimatorsKeys.StanMAP.value:
         dlt_forecaster = MAPForecaster(
             model=dlt, estimator_type=StanEstimatorMAP, **kwargs

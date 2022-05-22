@@ -27,22 +27,22 @@ logger = logging.getLogger("orbit")
 
 @orbit_style_decorator
 def plot_predicted_data(
-    training_actual_df,
-    predicted_df,
-    date_col,
-    actual_col,
-    pred_col=PredictionKeys.PREDICTION.value,
-    prediction_percentiles=None,
-    title="",
-    test_actual_df=None,
-    is_visible=True,
-    figsize=None,
-    path=None,
-    fontsize=None,
-    line_plot=False,
-    markersize=50,
-    lw=2,
-    linestyle="-",
+        training_actual_df,
+        predicted_df,
+        date_col,
+        actual_col,
+        pred_col=PredictionKeys.PREDICTION.value,
+        prediction_percentiles=None,
+        title="",
+        test_actual_df=None,
+        is_visible=True,
+        figsize=None,
+        path=None,
+        fontsize=None,
+        line_plot=False,
+        markersize=50,
+        lw=2,
+        linestyle="-",
 ):
     """plot training actual response together with predicted data; if actual response of predicted
     data is there, plot it too.
@@ -213,15 +213,15 @@ def plot_predicted_data(
 
 @orbit_style_decorator
 def plot_predicted_components(
-    predicted_df,
-    date_col,
-    prediction_percentiles=None,
-    plot_components=None,
-    title="",
-    figsize=None,
-    path=None,
-    fontsize=None,
-    is_visible=True,
+        predicted_df,
+        date_col,
+        prediction_percentiles=None,
+        plot_components=None,
+        title="",
+        figsize=None,
+        path=None,
+        fontsize=None,
+        is_visible=True,
 ):
     """Plot predicted components with the data frame of decomposed prediction where components
      has been pre-defined as `trend`, `seasonality` and `regression`.
@@ -323,16 +323,16 @@ def plot_predicted_components(
 
 @orbit_style_decorator
 def plot_bt_predictions(
-    bt_pred_df,
-    metrics=smape,
-    split_key_list=None,
-    ncol=2,
-    figsize=None,
-    include_vline=True,
-    title="",
-    fontsize=20,
-    path=None,
-    is_visible=True,
+        bt_pred_df,
+        metrics=smape,
+        split_key_list=None,
+        ncol=2,
+        figsize=None,
+        include_vline=True,
+        title="",
+        fontsize=20,
+        path=None,
+        is_visible=True,
 ):
     """function to plot and visualize the prediction results from back testing.
 
@@ -389,7 +389,7 @@ def plot_bt_predictions(
         col_idx = idx % ncol
         tmp = bt_pred_df[
             bt_pred_df[BacktestFitKeys.SPLIT_KEY.value] == split_key
-        ].copy()
+            ].copy()
         axes[row_idx, col_idx].plot(
             tmp[BacktestFitKeys.DATE.value],
             tmp[BacktestFitKeys.PREDICTED.value],
@@ -437,19 +437,19 @@ def plot_bt_predictions(
 
 @orbit_style_decorator
 def plot_bt_predictions2(
-    bt_pred_df,
-    metrics=smape,
-    split_key_list=None,
-    figsize=None,
-    include_vline=True,
-    title="",
-    fontsize=20,
-    markersize=50,
-    lw=2,
-    fig_dir=None,
-    is_visible=True,
-    fix_xylim=True,
-    export_gif=False,
+        bt_pred_df,
+        metrics=smape,
+        split_key_list=None,
+        figsize=None,
+        include_vline=True,
+        title="",
+        fontsize=20,
+        markersize=50,
+        lw=2,
+        fig_dir=None,
+        is_visible=True,
+        fix_xylim=True,
+        export_gif=False,
 ):
     """a different style backtest plot compare to `plot_bt_prediction` where it writes separate plot for each split;
     this is also used to produce an animation to summarize every split
@@ -495,7 +495,7 @@ def plot_bt_predictions2(
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         tmp = bt_pred_df[
             bt_pred_df[BacktestFitKeys.SPLIT_KEY.value] == split_key
-        ].copy()
+            ].copy()
         ax.plot(
             tmp[BacktestFitKeys.DATE.value],
             tmp[BacktestFitKeys.PREDICTED.value],
@@ -564,7 +564,7 @@ def plot_bt_predictions2(
             import imageio
 
             with imageio.get_writer(
-                "{}/orbit-backtest.gif".format(fig_dir), mode="I"
+                    "{}/orbit-backtest.gif".format(fig_dir), mode="I"
             ) as writer:
                 for fig_path in fig_paths:
                     image = imageio.imread(fig_path)
@@ -582,15 +582,15 @@ def plot_bt_predictions2(
 # TODO: update palette
 @orbit_style_decorator
 def metric_horizon_barplot(
-    df,
-    model_col="model",
-    pred_horizon_col="pred_horizon",
-    metric_col="smape",
-    bar_width=0.1,
-    path=None,
-    figsize=None,
-    fontsize=None,
-    is_visible=False,
+        df,
+        model_col="model",
+        pred_horizon_col="pred_horizon",
+        metric_col="smape",
+        bar_width=0.1,
+        path=None,
+        figsize=None,
+        fontsize=None,
+        is_visible=False,
 ):
     if not figsize:
         figsize = [20, 6]
@@ -645,15 +645,15 @@ def metric_horizon_barplot(
 
 @orbit_style_decorator
 def params_comparison_boxplot(
-    model_name_list,
-    data_list,
-    label_list,
-    color_list=sns.color_palette(),
-    title="Params Comparison",
-    fig_size=(10, 6),
-    box_width=0.1,
-    box_distance=0.2,
-    showfliers=False,
+        model_name_list,
+        data_list,
+        label_list,
+        color_list=sns.color_palette(),
+        title="Params Comparison",
+        fig_size=(10, 6),
+        box_width=0.1,
+        box_distance=0.2,
+        showfliers=False,
 ):
     """compare the distribution of parameters from different models uisng a boxplot.
     Parameters:
@@ -718,8 +718,8 @@ def params_comparison_boxplot(
 
 
 @orbit_style_decorator
-def residual_diganostic_plot(df, date_col='week', residual_col='residual', fitted_col='prediction'):
-    '''
+def residual_diagnostic_plot(df, date_col='week', residual_col='residual', fitted_col='prediction'):
+    """
     residual diganostic plots
     INPUT:
         df: Data Frame
@@ -732,28 +732,31 @@ def residual_diganostic_plot(df, date_col='week', residual_col='residual', fitte
     2. residual histogram with vertical line as mean
     3. residual vs fitted
     4. residual ACF
-    '''
-    fig, ax = plt.subplots(2,2, figsize=(15,8))
+    """
+    fig, ax = plt.subplots(2, 2, figsize=(15, 8))
     # plot 1 residual by time
-    sns.lineplot(x=date_col, y=residual_col, data=df, ax=ax[0,0], color=palette.OrbitPalette.BLUE.value, alpha=0.8, label='residual')
-    ax[0,0].set_title('Residual by Time')
-    ax[0,0].legend()
+    sns.lineplot(x=date_col, y=residual_col, data=df, ax=ax[0, 0], color=palette.OrbitPalette.BLUE.value, alpha=0.8,
+                 label='residual')
+    ax[0, 0].set_title('Residual by Time')
+    ax[0, 0].legend()
     # plot 2 residual histogram with vertical line as mean
-    sns.distplot(df[residual_col], hist=True, kde=True, ax=ax[0,1], color=palette.OrbitPalette.BLUE.value, label='residual',
-                 hist_kws={'edgecolor': 'white', 'alpha':0.5, 'facecolor': palette.OrbitPalette.BLUE.value})
-    ax[0,1].set_title('Residual Distribution')
-    ax[0,1].axvline(df[residual_col].mean(), color=palette.OrbitPalette.ORANGE.value, linestyle='--', alpha=0.9, label = 'residual mean')
-    ax[0,1].set_ylabel('density')
-    ax[0,1].legend()
+    sns.distplot(df[residual_col], hist=True, kde=True, ax=ax[0, 1], color=palette.OrbitPalette.BLUE.value,
+                 label='residual',
+                 hist_kws={'edgecolor': 'white', 'alpha': 0.5, 'facecolor': palette.OrbitPalette.BLUE.value})
+    ax[0, 1].set_title('Residual Distribution')
+    ax[0, 1].axvline(df[residual_col].mean(), color=palette.OrbitPalette.ORANGE.value, linestyle='--', alpha=0.9,
+                     label='residual mean')
+    ax[0, 1].set_ylabel('density')
+    ax[0, 1].legend()
     # plot 3 residual vs fitted
-    sns.scatterplot(x=fitted_col, y=residual_col, data=df, ax=ax[1,0], color=palette.OrbitPalette.BLUE.value, alpha=0.8, label='residual')
-    ax[1,0].axhline(y=0, linestyle = '--', color=palette.OrbitPalette.BLACK.value, alpha=0.5, label = '0')
-    ax[1,0].set_title('Residual vs Fitted')
-    ax[1,0].set_xlabel('fitted')
-    ax[1,0].legend()
+    sns.scatterplot(x=fitted_col, y=residual_col, data=df, ax=ax[1, 0], color=palette.OrbitPalette.BLUE.value,
+                    alpha=0.8, label='residual')
+    ax[1, 0].axhline(y=0, linestyle='--', color=palette.OrbitPalette.BLACK.value, alpha=0.5, label='0')
+    ax[1, 0].set_title('Residual vs Fitted')
+    ax[1, 0].set_xlabel('fitted')
+    ax[1, 0].legend()
     # plot 4 residual ACF
-    sm.graphics.tsa.plot_acf(df[residual_col], ax=ax[1,1], title='Residual ACF', color=palette.OrbitPalette.BLUE.value)
-    ax[1,1].set_xlabel('lag')
-    ax[1,1].set_ylabel('acf')
+    sm.graphics.tsa.plot_acf(df[residual_col], ax=ax[1, 1], title='Residual ACF', color=palette.OrbitPalette.BLUE.value)
+    ax[1, 1].set_xlabel('lag')
+    ax[1, 1].set_ylabel('acf')
     plt.tight_layout()
-
