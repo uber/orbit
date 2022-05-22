@@ -725,14 +725,22 @@ def residual_diagnostic_plot(
         sparams=None,
     ):
     """
-    residual diagnostic plots
-    INPUT:
-        df: Data Frame
-        date_col: column name of date
-        residual_col: column name of residual
-        fitted_col: column name of fitted value from model
+    Parameters
+    ----------
 
-    OUTPUT: produces four residual plots:
+    df : pd.DataFrame
+    dist : str
+    date_col : str
+        column name of date
+    residual_col : str
+        column name of residual
+    fitted_col: str
+        column name of fitted value from model
+    sparams : float or list
+        extra parameters
+
+    Notes
+    -----
     1. residual by time
     2. residual vs fitted
     3. residual histogram with vertical line as mean
@@ -740,7 +748,7 @@ def residual_diagnostic_plot(
     5. residual ACF
     6. residual PACF
     """
-    fig, ax = plt.subplots(3, 2, figsize=(15, 8))
+    fig, ax = plt.subplots(3, 2, figsize=(15, 12))
 
     # plot 1 residual by time
     sns.lineplot(x=date_col, y=residual_col, data=df, ax=ax[0, 0], color=palette.OrbitPalette.BLUE.value, alpha=0.8,
@@ -775,7 +783,7 @@ def residual_diagnostic_plot(
 
     # plot 5 residual ACF
     sm.graphics.tsa.plot_acf(
-        df[residual_col].values, ax=ax[2, 1],
+        df[residual_col].values, ax=ax[2, 0],
         title='Residual ACF', color=palette.OrbitPalette.BLUE.value
     )
     ax[2, 0].set_xlabel('lag')
@@ -783,7 +791,7 @@ def residual_diagnostic_plot(
 
     # plot 6 residual PACF
     sm.graphics.tsa.plot_pacf(
-        df[residual_col].values, ax=ax[2, 2],
+        df[residual_col].values, ax=ax[2, 1],
         title='Residual PACF', color=palette.OrbitPalette.BLUE.value
     )
     ax[2, 1].set_xlabel('lag')
