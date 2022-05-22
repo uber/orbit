@@ -751,17 +751,15 @@ def residual_diagnostic_plot(df, date_col='week', residual_col='residual', fitte
     ax[0, 1].set_xlabel('fitted')
     ax[0, 1].legend()
 
-    # plot 2 residual histogram with vertical line as mean
+    # plot 3 residual histogram with vertical line as mean
     sns.distplot(df[residual_col], hist=True, kde=True, ax=ax[0, 1], color=palette.OrbitPalette.BLUE.value,
                  label='residual',
                  hist_kws={'edgecolor': 'white', 'alpha': 0.5, 'facecolor': palette.OrbitPalette.BLUE.value})
-    ax[0, 1].set_title('Residual Distribution')
-    ax[0, 1].axvline(df[residual_col].mean(), color=palette.OrbitPalette.ORANGE.value, linestyle='--', alpha=0.9,
+    ax[1, 0].set_title('Residual Distribution')
+    ax[1, 0].axvline(df[residual_col].mean(), color=palette.OrbitPalette.ORANGE.value, linestyle='--', alpha=0.9,
                      label='residual mean')
-    ax[0, 1].set_ylabel('density')
-    ax[0, 1].legend()
-
-
+    ax[1, 0].set_ylabel('density')
+    ax[1, 0].legend()
 
     # plot 4 residual vs fitted
     sns.scatterplot(x=fitted_col, y=residual_col, data=df, ax=ax[1, 0], color=palette.OrbitPalette.BLUE.value,
