@@ -720,7 +720,7 @@ def params_comparison_boxplot(
 @orbit_style_decorator
 def residual_diagnostic_plot(df, date_col='week', residual_col='residual', fitted_col='prediction'):
     """
-    residual diganostic plots
+    residual diagnostic plots
     INPUT:
         df: Data Frame
         date_col: column name of date
