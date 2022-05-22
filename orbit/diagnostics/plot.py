@@ -8,20 +8,20 @@ import numpy as np
 import math
 import os
 import pkg_resources
+import statsmodels.api as sm
+from scipy import stats
 
 from ..constants.constants import PredictionKeys
 from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
 from ..constants.constants import BacktestFitKeys
 from ..constants.palette import PredictionPaletteClassic as PredPal
+from orbit.constants import palette
 from orbit.diagnostics.metrics import smape
 from orbit.utils.plot import orbit_style_decorator
-
 from ..exceptions import PlotException
+
+
 import logging
-
-import statsmodels.api as sm
-from orbit.constants import palette
-
 logger = logging.getLogger("orbit")
 
 
@@ -752,7 +752,7 @@ def residual_diagnostic_plot(df, date_col='week', residual_col='residual', fitte
     ax[0, 1].legend()
 
     # plot 3 residual histogram with vertical line as mean
-    sns.distplot(df[residual_col], hist=True, kde=True, ax=ax[0, 1], color=palette.OrbitPalette.BLUE.value,
+    sns.distplot(df[residual_col].values, hist=True, kde=True, ax=ax[0, 1], color=palette.OrbitPalette.BLUE.value,
                  label='residual',
                  hist_kws={'edgecolor': 'white', 'alpha': 0.5, 'facecolor': palette.OrbitPalette.BLUE.value})
     ax[1, 0].set_title('Residual Distribution')
@@ -761,22 +761,24 @@ def residual_diagnostic_plot(df, date_col='week', residual_col='residual', fitte
     ax[1, 0].set_ylabel('density')
     ax[1, 0].legend()
 
-    # plot 4 residual vs fitted
-    sns.scatterplot(x=fitted_col, y=residual_col, data=df, ax=ax[1, 0], color=palette.OrbitPalette.BLUE.value,
-                    alpha=0.8, label='residual')
-    ax[1, 0].axhline(y=0, linestyle='--', color=palette.OrbitPalette.BLACK.value, alpha=0.5, label='0')
-    ax[1, 0].set_title('Residual vs Fitted')
-    ax[1, 0].set_xlabel('fitted')
-    ax[1, 0].legend()
+    # plot 4 residual qq plot
+    # t-dist qq-plot
+    _ = stats.probplot(df[residual_col].values, dist=stats.t, sparams=5, plot=ax[1, 1])
 
     # plot 5 residual ACF
-    sm.graphics.tsa.plot_acf(df[residual_col], ax=ax[1, 1], title='Residual ACF', color=palette.OrbitPalette.BLUE.value)
+    sm.graphics.tsa.plot_acf(
+        df[residual_col].values, ax=ax[2, 1],
+        title='Residual ACF', color=palette.OrbitPalette.BLUE.value
+    )
     ax[1, 1].set_xlabel('lag')
     ax[1, 1].set_ylabel('acf')
     plt.tight_layout()
 
     # plot 6 residual PACF
-    sm.graphics.tsa.plot_acf(df[residual_col], ax=ax[1, 1], title='Residual ACF', color=palette.OrbitPalette.BLUE.value)
+    sm.graphics.tsa.plot_pacf(
+        df[residual_col].values, ax=ax[2, 2],
+        title='Residual PACF', color=palette.OrbitPalette.BLUE.value
+    )
     ax[1, 1].set_xlabel('lag')
     ax[1, 1].set_ylabel('acf')
     plt.tight_layout()
