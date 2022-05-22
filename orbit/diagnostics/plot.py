@@ -744,7 +744,7 @@ def residual_diagnostic_plot(df, date_col='week', residual_col='residual', fitte
     ax[0, 0].legend()
 
     # plot 2 residual vs fitted
-    sns.scatterplot(x=fitted_col, y=residual_col, data=df, ax=ax[1, 0], color=palette.OrbitPalette.BLUE.value,
+    sns.scatterplot(x=fitted_col, y=residual_col, data=df, ax=ax[0, 1], color=palette.OrbitPalette.BLUE.value,
                     alpha=0.8, label='residual')
     ax[0, 1].axhline(y=0, linestyle='--', color=palette.OrbitPalette.BLACK.value, alpha=0.5, label='0')
     ax[0, 1].set_title('Residual vs Fitted')
@@ -752,7 +752,7 @@ def residual_diagnostic_plot(df, date_col='week', residual_col='residual', fitte
     ax[0, 1].legend()
 
     # plot 3 residual histogram with vertical line as mean
-    sns.distplot(df[residual_col].values, hist=True, kde=True, ax=ax[0, 1], color=palette.OrbitPalette.BLUE.value,
+    sns.distplot(df[residual_col].values, hist=True, kde=True, ax=ax[1, 0], color=palette.OrbitPalette.BLUE.value,
                  label='residual',
                  hist_kws={'edgecolor': 'white', 'alpha': 0.5, 'facecolor': palette.OrbitPalette.BLUE.value})
     ax[1, 0].set_title('Residual Distribution')
@@ -770,8 +770,8 @@ def residual_diagnostic_plot(df, date_col='week', residual_col='residual', fitte
         df[residual_col].values, ax=ax[2, 1],
         title='Residual ACF', color=palette.OrbitPalette.BLUE.value
     )
-    ax[1, 1].set_xlabel('lag')
-    ax[1, 1].set_ylabel('acf')
+    ax[2, 1].set_xlabel('lag')
+    ax[2, 1].set_ylabel('acf')
     plt.tight_layout()
 
     # plot 6 residual PACF
@@ -779,6 +779,6 @@ def residual_diagnostic_plot(df, date_col='week', residual_col='residual', fitte
         df[residual_col].values, ax=ax[2, 2],
         title='Residual PACF', color=palette.OrbitPalette.BLUE.value
     )
-    ax[1, 1].set_xlabel('lag')
-    ax[1, 1].set_ylabel('acf')
+    ax[2, 2].set_xlabel('lag')
+    ax[2, 2].set_ylabel('pacf')
     plt.tight_layout()
