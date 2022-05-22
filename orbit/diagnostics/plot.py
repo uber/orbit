@@ -718,7 +718,12 @@ def params_comparison_boxplot(
 
 
 @orbit_style_decorator
-def residual_diagnostic_plot(df, date_col='week', residual_col='residual', fitted_col='prediction'):
+def residual_diagnostic_plot(
+        df, dist='norm', date_col='week',
+        residual_col='residual',
+        fitted_col='prediction',
+        sparams=None,
+    ):
     """
     residual diagnostic plots
     INPUT:
@@ -762,8 +767,11 @@ def residual_diagnostic_plot(df, date_col='week', residual_col='residual', fitte
     ax[1, 0].legend()
 
     # plot 4 residual qq plot
-    # t-dist qq-plot
-    _ = stats.probplot(df[residual_col].values, dist=stats.t, sparams=5, plot=ax[1, 1])
+    if dist == 'norm':
+        _ = stats.probplot(df[residual_col].values, dist="norm", plot=ax[1, 1])
+    elif dist == 't-dist':
+        # t-dist qq-plot
+        _ = stats.probplot(df[residual_col].values, dist=stats.t, sparams=sparams, plot=ax[1, 1])
 
     # plot 5 residual ACF
     sm.graphics.tsa.plot_acf(
