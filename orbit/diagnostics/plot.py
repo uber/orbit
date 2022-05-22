@@ -770,15 +770,14 @@ def residual_diagnostic_plot(df, date_col='week', residual_col='residual', fitte
         df[residual_col].values, ax=ax[2, 1],
         title='Residual ACF', color=palette.OrbitPalette.BLUE.value
     )
-    ax[2, 1].set_xlabel('lag')
-    ax[2, 1].set_ylabel('acf')
-    plt.tight_layout()
+    ax[2, 0].set_xlabel('lag')
+    ax[2, 0].set_ylabel('acf')
 
     # plot 6 residual PACF
     sm.graphics.tsa.plot_pacf(
         df[residual_col].values, ax=ax[2, 2],
         title='Residual PACF', color=palette.OrbitPalette.BLUE.value
     )
-    ax[2, 2].set_xlabel('lag')
-    ax[2, 2].set_ylabel('pacf')
-    plt.tight_layout()
+    ax[2, 1].set_xlabel('lag')
+    ax[2, 1].set_ylabel('pacf')
+    fig.tight_layout()
