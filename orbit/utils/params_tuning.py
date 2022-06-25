@@ -1,6 +1,6 @@
 import pandas as pd
 import inspect
-from tqdm.autonotebook import tqdm
+from tqdm.auto import tqdm
 from itertools import product
 from collections.abc import Mapping, Iterable
 
