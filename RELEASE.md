@@ -3,17 +3,17 @@
 ## Full Release
 1. Create a **doc-refresh** branch. Add the logs of changes under
    [changelog](https://github.com/uber/orbit/blob/dev/docs/changelog.rst).
-   The logs can be reused on later draft of release under Github.
+   The logs can be reused later for drafting release notes.
    Rerun notebooks under **docs/tutorails** for defined readthedocs triggered job.
-2. Submit a PR for dev for the changes of any documentation.
+2. Submit a PR to dev branch for any changes of any documentation.
 3. After the approval and merge from previous PR, create a release branch from `dev`
     - e.g. `release-v1.0.15`
-4. Update the version number in `orbit/__init__.py`. This version number will propagate to `docs/conf.py`, `setup.cfg`, and `setup.py`.
+4. Update the version number in `orbit/__init__.py`. This version number will be propagated to `docs/conf.py`, `setup.cfg`, and `setup.py`.
 5. Commit changes
-6. Test PyPI deployment locally by running
+6. Test PyPI deployment locally by running [Optional]
     - `python3 setup.py sdist bdist_wheel`
     - `python3 -m twine check dist/*`
-7. If necessary, additional PRs may be merged to the release branch directly, but this should be reserved for bug fixes only and should not add or change any features
+7. If necessary, additional PRs may be merged to the release branch directly, but this should be for bug fixes only.
 8. Rebase and merge the release branch to `master` by running
     - `git checkout master`
     - `git rebase --no-ff release-v1.0.15`
