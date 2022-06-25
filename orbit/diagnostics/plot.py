@@ -743,7 +743,7 @@ def residual_diagnostic_plot(
     fitted_col: str
         column name of fitted value from model
     sparams : float or list
-        extra parameters
+        extra parameters used in distribution such as t-dist
 
     Notes
     -----
