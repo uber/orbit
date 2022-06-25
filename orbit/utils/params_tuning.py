@@ -1,6 +1,6 @@
 import pandas as pd
 import inspect
-import tqdm
+from tqdm.autonotebook import tqdm
 from itertools import product
 from collections.abc import Mapping, Iterable
 
@@ -120,7 +120,7 @@ def grid_search_orbit(
     res = pd.DataFrame(param_list_dict)
     metric_values = list()
 
-    for tuned_param_dict in tqdm.tqdm(param_list_dict):
+    for tuned_param_dict in tqdm(param_list_dict):
         if verbose:
             logger.info("tuning hyper-params {}".format(tuned_param_dict))
 
@@ -157,6 +157,7 @@ def grid_search_orbit(
             metric_val = bt.score(metrics=[metrics]).metric_values[0]
         elif eval_method == "bic":
             if isinstance(new_model, MAPForecaster):
+                # pass thru arg for estimator
                 new_model.fit(df)
                 metric_val = new_model.get_bic()
             else:
