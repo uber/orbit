@@ -7,7 +7,7 @@ import numpy as np
 # ci.add_style("numpy_with_merge_dedup", merge_numpy_docs_dedup)
 
 
-class BaseEstimator(object):
+class BaseEstimator:
     """Base Estimator class for both Stan and Pyro Estimator
 
     Parameters

@@ -1,5 +1,5 @@
 """Top level Orbit class"""
 
 
-class Orbit(object):
+class Orbit:
     pass
