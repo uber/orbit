@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 from pystan import StanModel
 import pickle
 import pkg_resources
@@ -65,7 +64,7 @@ def get_compiled_stan_model(stan_model_name):
         return pickle.load(f)
 
 
-class suppress_stdout_stderr(object):
+class suppress_stdout_stderr:
     """
     A context manager for doing a "deep suppression" of stdout and stderr in
     Python, i.e. will suppress all print, even if the print originates in a
