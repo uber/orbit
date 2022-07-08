@@ -65,7 +65,7 @@ def get_compiled_stan_model(stan_model_name):
 
 
 def compile_stan_model_simplified(path):
-    """ A more flexible way to load compile stan model with a path provided
+    """A more flexible way to load compile stan model with a path provided
     Parameters
     ----------
     path
@@ -79,7 +79,9 @@ def compile_stan_model_simplified(path):
     compiled_path = "{}.pkl".format(source_filename)
 
     # compile if stan source has changed
-    if not os.path.isfile(compiled_path) or os.path.getmtime(compiled_path) < os.path.getmtime(source_path):
+    if not os.path.isfile(compiled_path) or os.path.getmtime(
+        compiled_path
+    ) < os.path.getmtime(source_path):
         with open(source_path, encoding="utf-8") as f:
             model_code = f.read()
         sm = StanModel(model_code=model_code)
@@ -91,7 +93,7 @@ def compile_stan_model_simplified(path):
 
 
 def get_compiled_stan_model_simplified(path):
-    """ A more flexible way to load pre-compiled model
+    """A more flexible way to load pre-compiled model
     Parameters
     ----------
     path
