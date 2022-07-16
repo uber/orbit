@@ -212,7 +212,6 @@ class KTRModel(ModelTemplate):
         self.seasonality_fs_order = seasonality_fs_order
         self._seasonality = self.seasonality
         # used to name different seasonal components in prediction
-        self._seasonality_labels = list()
         self._seasonality_fs_order = self.seasonality_fs_order
         self.seasonal_initial_knot_scale = seasonal_initial_knot_scale
         self.seasonal_knot_scale = seasonal_knot_scale
@@ -889,6 +888,7 @@ class KTRModel(ModelTemplate):
         # load _seasonality and _seasonality_fs_order
         self._seasonality = ktrlite._model._seasonality
         self._seasonality_fs_order = ktrlite._model._seasonality_fs_order
+        self._seasonality_labels = list()
         for seas in self._seasonality:
             self._seasonality_labels.append("seasonality_{}".format(seas))
 
