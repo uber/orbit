@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 from copy import deepcopy
+from itertools import product
 
 
 def update_dict(original_dict, append_dict):
@@ -53,3 +54,22 @@ def get_parent_path(current_file_path):
     """
 
     return os.path.abspath(os.path.join(current_file_path, os.pardir))
+
+
+def expand_grid(base):
+    """
+    Parameters
+    ----------
+    base : dict
+        dictionary with keys equal columns name and value equals key values
+
+    Returns
+    -------
+    pd.DataFrame : dataframe generate based on user specified base
+    """
+    return pd.DataFrame([row for row in product(*base.values())],
+                        columns=base.keys())
+
+
+def backfill_missing(df, time_col, key_col):
+    pass
