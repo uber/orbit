@@ -57,6 +57,7 @@ Welcome to Orbit's Documentation!
 
    tutorials/exploratory_data_analysis
    tutorials/utilities_simulation
+   tutorials/other_utilities
 
 .. toctree::
    :maxdepth: 1
