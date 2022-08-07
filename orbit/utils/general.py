@@ -65,9 +65,7 @@ def expand_grid(base):
     -------
     pd.DataFrame : dataframe generate based on user specified base
     """
-    return pd.DataFrame(
-        [row for row in product(*base.values())], columns=base.keys()
-    )
+    return pd.DataFrame([row for row in product(*base.values())], columns=base.keys())
 
 
 def regenerate_base_df(df, time_col, key_col, val_cols=[], fill_na=None):
@@ -89,10 +87,12 @@ def regenerate_base_df(df, time_col, key_col, val_cols=[], fill_na=None):
     out = df.copy()
     unique_time = out[time_col].unique()
     unique_key = out[key_col].unique()
-    new_df_base = expand_grid({
-        key_col: unique_key,
-        time_col: unique_time,
-    })
+    new_df_base = expand_grid(
+        {
+            key_col: unique_key,
+            time_col: unique_time,
+        }
+    )
     out = new_df_base.merge(out, how="left", on=[time_col, key_col])
     if not isinstance(val_cols, list):
         val_cols = list(val_cols)
