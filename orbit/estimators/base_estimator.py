@@ -191,17 +191,13 @@ class EstimatorMAP(BaseEstimator):
 
     Parameters
     ----------
-    stan_map_args : dict
-        Supplemental stan vi args to pass to PyStan.optimizing()
-
+    n_iters : Optional[int]
+        The maximum number of iterations.
     """
 
-    def __init__(self, algorithm="LBFGS", **kwargs):
+    def __init__(self, n_iters, **kwargs):
+        self.n_iters = n_iters
         super().__init__(**kwargs)
-        if self.algorithm is None:
-            self.algorithm = "LBFGS"
-        else:
-            self.algorithm = algorithm
 
     def fit(
             self,

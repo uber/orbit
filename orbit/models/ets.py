@@ -3,6 +3,7 @@ from ..template.ets import ETSModel
 from ..forecaster import MAPForecaster, FullBayesianForecaster
 from ..exceptions import IllegalArgument
 from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
+from ..estimators.numpyro_estimator import NumPyroEstimatorMCMC, NumPyroEstimatorMAP
 from ..constants.constants import EstimatorsKeys
 
 
@@ -50,6 +51,8 @@ def ETS(
     _supported_estimators = [
         EstimatorsKeys.StanMAP.value,
         EstimatorsKeys.StanMCMC.value,
+        EstimatorsKeys.NumPyroMCMC.value,
+        EstimatorsKeys.NumPyroMAP.value,
     ]
 
     ets = ETSModel(
@@ -61,9 +64,17 @@ def ETS(
         ets_forecaster = MAPForecaster(
             model=ets, estimator_type=StanEstimatorMAP, **kwargs
         )
+    if estimator == EstimatorsKeys.NumPyroMAP.value:
+        ets_forecaster = MAPForecaster(
+            model=ets, estimator_type=NumPyroEstimatorMAP, **kwargs
+        )
     elif estimator == EstimatorsKeys.StanMCMC.value:
         ets_forecaster = FullBayesianForecaster(
             model=ets, estimator_type=StanEstimatorMCMC, **kwargs
+        )
+    elif estimator == EstimatorsKeys.NumPyroMCMC.value:
+        ets_forecaster = FullBayesianForecaster(
+            model=ets, estimator_type=NumPyroEstimatorMCMC, **kwargs
         )
     else:
         raise IllegalArgument(

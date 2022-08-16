@@ -31,6 +31,8 @@ class EstimatorsKeys(Enum):
     """
 
     PyroSVI = "pyro-svi"
+    NumPyroMCMC = "numpyro-mcmc"
+    NumPyroMAP = "numpyro-map"
     StanMAP = "stan-map"
     StanMCMC = "stan-mcmc"
 

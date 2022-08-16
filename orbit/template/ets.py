@@ -7,6 +7,7 @@ from ..constants.constants import PredictionKeys, TrainingMetaKeys, PredictionMe
 from ..exceptions import IllegalArgument, DataInputException
 from .model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
+from ..estimators.numpyro_estimator import NumPyroEstimatorMCMC, NumPyroEstimatorMAP
 from ..utils.features import moving_average
 
 
@@ -88,7 +89,9 @@ class ETSModel(ModelTemplate):
     _data_input_mapper = DataInputMapper
     # used to match name of `*.stan` or `*.pyro` file to look for the model
     _model_name = "ets"
-    _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC]
+    _supported_estimator_types = [
+        StanEstimatorMAP, StanEstimatorMCMC,
+        NumPyroEstimatorMCMC, NumPyroEstimatorMAP]
 
     def __init__(
         self, seasonality=None, seasonality_sm_input=None, level_sm_input=None, **kwargs

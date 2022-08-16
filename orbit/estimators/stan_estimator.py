@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from copy import deepcopy
 import logging
 import multiprocessing
@@ -18,7 +17,7 @@ logger = logging.getLogger("orbit")
 
 
 class StanEstimatorMCMC(EstimatorMCMC):
-    """Stan Estimator for MCMC Sampling
+    """Stan Estimator for MCMC (No-U-Turn) Sampling
 
     Parameters
     ----------
@@ -126,17 +125,18 @@ class StanEstimatorMCMC(EstimatorMCMC):
 
 
 class StanEstimatorMAP(EstimatorMAP):
-    """Stan Estimator for MAP Posteriors
+    """Stan Estimator for Max a Posteriori(MAP)
 
     Parameters
     ----------
     stan_map_args : dict
-        Supplemental stan vi args to pass to PyStan.optimizing()
-
+        Supplemental stan map args to pass to PyStan.optimizing()
+    Check API document from PyStan (https://pystan2.readthedocs.io/en/latest/api.html)
+    and Original Stan API
     """
 
-    def __init__(self, stan_map_args=None, **kwargs):
-        # init computed args
+    def __init__(self, algorithm="LBFGS", stan_map_args=None, **kwargs):
+        # extra map args
         self._stan_map_args = deepcopy(stan_map_args)
         super().__init__(**kwargs)
         # stan_init fallback if not provided in model
@@ -153,8 +153,8 @@ class StanEstimatorMAP(EstimatorMAP):
             **kwargs,
     ):
         if self.verbose:
-            msg_template = "Optimizing (PyStan) with algorithm: {}."
-            msg = msg_template.format(self.algorithm)
+            msg_template = "Optimizing (PyStan) with algorithm: {} and max iterations: {}."
+            msg = msg_template.format(self.algorithm, self.n_iters)
             logger.info(msg)
 
         compiled_stan_file = get_compiled_stan_model(model_name)
@@ -172,6 +172,7 @@ class StanEstimatorMAP(EstimatorMAP):
                     init=init_values,
                     seed=self.seed,
                     algorithm=self.algorithm,
+                    iter=self.n_iters,
                     **self._stan_map_args,
                 )
         except RuntimeError:

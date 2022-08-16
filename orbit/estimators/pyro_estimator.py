@@ -49,7 +49,6 @@ class PyroEstimatorSVI(EstimatorSVI):
         message = self.message
         learning_rate = self.learning_rate
         learning_rate_total_decay = self.learning_rate_total_decay
-        num_sample = self.num_sample
         seed = self.seed
         num_steps = self.num_steps
         if self.verbose:
@@ -92,7 +91,7 @@ class PyroEstimatorSVI(EstimatorSVI):
                 )
 
         # Extract samples.
-        vectorize = pyro.plate("samples", num_sample, dim=-1 - model.max_plate_nesting)
+        vectorize = pyro.plate("samples", self.num_sample, dim=-1 - model.max_plate_nesting)
         with pyro.poutine.trace() as tr:
             samples = vectorize(guide)()
         with pyro.poutine.replay(trace=tr.trace):

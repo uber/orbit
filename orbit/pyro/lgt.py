@@ -4,7 +4,9 @@ import torch
 import pyro
 import pyro.distributions as dist
 
+# FIXME: this is sort of dangerous; consider better implementation later
 torch.set_default_tensor_type("torch.DoubleTensor")
+pyro.enable_validation(True)
 
 
 class Model:
