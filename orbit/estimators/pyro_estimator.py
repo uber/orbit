@@ -1,66 +1,20 @@
-from abc import abstractmethod
 import numpy as np
 import logging
 
 import pyro
 from pyro.infer import SVI, Trace_ELBO
-from pyro.infer.autoguide import AutoLowRankMultivariateNormal, AutoDelta
+from pyro.infer.autoguide import AutoLowRankMultivariateNormal
 from pyro.optim import ClippedAdam
 
-from .base_estimator import BaseEstimator
+from .base_estimator import EstimatorSVI
 from ..exceptions import EstimatorException
 from ..utils.pyro import get_pyro_model
 
 logger = logging.getLogger("orbit")
 
 
-class PyroEstimator(BaseEstimator):
-    """Abstract PyroEstimator with shared args for all PyroEstimator child classes
-
-    Parameters
-    ----------
-    num_steps : int
-        Number of estimator steps in optimization
-    learning_rate : float
-        Estimator learning rate
-    learning_rate_total_decay : float
-        A config re-parameterized from ``lrd`` in :class:`~pyro.optim.ClippedAdam`. For example, 0.1 means a 90%
-        reduction of the final step as of original learning rate where linear decay is implied along the steps. In the
-        case of 1.0, no decay is applied.  All steps will have the constant learning rate specified by `learning_rate`.
-    seed : int
-        Seed int
-    message : int
-        Print to console every `message` number of steps
-    kwargs
-        Additional BaseEstimator args
-    Notes
-    -----
-        See http://docs.pyro.ai/en/stable/_modules/pyro/optim/clipped_adam.html for optimizer details
-    """
-
-    def __init__(
-        self,
-        num_steps=301,
-        learning_rate=0.1,
-        learning_rate_total_decay=1.0,
-        message=100,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
-        self.num_steps = num_steps
-        self.learning_rate = learning_rate
-        self.learning_rate_total_decay = learning_rate_total_decay
-        self.message = message
-
-    @abstractmethod
-    def fit(
-        self, model_name, model_param_names, data_input, fitter=None, init_values=None
-    ):
-        raise NotImplementedError("Concrete fit() method must be implemented")
-
-
 # make the name consistent across VI
-class PyroEstimatorSVI(PyroEstimator):
+class PyroEstimatorSVI(EstimatorSVI):
     """Pyro Estimator for VI Sampling
 
     Parameters
@@ -76,20 +30,18 @@ class PyroEstimatorSVI(PyroEstimator):
 
     """
 
-    def __init__(self, num_sample=100, num_particles=100, init_scale=0.1, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.num_sample = num_sample
-        self.num_particles = num_particles
-        self.init_scale = init_scale
 
     def fit(
-        self,
-        model_name,
-        model_param_names,
-        data_input,
-        sampling_temperature,
-        fitter=None,
-        init_values=None,
+            self,
+            model_name,
+            model_param_names,
+            data_input,
+            fitter=None,
+            init_values=None,
+            sampling_temperature=1.0,
+            **kwargs,
     ):
         data_input.update({"T_STAR": sampling_temperature})
         # verbose is passed through from orbit.template.base_estimator

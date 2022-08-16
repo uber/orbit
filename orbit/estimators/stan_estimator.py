@@ -1,87 +1,23 @@
 from abc import abstractmethod
-from copy import copy
+from copy import deepcopy
 import logging
 import multiprocessing
 from sys import platform, version_info
 
-from .base_estimator import BaseEstimator
+from .base_estimator import EstimatorMCMC, EstimatorMAP
 from ..exceptions import EstimatorException
 from ..utils.stan import get_compiled_stan_model, suppress_stdout_stderr
-from ..utils.general import update_dict
 
-if platform == "darwin" and version_info[0] == 3 and version_info[1] == 9:
-    # fix issue in Python 3.9
-    multiprocessing.set_start_method("fork", force=True)
+if platform == "darwin":
+    # fix issue in Python 3.9 for PyStan
+    if version_info[0] == 3 and version_info[1] == 9:
+        multiprocessing.set_start_method("fork", force=True)
+    elif version_info[0] == 3 and version_info[1] == 8 and version_info[2] >= 12:
+        multiprocessing.set_start_method("fork", force=True)
 logger = logging.getLogger("orbit")
 
 
-class StanEstimator(BaseEstimator):
-    """Abstract StanEstimator with shared args for all StanEstimator child classes
-
-    Parameters
-    ----------
-    num_warmup : int
-        Number of samples to warm up and to be discarded, default 900
-    num_sample : int
-        Number of samples to return, default 100
-    chains : int
-        Number of chains in stan sampler, default 4
-    cores : int
-        Number of cores for parallel processing, default max(cores, multiprocessing.cpu_count())
-    algorithm : str
-        If None, default to Stan defaults
-    kwargs
-        Additional `BaseEstimator` class args
-
-    """
-
-    def __init__(
-        self,
-        num_warmup=900,
-        num_sample=100,
-        chains=4,
-        cores=8,
-        algorithm=None,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
-        self.num_warmup = num_warmup
-        self.num_sample = num_sample
-        self.chains = chains
-        self.cores = cores
-        self.algorithm = algorithm
-
-        # stan_init fallback if not provided in model
-        # this arg is passed in through `model_payload` in `fit()` to override
-        self.stan_init = "random"
-
-        # init computed configs
-        self._num_warmup_per_chain = None
-        self._num_sample_per_chain = None
-        self._num_iter_per_chain = None
-        self._total_iter = None
-
-        self._set_computed_stan_configs()
-
-    def _set_computed_stan_configs(self):
-        """Sets sampler configs based on init class attributes"""
-        # make sure cores can only be as large as the device support
-        self.cores = min(self.cores, multiprocessing.cpu_count())
-        self._num_warmup_per_chain = int(self.num_warmup / self.chains)
-        self._num_sample_per_chain = int(self.num_sample / self.chains)
-        self._num_iter_per_chain = (
-            self._num_warmup_per_chain + self._num_sample_per_chain
-        )
-        self._total_iter = self._num_iter_per_chain * self.chains
-
-    @abstractmethod
-    def fit(
-        self, model_name, model_param_names, data_input, fitter=None, init_values=None
-    ):
-        raise NotImplementedError("Concrete fit() method must be implemented")
-
-
-class StanEstimatorMCMC(StanEstimator):
+class StanEstimatorMCMC(EstimatorMCMC):
     """Stan Estimator for MCMC Sampling
 
     Parameters
@@ -96,24 +32,34 @@ class StanEstimatorMCMC(StanEstimator):
     def __init__(self, stan_mcmc_control=None, stan_mcmc_args=None, **kwargs):
         super().__init__(**kwargs)
         self.stan_mcmc_control = stan_mcmc_control
-        self.stan_mcmc_args = stan_mcmc_args
-
         # init computed args
-        self._stan_mcmc_args = copy(self.stan_mcmc_args)
+        if stan_mcmc_args is None:
+            self._stan_mcmc_args = dict()
+        else:
+            self._stan_mcmc_args = deepcopy(stan_mcmc_args)
+        # stan_init fallback if not provided in model
+        # this arg is passed in through `model_payload` in `fit()` to override
+        self.stan_init = "random"
 
-        self._set_computed_stan_mcmc_configs()
-
-    def _set_computed_stan_mcmc_configs(self):
-        self._stan_mcmc_args = update_dict({}, self._stan_mcmc_args)
+    def _set_computed_configs(self):
+        # make sure cores can only be as large as the device support
+        self.cores = min(self.cores, multiprocessing.cpu_count())
+        self._num_warmup_per_chain = int(self.num_warmup / self.chains)
+        self._num_sample_per_chain = int(self.num_sample / self.chains)
+        self._num_iter_per_chain = (
+                self._num_warmup_per_chain + self._num_sample_per_chain
+        )
+        self._total_iter = self._num_iter_per_chain * self.chains
 
     def fit(
-        self,
-        model_name,
-        model_param_names,
-        sampling_temperature,
-        data_input,
-        fitter=None,
-        init_values=None,
+            self,
+            model_name,
+            model_param_names,
+            data_input,
+            fitter=None,
+            init_values=None,
+            sampling_temperature=1.0,
+            **kwargs,
     ):
         compiled_stan_file = get_compiled_stan_model(model_name)
 
@@ -151,7 +97,6 @@ class StanEstimatorMCMC(StanEstimator):
                 # fall back to default if not provided by model payload
                 init=init_values,
                 seed=self.seed,
-                algorithm=self.algorithm,
                 control=self.stan_mcmc_control,
                 **self._stan_mcmc_args,
             )
@@ -180,7 +125,7 @@ class StanEstimatorMCMC(StanEstimator):
         return posteriors, training_metrics
 
 
-class StanEstimatorMAP(StanEstimator):
+class StanEstimatorMAP(EstimatorMAP):
     """Stan Estimator for MAP Posteriors
 
     Parameters
@@ -191,32 +136,29 @@ class StanEstimatorMAP(StanEstimator):
     """
 
     def __init__(self, stan_map_args=None, **kwargs):
-        super().__init__(**kwargs)
-        self.stan_map_args = stan_map_args
-
         # init computed args
-        self._stan_map_args = copy(self.stan_map_args)
-
-        # set defaults
-        self._set_computed_stan_map_configs()
-
-    def _set_computed_stan_map_configs(self):
-        default_stan_map_args = {}
-        self._stan_map_args = update_dict(default_stan_map_args, self._stan_map_args)
-        # TODO: should it be within the fit block?
-        if self.verbose:
-            msg_template = "Optimizing (PyStan) with algorithm: {}."
-            if self.algorithm is None:
-                algorithm = "LBFGS"
-            else:
-                algorithm = self.algorithm
-            msg = msg_template.format(algorithm)
-            logger.info(msg)
+        self._stan_map_args = deepcopy(stan_map_args)
+        super().__init__(**kwargs)
+        # stan_init fallback if not provided in model
+        # this arg is passed in through `model_payload` in `fit()` to override
+        self.stan_init = "random"
 
     def fit(
-        self, model_name, model_param_names, data_input, fitter=None, init_values=None
+            self,
+            model_name,
+            model_param_names,
+            data_input,
+            fitter=None,
+            init_values=None,
+            **kwargs,
     ):
+        if self.verbose:
+            msg_template = "Optimizing (PyStan) with algorithm: {}."
+            msg = msg_template.format(self.algorithm)
+            logger.info(msg)
+
         compiled_stan_file = get_compiled_stan_model(model_name)
+        # workaround the sampling temperature problem
         data_input.update({"T_STAR": 1.0})
 
         # passing callable from the model as seen in `initfun1()`
@@ -259,7 +201,7 @@ class StanEstimatorMAP(StanEstimator):
         # this is for the BIC calculation
         training_metrics.update({"loglk": stan_extract["loglk"]})
         # FIXME: this needs to be the full length of all parameters instead of the one we sampled?
-        # FIXME: or it should be not include latent varaibles / derive variables?
+        # FIXME: or it should be not included in latent variables / derive variables?
         training_metrics.update({"num_of_params": len(model_param_names)})
 
         return posteriors, training_metrics
