@@ -191,12 +191,12 @@ class EstimatorMAP(BaseEstimator):
 
     Parameters
     ----------
-    n_iters : Optional[int]
+    num_iters : Optional[int]
         The maximum number of iterations.
     """
 
-    def __init__(self, n_iters, **kwargs):
-        self.n_iters = n_iters
+    def __init__(self, num_iters, **kwargs):
+        self.num_iters = num_iters
         super().__init__(**kwargs)
 
     def fit(

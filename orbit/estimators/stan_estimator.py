@@ -136,7 +136,10 @@ class StanEstimatorMAP(EstimatorMAP):
     """
 
     def __init__(self, algorithm="LBFGS", stan_map_args=None, **kwargs):
+        self.algorithm = algorithm
         # extra map args
+        if stan_map_args is None:
+            stan_map_args = dict()
         self._stan_map_args = deepcopy(stan_map_args)
         super().__init__(**kwargs)
         # stan_init fallback if not provided in model
@@ -154,7 +157,7 @@ class StanEstimatorMAP(EstimatorMAP):
     ):
         if self.verbose:
             msg_template = "Optimizing (PyStan) with algorithm: {} and max iterations: {}."
-            msg = msg_template.format(self.algorithm, self.n_iters)
+            msg = msg_template.format(self.algorithm, self.num_iters)
             logger.info(msg)
 
         compiled_stan_file = get_compiled_stan_model(model_name)
@@ -172,7 +175,7 @@ class StanEstimatorMAP(EstimatorMAP):
                     init=init_values,
                     seed=self.seed,
                     algorithm=self.algorithm,
-                    iter=self.n_iters,
+                    iter=self.num_iters,
                     **self._stan_map_args,
                 )
         except RuntimeError:
@@ -183,6 +186,7 @@ class StanEstimatorMAP(EstimatorMAP):
                     init=init_values,
                     seed=self.seed,
                     algorithm=self.algorithm,
+                    iter=self.num_iters,
                     **self._stan_map_args,
                 )
 

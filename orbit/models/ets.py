@@ -64,7 +64,7 @@ def ETS(
         ets_forecaster = MAPForecaster(
             model=ets, estimator_type=StanEstimatorMAP, **kwargs
         )
-    if estimator == EstimatorsKeys.NumPyroMAP.value:
+    elif estimator == EstimatorsKeys.NumPyroMAP.value:
         ets_forecaster = MAPForecaster(
             model=ets, estimator_type=NumPyroEstimatorMAP, **kwargs
         )
@@ -78,7 +78,7 @@ def ETS(
         )
     else:
         raise IllegalArgument(
-            "Invalid estimator. Must be one of {}".format(_supported_estimators)
+            "Invalid estimator: {}. Must be one of {}".format(estimator, _supported_estimators)
         )
 
     return ets_forecaster

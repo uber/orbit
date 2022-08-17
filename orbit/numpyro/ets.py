@@ -35,7 +35,7 @@ class Model:
             (init_sea_param[1:], -1 * jnp.sum(init_sea_param), init_sea_param[0])
         )
 
-        init_lev = response[0] - init_sea_param[0]
+        init_lev = jnp.reshape(response[0] - init_sea_param[0], (1, ))
 
         def transition_fn(carry, t):
             prev_lev, prev_sea = carry
@@ -45,8 +45,7 @@ class Model:
             # update
             new_lev = lev_sm * (response[t] - prev_sea[0]) + (1 - lev_sm) * prev_lev
             sea_update = sea_sm * (response[t] - new_lev) + (1 - sea_sm) * prev_sea[0]
-            # sea_update = prev_sea[0]
-            new_sea = jnp.hstack((prev_sea[1:], sea_update))
+            new_sea = jnp.concatenate((prev_sea[1:], sea_update), 0)
 
             return (new_lev, new_sea), (new_lev, sea_update, yhat)
 
@@ -54,11 +53,16 @@ class Model:
             transition_fn, (init_lev, init_sea), jnp.arange(1, n_obs)
         )
         l_generated, s_generated, yhat_generated = res
+        # the last dimension is an extra one; collaspe them
+        l_generated = jnp.squeeze(l_generated, -1)
+        s_generated = jnp.squeeze(s_generated, -1)
+        yhat_generated = jnp.squeeze(yhat_generated, -1)
+
         numpyro.sample("response", dist.Normal(yhat_generated, obs_sigma), obs=response[1:])
 
-        s = numpyro.deterministic("s", jnp.hstack((init_sea_param[0], init_sea, s_generated)))
-        l = numpyro.deterministic("l", jnp.hstack((init_lev, l_generated)))
-        yhat = numpyro.deterministic("yhat", jnp.hstack((response[0], yhat_generated)))
+        s = numpyro.deterministic("s", jnp.concatenate((init_sea_param[0, None], init_sea, s_generated), 0))
+        l = numpyro.deterministic("l", jnp.concatenate((init_lev, l_generated), -1))
+        yhat = numpyro.deterministic("yhat", jnp.concatenate((response[0, None], yhat_generated), 0))
         extra_out = {
             "s": s,
             "l": l,
