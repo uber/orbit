@@ -65,7 +65,6 @@ data {
   real<lower=1> MIN_NU; real<lower=1> MAX_NU;
   int<lower=1> FORECAST_HORIZON;
 
-
   // Damped Trend Hyper-Params
   real<lower=0,upper=1> DAMPED_FACTOR;
 
@@ -74,8 +73,7 @@ data {
   real<lower=0> SEASONALITY_SD;
 
   // Global Trend Hyper-Params
-  // real GL_PRIOR;
-  // real GB_PRIOR;
+  real<lower=0> GB_SIGMA_PRIOR;
   // 0 As linear, 1 As log-linear, 2 As logistic, 3 As flat
   int <lower=0,upper=3> GLOBAL_TREND_OPTION;
   // used in logistic trend
@@ -339,15 +337,15 @@ model {
 
   // linear and log-linear
   if ((GLOBAL_TREND_OPTION == 0 ) || (GLOBAL_TREND_OPTION == 1)) {
-    gl[1] ~ normal(0, RESPONSE_SD);
-    gb[1] ~ normal(0, RESPONSE_SD);
+    gl[1] ~ normal(0, GB_SIGMA_PRIOR);
+    gb[1] ~ normal(0, GB_SIGMA_PRIOR);
   } else if (GLOBAL_TREND_OPTION == 2) {
     // make some data-driven prior for logistic curve
     gl[1] ~ normal(0, 10);
     gb[1] ~ double_exponential(0, 1);
   } else {
     // flat global trend
-    gl[1] ~ normal(0, RESPONSE_SD);
+    gl[1] ~ normal(0, GB_SIGMA_PRIOR);
   }
 
   // regression prior

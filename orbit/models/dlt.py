@@ -7,25 +7,26 @@ from ..constants.constants import EstimatorsKeys
 
 
 def DLT(
-    seasonality=None,
-    seasonality_sm_input=None,
-    level_sm_input=None,
-    regressor_col=None,
-    regressor_sign=None,
-    regressor_beta_prior=None,
-    regressor_sigma_prior=None,
-    regression_penalty="fixed_ridge",
-    lasso_scale=0.5,
-    auto_ridge_scale=0.5,
-    slope_sm_input=None,
-    period=1,
-    damped_factor=0.8,
-    global_trend_option="linear",
-    global_cap=1.0,
-    global_floor=0.0,
-    forecast_horizon=1,
-    estimator="stan-mcmc",
-    **kwargs,
+        seasonality=None,
+        seasonality_sm_input=None,
+        level_sm_input=None,
+        regressor_col=None,
+        regressor_sign=None,
+        regressor_beta_prior=None,
+        regressor_sigma_prior=None,
+        regression_penalty="fixed_ridge",
+        lasso_scale=0.5,
+        auto_ridge_scale=0.5,
+        slope_sm_input=None,
+        period=1,
+        damped_factor=0.8,
+        global_trend_option="linear",
+        global_cap=1.0,
+        global_floor=0.0,
+        global_trend_sigma_prior=None,
+        forecast_horizon=1,
+        estimator="stan-mcmc",
+        **kwargs,
 ):
     """
     Args
@@ -77,6 +78,7 @@ def DLT(
     global_floor : float
         Minimum value of global logistic trend. Default is set to 0.0. This value is used only when
         `global_trend_option` = 'logistic'
+    global_trend_sigma_prior : sigma prior of the global trend; default uses 1 standard deviation of response
     forecast_horizon : int
         forecast_horizon will be used only when users want to specify optimization forecast horizon > 1
     estimator : string; {'stan-mcmc', 'stan-map'}
@@ -97,7 +99,6 @@ def DLT(
     prediction_percentiles : list
         List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
         confident intervals, pass an empty list
-
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator
     """
@@ -123,6 +124,7 @@ def DLT(
         global_trend_option=global_trend_option,
         global_cap=global_cap,
         global_floor=global_floor,
+        global_trend_sigma_prior=global_trend_sigma_prior,
         forecast_horizon=forecast_horizon,
     )
 
