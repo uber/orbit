@@ -583,7 +583,9 @@ class DLTModel(ETSModel):
         self._set_regressor_matrix(df, training_meta[TrainingMetaKeys.NUM_OF_OBS.value])
 
         if self.global_trend_sigma_prior is None:
-            self.global_trend_sigma_prior = training_meta[TrainingMetaKeys.RESPONSE_SD.value]
+            self.global_trend_sigma_prior = training_meta[
+                TrainingMetaKeys.RESPONSE_SD.value
+            ]
 
     def predict(
         self,
