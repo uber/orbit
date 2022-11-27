@@ -1,4 +1,3 @@
-from pystan import StanModel
 import pickle
 import pkg_resources
 import os
@@ -45,7 +44,12 @@ def compile_stan_model(stan_model_name):
         with open(source_model, encoding="utf-8") as f:
             model_code = f.read()
 
-        sm = StanModel(model_code=model_code)
+        try:
+            from pystan import StanModel
+        except ImportError:
+            print("Please install pystan==2.19.1.1 if users choose to sample with PyStan engine.")
+        finally:
+            sm = StanModel(model_code=model_code)
 
         with open(compiled_model, "wb") as f:
             pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -84,10 +88,16 @@ def compile_stan_model_simplified(path):
     ) < os.path.getmtime(source_path):
         with open(source_path, encoding="utf-8") as f:
             model_code = f.read()
+
+    try:
+        from pystan import StanModel
+    except ImportError:
+        print("Please install pystan==2.19.1.1 if users choose to sample with PyStan engine.")
+    finally:
         sm = StanModel(model_code=model_code)
 
-        with open(compiled_path, "wb") as f:
-            pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(compiled_path, "wb") as f:
+        pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     return compiled_path
 
