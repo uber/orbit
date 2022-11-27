@@ -545,30 +545,6 @@ class DLTModel(ETSModel):
                     "Invalid regressors values. They must be all not missing and finite."
                 )
 
-    # def _set_global_trend_priors(self, training_meta):
-    #     if self.global_trend_option != GlobalTrendOption.logistic.value:
-    #         # intercept
-    #         x = np.ones(training_meta[TrainingMetaKeys.NUM_OF_OBS.value]).reshape(-1, 1)
-    #         # add slope if needed
-    #         if self.global_trend_option == GlobalTrendOption.linear.value:
-    #             x1 = (np.arange(training_meta[TrainingMetaKeys.NUM_OF_OBS.value]) * self._time_delta).reshape(-1, 1)
-    #             x = np.concatenate([x, x1], axis=-1)
-    #         if self.global_trend_option == GlobalTrendOption.loglinear.value:
-    #             x1 = (np.arange(training_meta[TrainingMetaKeys.NUM_OF_OBS.value]) * self._time_delta).reshape(-1, 1)
-    #             x1 = np.log1p(x1)
-    #             x = np.concatenate([x, x1], axis=-1)
-    #
-    #         y = training_meta[TrainingMetaKeys.RESPONSE.value]
-    #         model = OLS(y, x)
-    #         results = model.fit()
-    #         self.global_level_prior = results.params[0]
-    #         self.global_slope_prior = 0.0
-    #         if len(results.params) > 1:
-    #             self.global_slope_prior = results.params[1]
-    #     else:
-    #         self.global_level_prior = 0
-    #         self.global_slope_prior = 0
-
     def set_dynamic_attributes(self, df, training_meta):
         """Overriding: func: `~orbit.models.BaseETS._set_dynamic_attributes"""
         super().set_dynamic_attributes(df, training_meta)
