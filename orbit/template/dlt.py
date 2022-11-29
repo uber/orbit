@@ -18,7 +18,6 @@ from ..constants.constants import (
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .ets import ETSModel
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
-from ..estimators.cmdstan_estimator import CmdStanEstimatorMAP, CmdStanEstimatorMCMC
 
 class DataInputMapper(Enum):
     """
@@ -211,8 +210,6 @@ class DLTModel(ETSModel):
     _supported_estimator_types = [
         StanEstimatorMAP,
         StanEstimatorMCMC,
-        CmdStanEstimatorMAP,
-        CmdStanEstimatorMCMC,
     ]
 
     def __init__(

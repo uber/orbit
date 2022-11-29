@@ -1,6 +1,7 @@
 import pickle
 import pkg_resources
 import os
+from cmdstanpy import CmdStanModel
 
 from orbit.constants.constants import CompiledStanModelPath
 
@@ -35,40 +36,24 @@ def compile_stan_model(stan_model_name):
 
     # updated for py3
     os.makedirs(os.path.dirname(compiled_model), exist_ok=True)
-
-    # compile if stan source has changed
+    # compile if compiled file does not exist or stan source has changed (with later datestamp than compiled)
     if not os.path.isfile(compiled_model) or os.path.getmtime(
         compiled_model
     ) < os.path.getmtime(source_model):
 
-        with open(source_model, encoding="utf-8") as f:
-            model_code = f.read()
-
-        try:
-            from pystan import StanModel
-        except ImportError:
-            print("Please install pystan==2.19.1.1 if users choose to sample with PyStan engine.")
-        else:
-            sm = StanModel(model_code=model_code)
-
+        sm = CmdStanModel(stan_file=source_model)
         with open(compiled_model, "wb") as f:
             pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     return compiled_model
 
-
 def get_compiled_stan_model(stan_model_name):
     """
     Load compiled Stan model
     """
-    try:
-        import pystan
-    except ImportError:
-        print("Please install pystan if users choose to sample with PyStan engine.")
-    else:
-        compiled_model = compile_stan_model(stan_model_name)
-        with open(compiled_model, "rb") as f:
-            return pickle.load(f)
+    compiled_model = compile_stan_model(stan_model_name)
+    with open(compiled_model, "rb") as f:
+        return pickle.load(f)
 
 
 def compile_stan_model_simplified(path):
@@ -89,15 +74,8 @@ def compile_stan_model_simplified(path):
     if not os.path.isfile(compiled_path) or os.path.getmtime(
         compiled_path
     ) < os.path.getmtime(source_path):
-        with open(source_path, encoding="utf-8") as f:
-            model_code = f.read()
 
-    try:
-        from pystan import StanModel
-    except ImportError:
-        print("Please install pystan==2.19.1.1 if users choose to sample with PyStan engine.")
-    else:
-        sm = StanModel(model_code=model_code)
+        sm = CmdStanModel(stan_file=source_path)
 
     with open(compiled_path, "wb") as f:
         pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -148,61 +126,3 @@ class suppress_stdout_stderr:
         # Close the null files
         for fd in self.null_fds + self.save_fds:
             os.close(fd)
-
-
-def compile_cmdstan_model(stan_model_name):
-    """
-    Compile stan model and save as pkl
-    """
-    source_model = pkg_resources.resource_filename(
-        "orbit", "stan/{}.stan".format(stan_model_name)
-    )
-    if CompiledStanModelPath.PARENT == "orbit":
-        compiled_model = pkg_resources.resource_filename(
-            "orbit", "{}/{}_cmdstan.pkl".format(CompiledStanModelPath.CHILD, stan_model_name)
-        )
-    else:
-        compiled_model = os.path.join(
-            CompiledStanModelPath.PARENT,
-            "{}/{}_cmdstan.pkl".format(CompiledStanModelPath.CHILD, stan_model_name),
-        )
-
-    # updated for py3
-    os.makedirs(os.path.dirname(compiled_model), exist_ok=True)
-    # compile if compiled file does not exist or stan source has changed (with later datestamp than compiled)
-    if not os.path.isfile(compiled_model) or os.path.getmtime(
-        compiled_model
-    ) < os.path.getmtime(source_model):
-
-        # with open(source_model, encoding="utf-8") as f:
-        #     model_code = f.read()
-
-        try:
-            from cmdstanpy import CmdStanModel
-        except ImportError:
-            print("Please install cmdstanpy if users choose to sample with CmdStan engine.")
-        else:
-            print(source_model)
-            sm = CmdStanModel(stan_file=source_model)
-
-        with open(compiled_model, "wb") as f:
-            pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
-
-    # TODO: what is the difference between compiled model vs. sm? 
-    # test later
-    return compiled_model
-
-
-def get_compiled_cmdstan_model(stan_model_name):
-    """
-    Load compiled Stan model
-    """
-
-    try:
-        import cmdstanpy
-    except ImportError:
-        print("Please install cmdstanpy if users choose to sample with CmdStan engine.")
-    else:
-        compiled_model = compile_cmdstan_model(stan_model_name)
-        with open(compiled_model, "rb") as f:
-            return pickle.load(f)

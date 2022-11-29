@@ -8,7 +8,6 @@ from ..exceptions import ForecasterException, AbstractMethodException, IllegalAr
 from ..utils.general import is_ordered_datetime, is_even_gap_datetime
 from ..template.model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMCMC
-from ..estimators.cmdstan_estimator import CmdStanEstimatorMCMC
 from ..constants.constants import TrainingMetaKeys, PredictionMetaKeys
 
 COMMON_MODEL_CALLABLES = [
@@ -419,7 +418,7 @@ class Forecaster(object):
                 del posterior_samples["beta"]
 
         if not permute:
-            if self.estimator_type in [StanEstimatorMCMC, CmdStanEstimatorMCMC]:
+            if self.estimator_type == StanEstimatorMCMC:
                 for key, val in posterior_samples.items():
                     posterior_samples[key] = val.reshape(
                         (

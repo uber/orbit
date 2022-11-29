@@ -8,3 +8,4 @@ seaborn>=0.10.0
 pyro-ppl>=1.4.0
 statsmodels>=0.11.1
 arviz
+cmdstanpy
