@@ -19,6 +19,7 @@ from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .ets import ETSModel
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
 
+
 class DataInputMapper(Enum):
     """
     mapping from object input to stan file

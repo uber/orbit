@@ -129,11 +129,13 @@ def DLT(
 
     if estimator == EstimatorsKeys.StanMAP.value:
         from ..estimators.stan_estimator import StanEstimatorMAP
+
         dlt_forecaster = MAPForecaster(
             model=dlt, estimator_type=StanEstimatorMAP, **kwargs
         )
     elif estimator == EstimatorsKeys.StanMCMC.value:
         from ..estimators.stan_estimator import StanEstimatorMCMC
+
         dlt_forecaster = FullBayesianForecaster(
             model=dlt, estimator_type=StanEstimatorMCMC, **kwargs
         )

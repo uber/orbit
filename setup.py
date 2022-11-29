@@ -4,6 +4,7 @@ from setuptools import setup, find_packages
 from setuptools.command.build_py import build_py
 from setuptools.command.develop import develop
 from setuptools.command.test import test as test_command
+
 # from setuptools.command.install import install as install_command
 
 # # force cython to use setuptools dist
@@ -44,8 +45,8 @@ class PyTest(test_command):
 # numpy>=1.18.2, <=1.22.2
 # pystan==2.19.1.1
 extras_require = dict()
-extras_require['pystan'] = ['numpy<=<=1.22.2', 'pystan==2.19.1.1']
-extras_require['cmdstanpy'] = ['cmdstanpy>=1.0.8']
+extras_require["pystan"] = ["numpy<=<=1.22.2", "pystan==2.19.1.1"]
+extras_require["cmdstanpy"] = ["cmdstanpy>=1.0.8"]
 
 setup(
     author="Edwin Ng, Zhishi Wang, Steve Yang, Yifeng Wu, Jing Pan",

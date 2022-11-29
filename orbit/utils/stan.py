@@ -47,6 +47,7 @@ def compile_stan_model(stan_model_name):
 
     return compiled_model
 
+
 def get_compiled_stan_model(stan_model_name):
     """
     Load compiled Stan model

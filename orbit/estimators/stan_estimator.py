@@ -159,7 +159,9 @@ class StanEstimatorMCMC(StanEstimator):
 
         # posteriors = stan_mcmc_fit.extract(pars=model_param_names, permuted=False)
         stan_extract = stan_mcmc_fit.stan_variables()
-        posteriors = {param: stan_extract[param] for param in model_param_names + ["loglk"]}
+        posteriors = {
+            param: stan_extract[param] for param in model_param_names + ["loglk"]
+        }
 
         # todo: move dimension cleaning function to the model directly
         # flatten the first two dims by preserving the chain order
@@ -173,7 +175,7 @@ class StanEstimatorMCMC(StanEstimator):
         # extract `log_prob` in addition to defined model params
         # to make naming consistent across api; we move lp along with warm up lp to `training_metrics`
         # model_param_names_with_lp = model_param_names[:] + ['lp__']
-        loglk = posteriors['loglk']
+        loglk = posteriors["loglk"]
         training_metrics = {"loglk": loglk}
         # training_metrics.update(
         #     {"log_posterior": stan_mcmc_fit.get_logposterior(inc_warmup=True)}
@@ -216,11 +218,11 @@ class StanEstimatorMAP(StanEstimator):
             logger.info(msg)
 
     def fit(
-        self, 
-        model_name, 
-        model_param_names, 
-        data_input, 
-        fitter=None, 
+        self,
+        model_name,
+        model_param_names,
+        data_input,
+        fitter=None,
         init_values=None,
     ):
         compiled_mod = get_compiled_stan_model(model_name)
