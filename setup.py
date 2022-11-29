@@ -39,6 +39,13 @@ class PyTest(test_command):
         sys.exit(errcode)
 
 
+# pystan is calling numpy.distutils which requires this
+# numpy>=1.18.2, <=1.22.2
+# pystan==2.19.1.1
+extras_require = dict()
+extras_require['pystan'] = ['numpy<=<=1.22.2', 'pystan==2.19.1.1']
+extras_require['cmdstanpy'] = ['cmdstanpy>=1.0.8']
+
 setup(
     author="Edwin Ng, Zhishi Wang, Steve Yang, Yifeng Wu, Jing Pan",
     author_email="zhishiw@uber.com",
@@ -46,6 +53,7 @@ setup(
     include_package_data=True,
     install_requires=requirements("requirements.txt"),
     tests_require=requirements("requirements-test.txt"),
+    extras_require=extras_require,
     cmdclass={
         "build_py": build_py,
         "develop": develop,

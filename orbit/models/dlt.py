@@ -104,6 +104,8 @@ def DLT(
     _supported_estimators = [
         EstimatorsKeys.StanMAP.value,
         EstimatorsKeys.StanMCMC.value,
+        EstimatorsKeys.CmdStanMAP.value,
+        EstimatorsKeys.CmdStanMCMC.value,
     ]
 
     dlt = DLTModel(
@@ -136,6 +138,16 @@ def DLT(
         from ..estimators.stan_estimator import StanEstimatorMCMC
         dlt_forecaster = FullBayesianForecaster(
             model=dlt, estimator_type=StanEstimatorMCMC, **kwargs
+        )
+    elif estimator == EstimatorsKeys.CmdStanMAP.value:
+        from ..estimators.cmdstan_estimator import CmdStanEstimatorMAP
+        dlt_forecaster = MAPForecaster(
+            model=dlt, estimator_type=CmdStanEstimatorMAP, **kwargs
+        )
+    elif estimator == EstimatorsKeys.CmdStanMCMC.value:
+        from ..estimators.cmdstan_estimator import CmdStanEstimatorMCMC
+        dlt_forecaster = FullBayesianForecaster(
+            model=dlt, estimator_type=CmdStanEstimatorMCMC, **kwargs
         )
     else:
         raise IllegalArgument(
