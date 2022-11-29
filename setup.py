@@ -1,4 +1,6 @@
 import sys
+import os
+from pathlib import Path
 
 from setuptools import setup, find_packages
 from setuptools.command.build_py import build_py
@@ -15,6 +17,7 @@ from setuptools.command.test import test as test_command
 # dist.Distribution().fetch_build_eggs(['cython'])
 
 DESCRIPTION = "Orbit is a package for Bayesian time series modeling and inference."
+CMDSTAN_VERSION = "2.31.0"
 
 
 def read_long_description(filename="README.md"):
@@ -28,7 +31,7 @@ def requirements(filename="requirements.txt"):
         return f.readlines()
 
 
-class PyTest(test_command):
+class PyTestCommand(test_command):
     def finalize_options(self):
         test_command.finalize_options(self)
         self.test_args = ["-v"]  # test args
@@ -41,12 +44,49 @@ class PyTest(test_command):
         sys.exit(errcode)
 
 
-# pystan is calling numpy.distutils which requires this
-# numpy>=1.18.2, <=1.22.2
-# pystan==2.19.1.1
-extras_require = dict()
-extras_require["pystan"] = ["numpy<=<=1.22.2", "pystan==2.19.1.1"]
-extras_require["cmdstanpy"] = ["cmdstanpy>=1.0.8"]
+class BuildPyCommand(build_py):
+    """Custom build command to make sure install cmdstanpy properly."""
+
+    def run(self):
+        if not self.dry_run:
+            import cmdstanpy
+            from multiprocessing import cpu_count
+
+            target_dir = os.path.join(self.build_lib, "stan_compiled")
+            self.mkpath(target_dir)
+
+            if not cmdstanpy.install_cmdstan(
+                version=CMDSTAN_VERSION,
+                dir=target_dir,
+                overwrite=True,
+                verbose=True,
+                cores=cpu_count(),
+                progress=True,
+            ):
+                raise RuntimeError("CmdStan failed to install in repackaged directory")
+
+
+class DevelopCommand(develop):
+    """Custom build command to make sure install cmdstanpy properly."""
+
+    def run(self):
+        if not self.dry_run:
+            import cmdstanpy
+            from multiprocessing import cpu_count
+
+            target_dir = os.path.join(self.setup_path, "stan_compiled")
+            self.mkpath(target_dir)
+
+            if not cmdstanpy.install_cmdstan(
+                version=CMDSTAN_VERSION,
+                dir=target_dir,
+                overwrite=True,
+                verbose=True,
+                cores=cpu_count(),
+                progress=True,
+            ):
+                raise RuntimeError("CmdStan failed to install in repackaged directory")
+
 
 setup(
     author="Edwin Ng, Zhishi Wang, Steve Yang, Yifeng Wu, Jing Pan",
@@ -55,11 +95,11 @@ setup(
     include_package_data=True,
     install_requires=requirements("requirements.txt"),
     tests_require=requirements("requirements-test.txt"),
-    extras_require=extras_require,
+    # extras_require=extras_require,
     cmdclass={
-        "build_py": build_py,
-        "develop": develop,
-        "test": PyTest,
+        "build_py": BuildPyCommand,
+        "develop": DevelopCommand,
+        "test": PyTestCommand,
     },
     test_suite="orbit.tests",
     license="Apache License 2.0",

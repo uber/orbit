@@ -3,9 +3,10 @@ pandas>=1.0.3
 matplotlib>=3.3.2
 scipy>=1.4.1
 torch>=1.11.0
-tqdm
+tqdm>=4.36.1
 seaborn>=0.10.0
 pyro-ppl>=1.4.0
 statsmodels>=0.11.1
 arviz
-cmdstanpy
+cmdstanpy>=1.0.4
+setuptools>=42
