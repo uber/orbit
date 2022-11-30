@@ -9,7 +9,7 @@ from ..exceptions import EstimatorException
 from ..utils.stan import get_compiled_stan_model, suppress_stdout_stderr
 from ..utils.general import update_dict
 
-if platform == "darwin" and version_info[0] == 3 and version_info[1] == 9:
+if platform == "darwin" and version_info[0] == 3 and version_info[1] >= 8:
     # fix issue in Python 3.9
     multiprocessing.set_start_method("fork", force=True)
 logger = logging.getLogger("orbit")
