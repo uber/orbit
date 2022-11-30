@@ -52,6 +52,7 @@ class BuildPyCommand(build_py):
             import cmdstanpy
             from multiprocessing import cpu_count
 
+            print("Installing cmdstanpy package...")
             target_dir = os.path.join(self.build_lib, "stan_compiled")
             self.mkpath(target_dir)
 
@@ -64,7 +65,8 @@ class BuildPyCommand(build_py):
                 progress=True,
             ):
                 raise RuntimeError("CmdStan failed to install in repackaged directory")
-
+            else:
+                print("Installed cmdstanpy package.")
 
 class DevelopCommand(develop):
     """Custom build command to make sure install cmdstanpy properly."""
@@ -74,6 +76,7 @@ class DevelopCommand(develop):
             import cmdstanpy
             from multiprocessing import cpu_count
 
+            print("Installing cmdstanpy package...")
             target_dir = os.path.join(self.setup_path, "stan_compiled")
             self.mkpath(target_dir)
 
@@ -86,6 +89,8 @@ class DevelopCommand(develop):
                 progress=True,
             ):
                 raise RuntimeError("CmdStan failed to install in repackaged directory")
+            else:
+                print("Installed cmdstanpy package.")
 
 
 setup(
