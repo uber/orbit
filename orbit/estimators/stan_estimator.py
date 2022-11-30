@@ -180,7 +180,7 @@ class StanEstimatorMCMC(StanEstimator):
         # training_metrics.update(
         #     {"log_posterior": stan_mcmc_fit.get_logposterior(inc_warmup=True)}
         # )
-        # training_metrics.update({"sampling_temperature": sampling_temperature})
+        training_metrics.update({"sampling_temperature": sampling_temperature})
         return posteriors, training_metrics
 
 
