@@ -53,12 +53,12 @@ class BuildPyCommand(build_py):
             from multiprocessing import cpu_count
 
             print("Installing cmdstanpy package...")
-            target_dir = os.path.join(self.build_lib, "stan_compiled")
-            self.mkpath(target_dir)
+            # target_dir = os.path.join(self.build_lib, "stan_compiled")
+            # self.mkpath(target_dir)
 
             if not cmdstanpy.install_cmdstan(
                 version=CMDSTAN_VERSION,
-                dir=target_dir,
+                # dir=target_dir,
                 overwrite=True,
                 verbose=True,
                 cores=cpu_count(),
@@ -77,12 +77,12 @@ class DevelopCommand(develop):
             from multiprocessing import cpu_count
 
             print("Installing cmdstanpy package...")
-            target_dir = os.path.join(self.setup_path, "stan_compiled")
-            self.mkpath(target_dir)
+            # target_dir = os.path.join(self.setup_path, "stan_compiled")
+            # self.mkpath(target_dir)
 
             if not cmdstanpy.install_cmdstan(
                 version=CMDSTAN_VERSION,
-                dir=target_dir,
+                # dir=target_dir,
                 overwrite=True,
                 verbose=True,
                 cores=cpu_count(),
