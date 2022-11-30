@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import nct
-from statsmodels.api import OLS
 from copy import deepcopy
 import torch
 from enum import Enum
@@ -19,7 +18,6 @@ from ..constants.constants import (
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .ets import ETSModel
 from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
-from ..estimators.pyro_estimator import PyroEstimatorSVI
 
 
 class DataInputMapper(Enum):
@@ -36,6 +34,7 @@ class DataInputMapper(Enum):
     _SLOPE_SM_INPUT = "SLP_SM_INPUT"
     # ---------- Global Trend ---------- #
     _GLOBAL_TREND_OPTION = "GLOBAL_TREND_OPTION"
+    GLOBAL_TREND_SIGMA_PRIOR = "GB_SIGMA_PRIOR"
     GLOBAL_CAP = "G_CAP"
     GLOBAL_FLOOR = "G_FLOOR"
     # GLOBAL_LEVEL_PRIOR = 'GL_PRIOR'
@@ -202,7 +201,7 @@ class DLTModel(ETSModel):
         global trend value. Default, 0.8
     global_trend_option : { 'flat', 'linear', 'loglinear', 'logistic' }
         Transformation function for the shape of the forecasted global trend.
-
+    global_trend_sigma_prior : sigma prior of the global trend; default uses 1 standard deviation of response
     """
 
     # data labels for sampler
@@ -226,6 +225,7 @@ class DLTModel(ETSModel):
         global_trend_option="linear",
         global_cap=1.0,
         global_floor=0.0,
+        global_trend_sigma_prior=None,
         forecast_horizon=1,
         **kwargs,
     ):
@@ -256,6 +256,8 @@ class DLTModel(ETSModel):
         self._time_delta = 1
         self.global_cap = global_cap
         self.global_floor = global_floor
+
+        self.global_trend_sigma_prior = global_trend_sigma_prior
         self.forecast_horizon = forecast_horizon
 
         # _regressor_sign stores final values after internal process of regressor_sign
@@ -579,6 +581,11 @@ class DLTModel(ETSModel):
         self._validate_training_df_with_regression(df)
         # depends on num_of_observations
         self._set_regressor_matrix(df, training_meta[TrainingMetaKeys.NUM_OF_OBS.value])
+
+        if self.global_trend_sigma_prior is None:
+            self.global_trend_sigma_prior = training_meta[
+                TrainingMetaKeys.RESPONSE_SD.value
+            ]
 
     def predict(
         self,

@@ -1,8 +1,6 @@
-from __future__ import print_function
-
 import sys
 
-from setuptools import dist, setup, find_packages
+from setuptools import setup, find_packages
 from setuptools.command.build_py import build_py
 from setuptools.command.develop import develop
 from setuptools.command.test import test as test_command
@@ -11,14 +9,10 @@ from setuptools.command.test import test as test_command
 # # see also:
 # #   https://bugs.python.org/issue23114
 # #   https://bugs.python.org/issue23102
+# from setuptools import dist
 # dist.Distribution().fetch_build_eggs(['cython'])
 
-DESCRIPTION = "Orbit is a package for bayesian time series modeling and inference."
-AUTHOR = """
-    Edwin Ng <edwinng@uber.com>, Steve Yang <steve.yang@uber.com>,
-    Zhishi Wang <zhishiw@uber.com>, Yifeng Wu <yifeng.wu@uber.com>,  
-    Jing Pan <jing.pan@uber.com>
-    """
+DESCRIPTION = "Orbit is a package for Bayesian time series modeling and inference."
 
 
 def read_long_description(filename="README.md"):
@@ -46,8 +40,8 @@ class PyTest(test_command):
 
 
 setup(
-    author=AUTHOR,
-    author_email="edwinng@uber.com",
+    author="Edwin Ng, Zhishi Wang, Steve Yang, Yifeng Wu, Jing Pan",
+    author_email="zhishiw@uber.com",
     description=DESCRIPTION,
     include_package_data=True,
     install_requires=requirements("requirements.txt"),
@@ -68,7 +62,8 @@ setup(
     zip_safe=False,
     classifiers=[
         "Development Status :: 3 - Alpha",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
     ],
 )

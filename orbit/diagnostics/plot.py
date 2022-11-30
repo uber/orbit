@@ -8,15 +8,19 @@ import numpy as np
 import math
 import os
 import pkg_resources
+import statsmodels.api as sm
+from scipy import stats
 
 from ..constants.constants import PredictionKeys
 from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
 from ..constants.constants import BacktestFitKeys
 from ..constants.palette import PredictionPaletteClassic as PredPal
+from orbit.constants import palette
 from orbit.diagnostics.metrics import smape
 from orbit.utils.plot import orbit_style_decorator
-
 from ..exceptions import PlotException
+
+
 import logging
 
 logger = logging.getLogger("orbit")
@@ -642,9 +646,9 @@ def metric_horizon_barplot(
 
 @orbit_style_decorator
 def params_comparison_boxplot(
-    model_name_list,
-    data_list,
-    label_list,
+    data,
+    var_names,
+    model_names,
     color_list=sns.color_palette(),
     title="Params Comparison",
     fig_size=(10, 6),
@@ -654,10 +658,9 @@ def params_comparison_boxplot(
 ):
     """compare the distribution of parameters from different models uisng a boxplot.
     Parameters:
-        model_name_list : a list of strings, the names of models
-        data_list : a list of np.arrays, the distributions of parameters to compare
-        label_list : a list of strings, the labels of the parameters to compare
-                    (the order of labels must match the order of the data in the data_list)
+        data : a list of dict with keys as the parameters of interest
+        var_names : a list of strings, the labels of the parameters to compare
+        model_names : a list of strings, the names of models to compare
         color_list : a list of strings, the color to use for differentiating models
         title : string
             the title of the chart
@@ -676,7 +679,7 @@ def params_comparison_boxplot(
 
     fig, ax = plt.subplots(1, 1, figsize=fig_size)
     handles = []
-    n_models = len(model_name_list)
+    n_models = len(model_names)
     pos = []
 
     if n_models % 2 == 0:
@@ -692,10 +695,14 @@ def params_comparison_boxplot(
 
     pos = sorted(pos)
 
-    for i in range(len(data_list)):
+    for i in range(len(model_names)):
+        plt_arr = []
+        for var in var_names:
+            plt_arr.append(data[i][var].flatten())
+        plt_arr = np.vstack(plt_arr).T
         globals()[f"bp{i}"] = ax.boxplot(
-            data_list[i],
-            positions=np.arange(data_list[i].shape[1]) + pos[i],
+            plt_arr,
+            positions=np.arange(plt_arr.shape[1]) + pos[i],
             widths=box_width,
             patch_artist=True,
             manage_ticks=False,
@@ -705,10 +712,135 @@ def params_comparison_boxplot(
         )
         handles.append(globals()[f"bp{i}"]["boxes"][0])
 
-    plt.xticks(np.arange(len(label_list)), label_list)
-    ax.legend(handles, model_name_list)
+    plt.xticks(np.arange(len(var_names)), var_names)
+    ax.legend(handles, model_names)
     plt.xlabel("params")
     plt.ylabel("value")
     plt.title(title)
 
     return ax
+
+
+@orbit_style_decorator
+def residual_diagnostic_plot(
+    df,
+    dist="norm",
+    date_col="week",
+    residual_col="residual",
+    fitted_col="prediction",
+    sparams=None,
+):
+    """
+    Parameters
+    ----------
+
+    df : pd.DataFrame
+    dist : str
+    date_col : str
+        column name of date
+    residual_col : str
+        column name of residual
+    fitted_col: str
+        column name of fitted value from model
+    sparams : float or list
+        extra parameters used in distribution such as t-dist
+
+    Notes
+    -----
+    1. residual by time
+    2. residual vs fitted
+    3. residual histogram with vertical line as mean
+    4. residuals qq plot
+    5. residual ACF
+    6. residual PACF
+    """
+    fig, ax = plt.subplots(3, 2, figsize=(15, 12))
+
+    # plot 1 residual by time
+    sns.lineplot(
+        x=date_col,
+        y=residual_col,
+        data=df,
+        ax=ax[0, 0],
+        color=palette.OrbitPalette.BLUE.value,
+        alpha=0.8,
+        label="residual",
+    )
+    ax[0, 0].set_title("Residual by Time")
+    ax[0, 0].legend()
+
+    # plot 2 residual vs fitted
+    sns.scatterplot(
+        x=fitted_col,
+        y=residual_col,
+        data=df,
+        ax=ax[0, 1],
+        color=palette.OrbitPalette.BLUE.value,
+        alpha=0.8,
+        label="residual",
+    )
+    ax[0, 1].axhline(
+        y=0,
+        linestyle="--",
+        color=palette.OrbitPalette.BLACK.value,
+        alpha=0.5,
+        label="0",
+    )
+    ax[0, 1].set_title("Residual vs Fitted")
+    ax[0, 1].set_xlabel("fitted")
+    ax[0, 1].legend()
+
+    # plot 3 residual histogram with vertical line as mean
+    sns.distplot(
+        df[residual_col].values,
+        hist=True,
+        kde=True,
+        ax=ax[1, 0],
+        color=palette.OrbitPalette.BLUE.value,
+        label="residual",
+        hist_kws={
+            "edgecolor": "white",
+            "alpha": 0.5,
+            "facecolor": palette.OrbitPalette.BLUE.value,
+        },
+    )
+    ax[1, 0].set_title("Residual Distribution")
+    ax[1, 0].axvline(
+        df[residual_col].mean(),
+        color=palette.OrbitPalette.ORANGE.value,
+        linestyle="--",
+        alpha=0.9,
+        label="residual mean",
+    )
+    ax[1, 0].set_ylabel("density")
+    ax[1, 0].legend()
+
+    # plot 4 residual qq plot
+    if dist == "norm":
+        _ = stats.probplot(df[residual_col].values, dist="norm", plot=ax[1, 1])
+    elif dist == "t-dist":
+        # t-dist qq-plot
+        _ = stats.probplot(
+            df[residual_col].values, dist=stats.t, sparams=sparams, plot=ax[1, 1]
+        )
+
+    # plot 5 residual ACF
+    sm.graphics.tsa.plot_acf(
+        df[residual_col].values,
+        ax=ax[2, 0],
+        title="Residual ACF",
+        color=palette.OrbitPalette.BLUE.value,
+    )
+    ax[2, 0].set_xlabel("lag")
+    ax[2, 0].set_ylabel("acf")
+
+    # plot 6 residual PACF
+    sm.graphics.tsa.plot_pacf(
+        df[residual_col].values,
+        ax=ax[2, 1],
+        title="Residual PACF",
+        color=palette.OrbitPalette.BLUE.value,
+    )
+    ax[2, 1].set_xlabel("lag")
+    ax[2, 1].set_ylabel("pacf")
+    fig.tight_layout()

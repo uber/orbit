@@ -25,8 +25,15 @@ class FullBayesianForecaster(Forecaster):
         data_input.update({"WITH_MCMC": 1})
         return data_input
 
-    def fit(self, df, point_method=None, keep_samples=True, sampling_temperature=1.0):
-        super().fit(df, sampling_temperature=sampling_temperature)
+    def fit(
+        self,
+        df,
+        point_method=None,
+        keep_samples=True,
+        sampling_temperature=1.0,
+        **kwargs,
+    ):
+        super().fit(df, sampling_temperature=sampling_temperature, **kwargs)
         self._point_method = point_method
 
         if point_method is not None:

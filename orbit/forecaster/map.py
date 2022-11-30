@@ -19,8 +19,8 @@ class MAPForecaster(Forecaster):
         data_input.update({"WITH_MCMC": 0})
         return data_input
 
-    def fit(self, df):
-        super().fit(df)
+    def fit(self, df, **kwargs):
+        super().fit(df, **kwargs)
         posterior_samples = self._posterior_samples
         map_posterior = {}
         for param_name in self._model.get_model_param_names():

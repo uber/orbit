@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division, print_function
 from pystan import StanModel
 import pickle
 import pkg_resources
@@ -65,7 +64,49 @@ def get_compiled_stan_model(stan_model_name):
         return pickle.load(f)
 
 
-class suppress_stdout_stderr(object):
+def compile_stan_model_simplified(path):
+    """A more flexible way to load compile stan model with a path provided
+    Parameters
+    ----------
+    path
+
+    Returns
+    -------
+
+    """
+    source_path = os.path.abspath(path)
+    source_filename, source_file_ext = os.path.splitext(source_path)
+    compiled_path = "{}.pkl".format(source_filename)
+
+    # compile if stan source has changed
+    if not os.path.isfile(compiled_path) or os.path.getmtime(
+        compiled_path
+    ) < os.path.getmtime(source_path):
+        with open(source_path, encoding="utf-8") as f:
+            model_code = f.read()
+        sm = StanModel(model_code=model_code)
+
+        with open(compiled_path, "wb") as f:
+            pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    return compiled_path
+
+
+def get_compiled_stan_model_simplified(path):
+    """A more flexible way to load pre-compiled model
+    Parameters
+    ----------
+    path
+
+    Returns
+    -------
+
+    """
+    with open(path, "rb") as f:
+        return pickle.load(f)
+
+
+class suppress_stdout_stderr:
     """
     A context manager for doing a "deep suppression" of stdout and stderr in
     Python, i.e. will suppress all print, even if the print originates in a
