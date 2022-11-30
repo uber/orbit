@@ -44,54 +44,39 @@ class PyTestCommand(test_command):
         sys.exit(errcode)
 
 
+def install_cmdstanpy():
+        import cmdstanpy
+        from multiprocessing import cpu_count
+
+        print("Installing cmdstanpy package...")
+        # target_dir = os.path.join(self.setup_path, "stan_compiled")
+        # self.mkpath(target_dir)
+
+        if not cmdstanpy.install_cmdstan(
+            version=CMDSTAN_VERSION,
+            # if we want to do it inside the repo dir, we need to include the folder in
+            # MANIFEST.in
+            # dir=target_dir,
+            overwrite=True,
+            verbose=True,
+            cores=cpu_count(),
+            progress=True,
+        ):
+            raise RuntimeError("CmdStan failed to install in repackaged directory")
+        else:
+            print("Installed cmdstanpy package.")
 class BuildPyCommand(build_py):
     """Custom build command to make sure install cmdstanpy properly."""
 
     def run(self):
         if not self.dry_run:
-            import cmdstanpy
-            from multiprocessing import cpu_count
-
-            print("Installing cmdstanpy package...")
-            # target_dir = os.path.join(self.build_lib, "stan_compiled")
-            # self.mkpath(target_dir)
-
-            if not cmdstanpy.install_cmdstan(
-                version=CMDSTAN_VERSION,
-                # dir=target_dir,
-                overwrite=True,
-                verbose=True,
-                cores=cpu_count(),
-                progress=True,
-            ):
-                raise RuntimeError("CmdStan failed to install in repackaged directory")
-            else:
-                print("Installed cmdstanpy package.")
-
+            install_cmdstanpy()
 class DevelopCommand(develop):
     """Custom build command to make sure install cmdstanpy properly."""
 
     def run(self):
         if not self.dry_run:
-            import cmdstanpy
-            from multiprocessing import cpu_count
-
-            print("Installing cmdstanpy package...")
-            # target_dir = os.path.join(self.setup_path, "stan_compiled")
-            # self.mkpath(target_dir)
-
-            if not cmdstanpy.install_cmdstan(
-                version=CMDSTAN_VERSION,
-                # dir=target_dir,
-                overwrite=True,
-                verbose=True,
-                cores=cpu_count(),
-                progress=True,
-            ):
-                raise RuntimeError("CmdStan failed to install in repackaged directory")
-            else:
-                print("Installed cmdstanpy package.")
-
+            install_cmdstanpy()
 
 setup(
     author="Edwin Ng, Zhishi Wang, Steve Yang, Yifeng Wu, Jing Pan",
