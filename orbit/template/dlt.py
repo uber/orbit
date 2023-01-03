@@ -131,40 +131,6 @@ class RegressionPenalty(Enum):
     auto_ridge = 2
 
 
-# # a callable object for generating initial values in sampling/optimization
-# class DLTInitializer(object):
-#     def __init__(self, s, n_pr, n_nr, n_rr):
-#         self.s = s
-#         self.n_pr = n_pr
-#         self.n_nr = n_nr
-#         self.n_rr = n_rr
-
-#     def __call__(self):
-#         init_values = dict()
-#         if self.s > 1:
-#             init_sea = np.clip(
-#                 np.random.normal(loc=0, scale=0.05, size=self.s - 1), -1.0, 1.0
-#             )
-#             init_values[LatentSamplingParameters.INITIAL_SEASONALITY.value] = init_sea
-#         if self.n_pr > 0:
-#             x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.n_pr), 1e-5, 2.0)
-#             init_values[
-#                 LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS.value
-#             ] = x
-#         if self.n_nr > 0:
-#             x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.n_nr), -2.0, -1e-5)
-#             init_values[
-#                 LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS.value
-#             ] = x
-#         if self.n_rr > 0:
-#             x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.n_rr), -2.0, 2.0)
-#             init_values[
-#                 LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS.value
-#             ] = x
-
-#         return init_values
-
-
 class DLTModel(ETSModel):
     """
     Parameters
@@ -302,26 +268,43 @@ class DLTModel(ETSModel):
         super().__init__(**kwargs)
 
     def set_init_values(self):
-        """Override from base class
-        """
+        """Override from base class"""
         init_values = dict()
         if self._seasonality > 1:
             init_sea = np.clip(
-                np.random.normal(loc=0, scale=0.05, size=self._seasonality - 1), -1.0, 1.0
+                np.random.normal(loc=0, scale=0.05, size=self._seasonality - 1),
+                -1.0,
+                1.0,
             )
             init_values[LatentSamplingParameters.INITIAL_SEASONALITY.value] = init_sea
         if self.num_of_positive_regressors > 0:
-            x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.num_of_positive_regressors), 1e-5, 2.0)
+            x = np.clip(
+                np.random.normal(
+                    loc=0, scale=0.1, size=self.num_of_positive_regressors
+                ),
+                1e-5,
+                2.0,
+            )
             init_values[
                 LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS.value
             ] = x
         if self.num_of_negative_regressors > 0:
-            x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.num_of_negative_regressors), -2.0, -1e-5)
+            x = np.clip(
+                np.random.normal(
+                    loc=0, scale=0.1, size=self.num_of_negative_regressors
+                ),
+                -2.0,
+                -1e-5,
+            )
             init_values[
                 LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS.value
             ] = x
         if self.num_of_regular_regressors > 0:
-            x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.num_of_regular_regressors), -2.0, 2.0)
+            x = np.clip(
+                np.random.normal(loc=0, scale=0.1, size=self.num_of_regular_regressors),
+                -2.0,
+                2.0,
+            )
             init_values[
                 LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS.value
             ] = x

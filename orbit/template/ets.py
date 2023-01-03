@@ -55,20 +55,6 @@ class LatentSamplingParameters(Enum):
     INITIAL_SEASONALITY = "init_sea"
 
 
-# a callable object for generating initial values in sampling/optimization
-# class ETSInitializer(object):
-#     def __init__(self, s):
-#         self.s = s
-
-#     def __call__(self):
-#         init_values = dict()
-#         init_sea = np.clip(
-#             np.random.normal(loc=0, scale=0.05, size=self.s - 1), -1.0, 1.0
-#         )
-#         init_values[LatentSamplingParameters.INITIAL_SEASONALITY.value] = init_sea
-#         return init_values
-
-
 class ETSModel(ModelTemplate):
     """
     Parameters
@@ -164,7 +150,9 @@ class ETSModel(ModelTemplate):
         init_values = dict()
         if self._seasonality > 1:
             init_sea = np.clip(
-                np.random.normal(loc=0, scale=0.05, size=self._seasonality - 1), -1.0, 1.0
+                np.random.normal(loc=0, scale=0.05, size=self._seasonality - 1),
+                -1.0,
+                1.0,
             )
             init_values[LatentSamplingParameters.INITIAL_SEASONALITY.value] = init_sea
             self._init_values = init_values

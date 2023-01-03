@@ -3,7 +3,6 @@ import pytest
 import numpy as np
 
 from orbit.models import DLT
-from orbit.template.dlt import DLTInitializer
 from orbit.constants.constants import PredictionKeys
 from orbit.exceptions import ModelException, PredictionException
 
@@ -44,10 +43,7 @@ def test_dlt_full_univariate(make_weekly_data, estimator):
 
     dlt.fit(train_df)
 
-    init_call = dlt._model.get_init_values()
-    assert isinstance(init_call, DLTInitializer)
-    assert init_call.s == 52
-    init_values = init_call()
+    init_values = dlt._model.get_init_values()
     assert init_values["init_sea"].shape == (51,)
 
     predict_df = dlt.predict(test_df)
@@ -77,10 +73,7 @@ def test_dlt_aggregated_univariate(make_weekly_data, estimator, point_method):
 
     dlt.fit(train_df, point_method=point_method)
 
-    init_call = dlt._model.get_init_values()
-    assert isinstance(init_call, DLTInitializer)
-    assert init_call.s == 52
-    init_values = init_call()
+    init_values = dlt._model.get_init_values()
     assert init_values["init_sea"].shape == (51,)
 
     predict_df = dlt.predict(test_df)
@@ -108,10 +101,7 @@ def test_dlt_map_univariate(make_weekly_data):
 
     dlt.fit(train_df)
 
-    init_call = dlt._model.get_init_values()
-    assert isinstance(init_call, DLTInitializer)
-    assert init_call.s == 52
-    init_values = init_call()
+    init_values = dlt._model.get_init_values()
     assert init_values["init_sea"].shape == (51,)
 
     predict_df = dlt.predict(test_df)
@@ -243,9 +233,7 @@ def test_dlt_full_with_regression(make_weekly_data, regressor_signs):
     )
 
     dlt.fit(train_df)
-    init_call = dlt._model.get_init_values()
-    assert isinstance(init_call, DLTInitializer)
-    init_values = init_call()
+    init_values = dlt._model.get_init_values()
     assert init_values["init_sea"].shape == (51,)
 
     if regressor_signs.count("+") > 0:

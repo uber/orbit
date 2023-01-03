@@ -3,7 +3,6 @@ import numpy as np
 from copy import copy
 
 from orbit.models import ETS
-from orbit.template.ets import ETSInitializer
 from orbit.constants.constants import PredictionKeys
 
 
@@ -76,7 +75,6 @@ def test_ets_aggregated_seasonal_fit(make_weekly_data, point_method):
     ets.fit(train_df, point_method=point_method)
 
     init_call = ets._model.get_init_values()
-    assert isinstance(init_call, ETSInitializer)
     assert init_call.s == 52
     init_values = init_call()
     assert init_values["init_sea"].shape == (51,)
@@ -106,10 +104,7 @@ def test_ets_map_seasonal_fit(make_weekly_data, n_bootstrap_draws):
     )
 
     ets.fit(train_df)
-    init_call = ets._model.get_init_values()
-    assert isinstance(init_call, ETSInitializer)
-    assert init_call.s == 52
-    init_values = init_call()
+    init_values = ets._model.get_init_values()
     assert init_values["init_sea"].shape == (51,)
 
     predict_df = ets.predict(test_df)

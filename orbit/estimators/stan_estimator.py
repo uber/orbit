@@ -178,7 +178,7 @@ class StanEstimatorMCMC(StanEstimator):
         # model_param_names_with_lp = model_param_names[:] + ['lp__']
         loglk = posteriors["loglk"]
         training_metrics = {"loglk": loglk}
-        # log_posterior is not supported in cmdstanpy 
+        # log_posterior is not supported in cmdstanpy
         # training_metrics.update(
         #     {"log_posterior": stan_mcmc_fit.get_logposterior(inc_warmup=True)}
         # )
