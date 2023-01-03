@@ -1,7 +1,7 @@
-from pystan import StanModel
 import pickle
 import pkg_resources
 import os
+from cmdstanpy import CmdStanModel
 
 from orbit.constants.constants import CompiledStanModelPath
 
@@ -36,17 +36,12 @@ def compile_stan_model(stan_model_name):
 
     # updated for py3
     os.makedirs(os.path.dirname(compiled_model), exist_ok=True)
-
-    # compile if stan source has changed
+    # compile if compiled file does not exist or stan source has changed (with later datestamp than compiled)
     if not os.path.isfile(compiled_model) or os.path.getmtime(
         compiled_model
     ) < os.path.getmtime(source_model):
 
-        with open(source_model, encoding="utf-8") as f:
-            model_code = f.read()
-
-        sm = StanModel(model_code=model_code)
-
+        sm = CmdStanModel(stan_file=source_model)
         with open(compiled_model, "wb") as f:
             pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -57,9 +52,7 @@ def get_compiled_stan_model(stan_model_name):
     """
     Load compiled Stan model
     """
-
     compiled_model = compile_stan_model(stan_model_name)
-
     with open(compiled_model, "rb") as f:
         return pickle.load(f)
 
@@ -82,12 +75,11 @@ def compile_stan_model_simplified(path):
     if not os.path.isfile(compiled_path) or os.path.getmtime(
         compiled_path
     ) < os.path.getmtime(source_path):
-        with open(source_path, encoding="utf-8") as f:
-            model_code = f.read()
-        sm = StanModel(model_code=model_code)
 
-        with open(compiled_path, "wb") as f:
-            pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
+        sm = CmdStanModel(stan_file=source_path)
+
+    with open(compiled_path, "wb") as f:
+        pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     return compiled_path
 

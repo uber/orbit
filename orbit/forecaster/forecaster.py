@@ -159,7 +159,6 @@ class Forecaster(object):
 
         # note that estimator will search for the .stan, .pyro model file based on the
         # estimator type and model_name provided
-
         _posterior_samples, training_metrics = estimator.fit(
             model_name=model_name,
             model_param_names=model_param_names,
@@ -168,11 +167,8 @@ class Forecaster(object):
             init_values=init_values,
             **kwargs,
         )
-
         self._posterior_samples = _posterior_samples
         self._training_metrics = training_metrics
-        # load extra methods implemented in model layer after fitting
-        # self.load_extra_methods()
 
     def _set_training_meta(self, df):
         """A default pre-processing and information gathering from training input dataframe"""
@@ -195,7 +191,7 @@ class Forecaster(object):
         return deepcopy(self._training_meta)
 
     def set_forecaster_training_meta(self, data_input):
-        """A empty function to be derived from child to set forecaster specfic meta in training
+        """A empty function to be derived from child to set forecaster specific meta in training
 
         Parameters
         ----------
