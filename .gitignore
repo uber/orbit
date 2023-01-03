@@ -131,8 +131,9 @@ examples/debug_stan_data.txt
 examples/debug_stan_data.json
 examples/internal_data_test.ipynb
 examples/temp/
-*.hpp
 *.bin
 
-# ignore stan compiled files
+# ignore stan compiled files due to cmdstanpy
 stan_compiled/
+*.hpp
+orbit/stan/ets

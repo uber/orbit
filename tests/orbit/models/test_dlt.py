@@ -50,7 +50,7 @@ def test_dlt_full_univariate(make_weekly_data, estimator):
 
     expected_columns = ["week", "prediction_5", "prediction", "prediction_95"]
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 13
+    expected_num_parameters = len(dlt._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -80,7 +80,7 @@ def test_dlt_aggregated_univariate(make_weekly_data, estimator, point_method):
 
     expected_columns = ["week", "prediction"]
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 13
+    expected_num_parameters = len(dlt._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -108,7 +108,7 @@ def test_dlt_map_univariate(make_weekly_data):
 
     expected_columns = ["week", "prediction"]
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 12
+    expected_num_parameters = len(dlt._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -131,7 +131,7 @@ def test_dlt_non_seasonal_fit(make_weekly_data, estimator):
 
     expected_columns = ["week", "prediction_5", "prediction", "prediction_95"]
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 11
+    expected_num_parameters = len(dlt._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -688,7 +688,7 @@ def test_dlt_map_single_regressor(iclaims_training_data):
     dlt.fit(df)
     predicted_df = dlt.predict(df)
 
-    expected_num_parameters = 13
+    expected_num_parameters = len(dlt._model.get_model_param_names()) + 1
     expected_columns = ["week", "prediction"]
 
     assert predicted_df.shape[0] == df.shape[0]
