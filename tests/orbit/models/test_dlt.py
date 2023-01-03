@@ -50,7 +50,7 @@ def test_dlt_full_univariate(make_weekly_data, estimator):
 
     expected_columns = ["week", "prediction_5", "prediction", "prediction_95"]
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 12
+    expected_num_parameters = 13
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -80,7 +80,7 @@ def test_dlt_aggregated_univariate(make_weekly_data, estimator, point_method):
 
     expected_columns = ["week", "prediction"]
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 12
+    expected_num_parameters = 13
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -131,7 +131,7 @@ def test_dlt_non_seasonal_fit(make_weekly_data, estimator):
 
     expected_columns = ["week", "prediction_5", "prediction", "prediction_95"]
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 10
+    expected_num_parameters = 11
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns

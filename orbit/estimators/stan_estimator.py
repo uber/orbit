@@ -54,7 +54,7 @@ class StanEstimator(BaseEstimator):
 
         # stan_init fallback if not provided in model
         # this arg is passed in through `model_payload` in `fit()` to override
-        self.stan_init = "random"
+        # self.stan_init = "random"
 
         # init computed configs
         self._num_warmup_per_chain = None
@@ -117,9 +117,6 @@ class StanEstimatorMCMC(StanEstimator):
         fitter=None,
         init_values=None,
     ):
-
-        # not use
-        init_values = init_values or self.stan_init
 
         # T_STAR is used as sampling temperature which is used for WBIC calculation
         data_input.update({"T_STAR": sampling_temperature})
@@ -231,7 +228,7 @@ class StanEstimatorMAP(StanEstimator):
         data_input.update({"T_STAR": 1.0})
 
         # passing callable from the model as seen in `initfun1()`
-        init_values = init_values or self.stan_init
+        # init_values = init_values or self.stan_init
 
         # in case optimizing fails with given algorithm fallback to `Newton`
         # init values interface can be referred here: https://cmdstanpy.readthedocs.io/en/stable-0.9.65/api.html
@@ -248,7 +245,7 @@ class StanEstimatorMAP(StanEstimator):
             self.algorithm = "Newton"
             stan_fit = compiled_mod.optimize(
                 data=data_input,
-                init=init_values,
+                inits=init_values,
                 seed=self.seed,
                 algorithm=self.algorithm,
                 **self._stan_map_args,
