@@ -133,8 +133,6 @@ examples/internal_data_test.ipynb
 examples/temp/
 *.hpp
 *.bin
-orbit/stan/lgt
-orbit/stan/ktrlite
-orbit/stan/ets
-orbit/stan/dlt
+
+# ignore stan compiled files
 stan_compiled/
