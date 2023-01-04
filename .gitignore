@@ -138,3 +138,5 @@ orbit/stan_model/
 orbit/stan_compiled/
 orbit/stan/ets
 orbit/stan/dlt
+orbit/stan/ktr
+orbit/stan/ktrlite

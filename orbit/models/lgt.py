@@ -2,8 +2,6 @@
 from ..template.lgt import LGTModel
 from ..forecaster import MAPForecaster, FullBayesianForecaster, SVIForecaster
 from ..exceptions import IllegalArgument
-from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
-from ..estimators.pyro_estimator import PyroEstimatorSVI
 from ..constants.constants import EstimatorsKeys
 
 
@@ -100,14 +98,20 @@ def LGT(
         slope_sm_input=slope_sm_input,
     )
     if estimator == EstimatorsKeys.StanMAP.value:
+        from ..estimators.stan_estimator import StanEstimatorMAP
+
         lgt_forecaster = MAPForecaster(
             model=lgt, estimator_type=StanEstimatorMAP, **kwargs
         )
     elif estimator == EstimatorsKeys.StanMCMC.value:
+        from ..estimators.stan_estimator import StanEstimatorMCMC
+
         lgt_forecaster = FullBayesianForecaster(
             model=lgt, estimator_type=StanEstimatorMCMC, **kwargs
         )
     elif estimator == EstimatorsKeys.PyroSVI.value:
+        from ..estimators.pyro_estimator import PyroEstimatorSVI
+
         lgt_forecaster = SVIForecaster(
             model=lgt, estimator_type=PyroEstimatorSVI, **kwargs
         )
