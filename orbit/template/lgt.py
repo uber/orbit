@@ -113,6 +113,7 @@ class RegressionPenalty(Enum):
     lasso = 1
     auto_ridge = 2
 
+
 class LGTModel(ETSModel):
     """
     Parameters
@@ -226,21 +227,43 @@ class LGTModel(ETSModel):
             init_values = dict()
             if self._seasonality > 1:
                 init_sea = np.clip(
-                    np.random.normal(loc=0, scale=0.05, size=self._seasonality - 1), -1.0, 1.0
+                    np.random.normal(loc=0, scale=0.05, size=self._seasonality - 1),
+                    -1.0,
+                    1.0,
                 )
-                init_values[LatentSamplingParameters.INITIAL_SEASONALITY.value] = init_sea
+                init_values[
+                    LatentSamplingParameters.INITIAL_SEASONALITY.value
+                ] = init_sea
             if self.num_of_positive_regressors > 0:
-                x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.num_of_positive_regressors), 1e-5, 2.0)
+                x = np.clip(
+                    np.random.normal(
+                        loc=0, scale=0.1, size=self.num_of_positive_regressors
+                    ),
+                    1e-5,
+                    2.0,
+                )
                 init_values[
                     LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS.value
                 ] = x
             if self.num_of_negative_regressors > 0:
-                x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.num_of_negative_regressors), -2.0, -1e-5)
+                x = np.clip(
+                    np.random.normal(
+                        loc=0, scale=0.1, size=self.num_of_negative_regressors
+                    ),
+                    -2.0,
+                    -1e-5,
+                )
                 init_values[
                     LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS.value
                 ] = x
             if self.num_of_regular_regressors > 0:
-                x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.num_of_regular_regressors), -2.0, 2.0)
+                x = np.clip(
+                    np.random.normal(
+                        loc=0, scale=0.1, size=self.num_of_regular_regressors
+                    ),
+                    -2.0,
+                    2.0,
+                )
                 init_values[
                     LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS.value
                 ] = x

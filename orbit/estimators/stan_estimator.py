@@ -261,7 +261,9 @@ class StanEstimatorMAP(StanEstimator):
 
         # `stan.optimizing` automatically returns all defined parameters
         # filter out unnecessary keys
-        posteriors = {param: stan_extract[param] for param in model_param_names + ['loglk']}
+        posteriors = {
+            param: stan_extract[param] for param in model_param_names + ["loglk"]
+        }
         training_metrics = dict()
 
         # loglk is needed for BIC calculation

@@ -195,7 +195,6 @@ class KTRLiteModel(ModelTemplate):
             ] = np.zeros((self.num_of_regressors, self.num_knots_coefficients))
             self._init_values = init_values
 
-
     def _set_default_args(self):
         """Set default attributes for None"""
         if self.seasonality is None:
