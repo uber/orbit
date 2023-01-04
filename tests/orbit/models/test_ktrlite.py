@@ -32,7 +32,7 @@ def test_ktrlite_single_seas(make_daily_data, seasonality_fs_order):
 
     expected_columns = ["date", "prediction"]
     expected_shape = (train_df.shape[0], len(expected_columns))
-    expected_num_parameters = 6
+    expected_num_parameters = len(ktrlite._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -64,7 +64,7 @@ def test_ktrlite_dual_seas(make_daily_data, seasonality_fs_order):
 
     expected_columns = ["date", "prediction"]
     expected_shape = (train_df.shape[0], len(expected_columns))
-    expected_num_parameters = 6
+    expected_num_parameters = len(ktrlite._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -93,7 +93,7 @@ def test_ktrlite_level_segments(make_daily_data, level_segments):
 
     expected_columns = ["date", "prediction"]
     expected_shape = (364, len(expected_columns))
-    expected_num_parameters = 4
+    expected_num_parameters = len(ktrlite._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -130,7 +130,7 @@ def test_ktrlite_level_knot_dates(make_daily_data, level_knot_dates):
 
     expected_columns = ["date", "prediction_5", "prediction", "prediction_95"]
     expected_shape = (364, len(expected_columns))
-    expected_num_parameters = 4
+    expected_num_parameters = len(ktrlite._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -159,7 +159,7 @@ def test_ktrlite_level_knot_distance(make_daily_data, level_knot_distance):
 
     expected_columns = ["date", "prediction_5", "prediction", "prediction_95"]
     expected_shape = (364, len(expected_columns))
-    expected_num_parameters = 4
+    expected_num_parameters = len(ktrlite._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -196,7 +196,7 @@ def test_ktrlite_seas_segments(make_daily_data, seas_segments):
 
     expected_columns = ["date", "prediction"]
     expected_shape = (364, len(expected_columns))
-    expected_num_parameters = 6
+    expected_num_parameters = len(ktrlite._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -237,7 +237,7 @@ def test_ktrlite_predict_decompose(make_daily_data):
         "seasonality_365.25_95",
     ]
     expected_shape = (364, len(expected_columns))
-    expected_num_parameters = 6
+    expected_num_parameters = len(ktrlite._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -270,7 +270,7 @@ def test_ktrlite_predict_decompose_point_estimate(make_daily_data):
         "seasonality_365.25",
     ]
     expected_shape = (364, len(expected_columns))
-    expected_num_parameters = 6
+    expected_num_parameters = len(ktrlite._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -294,7 +294,7 @@ def test_ktrlite_hourly_data(ca_hourly_electricity_data):
 
     expected_columns = ["Dates", "prediction"]
     expected_shape = (train_df.shape[0], len(expected_columns))
-    expected_num_parameters = 6
+    expected_num_parameters = len(ktrlite._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
