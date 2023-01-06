@@ -134,9 +134,6 @@ class StanEstimatorMCMC(StanEstimator):
                 self._num_sample_per_chain,
             )
             logger.info(msg)
-            logger.info(
-                "CmdStanEstimator does not implement customized initial values yet. It will use the default from CmdStanPy"
-            )
 
         compiled_mod = get_compiled_stan_model(model_name)
         # check https://mc-stan.org/cmdstanpy/api.html#cmdstanpy.CmdStanModel.sample

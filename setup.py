@@ -85,7 +85,7 @@ class DevelopCommand(develop):
 
 setup(
     author="Edwin Ng, Zhishi Wang, Steve Yang, Yifeng Wu, Jing Pan",
-    author_email="zhishiw@uber.com",
+    author_email="edwinnglabs@gmail.com",
     description=DESCRIPTION,
     include_package_data=True,
     install_requires=requirements("requirements.txt"),
