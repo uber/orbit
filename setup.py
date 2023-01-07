@@ -45,10 +45,11 @@ class PyTestCommand(test_command):
 
 
 def install_cmdstanpy():
+    print("Importing cmdstanpy...")
     import cmdstanpy
     from multiprocessing import cpu_count
 
-    print("Installing cmdstanpy package...")
+    print("Installing cmdstan...")
     # target_dir = os.path.join(self.setup_path, "stan_compiled")
     # self.mkpath(target_dir)
 
