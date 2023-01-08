@@ -87,17 +87,13 @@ class StanEstimatorMCMC(StanEstimator):
 
     Parameters
     ----------
-    stan_mcmc_control : dict
-        Supplemental stan control parameters to pass to PyStan.sampling()
     stan_mcmc_args : dict
-        Supplemental stan mcmc args to pass to PyStan.sampling()
+        Supplemental stan mcmc args to pass to CmdStandPy.sampling()
 
     """
 
-    def __init__(self, stan_mcmc_control=None, stan_mcmc_args=None, **kwargs):
+    def __init__(self, stan_mcmc_args=None, **kwargs):
         super().__init__(**kwargs)
-        # TODO: not use
-        self.stan_mcmc_control = stan_mcmc_control
         self.stan_mcmc_args = stan_mcmc_args
 
         # init computed args
