@@ -22,7 +22,7 @@
 data {
   // indicator of which method stan using
   int<lower=0,upper=1> WITH_MCMC;
-  // The sampling tempature t_star;
+  // The sampling temperature t_star;
   real<lower=0> T_STAR;
 
   // Data Input
@@ -293,7 +293,7 @@ transformed parameters {
     // otherwise with original one, use 0 < sea_sm < 1 - lev_sm
 
     if (IS_SEASONAL) {
-      if (IS_VALID_RES[t]) {
+      if (IS_VALID_RES[t] ) {
         s[t + SEASONALITY] = sea_sm * (RESPONSE[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm) * s_t;
       } else {
         s[t + SEASONALITY] = sea_sm * (yhat[t] - gt_sum[t] - l[t]  - r[t]) + (1 - sea_sm) * s_t;
@@ -308,9 +308,9 @@ transformed parameters {
     obs_sigma = obs_sigma_dummy[1];
   }
 
-  // tempature based sampling and log probs used for WBIC
+  // temperature based sampling and log probs used for WBIC
   for (t in 1:NUM_OF_OBS) {
-    if (IS_VALID_RES[t]) {
+    if (IS_VALID_RES[t] && !is_nan(yhat[t])) {
       loglk_1step[t] = student_t_lpdf(RESPONSE[t] | nu, yhat[t], obs_sigma);
     }
   }
@@ -325,7 +325,7 @@ model {
   // likelihood; skipped the first observation for degree of freedom used
   // to estimate l[1]
   for (t in 2:NUM_OF_OBS) {
-    if (IS_VALID_RES[t]) {
+    if (IS_VALID_RES[t] && !is_nan(yhat[t])) {
         target += t_star_inv * loglk_1step[t];
     }
   }
