@@ -78,11 +78,13 @@ class BuildPyCommand(build_py):
 
         build_py.run(self)
 
+
 class BuildExtCommand(build_ext):
     """Ensure built extensions are added to the correct path in the wheel."""
 
     def run(self):
         pass
+
 
 class DevelopCommand(develop):
     """Custom build command to make sure install cmdstanpy properly."""
@@ -92,6 +94,7 @@ class DevelopCommand(develop):
             install_cmdstanpy()
 
         develop.run(self)
+
 
 setup(
     author="Edwin Ng, Zhishi Wang, Steve Yang, Yifeng Wu, Jing Pan",
