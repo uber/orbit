@@ -6,6 +6,7 @@ from setuptools import setup, find_packages
 from setuptools.command.build_py import build_py
 from setuptools.command.develop import develop
 from setuptools.command.test import test as test_command
+from setuptools.command.build_ext import build_ext
 
 # from setuptools.command.install import install as install_command
 
@@ -77,6 +78,12 @@ class BuildPyCommand(build_py):
 
         build_py.run(self)
 
+class BuildExtCommand(build_ext):
+    """Ensure built extensions are added to the correct path in the wheel."""
+
+    def run(self):
+        pass
+
 class DevelopCommand(develop):
     """Custom build command to make sure install cmdstanpy properly."""
 
@@ -95,6 +102,7 @@ setup(
     tests_require=requirements("requirements-test.txt"),
     # extras_require=extras_require,
     cmdclass={
+        "build_ext": BuildExtCommand,
         "build_py": BuildPyCommand,
         "develop": DevelopCommand,
         "test": PyTestCommand,
