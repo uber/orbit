@@ -75,7 +75,8 @@ class BuildPyCommand(build_py):
     def run(self):
         if not self.dry_run:
             install_cmdstanpy()
-
+            
+        build_py.run(self)
 
 class DevelopCommand(develop):
     """Custom build command to make sure install cmdstanpy properly."""
@@ -84,6 +85,7 @@ class DevelopCommand(develop):
         if not self.dry_run:
             install_cmdstanpy()
 
+        develop.run(self)
 
 setup(
     author="Edwin Ng, Zhishi Wang, Steve Yang, Yifeng Wu, Jing Pan",
