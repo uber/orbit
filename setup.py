@@ -46,7 +46,6 @@ class PyTestCommand(test_command):
 
 def install_cmdstanpy():
     print("Importing cmdstanpy...")
-    import pandas as pd
     import cmdstanpy
     from multiprocessing import cpu_count
 
@@ -75,7 +74,7 @@ class BuildPyCommand(build_py):
     def run(self):
         if not self.dry_run:
             install_cmdstanpy()
-            
+
         build_py.run(self)
 
 class DevelopCommand(develop):
