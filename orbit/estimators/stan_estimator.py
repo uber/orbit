@@ -8,9 +8,11 @@ from .base_estimator import BaseEstimator
 from ..exceptions import EstimatorException
 from ..utils.stan import get_compiled_stan_model, suppress_stdout_stderr
 from ..utils.general import update_dict
+from ..utils.logger import get_logger
 
-logger = logging.getLogger("orbit")
-logger.setLevel(logging.INFO)
+
+logger = get_logger("orbit")
+
 
 class StanEstimator(BaseEstimator):
     """Abstract StanEstimator with shared args for all StanEstimator child classes
@@ -45,9 +47,8 @@ class StanEstimator(BaseEstimator):
         **kwargs,
     ):  
         # see https://mc-stan.org/cmdstanpy/users-guide/outputs.html for details
-        if suppress_stan_log:
-            cmdstanpy_logger = logging.getLogger("cmdstanpy")
-            cmdstanpy_logger.disabled = True
+        cmdstanpy_logger = logging.getLogger("cmdstanpy")
+        cmdstanpy_logger.disabled = suppress_stan_log
 
         super().__init__(**kwargs)
         self.num_warmup = num_warmup
@@ -102,7 +103,6 @@ class StanEstimatorMCMC(StanEstimator):
 
         # init computed args
         self._stan_mcmc_args = copy(self.stan_mcmc_args)
-
         self._set_computed_stan_mcmc_configs()
 
     def _set_computed_stan_mcmc_configs(self):
@@ -120,7 +120,6 @@ class StanEstimatorMCMC(StanEstimator):
 
         # T_STAR is used as sampling temperature which is used for WBIC calculation
         data_input.update({"T_STAR": sampling_temperature})
-
         if self.verbose:
             msg_template = (
                 "Sampling (PyStan) with chains: {:d}, cores: {:d}, temperature: {:.3f}, "
