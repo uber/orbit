@@ -101,7 +101,7 @@ def DLT(
         confident intervals, pass an empty list
     suppress_stan_log : bool
         If False, turn off cmdstanpy logger. Default as False.
-        
+
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator
     """
@@ -135,13 +135,19 @@ def DLT(
         from ..estimators.stan_estimator import StanEstimatorMAP
 
         dlt_forecaster = MAPForecaster(
-            model=dlt, estimator_type=StanEstimatorMAP, suppress_stan_log=suppress_stan_log, **kwargs
+            model=dlt,
+            estimator_type=StanEstimatorMAP,
+            suppress_stan_log=suppress_stan_log,
+            **kwargs,
         )
     elif estimator == EstimatorsKeys.StanMCMC.value:
         from ..estimators.stan_estimator import StanEstimatorMCMC
 
         dlt_forecaster = FullBayesianForecaster(
-            model=dlt, estimator_type=StanEstimatorMCMC, suppress_stan_log=suppress_stan_log, **kwargs
+            model=dlt,
+            estimator_type=StanEstimatorMCMC,
+            suppress_stan_log=suppress_stan_log,
+            **kwargs,
         )
     else:
         raise IllegalArgument(

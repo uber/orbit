@@ -8,6 +8,7 @@ from ..utils.logger import get_logger
 
 logger = get_logger("orbit")
 
+
 def set_compiled_stan_path(parent, child="stan_compiled"):
     """
     Set the path for compiled stan models.

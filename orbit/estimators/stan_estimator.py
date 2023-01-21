@@ -45,7 +45,7 @@ class StanEstimator(BaseEstimator):
         algorithm=None,
         suppress_stan_log=True,
         **kwargs,
-    ):  
+    ):
         # see https://mc-stan.org/cmdstanpy/users-guide/outputs.html for details
         cmdstanpy_logger = logging.getLogger("cmdstanpy")
         cmdstanpy_logger.disabled = suppress_stan_log

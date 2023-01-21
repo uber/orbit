@@ -89,7 +89,10 @@ def KTRLite(
     )
     if estimator == EstimatorsKeys.StanMAP.value:
         ktrlite_forecaster = MAPForecaster(
-            model=ktrlite, estimator_type=StanEstimatorMAP, suppress_stan_log=suppress_stan_log, **kwargs
+            model=ktrlite,
+            estimator_type=StanEstimatorMAP,
+            suppress_stan_log=suppress_stan_log,
+            **kwargs,
         )
     else:
         raise IllegalArgument(

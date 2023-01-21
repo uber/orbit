@@ -1,6 +1,7 @@
 import logging
 from typing import Optional
 
+
 def make_info_logger(name: str, path: Optional[str] = None) -> logging.Logger:
     """generate new logger in a standardized way for Karpiu
     Returns:

@@ -63,13 +63,19 @@ def ETS(
         from ..estimators.stan_estimator import StanEstimatorMAP
 
         ets_forecaster = MAPForecaster(
-            model=ets, estimator_type=StanEstimatorMAP, suppress_stan_log=suppress_stan_log, **kwargs
+            model=ets,
+            estimator_type=StanEstimatorMAP,
+            suppress_stan_log=suppress_stan_log,
+            **kwargs,
         )
     elif estimator == EstimatorsKeys.StanMCMC.value:
         from ..estimators.stan_estimator import StanEstimatorMCMC
 
         ets_forecaster = FullBayesianForecaster(
-            model=ets, estimator_type=StanEstimatorMCMC, suppress_stan_log=suppress_stan_log, **kwargs
+            model=ets,
+            estimator_type=StanEstimatorMCMC,
+            suppress_stan_log=suppress_stan_log,
+            **kwargs,
         )
     else:
         raise IllegalArgument(

@@ -104,13 +104,19 @@ def LGT(
         from ..estimators.stan_estimator import StanEstimatorMAP
 
         lgt_forecaster = MAPForecaster(
-            model=lgt, estimator_type=StanEstimatorMAP, suppress_stan_log=suppress_stan_log, **kwargs
+            model=lgt,
+            estimator_type=StanEstimatorMAP,
+            suppress_stan_log=suppress_stan_log,
+            **kwargs,
         )
     elif estimator == EstimatorsKeys.StanMCMC.value:
         from ..estimators.stan_estimator import StanEstimatorMCMC
 
         lgt_forecaster = FullBayesianForecaster(
-            model=lgt, estimator_type=StanEstimatorMCMC, suppress_stan_log=suppress_stan_log, **kwargs
+            model=lgt,
+            estimator_type=StanEstimatorMCMC,
+            suppress_stan_log=suppress_stan_log,
+            **kwargs,
         )
     elif estimator == EstimatorsKeys.PyroSVI.value:
         from ..estimators.pyro_estimator import PyroEstimatorSVI
