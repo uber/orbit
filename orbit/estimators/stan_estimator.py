@@ -10,6 +10,7 @@ from ..utils.stan import get_compiled_stan_model, suppress_stdout_stderr
 from ..utils.general import update_dict
 
 logger = logging.getLogger("orbit")
+logger.setLevel(logging.INFO)
 
 class StanEstimator(BaseEstimator):
     """Abstract StanEstimator with shared args for all StanEstimator child classes

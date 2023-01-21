@@ -18,7 +18,7 @@ def LGT(
     auto_ridge_scale=0.5,
     slope_sm_input=None,
     estimator="stan-mcmc",
-    suppress_stan_log=suppress_stan_log,
+    suppress_stan_log=True,
     **kwargs,
 ):
     """

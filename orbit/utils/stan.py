@@ -2,9 +2,11 @@ import pickle
 import pkg_resources
 import os
 from cmdstanpy import CmdStanModel
-
+import logging
 from orbit.constants.constants import CompiledStanModelPath
 
+logger = logging.getLogger("orbit")
+logger.setLevel(logging.INFO)
 
 def set_compiled_stan_path(parent, child="stan_compiled"):
     """
@@ -41,6 +43,11 @@ def compile_stan_model(stan_model_name):
         compiled_model
     ) < os.path.getmtime(source_model):
 
+        logger.info(
+            "First time in running stan model:{}. Expect 3 - 5 minutes for compilation.".format(
+                stan_model_name
+            )
+        )
         sm = CmdStanModel(stan_file=source_model)
         with open(compiled_model, "wb") as f:
             pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
