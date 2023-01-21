@@ -150,29 +150,11 @@ class StanEstimatorMCMC(StanEstimator):
             param: stan_extract[param] for param in model_param_names + ["loglk"]
         }
 
-        # TODO: cmdstan is the API now; does it preserve the chain information
-        # by default?
-        # todo: move dimension cleaning function to the model directly
-        # flatten the first two dims by preserving the chain order
-        # for k, v in posteriors.items():
-        #     print(k)
-        #     print(v.shape)
-        #     if len(val.shape) == 2:
-        #         # here `order` is important to make samples flattened by chain
-        #         posteriors[k] = v.flatten(order="F")
-        #     else:
-        #         posteriors[k] = v.reshape((-1, *v.shape[2:]), order="F")
+        training_metrics = {
+            "loglk": posteriors["loglk"],
+            "sampling_temperature": sampling_temperature,
+        }
 
-        # extract `log_prob` in addition to defined model params
-        # to make naming consistent across api; we move lp along with warm up lp to `training_metrics`
-        # model_param_names_with_lp = model_param_names[:] + ['lp__']
-        loglk = posteriors["loglk"]
-        training_metrics = {"loglk": loglk}
-        # log_posterior is not supported in cmdstanpy
-        # training_metrics.update(
-        #     {"log_posterior": stan_mcmc_fit.get_logposterior(inc_warmup=True)}
-        # )
-        training_metrics.update({"sampling_temperature": sampling_temperature})
         return posteriors, training_metrics
 
 
@@ -257,12 +239,13 @@ class StanEstimatorMAP(StanEstimator):
         posteriors = {
             param: stan_extract[param] for param in model_param_names + ["loglk"]
         }
-        training_metrics = dict()
 
-        # loglk is needed for BIC calculation
-        training_metrics.update({"loglk": stan_extract["loglk"]})
-        # TODO: this needs to be the full length of all parameters instead of the one we sampled?
-        # TODO: or it should be not include latent variables / derive variables?
-        training_metrics.update({"num_of_params": len(model_param_names)})
+        training_metrics = {
+            # loglk is needed for BIC calculation
+            "loglk": stan_extract["loglk"],
+            # TODO: this needs to be the full length of all parameters instead of the one we sampled?
+            # TODO: i.e. should it include latent variables / derive variables?
+            "num_of_params": len(model_param_names),
+        }
 
         return posteriors, training_metrics
