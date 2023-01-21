@@ -20,6 +20,7 @@ def KTRLite(
     degree_of_freedom=30,
     date_freq=None,
     estimator="stan-map",
+    suppress_stan_log=True,
     **kwargs,
 ):
     """
@@ -64,6 +65,8 @@ def KTRLite(
     prediction_percentiles : list
         List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
         confident intervals, pass an empty list
+    suppress_stan_log : bool
+        If False, turn off cmdstanpy logger. Default as False.
 
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator
@@ -86,7 +89,7 @@ def KTRLite(
     )
     if estimator == EstimatorsKeys.StanMAP.value:
         ktrlite_forecaster = MAPForecaster(
-            model=ktrlite, estimator_type=StanEstimatorMAP, **kwargs
+            model=ktrlite, estimator_type=StanEstimatorMAP, suppress_stan_log=suppress_stan_log, **kwargs
         )
     else:
         raise IllegalArgument(

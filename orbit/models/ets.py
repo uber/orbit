@@ -10,6 +10,7 @@ def ETS(
     seasonality_sm_input=None,
     level_sm_input=None,
     estimator="stan-mcmc",
+    suppress_stan_log=True,
     **kwargs,
 ):
     """
@@ -42,6 +43,8 @@ def ETS(
     prediction_percentiles : list
         List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
         confident intervals, pass an empty list
+    suppress_stan_log : bool
+        If False, turn off cmdstanpy logger. Default as False.
 
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator
@@ -60,13 +63,13 @@ def ETS(
         from ..estimators.stan_estimator import StanEstimatorMAP
 
         ets_forecaster = MAPForecaster(
-            model=ets, estimator_type=StanEstimatorMAP, **kwargs
+            model=ets, estimator_type=StanEstimatorMAP, suppress_stan_log=suppress_stan_log, **kwargs
         )
     elif estimator == EstimatorsKeys.StanMCMC.value:
         from ..estimators.stan_estimator import StanEstimatorMCMC
 
         ets_forecaster = FullBayesianForecaster(
-            model=ets, estimator_type=StanEstimatorMCMC, **kwargs
+            model=ets, estimator_type=StanEstimatorMCMC, suppress_stan_log=suppress_stan_log, **kwargs
         )
     else:
         raise IllegalArgument(

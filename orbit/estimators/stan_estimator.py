@@ -9,12 +9,7 @@ from ..exceptions import EstimatorException
 from ..utils.stan import get_compiled_stan_model, suppress_stdout_stderr
 from ..utils.general import update_dict
 
-# does not need this in cmdstan
-# if platform == "darwin" and version_info[0] == 3 and version_info[1] >= 8:
-#     # fix issue in Python 3.9
-#     multiprocessing.set_start_method("fork", force=True)
 logger = logging.getLogger("orbit")
-
 
 class StanEstimator(BaseEstimator):
     """Abstract StanEstimator with shared args for all StanEstimator child classes
@@ -31,6 +26,8 @@ class StanEstimator(BaseEstimator):
         Number of cores for parallel processing, default max(cores, multiprocessing.cpu_count())
     algorithm : str
         If None, default to Stan defaults
+    suppress_stan_log : bool
+        If False, turn off cmdstanpy logger. Default as False.
     kwargs
         Additional `BaseEstimator` class args
 
@@ -43,8 +40,14 @@ class StanEstimator(BaseEstimator):
         chains=4,
         cores=8,
         algorithm=None,
+        suppress_stan_log=True,
         **kwargs,
-    ):
+    ):  
+        # see https://mc-stan.org/cmdstanpy/users-guide/outputs.html for details
+        if suppress_stan_log:
+            cmdstanpy_logger = logging.getLogger("cmdstanpy")
+            cmdstanpy_logger.disabled = True
+
         super().__init__(**kwargs)
         self.num_warmup = num_warmup
         self.num_sample = num_sample

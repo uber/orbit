@@ -18,6 +18,7 @@ def LGT(
     auto_ridge_scale=0.5,
     slope_sm_input=None,
     estimator="stan-mcmc",
+    suppress_stan_log=suppress_stan_log,
     **kwargs,
 ):
     """
@@ -74,6 +75,8 @@ def LGT(
     prediction_percentiles : list
         List of integers of prediction percentiles that should be returned on prediction. To avoid reporting any
         confident intervals, pass an empty list
+    suppress_stan_log : bool
+        If False, turn off cmdstanpy logger. Default as False.
 
     **kwargs:
         additional arguments passed into orbit.estimators.stan_estimator or orbit.estimators.pyro_estimator
@@ -101,13 +104,13 @@ def LGT(
         from ..estimators.stan_estimator import StanEstimatorMAP
 
         lgt_forecaster = MAPForecaster(
-            model=lgt, estimator_type=StanEstimatorMAP, **kwargs
+            model=lgt, estimator_type=StanEstimatorMAP, suppress_stan_log=suppress_stan_log, **kwargs
         )
     elif estimator == EstimatorsKeys.StanMCMC.value:
         from ..estimators.stan_estimator import StanEstimatorMCMC
 
         lgt_forecaster = FullBayesianForecaster(
-            model=lgt, estimator_type=StanEstimatorMCMC, **kwargs
+            model=lgt, estimator_type=StanEstimatorMCMC, suppress_stan_log=suppress_stan_log, **kwargs
         )
     elif estimator == EstimatorsKeys.PyroSVI.value:
         from ..estimators.pyro_estimator import PyroEstimatorSVI
