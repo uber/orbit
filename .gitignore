@@ -115,21 +115,13 @@ build/
 classes/
 
 # development
+*.pkl
 log/
 tmp/
 /out/
 ins.xml
-examples/lgt_stan_model_comparing_with_R.pkl
-examples/slgt_stan_model_comparing_with_R.pkl
-examples/backtest_results/
-examples/orbit_benchmark_results/
-
-examples/debug.ipynb
-examples/debug_stan_data.txt
-examples/debug_stan_data.json
-examples/internal_data_test.ipynb
-examples/temp/
 *.bin
+*.bak-*
 
 # ignore stan compiled files due to cmdstanpy
 stan_compiled/
