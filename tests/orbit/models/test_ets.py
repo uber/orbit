@@ -3,7 +3,6 @@ import numpy as np
 from copy import copy
 
 from orbit.models import ETS
-from orbit.template.ets import ETSInitializer
 from orbit.constants.constants import PredictionKeys
 
 
@@ -42,17 +41,14 @@ def test_ets_full_seasonal_fit(make_weekly_data):
     )
     ets.fit(train_df)
 
-    init_call = ets._model.get_init_values()
-    assert isinstance(init_call, ETSInitializer)
-    assert init_call.s == 52
-    init_values = init_call()
+    init_values = ets._model.get_init_values()
     assert init_values["init_sea"].shape == (51,)
 
     predict_df = ets.predict(test_df, decompose=False)
 
     expected_columns = ["week", "prediction_5", "prediction", "prediction_95"]
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 5
+    expected_num_parameters = len(ets._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -75,17 +71,14 @@ def test_ets_aggregated_seasonal_fit(make_weekly_data, point_method):
     )
     ets.fit(train_df, point_method=point_method)
 
-    init_call = ets._model.get_init_values()
-    assert isinstance(init_call, ETSInitializer)
-    assert init_call.s == 52
-    init_values = init_call()
+    init_values = ets._model.get_init_values()
     assert init_values["init_sea"].shape == (51,)
 
     predict_df = ets.predict(test_df, decompose=False)
 
     expected_columns = ["week", "prediction_5", "prediction", "prediction_95"]
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 5
+    expected_num_parameters = len(ets._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -106,10 +99,7 @@ def test_ets_map_seasonal_fit(make_weekly_data, n_bootstrap_draws):
     )
 
     ets.fit(train_df)
-    init_call = ets._model.get_init_values()
-    assert isinstance(init_call, ETSInitializer)
-    assert init_call.s == 52
-    init_values = init_call()
+    init_values = ets._model.get_init_values()
     assert init_values["init_sea"].shape == (51,)
 
     predict_df = ets.predict(test_df)
@@ -120,11 +110,12 @@ def test_ets_map_seasonal_fit(make_weekly_data, n_bootstrap_draws):
     else:
         expected_columns = ["week", "prediction"]
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 5
+    expected_num_parameters = len(ets._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
-    assert len(ets._posterior_samples) == expected_num_parameters
+    p = ets.get_posterior_samples()
+    assert len(p.keys()) == expected_num_parameters
 
 
 def test_ets_non_seasonal_fit(make_weekly_data):
@@ -141,7 +132,7 @@ def test_ets_non_seasonal_fit(make_weekly_data):
 
     expected_columns = ["week", "prediction_5", "prediction", "prediction_95"]
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 3
+    expected_num_parameters = len(ets._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns

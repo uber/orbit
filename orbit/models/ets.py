@@ -2,7 +2,6 @@
 from ..template.ets import ETSModel
 from ..forecaster import MAPForecaster, FullBayesianForecaster
 from ..exceptions import IllegalArgument
-from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
 from ..constants.constants import EstimatorsKeys
 
 
@@ -58,10 +57,14 @@ def ETS(
         level_sm_input=level_sm_input,
     )
     if estimator == EstimatorsKeys.StanMAP.value:
+        from ..estimators.stan_estimator import StanEstimatorMAP
+
         ets_forecaster = MAPForecaster(
             model=ets, estimator_type=StanEstimatorMAP, **kwargs
         )
     elif estimator == EstimatorsKeys.StanMCMC.value:
+        from ..estimators.stan_estimator import StanEstimatorMCMC
+
         ets_forecaster = FullBayesianForecaster(
             model=ets, estimator_type=StanEstimatorMCMC, **kwargs
         )

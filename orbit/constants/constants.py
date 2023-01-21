@@ -33,6 +33,8 @@ class EstimatorsKeys(Enum):
     PyroSVI = "pyro-svi"
     StanMAP = "stan-map"
     StanMCMC = "stan-mcmc"
+    CmdStanMAP = "cmdstan-map"
+    CmdStanMCMC = "cmdstan-mcmc"
 
 
 class TrainingMetaKeys(Enum):

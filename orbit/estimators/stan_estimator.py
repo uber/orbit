@@ -9,9 +9,10 @@ from ..exceptions import EstimatorException
 from ..utils.stan import get_compiled_stan_model, suppress_stdout_stderr
 from ..utils.general import update_dict
 
-if platform == "darwin" and version_info[0] == 3 and version_info[1] >= 8:
-    # fix issue in Python 3.9
-    multiprocessing.set_start_method("fork", force=True)
+# does not need this in cmdstan
+# if platform == "darwin" and version_info[0] == 3 and version_info[1] >= 8:
+#     # fix issue in Python 3.9
+#     multiprocessing.set_start_method("fork", force=True)
 logger = logging.getLogger("orbit")
 
 
@@ -53,7 +54,7 @@ class StanEstimator(BaseEstimator):
 
         # stan_init fallback if not provided in model
         # this arg is passed in through `model_payload` in `fit()` to override
-        self.stan_init = "random"
+        # self.stan_init = "random"
 
         # init computed configs
         self._num_warmup_per_chain = None
@@ -86,16 +87,13 @@ class StanEstimatorMCMC(StanEstimator):
 
     Parameters
     ----------
-    stan_mcmc_control : dict
-        Supplemental stan control parameters to pass to PyStan.sampling()
     stan_mcmc_args : dict
-        Supplemental stan mcmc args to pass to PyStan.sampling()
+        Supplemental stan mcmc args to pass to CmdStandPy.sampling()
 
     """
 
-    def __init__(self, stan_mcmc_control=None, stan_mcmc_args=None, **kwargs):
+    def __init__(self, stan_mcmc_args=None, **kwargs):
         super().__init__(**kwargs)
-        self.stan_mcmc_control = stan_mcmc_control
         self.stan_mcmc_args = stan_mcmc_args
 
         # init computed args
@@ -115,12 +113,6 @@ class StanEstimatorMCMC(StanEstimator):
         fitter=None,
         init_values=None,
     ):
-        compiled_stan_file = get_compiled_stan_model(model_name)
-
-        #   passing callable from the model as seen in `initfun1()`
-        #   https://pystan2.readthedocs.io/en/latest/api.html
-        #   if None, use default as defined in class variable
-        init_values = init_values or self.stan_init
 
         # T_STAR is used as sampling temperature which is used for WBIC calculation
         data_input.update({"T_STAR": sampling_temperature})
@@ -139,43 +131,29 @@ class StanEstimatorMCMC(StanEstimator):
             )
             logger.info(msg)
 
-        # with io.capture_output() as captured:
-        with suppress_stdout_stderr():
-            stan_mcmc_fit = compiled_stan_file.sampling(
-                data=data_input,
-                pars=model_param_names + ["loglk"],
-                iter=self._num_iter_per_chain,
-                warmup=self._num_warmup_per_chain,
-                chains=self.chains,
-                n_jobs=self.cores,
-                # fall back to default if not provided by model payload
-                init=init_values,
-                seed=self.seed,
-                algorithm=self.algorithm,
-                control=self.stan_mcmc_control,
-                **self._stan_mcmc_args,
-            )
-
-        posteriors = stan_mcmc_fit.extract(pars=model_param_names, permuted=False)
-
-        # todo: move dimension cleaning function to the model directly
-        # flatten the first two dims by preserving the chain order
-        for key, val in posteriors.items():
-            if len(val.shape) == 2:
-                # here `order` is important to make samples flattened by chain
-                posteriors[key] = val.flatten(order="F")
-            else:
-                posteriors[key] = val.reshape((-1, *val.shape[2:]), order="F")
-
-        # extract `log_prob` in addition to defined model params
-        # to make naming consistent across api; we move lp along with warm up lp to `training_metrics`
-        # model_param_names_with_lp = model_param_names[:] + ['lp__']
-        loglk = stan_mcmc_fit.extract(pars=["loglk"], permuted=True)["loglk"]
-        training_metrics = {"loglk": loglk}
-        training_metrics.update(
-            {"log_posterior": stan_mcmc_fit.get_logposterior(inc_warmup=True)}
+        compiled_mod = get_compiled_stan_model(model_name)
+        # check https://mc-stan.org/cmdstanpy/api.html#cmdstanpy.CmdStanModel.sample
+        # for additional args
+        stan_mcmc_fit = compiled_mod.sample(
+            data=data_input,
+            iter_sampling=self._num_sample_per_chain,
+            iter_warmup=self._num_warmup_per_chain,
+            chains=self.chains,
+            parallel_chains=self.cores,
+            inits=init_values,
+            seed=self.seed,
+            **self._stan_mcmc_args,
         )
-        training_metrics.update({"sampling_temperature": sampling_temperature})
+
+        stan_extract = stan_mcmc_fit.stan_variables()
+        posteriors = {
+            param: stan_extract[param] for param in model_param_names + ["loglk"]
+        }
+
+        training_metrics = {
+            "loglk": posteriors["loglk"],
+            "sampling_temperature": sampling_temperature,
+        }
 
         return posteriors, training_metrics
 
@@ -214,35 +192,41 @@ class StanEstimatorMAP(StanEstimator):
             logger.info(msg)
 
     def fit(
-        self, model_name, model_param_names, data_input, fitter=None, init_values=None
+        self,
+        model_name,
+        model_param_names,
+        data_input,
+        fitter=None,
+        init_values=None,
     ):
-        compiled_stan_file = get_compiled_stan_model(model_name)
+        compiled_mod = get_compiled_stan_model(model_name)
         data_input.update({"T_STAR": 1.0})
 
         # passing callable from the model as seen in `initfun1()`
-        init_values = init_values or self.stan_init
+        # init_values = init_values or self.stan_init
 
         # in case optimizing fails with given algorithm fallback to `Newton`
+        # init values interface can be referred here: https://cmdstanpy.readthedocs.io/en/stable-0.9.65/api.html
+        # Dict [Str, np.array] where key is the param name and value array dim matches the param dim
         try:
-            with suppress_stdout_stderr():
-                stan_extract = compiled_stan_file.optimizing(
-                    data=data_input,
-                    init=init_values,
-                    seed=self.seed,
-                    algorithm=self.algorithm,
-                    **self._stan_map_args,
-                )
+            stan_fit = compiled_mod.optimize(
+                data=data_input,
+                inits=init_values,
+                seed=self.seed,
+                algorithm=self.algorithm,
+                **self._stan_map_args,
+            )
         except RuntimeError:
             self.algorithm = "Newton"
-            with suppress_stdout_stderr():
-                stan_extract = compiled_stan_file.optimizing(
-                    data=data_input,
-                    init=init_values,
-                    seed=self.seed,
-                    algorithm=self.algorithm,
-                    **self._stan_map_args,
-                )
+            stan_fit = compiled_mod.optimize(
+                data=data_input,
+                inits=init_values,
+                seed=self.seed,
+                algorithm=self.algorithm,
+                **self._stan_map_args,
+            )
 
+        stan_extract = stan_fit.stan_variables()
         # make sure that model param names are a subset of stan extract keys
         invalid_model_param = set(model_param_names) - set(list(stan_extract.keys()))
         if invalid_model_param:
@@ -252,14 +236,16 @@ class StanEstimatorMAP(StanEstimator):
 
         # `stan.optimizing` automatically returns all defined parameters
         # filter out unnecessary keys
-        posteriors = {param: stan_extract[param] for param in model_param_names}
-        training_metrics = dict()
+        posteriors = {
+            param: stan_extract[param] for param in model_param_names + ["loglk"]
+        }
 
-        # extract `log_prob` in addition to defined model params
-        # this is for the BIC calculation
-        training_metrics.update({"loglk": stan_extract["loglk"]})
-        # FIXME: this needs to be the full length of all parameters instead of the one we sampled?
-        # FIXME: or it should be not include latent varaibles / derive variables?
-        training_metrics.update({"num_of_params": len(model_param_names)})
+        training_metrics = {
+            # loglk is needed for BIC calculation
+            "loglk": stan_extract["loglk"],
+            # TODO: this needs to be the full length of all parameters instead of the one we sampled?
+            # TODO: i.e. should it include latent variables / derive variables?
+            "num_of_params": len(model_param_names),
+        }
 
         return posteriors, training_metrics

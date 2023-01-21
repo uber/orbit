@@ -109,7 +109,11 @@ def load_electricity_demand():
 
     url = "https://robjhyndman.com/data/turkey_elec.csv"
     df = pd.read_csv(url, header=None, names=["electricity"])
-    df["date"] = pd.date_range(start="1/1/2000", end="31/12/2008", freq="D")
+    df["date"] = pd.date_range(
+        start="1/1/2000",
+        end="31/12/2008",
+        freq="D",
+    )
     # re-arrange columns
     df = df[["date", "electricity"]]
 

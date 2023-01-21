@@ -3,7 +3,6 @@ import pytest
 import numpy as np
 
 from orbit.models import LGT
-from orbit.template.lgt import LGTInitializer
 from orbit.constants.constants import PredictionKeys
 
 
@@ -56,21 +55,21 @@ def test_lgt_full_fit(
     elif estimator == "pyro-svi":
         args.update({"num_steps": 10})
 
-    expected_num_parameters = 10
-
-    if seasonality == 52:
-        expected_num_parameters += 2
+    # if seasonality == 52:
+    #     expected_num_parameters += 2
 
     lgt = LGT(**args)
     lgt.fit(train_df, point_method=point_method)
-    init_call = lgt._model.get_init_values()
+    if estimator == "stan-mcmc":
+        expected_num_parameters = len(lgt._model.get_model_param_names()) + 1
+    elif estimator == "pyro-svi":
+        expected_num_parameters = len(lgt._model.get_model_param_names())
+
+    init_values = lgt._model.get_init_values()
     if seasonality:
-        assert isinstance(init_call, LGTInitializer)
-        assert init_call.s == 52
-        init_values = init_call()
         assert init_values["init_sea"].shape == (51,)
     else:
-        assert not init_call
+        assert init_values is None
 
     predict_df = lgt.predict(test_df, store_prediction_array=store_prediction_array)
 
@@ -107,21 +106,18 @@ def test_lgt_aggregated_fit(make_weekly_data, seasonality, estimator, point_meth
     elif estimator == "pyro-svi":
         args.update({"num_steps": 10, "num_sample": 50})
 
-    expected_num_parameters = 10
-
-    if seasonality == 52:
-        expected_num_parameters += 2
-
     lgt = LGT(**args)
     lgt.fit(train_df, point_method=point_method)
-    init_call = lgt._model.get_init_values()
+    if estimator == "stan-mcmc":
+        expected_num_parameters = len(lgt._model.get_model_param_names()) + 1
+    elif estimator == "pyro-svi":
+        expected_num_parameters = len(lgt._model.get_model_param_names())
+
+    init_values = lgt._model.get_init_values()
     if seasonality:
-        assert isinstance(init_call, LGTInitializer)
-        assert init_call.s == 52
-        init_values = init_call()
         assert init_values["init_sea"].shape == (51,)
     else:
-        assert not init_call
+        assert init_values is None
 
     predict_df = lgt.predict(test_df)
     expected_columns = ["week", "prediction"]
@@ -146,22 +142,16 @@ def test_lgt_map_fit(make_weekly_data, seasonality, estimator):
     )
 
     lgt.fit(train_df)
-    init_call = lgt._model.get_init_values()
+    init_values = lgt._model.get_init_values()
     if seasonality:
-        assert isinstance(init_call, LGTInitializer)
-        assert init_call.s == 52
-        init_values = init_call()
         assert init_values["init_sea"].shape == (51,)
     else:
-        assert not init_call
+        assert init_values is None
 
     predict_df = lgt.predict(test_df)
 
-    expected_num_parameters = 10
+    expected_num_parameters = len(lgt._model.get_model_param_names()) + 1
     expected_columns = ["week", "prediction"]
-    if seasonality == 52:
-        expected_num_parameters += 2
-
     expected_shape = (51, len(expected_columns))
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -573,7 +563,7 @@ def test_lgt_map_single_regressor(iclaims_training_data):
     lgt.fit(df)
     predicted_df = lgt.predict(df)
 
-    expected_num_parameters = 13
+    expected_num_parameters = len(lgt._model.get_model_param_names()) + 1
     expected_columns = ["week", "prediction"]
 
     assert predicted_df.shape[0] == df.shape[0]

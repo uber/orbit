@@ -3,7 +3,6 @@ import pytest
 import numpy as np
 
 from orbit.models import DLT
-from orbit.template.dlt import DLTInitializer
 from orbit.constants.constants import PredictionKeys
 from orbit.exceptions import ModelException, PredictionException
 
@@ -44,17 +43,14 @@ def test_dlt_full_univariate(make_weekly_data, estimator):
 
     dlt.fit(train_df)
 
-    init_call = dlt._model.get_init_values()
-    assert isinstance(init_call, DLTInitializer)
-    assert init_call.s == 52
-    init_values = init_call()
+    init_values = dlt._model.get_init_values()
     assert init_values["init_sea"].shape == (51,)
 
     predict_df = dlt.predict(test_df)
 
     expected_columns = ["week", "prediction_5", "prediction", "prediction_95"]
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 12
+    expected_num_parameters = len(dlt._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -77,17 +73,14 @@ def test_dlt_aggregated_univariate(make_weekly_data, estimator, point_method):
 
     dlt.fit(train_df, point_method=point_method)
 
-    init_call = dlt._model.get_init_values()
-    assert isinstance(init_call, DLTInitializer)
-    assert init_call.s == 52
-    init_values = init_call()
+    init_values = dlt._model.get_init_values()
     assert init_values["init_sea"].shape == (51,)
 
     predict_df = dlt.predict(test_df)
 
     expected_columns = ["week", "prediction"]
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 12
+    expected_num_parameters = len(dlt._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -108,17 +101,14 @@ def test_dlt_map_univariate(make_weekly_data):
 
     dlt.fit(train_df)
 
-    init_call = dlt._model.get_init_values()
-    assert isinstance(init_call, DLTInitializer)
-    assert init_call.s == 52
-    init_values = init_call()
+    init_values = dlt._model.get_init_values()
     assert init_values["init_sea"].shape == (51,)
 
     predict_df = dlt.predict(test_df)
 
     expected_columns = ["week", "prediction"]
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 12
+    expected_num_parameters = len(dlt._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -141,7 +131,7 @@ def test_dlt_non_seasonal_fit(make_weekly_data, estimator):
 
     expected_columns = ["week", "prediction_5", "prediction", "prediction_95"]
     expected_shape = (51, len(expected_columns))
-    expected_num_parameters = 10
+    expected_num_parameters = len(dlt._model.get_model_param_names()) + 1
 
     assert predict_df.shape == expected_shape
     assert predict_df.columns.tolist() == expected_columns
@@ -243,9 +233,7 @@ def test_dlt_full_with_regression(make_weekly_data, regressor_signs):
     )
 
     dlt.fit(train_df)
-    init_call = dlt._model.get_init_values()
-    assert isinstance(init_call, DLTInitializer)
-    init_values = init_call()
+    init_values = dlt._model.get_init_values()
     assert init_values["init_sea"].shape == (51,)
 
     if regressor_signs.count("+") > 0:
@@ -700,7 +688,7 @@ def test_dlt_map_single_regressor(iclaims_training_data):
     dlt.fit(df)
     predicted_df = dlt.predict(df)
 
-    expected_num_parameters = 13
+    expected_num_parameters = len(dlt._model.get_model_param_names()) + 1
     expected_columns = ["week", "prediction"]
 
     assert predicted_df.shape[0] == df.shape[0]

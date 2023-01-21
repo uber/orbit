@@ -131,40 +131,6 @@ class RegressionPenalty(Enum):
     auto_ridge = 2
 
 
-# a callable object for generating initial values in sampling/optimization
-class DLTInitializer(object):
-    def __init__(self, s, n_pr, n_nr, n_rr):
-        self.s = s
-        self.n_pr = n_pr
-        self.n_nr = n_nr
-        self.n_rr = n_rr
-
-    def __call__(self):
-        init_values = dict()
-        if self.s > 1:
-            init_sea = np.clip(
-                np.random.normal(loc=0, scale=0.05, size=self.s - 1), -1.0, 1.0
-            )
-            init_values[LatentSamplingParameters.INITIAL_SEASONALITY.value] = init_sea
-        if self.n_pr > 0:
-            x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.n_pr), 1e-5, 2.0)
-            init_values[
-                LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS.value
-            ] = x
-        if self.n_nr > 0:
-            x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.n_nr), -2.0, -1e-5)
-            init_values[
-                LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS.value
-            ] = x
-        if self.n_rr > 0:
-            x = np.clip(np.random.normal(loc=0, scale=0.1, size=self.n_rr), -2.0, 2.0)
-            init_values[
-                LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS.value
-            ] = x
-
-        return init_values
-
-
 class DLTModel(ETSModel):
     """
     Parameters
@@ -208,7 +174,10 @@ class DLTModel(ETSModel):
     _data_input_mapper = DataInputMapper
     # used to match name of `*.stan` or `*.pyro` file to look for the model
     _model_name = "dlt"
-    _supported_estimator_types = [StanEstimatorMAP, StanEstimatorMCMC]
+    _supported_estimator_types = [
+        StanEstimatorMAP,
+        StanEstimatorMCMC,
+    ]
 
     def __init__(
         self,
@@ -299,21 +268,47 @@ class DLTModel(ETSModel):
         super().__init__(**kwargs)
 
     def set_init_values(self):
-        """Override function from Base Template"""
-        # init_values_partial = partial(init_values_callable, seasonality=seasonality)
-        # partialfunc does not work when passed to PyStan because PyStan uses
-        # inspect.getargspec(func) which seems to raise an exception with keyword-only args
-        # caused by using partialfunc
-        # lambda does not work in serialization in pickle
-        # callable object as an alternative workaround
-        if self._seasonality > 1 or self.num_of_regressors > 0:
-            init_values_callable = DLTInitializer(
-                self._seasonality,
-                self.num_of_positive_regressors,
-                self.num_of_negative_regressors,
-                self.num_of_regular_regressors,
+        """Override from base class"""
+        init_values = dict()
+        if self._seasonality > 1:
+            init_sea = np.clip(
+                np.random.normal(loc=0, scale=0.05, size=self._seasonality - 1),
+                -1.0,
+                1.0,
             )
-            self._init_values = init_values_callable
+            init_values[LatentSamplingParameters.INITIAL_SEASONALITY.value] = init_sea
+        if self.num_of_positive_regressors > 0:
+            x = np.clip(
+                np.random.normal(
+                    loc=0, scale=0.1, size=self.num_of_positive_regressors
+                ),
+                1e-5,
+                2.0,
+            )
+            init_values[
+                LatentSamplingParameters.REGRESSION_POSITIVE_COEFFICIENTS.value
+            ] = x
+        if self.num_of_negative_regressors > 0:
+            x = np.clip(
+                np.random.normal(
+                    loc=0, scale=0.1, size=self.num_of_negative_regressors
+                ),
+                -2.0,
+                -1e-5,
+            )
+            init_values[
+                LatentSamplingParameters.REGRESSION_NEGATIVE_COEFFICIENTS.value
+            ] = x
+        if self.num_of_regular_regressors > 0:
+            x = np.clip(
+                np.random.normal(loc=0, scale=0.1, size=self.num_of_regular_regressors),
+                -2.0,
+                2.0,
+            )
+            init_values[
+                LatentSamplingParameters.REGRESSION_REGULAR_COEFFICIENTS.value
+            ] = x
+        self._init_values = init_values
 
     def _validate_global_options(self):
         if self.global_trend_option not in ["flat", "linear", "loglinear", "logistic"]:
@@ -544,30 +539,6 @@ class DLTModel(ETSModel):
                 raise ModelException(
                     "Invalid regressors values. They must be all not missing and finite."
                 )
-
-    # def _set_global_trend_priors(self, training_meta):
-    #     if self.global_trend_option != GlobalTrendOption.logistic.value:
-    #         # intercept
-    #         x = np.ones(training_meta[TrainingMetaKeys.NUM_OF_OBS.value]).reshape(-1, 1)
-    #         # add slope if needed
-    #         if self.global_trend_option == GlobalTrendOption.linear.value:
-    #             x1 = (np.arange(training_meta[TrainingMetaKeys.NUM_OF_OBS.value]) * self._time_delta).reshape(-1, 1)
-    #             x = np.concatenate([x, x1], axis=-1)
-    #         if self.global_trend_option == GlobalTrendOption.loglinear.value:
-    #             x1 = (np.arange(training_meta[TrainingMetaKeys.NUM_OF_OBS.value]) * self._time_delta).reshape(-1, 1)
-    #             x1 = np.log1p(x1)
-    #             x = np.concatenate([x, x1], axis=-1)
-    #
-    #         y = training_meta[TrainingMetaKeys.RESPONSE.value]
-    #         model = OLS(y, x)
-    #         results = model.fit()
-    #         self.global_level_prior = results.params[0]
-    #         self.global_slope_prior = 0.0
-    #         if len(results.params) > 1:
-    #             self.global_slope_prior = results.params[1]
-    #     else:
-    #         self.global_level_prior = 0
-    #         self.global_slope_prior = 0
 
     def set_dynamic_attributes(self, df, training_meta):
         """Overriding: func: `~orbit.models.BaseETS._set_dynamic_attributes"""

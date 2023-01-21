@@ -15,7 +15,7 @@ def test_stan_estimator_mcmc(stan_estimator_lgt_model_input):
         sampling_temperature=1.0,
     )
 
-    assert set(model_param_names) == set(posteriors.keys())
+    assert set(model_param_names + ["loglk"]) == set(posteriors.keys())
 
 
 def test_stan_estimator_map(stan_estimator_lgt_model_input):
@@ -31,4 +31,4 @@ def test_stan_estimator_map(stan_estimator_lgt_model_input):
         data_input=data_input,
     )
 
-    assert set(model_param_names) == set(posteriors.keys())
+    assert set(model_param_names + ["loglk"]) == set(posteriors.keys())

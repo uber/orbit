@@ -55,20 +55,6 @@ class LatentSamplingParameters(Enum):
     INITIAL_SEASONALITY = "init_sea"
 
 
-# a callable object for generating initial values in sampling/optimization
-class ETSInitializer(object):
-    def __init__(self, s):
-        self.s = s
-
-    def __call__(self):
-        init_values = dict()
-        init_sea = np.clip(
-            np.random.normal(loc=0, scale=0.05, size=self.s - 1), -1.0, 1.0
-        )
-        init_values[LatentSamplingParameters.INITIAL_SEASONALITY.value] = init_sea
-        return init_values
-
-
 class ETSModel(ModelTemplate):
     """
     Parameters
@@ -160,16 +146,16 @@ class ETSModel(ModelTemplate):
             )
 
     def set_init_values(self):
-        """Override function from Base Template"""
-        # init_values_partial = partial(init_values_callable, seasonality=seasonality)
-        # partialfunc does not work when passed to PyStan because PyStan uses
-        # inspect.getargspec(func) which seems to raise an exception with keyword-only args
-        # caused by using partialfunc
-        # lambda does not work in serialization in pickle
-        # callable object as an alternative workaround
+        """Override function from base class"""
+        init_values = dict()
         if self._seasonality > 1:
-            init_values_callable = ETSInitializer(self._seasonality)
-            self._init_values = init_values_callable
+            init_sea = np.clip(
+                np.random.normal(loc=0, scale=0.05, size=self._seasonality - 1),
+                -1.0,
+                1.0,
+            )
+            init_values[LatentSamplingParameters.INITIAL_SEASONALITY.value] = init_sea
+            self._init_values = init_values
 
     def _set_model_param_names(self):
         """Set posteriors keys to extract from sampling/optimization api"""

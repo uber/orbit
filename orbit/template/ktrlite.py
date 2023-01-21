@@ -68,18 +68,18 @@ class RegressionSamplingParameters(Enum):
     COEFFICIENTS = "coef"
 
 
-class KTRLiteInitializer(object):
-    def __init__(self, num_regressor, num_knots_coefficients):
-        self.num_regressor = num_regressor
-        self.num_knots_coefficients = num_knots_coefficients
+# class KTRLiteInitializer(object):
+#     def __init__(self, num_regressor, num_knots_coefficients):
+#         self.num_regressor = num_regressor
+#         self.num_knots_coefficients = num_knots_coefficients
 
-    def __call__(self):
-        init_values = dict()
-        if self.num_regressor > 1:
-            init_values[
-                RegressionSamplingParameters.COEFFICIENTS_KNOT.value
-            ] = np.zeros((self.num_regressor, self.num_knots_coefficients))
-        return init_values
+#     def __call__(self):
+#         init_values = dict()
+#         if self.num_regressor > 1:
+#             init_values[
+#                 RegressionSamplingParameters.COEFFICIENTS_KNOT.value
+#             ] = np.zeros((self.num_regressor, self.num_knots_coefficients))
+#         return init_values
 
 
 class KTRLiteModel(ModelTemplate):
@@ -187,16 +187,13 @@ class KTRLiteModel(ModelTemplate):
 
     def set_init_values(self):
         """Override function from Base Template"""
-        # init_values_partial = partial(init_values_callable, seasonality=seasonality)
-        # partialfunc does not work when passed to PyStan because PyStan uses
-        # inspect.getargspec(func) which seems to raise an exception with keyword-only args
-        # caused by using partialfunc
-        # lambda as an alternative workaround
+        init_values = None
         if len(self._seasonality) > 1 and self.num_of_regressors > 0:
-            init_values_callable = KTRLiteInitializer(
-                self.num_of_regressors, self.num_knots_coefficients
-            )
-            self._init_values = init_values_callable
+            init_values = dict()
+            init_values[
+                RegressionSamplingParameters.COEFFICIENTS_KNOT.value
+            ] = np.zeros((self.num_of_regressors, self.num_knots_coefficients))
+            self._init_values = init_values
 
     def _set_default_args(self):
         """Set default attributes for None"""

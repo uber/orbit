@@ -87,8 +87,6 @@ build/
 dist/
 orbit.egg-info/
 orbit_ml.egg-info/
-orbit/stan_model/
-orbit/stan_compiled/
 env_docs/
 docs/_build/
 docs/_static
@@ -131,3 +129,15 @@ examples/debug_stan_data.txt
 examples/debug_stan_data.json
 examples/internal_data_test.ipynb
 examples/temp/
+*.bin
+
+# ignore stan compiled files due to cmdstanpy
+stan_compiled/
+*.hpp
+orbit/stan_model/
+orbit/stan_compiled/
+orbit/stan/ets
+orbit/stan/dlt
+orbit/stan/lgt
+orbit/stan/ktr
+orbit/stan/ktrlite
