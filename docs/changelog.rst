@@ -6,21 +6,21 @@ Changelog
 -------------------------------------------------------------------------------------------------
 :Core changes:
 
-- add python 3.8 unit tests (https://github.com/uber/orbit/pull/752)
-- optimize interface to be compatible with arviz (https://github.com/uber/orbit/pull/755)
-- requirements update (https://github.com/uber/orbit/pull/763)
-- code clean up (https://github.com/uber/orbit/pull/765)
-- dlt global trend prior adjustment (https://github.com/uber/orbit/pull/786)
+  - add python 3.8 unit tests (https://github.com/uber/orbit/pull/752)
+  - optimize interface to be compatible with arviz (https://github.com/uber/orbit/pull/755)
+  - requirements update (https://github.com/uber/orbit/pull/763)
+  - code clean up (https://github.com/uber/orbit/pull/765)
+  - dlt global trend prior adjustment (https://github.com/uber/orbit/pull/786)
 
 :Documentation:
 
 Tutorial enhancement:
-- tutorial refresh (https://github.com/uber/orbit/pull/795)
+  - tutorial refresh (https://github.com/uber/orbit/pull/795)
 
 :Utilities:
-- uses tqdm in parameters tuning (https://github.com/uber/orbit/pull/762)
-- residuals plot (https://github.com/uber/orbit/pull/758)
-- simpler stan compile interface (https://github.com/uber/orbit/pull/769)
+  - uses tqdm in parameters tuning (https://github.com/uber/orbit/pull/762)
+  - residuals plot (https://github.com/uber/orbit/pull/758)
+  - simpler stan compile interface (https://github.com/uber/orbit/pull/769)
 
 1.1.2 (2022-04-28) (`release notes <https://github.com/uber/orbit/releases/tag/v1.1.2>`__)
 -------------------------------------------------------------------------------------------------
