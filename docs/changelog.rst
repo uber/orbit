@@ -13,8 +13,6 @@ Changelog
   - dlt global trend prior adjustment (https://github.com/uber/orbit/pull/786)
 
 :Documentation:
-
-Tutorial enhancement:
   - tutorial refresh (https://github.com/uber/orbit/pull/795)
 
 :Utilities:
