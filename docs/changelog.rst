@@ -2,6 +2,18 @@
 
 Changelog
 =========
+
+1.1.4 (2022-01-22) (`release notes <https://github.com/uber/orbit/releases/tag/v1.1.4>`__)
+-------------------------------------------------------------------------------------------------
+:Core Changes:
+  - replace `PyStan2` by `cmdstanpy` (https://github.com/uber/orbit/pull/801)
+  - update requirement and installation procedures (https://github.com/uber/orbit/commit/073f03fac7c8cecc241909cd20f97124b10ea3f5)
+  - loggers upgrade
+
+:Documentation:
+  - all tutorial is updated to use `cmdstanpy` in backend
+
+
 1.1.3 (2022-11-30) (`release notes <https://github.com/uber/orbit/releases/tag/v1.1.3>`__)
 -------------------------------------------------------------------------------------------------
 :Core changes:
