@@ -43,7 +43,6 @@ def compile_stan_model(stan_model_name):
     if not os.path.isfile(compiled_model) or os.path.getmtime(
         compiled_model
     ) < os.path.getmtime(source_model):
-
         logger.info(
             "First time in running stan model:{}. Expect 3 - 5 minutes for compilation.".format(
                 stan_model_name
@@ -84,7 +83,6 @@ def compile_stan_model_simplified(path):
     if not os.path.isfile(compiled_path) or os.path.getmtime(
         compiled_path
     ) < os.path.getmtime(source_path):
-
         logger.info(
             "First time in running stan model:{}. Expect 3 - 5 minutes for compilation.".format(
                 source_filename

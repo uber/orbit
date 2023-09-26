@@ -117,7 +117,6 @@ class StanEstimatorMCMC(StanEstimator):
         fitter=None,
         init_values=None,
     ):
-
         # T_STAR is used as sampling temperature which is used for WBIC calculation
         data_input.update({"T_STAR": sampling_temperature})
         if self.verbose:

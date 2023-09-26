@@ -809,7 +809,6 @@ class KTRModel(ModelTemplate):
         seas_decomp = dict()
 
         if seasonality is not None and len(seasonality) > 0:
-
             date_col = training_meta[TrainingMetaKeys.DATE_COL.value]
             date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
             training_end = training_meta[TrainingMetaKeys.END.value]

@@ -18,7 +18,7 @@ from setuptools.command.build_ext import build_ext
 # dist.Distribution().fetch_build_eggs(['cython'])
 
 DESCRIPTION = "Orbit is a package for Bayesian time series modeling and inference."
-CMDSTAN_VERSION = "2.31.0"
+CMDSTAN_VERSION = "2.32.1"
 
 
 def read_long_description(filename="README.md"):
