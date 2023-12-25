@@ -38,6 +38,7 @@ logger = get_logger("orbit")
 #             "{}/{}.pkl".format(CompiledStanModelPath.CHILD, stan_model_name),
 #         )
 
+<<<<<<< HEAD
 #     # updated for py3
 #     os.makedirs(os.path.dirname(compiled_model), exist_ok=True)
 #     # compile if compiled file does not exist or stan source has changed (with later datestamp than compiled)
@@ -51,6 +52,20 @@ logger = get_logger("orbit")
 #             )
 #         )
 #         sm = CmdStanModel(stan_file=source_model)
+=======
+    # updated for py3
+    os.makedirs(os.path.dirname(compiled_model), exist_ok=True)
+    # compile if compiled file does not exist or stan source has changed (with later datestamp than compiled)
+    if not os.path.isfile(compiled_model) or os.path.getmtime(
+        compiled_model
+    ) < os.path.getmtime(source_model):
+        logger.info(
+            "First time in running stan model:{}. Expect 3 - 5 minutes for compilation.".format(
+                stan_model_name
+            )
+        )
+        sm = CmdStanModel(stan_file=source_model)
+>>>>>>> 7919a8c474dd4880539a9fddb54f9c1888b1704c
 
 #         with open(compiled_model, "wb") as f:
 #             pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -90,7 +105,6 @@ def compile_stan_model_simplified(path):
     if not os.path.isfile(compiled_path) or os.path.getmtime(
         compiled_path
     ) < os.path.getmtime(source_path):
-
         logger.info(
             "First time in running stan model:{}. Expect 3 - 5 minutes for compilation.".format(
                 source_filename

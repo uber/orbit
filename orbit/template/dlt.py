@@ -198,7 +198,6 @@ class DLTModel(ETSModel):
         forecast_horizon=1,
         **kwargs,
     ):
-
         self.damped_factor = damped_factor
         self.global_trend_option = global_trend_option
         self.period = period
