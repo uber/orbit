@@ -13,7 +13,7 @@ from setuptools.command.build_ext import build_ext
 
 # from setuptools.command.install import install as install_command
 
-# install style is taking reference from prophet package installation: 
+# install style is taking reference from prophet package installation:
 # https://github.com/facebook/prophet/
 
 MODEL_SOURCE_DIR = "orbit/stan"
@@ -27,6 +27,7 @@ BINARIES = ["diagnose", "print", "stanc", "stansummary"]
 TBB_PARENT = "stan/lib/stan_math/lib"
 TBB_DIRS = ["tbb", "tbb_2020.3"]
 IS_WINDOWS = platform.platform().startswith("Win")
+
 
 def read_long_description(filename="README.md"):
     # with open(filename) as f:
@@ -111,6 +112,7 @@ def build_stan_model(target_dir):
         #         os.remove(f)
 
     # prune_cmdstan(target_cmdstan_dir)
+
 
 # def prune_cmdstan(cmdstan_dir: str) -> None:
 #     """
