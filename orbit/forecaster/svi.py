@@ -88,7 +88,7 @@ class SVIForecaster(Forecaster):
 
     def predict(
         self, df, decompose=False, store_prediction_array=False, seed=None, **kwargs
-    ):
+    ) -> pd.DataFrame:
         # raise if model is not fitted
         if not self.is_fitted():
             raise ForecasterException("Model is not fitted yet.")
