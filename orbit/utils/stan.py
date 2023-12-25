@@ -1,4 +1,5 @@
 import pickle
+
 # import pkg_resources
 import importlib_resources
 
@@ -9,7 +10,7 @@ from ..utils.logger import get_logger
 
 logger = get_logger("orbit")
 
-# Old approach 
+# Old approach
 # def set_compiled_stan_path(parent, child="stan_compiled"):
 #     """
 #     Set the path for compiled stan models.
@@ -37,8 +38,6 @@ logger = get_logger("orbit")
 #             CompiledStanModelPath.PARENT,
 #             "{}/{}.pkl".format(CompiledStanModelPath.CHILD, stan_model_name),
 #         )
-
-<<<<<<< HEAD
 #     # updated for py3
 #     os.makedirs(os.path.dirname(compiled_model), exist_ok=True)
 #     # compile if compiled file does not exist or stan source has changed (with later datestamp than compiled)
@@ -52,20 +51,6 @@ logger = get_logger("orbit")
 #             )
 #         )
 #         sm = CmdStanModel(stan_file=source_model)
-=======
-    # updated for py3
-    os.makedirs(os.path.dirname(compiled_model), exist_ok=True)
-    # compile if compiled file does not exist or stan source has changed (with later datestamp than compiled)
-    if not os.path.isfile(compiled_model) or os.path.getmtime(
-        compiled_model
-    ) < os.path.getmtime(source_model):
-        logger.info(
-            "First time in running stan model:{}. Expect 3 - 5 minutes for compilation.".format(
-                stan_model_name
-            )
-        )
-        sm = CmdStanModel(stan_file=source_model)
->>>>>>> 7919a8c474dd4880539a9fddb54f9c1888b1704c
 
 #         with open(compiled_model, "wb") as f:
 #             pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -77,13 +62,17 @@ def get_compiled_stan_model(stan_model_name):
     """
     Load compiled Stan model
     """
-    # Old approach 
+    # Old approach
     # compiled_model = compile_stan_model(stan_model_name)
     # with open(compiled_model, "rb") as f:
     #     return pickle.load(f)
-    
+
     # New approach
-    model_file = importlib_resources.files("orbit") / "stan_compiled" / "{}.bin".format(stan_model_name)
+    model_file = (
+        importlib_resources.files("orbit")
+        / "stan_compiled"
+        / "{}.bin".format(stan_model_name)
+    )
     return CmdStanModel(exe_file=str(model_file))
 
 
