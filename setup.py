@@ -173,6 +173,7 @@ class BuildExtCommand(build_ext):
 
 #         develop.run(self)
 
+
 class EditableWheel(editable_wheel):
     """Custom develop command to pre-compile Stan models in-place."""
 
