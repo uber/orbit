@@ -26,7 +26,6 @@ jobs:
             pip install -U pip
             pip install -U setuptools
             pip install -r requirements.txt
-            pip install -r requirements-test.txt
-            python -m pip install -U --editable .
+            python -m pip install -U --editable ".[dev]"
       - name: Test with pytest
-        run: pytest -vs tests/ --cov orbit/
+        run:  python -m pytest tests/

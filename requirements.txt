@@ -10,3 +10,4 @@ statsmodels>=0.11.1
 arviz
 cmdstanpy>=1.0.4
 setuptools>=42
+importlib_resources

@@ -24,11 +24,16 @@ readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
   "cmdstanpy>=1.0.4",
-  "numpy>=1.15.4",
-  "matplotlib>=2.0.0",
-  "pandas>=1.0.4",
+  "numpy>=1.18",
+  "pandas>=1.0.3",
   "tqdm>=4.36.1",
   "importlib_resources",
+  "matplotlib>=3.3.2",
+  "scipy>=1.4.1",
+  "torch>=1.11.0",
+  "seaborn>=0.10.0",
+  "pyro-ppl>=1.4.0",
+  "arviz",
 ]
 license = {text = "Apache License 2.0"}
 classifiers = [
@@ -39,4 +44,11 @@ classifiers = [
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+]
+[project.optional-dependencies]
+dev = [
+  "setuptools>=64",
+  "wheel",
+  "pytest",
+  "black",
 ]

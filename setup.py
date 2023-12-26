@@ -41,17 +41,17 @@ def requirements(filename="requirements.txt"):
         return f.readlines()
 
 
-class PyTestCommand(test_command):
-    def finalize_options(self):
-        test_command.finalize_options(self)
-        self.test_args = ["-v"]  # test args
-        self.test_suite = True
+# class PyTestCommand(test_command):
+#     def finalize_options(self):
+#         test_command.finalize_options(self)
+#         self.test_args = ["-v"]  # test args
+#         self.test_suite = True
 
-    def run_tests(self):
-        import pytest
+#     def run_tests(self):
+#         import pytest
 
-        errcode = pytest.main(self.test_args)
-        sys.exit(errcode)
+#         errcode = pytest.main(self.test_args)
+#         sys.exit(errcode)
 
 
 def build_stan_model(target_dir):
@@ -148,8 +148,7 @@ class BuildPyCommand(build_py):
             target_dir = os.path.join(self.build_lib, MODEL_TARGET_DIR)
             self.mkpath(target_dir)
 
-            print("Not a dry run, run with build, target_dir:")
-            print("building with target_dir: {}".format(target_dir))
+            print("Not a dry run, run with build, target_dir: {}".format(target_dir))
 
             build_stan_model(target_dir)
 
@@ -182,8 +181,7 @@ class EditableWheel(editable_wheel):
             target_dir = os.path.join(self.project_dir, MODEL_TARGET_DIR)
             self.mkpath(target_dir)
 
-            print("Not a dry run, run with editable, target_dir:")
-            print("building with target_dir: {}".format(target_dir))
+            print("Not a dry run, run with editable, target_dir: {}".format(target_dir))
 
             build_stan_model(target_dir)
 
@@ -200,7 +198,16 @@ class BDistWheelABINone(bdist_wheel):
         return "py3", "none", plat
 
 
+about = {}
+here = Path(__file__).parent.resolve()
+with open(here / "orbit" / "__version__.py", "r") as f:
+    exec(f.read(), about)
+
+
 setup(
+    version=about["__version__"],
+    packages=find_packages(),
+    name="orbit-ml",
     author="Edwin Ng, Zhishi Wang, Steve Yang, Yifeng Wu, Jing Pan",
     author_email="edwinnglabs@gmail.com",
     description=DESCRIPTION,
@@ -211,23 +218,16 @@ setup(
     cmdclass={
         "build_ext": BuildExtCommand,
         "build_py": BuildPyCommand,
+        "editable_wheel": EditableWheel,
+        "bdist_wheel": BDistWheelABINone,
         # "develop": DevelopCommand,
-        "test": PyTestCommand,
+        # "test": PyTestCommand,
     },
     test_suite="orbit.tests",
-    license="Apache License 2.0",
     long_description=read_long_description(),
     long_description_content_type="text/markdown",
-    name="orbit-ml",
-    packages=find_packages(),
     url="https://orbit-ml.readthedocs.io/en/stable/",
     # version=VERSION, # being maintained by source module
     ext_modules=[Extension("orbit.stan_compiled", [])],
     zip_safe=False,
-    classifiers=[
-        "Development Status :: 3 - Alpha",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-    ],
 )
