@@ -17,7 +17,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "orbit"
+name = "orbit-ml"
 dynamic = ["version"]
 description = "Orbit is a package for Bayesian time series modeling and inference."
 readme = "README.md"
