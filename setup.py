@@ -5,11 +5,12 @@ from pathlib import Path
 import tempfile
 from shutil import copy, copytree, rmtree
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 from setuptools.command.build_py import build_py
-from setuptools.command.develop import develop
 from setuptools.command.test import test as test_command
 from setuptools.command.build_ext import build_ext
+from setuptools.command.editable_wheel import editable_wheel
+from wheel.bdist_wheel import bdist_wheel
 
 # from setuptools.command.install import install as install_command
 
@@ -147,9 +148,8 @@ class BuildPyCommand(build_py):
             target_dir = os.path.join(self.build_lib, MODEL_TARGET_DIR)
             self.mkpath(target_dir)
 
-            print("Not a dry run, target_dir:")
-            print(target_dir)
-            print(self.build_lib)
+            print("Not a dry run, run with build, target_dir:")
+            print("building with target_dir: {}".format(target_dir))
 
             build_stan_model(target_dir)
 
@@ -172,6 +172,31 @@ class BuildExtCommand(build_ext):
 #             install_cmdstanpy()
 
 #         develop.run(self)
+
+class EditableWheel(editable_wheel):
+    """Custom develop command to pre-compile Stan models in-place."""
+
+    def run(self):
+        if not self.dry_run:
+            target_dir = os.path.join(self.project_dir, MODEL_TARGET_DIR)
+            self.mkpath(target_dir)
+
+            print("Not a dry run, run with editable, target_dir:")
+            print("building with target_dir: {}".format(target_dir))
+
+            build_stan_model(target_dir)
+
+        editable_wheel.run(self)
+
+
+class BDistWheelABINone(bdist_wheel):
+    def finalize_options(self):
+        bdist_wheel.finalize_options(self)
+        self.root_is_pure = False
+
+    def get_tag(self):
+        _, _, plat = bdist_wheel.get_tag(self)
+        return "py3", "none", plat
 
 
 setup(
@@ -196,6 +221,7 @@ setup(
     packages=find_packages(),
     url="https://orbit-ml.readthedocs.io/en/stable/",
     # version=VERSION, # being maintained by source module
+    ext_modules=[Extension("orbit.stan_compiled", [])],
     zip_safe=False,
     classifiers=[
         "Development Status :: 3 - Alpha",

@@ -10,7 +10,33 @@ extend-exclude = '''
 
 [build-system]
 requires = [
-    "setuptools>=42",
+    "setuptools>=64",
     "wheel",
     "cmdstanpy>=1.0.4",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orbit"
+dynamic = ["version"]
+description = "Orbit is a package for Bayesian time series modeling and inference."
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+  "cmdstanpy>=1.0.4",
+  "numpy>=1.15.4",
+  "matplotlib>=2.0.0",
+  "pandas>=1.0.4",
+  "tqdm>=4.36.1",
+  "importlib_resources",
+]
+license = {text = "Apache License 2.0"}
+classifiers = [
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
 ]
