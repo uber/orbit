@@ -4,6 +4,8 @@ import pandas as pd
 import warnings
 from enum import Enum
 
+from typing import Dict, Any
+
 from ..exceptions import ForecasterException, AbstractMethodException, IllegalArgument
 from ..utils.general import is_ordered_datetime, is_even_gap_datetime
 from ..template.model_template import ModelTemplate
@@ -305,13 +307,13 @@ class Forecaster(object):
                 return True
         return False
 
-    def predict(self, df, **kwargs):
+    def predict(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """Predict interface requires concrete implementation from child class"""
         raise AbstractMethodException(
             "Abstract method.  Model should implement concrete .predict()."
         )
 
-    def _set_prediction_meta(self, df):
+    def _set_prediction_meta(self, df: pd.DataFrame) -> pd.DataFrame:
         """A default pre-processing and information gathering from prediction input dataframe"""
         # remove reference from original input
         df = df.copy()
@@ -384,13 +386,13 @@ class Forecaster(object):
 
         self._prediction_meta = prediction_meta
 
-    def get_prediction_meta(self):
+    def get_prediction_meta(self) -> Dict[str, Any]:
         return deepcopy(self._prediction_meta)
 
-    def get_training_metrics(self):
+    def get_training_metrics(self) -> Dict[str, Any]:
         return deepcopy(self._training_metrics)
 
-    def get_posterior_samples(self, relabel=False, permute=True):
+    def get_posterior_samples(self, relabel: bool = False, permute: bool = True):
         """
         Parameters
         ----------
@@ -429,7 +431,7 @@ class Forecaster(object):
                     )
         return posterior_samples
 
-    def get_point_posteriors(self):
+    def get_point_posteriors(self) -> Dict[str, Any]:
         return deepcopy(self._point_posteriors)
 
     def load_extra_methods(self):
@@ -441,7 +443,7 @@ class Forecaster(object):
         else:
             return list()
 
-    def make_future_df(self, periods=1):
+    def make_future_df(self, periods: int = 1) -> pd.DataFrame:
         """Given an Orbit Forecaster and number of periods, return a dataframe for future prediction
 
         Parameters

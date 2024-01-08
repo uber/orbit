@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 import numpy as np
-import pkg_resources
+import importlib_resources
 from copy import deepcopy
 
 from orbit.utils.simulation import make_trend, make_seasonality, make_regression
@@ -9,16 +9,14 @@ from orbit.utils.simulation import make_trend, make_seasonality, make_regression
 
 @pytest.fixture
 def iclaims_training_data():
-    test_file = pkg_resources.resource_filename(
-        "tests", "resources/iclaims.example.csv"
-    )
+    test_file = importlib_resources.files("tests") / "resources/iclaims.example.csv"
     df = pd.read_csv(test_file, parse_dates=["week"])
     return df
 
 
 @pytest.fixture
 def m3_monthly_data():
-    test_file = pkg_resources.resource_filename("tests", "resources/m3-monthly.csv")
+    test_file = importlib_resources.files("tests") / "resources/m3-monthly.csv"
     df = pd.read_csv(test_file, parse_dates=["date"])
     return df
 
@@ -497,9 +495,7 @@ def ca_hourly_electricity_data():
 
     Sources: https://github.com/pratha19/Hourly_Energy_Consumption_Prediction
     """
-    test_file = pkg_resources.resource_filename(
-        "tests", "resources/hourly1418CA_2018.csv"
-    )
+    test_file = importlib_resources.files("tests") / "resources/hourly1418CA_2018.csv"
     df = pd.read_csv(
         test_file,
         parse_dates=["Dates", "Date"],

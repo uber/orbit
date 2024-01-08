@@ -1,17 +1,11 @@
 include LICENSE
 include README.md
+include pyproject.toml
 include *.txt
 include requirements.txt
 include requirements-test.txt
 include orbit/stan/*.stan
 include orbit/stylelib/*.mplstyle
-
-prune orbit/stan_compiled
-prune orbit/stan/dlt
-prune orbit/stan/ets
-prune orbit/stan/ktrlite
-prune orbit/stan/lgt
-prune orbit/stan/*.hpp
 
 recursive-include tests *
 recursive-exclude * __pycache__
