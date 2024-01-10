@@ -1,69 +1,79 @@
 import pickle
-import pkg_resources
+
+# import pkg_resources
+import importlib_resources
+
 import os
 from cmdstanpy import CmdStanModel
-import logging
 from orbit.constants.constants import CompiledStanModelPath
 from ..utils.logger import get_logger
 
 logger = get_logger("orbit")
 
+# Old approach
+# def set_compiled_stan_path(parent, child="stan_compiled"):
+#     """
+#     Set the path for compiled stan models.
 
-def set_compiled_stan_path(parent, child="stan_compiled"):
-    """
-    Set the path for compiled stan models.
-
-    parent: the primary directory level
-    child: the secondary directory level
-    """
-    CompiledStanModelPath.PARENT = parent
-    CompiledStanModelPath.CHILD = child
+#     parent: the primary directory level
+#     child: the secondary directory level
+#     """
+#     CompiledStanModelPath.PARENT = parent
+#     CompiledStanModelPath.CHILD = child
 
 
-def compile_stan_model(stan_model_name):
-    """
-    Compile stan model and save as pkl
-    """
-    source_model = pkg_resources.resource_filename(
-        "orbit", "stan/{}.stan".format(stan_model_name)
-    )
-    if CompiledStanModelPath.PARENT == "orbit":
-        compiled_model = pkg_resources.resource_filename(
-            "orbit", "{}/{}.pkl".format(CompiledStanModelPath.CHILD, stan_model_name)
-        )
-    else:
-        compiled_model = os.path.join(
-            CompiledStanModelPath.PARENT,
-            "{}/{}.pkl".format(CompiledStanModelPath.CHILD, stan_model_name),
-        )
+# def compile_stan_model(stan_model_name):
+#     """
+#     Compile stan model and save as pkl
+#     """
+#     source_model = pkg_resources.resource_filename(
+#         "orbit", "stan/{}.stan".format(stan_model_name)
+#     )
+#     if CompiledStanModelPath.PARENT == "orbit":
+#         compiled_model = pkg_resources.resource_filename(
+#             "orbit", "{}/{}.pkl".format(CompiledStanModelPath.CHILD, stan_model_name)
+#         )
+#     else:
+#         compiled_model = os.path.join(
+#             CompiledStanModelPath.PARENT,
+#             "{}/{}.pkl".format(CompiledStanModelPath.CHILD, stan_model_name),
+#         )
+#     # updated for py3
+#     os.makedirs(os.path.dirname(compiled_model), exist_ok=True)
+#     # compile if compiled file does not exist or stan source has changed (with later datestamp than compiled)
+#     if not os.path.isfile(compiled_model) or os.path.getmtime(
+#         compiled_model
+#     ) < os.path.getmtime(source_model):
 
-    # updated for py3
-    os.makedirs(os.path.dirname(compiled_model), exist_ok=True)
-    # compile if compiled file does not exist or stan source has changed (with later datestamp than compiled)
-    if not os.path.isfile(compiled_model) or os.path.getmtime(
-        compiled_model
-    ) < os.path.getmtime(source_model):
+#         logger.info(
+#             "First time in running stan model:{}. Expect 3 - 5 minutes for compilation.".format(
+#                 stan_model_name
+#             )
+#         )
+#         sm = CmdStanModel(stan_file=source_model)
 
-        logger.info(
-            "First time in running stan model:{}. Expect 3 - 5 minutes for compilation.".format(
-                stan_model_name
-            )
-        )
-        sm = CmdStanModel(stan_file=source_model)
+#         with open(compiled_model, "wb") as f:
+#             pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-        with open(compiled_model, "wb") as f:
-            pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
-
-    return compiled_model
+#     return compiled_model
 
 
 def get_compiled_stan_model(stan_model_name):
     """
     Load compiled Stan model
     """
-    compiled_model = compile_stan_model(stan_model_name)
-    with open(compiled_model, "rb") as f:
-        return pickle.load(f)
+    # Old approach
+    # compiled_model = compile_stan_model(stan_model_name)
+    # with open(compiled_model, "rb") as f:
+    #     return pickle.load(f)
+
+    # New approach
+    model_file = (
+        importlib_resources.files("orbit")
+        / "stan_compiled"
+        / "{}.bin".format(stan_model_name)
+    )
+    return CmdStanModel(exe_file=str(model_file))
 
 
 def compile_stan_model_simplified(path):
@@ -84,7 +94,6 @@ def compile_stan_model_simplified(path):
     if not os.path.isfile(compiled_path) or os.path.getmtime(
         compiled_path
     ) < os.path.getmtime(source_path):
-
         logger.info(
             "First time in running stan model:{}. Expect 3 - 5 minutes for compilation.".format(
                 source_filename
