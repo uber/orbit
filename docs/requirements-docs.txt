@@ -1,7 +1,6 @@
-sphinx==4.0.2
+sphinx
 sphinxcontrib-napoleon
 sphinx-rtd-theme
 matplotlib
 nbsphinx
 IPython
-Jinja2==3.0.3
