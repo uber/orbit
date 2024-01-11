@@ -24,8 +24,8 @@ Welcome to Orbit's Documentation!
    :caption: Exponential Smoothing Models
    :name: exponential-smoothing-models
 
-   tutorials/dlt
-   tutorials/lgt
+   .. tutorials/dlt
+   .. tutorials/lgt
    tutorials/regression_prior
    tutorials/regression_penalty
    tutorials/ets_lgt_dlt_missing_response
