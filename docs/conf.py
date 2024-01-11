@@ -38,11 +38,11 @@ release = orbit.__version__
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    # 'sphinx.ext.autosummary',
-    # 'sphinx.ext.doctest',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.doctest',
     "sphinx.ext.mathjax",
     "sphinx.ext.githubpages",
-    # 'sphinx.ext.viewcode',
+    'sphinx.ext.viewcode',
     "sphinx.ext.napoleon",
     "IPython.sphinxext.ipython_console_highlighting",
     "IPython.sphinxext.ipython_directive",
@@ -104,3 +104,88 @@ napoleon_include_init_with_doc = True
 
 nbsphinx_kernel_name = "python3"
 nbsphinx_timeout = 60
+
+# -- Options for LaTeX output ------------------------------------------
+
+# To resolve a Unicode error as suggested in
+# https://docs.readthedocs.io/en/stable/guides/pdf-non-ascii-languages.html
+latex_engine = "xelatex"
+
+latex_elements = {
+    # The paper size ('letterpaper' or 'a4paper').
+    # 'papersize': 'letterpaper',
+    # The font size ('10pt', '11pt' or '12pt').
+    # 'pointsize': '10pt',
+    # Additional stuff for the LaTeX preamble.
+    # 'preamble': '',
+}
+
+# Grouping the document tree into LaTeX files. List of tuples
+# (source start file, target name, title, author, documentclass
+# [howto/manual]).
+latex_documents = [
+    ("index", "orbit.tex", "orbit Documentation", "Someone at Uber", "manual")
+]
+
+# The name of an image file (relative to this directory) to place at
+# the top of the title page.
+# latex_logo = None
+
+# For "manual" documents, if this is true, then toplevel headings
+# are parts, not chapters.
+# latex_use_parts = False
+
+# If true, show page references after internal links.
+# latex_show_pagerefs = False
+
+# If true, show URL addresses after external links.
+# latex_show_urls = False
+
+# Documents to append as an appendix to all manuals.
+# latex_appendices = []
+
+# If false, no module index is generated.
+# latex_domain_indices = True
+
+
+# -- Options for manual page output ------------------------------------
+
+# One entry per manual page. List of tuples
+# (source start file, name, description, authors, manual section).
+man_pages = [("index", "orbit", "orbit Documentation", [author], 1)]
+
+# If true, show URL addresses after external links.
+# man_show_urls = False
+
+
+# -- Options for Texinfo output ----------------------------------------
+
+# Grouping the document tree into Texinfo files. List of tuples
+# (source start file, target name, title, author,
+#  dir menu entry, description, category)
+texinfo_documents = [
+    (
+        "index",
+        "orbit",
+        "orbit Documentation",
+        author,
+        "orbit",
+        "One line description of project.",
+        "Miscellaneous",
+    )
+]
+
+# Documents to append as an appendix to all manuals.
+# texinfo_appendices = []
+
+# If false, no module index is generated.
+# texinfo_domain_indices = True
+
+# How to display URL addresses: 'footnote', 'no', or 'inline'.
+# texinfo_show_urls = 'footnote'
+
+# If true, do not generate a @detailmenu in the "Top" node's menu.
+# texinfo_no_detailmenu = False
+
+numpydoc_show_class_members = True
+class_members_toctree = False
