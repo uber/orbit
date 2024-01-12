@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+from datetime import datetime
 
 def load_iclaims(end_date="2018-06-24", transform=True):
     """Load iclaims dataset
@@ -24,7 +24,7 @@ def load_iclaims(end_date="2018-06-24", transform=True):
     https://finance.yahoo.com/
     """
     url = "https://raw.githubusercontent.com/uber/orbit/master/examples/data/iclaims_example.csv"
-    df = pd.read_csv(url, parse_dates=["week"])
+    df = pd.read_csv(url, parse_dates=["week"],date_format="%m/%d/%y")
     df = df[df["week"] <= end_date]
 
     # standardize the regressors by mean; equivalent to subtracting mean after np.log

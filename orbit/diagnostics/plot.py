@@ -791,18 +791,15 @@ def residual_diagnostic_plot(
     ax[0, 1].legend()
 
     # plot 3 residual histogram with vertical line as mean
-    sns.distplot(
+    sns.histplot(
         df[residual_col].values,
-        hist=True,
         kde=True,
         ax=ax[1, 0],
         color=palette.OrbitPalette.BLUE.value,
         label="residual",
-        hist_kws={
-            "edgecolor": "white",
-            "alpha": 0.5,
-            "facecolor": palette.OrbitPalette.BLUE.value,
-        },
+        edgecolor= "white",
+        alpha= 0.5,
+        facecolor=palette.OrbitPalette.BLUE.value,
     )
     ax[1, 0].set_title("Residual Distribution")
     ax[1, 0].axvline(
