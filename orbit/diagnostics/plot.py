@@ -797,8 +797,8 @@ def residual_diagnostic_plot(
         ax=ax[1, 0],
         color=palette.OrbitPalette.BLUE.value,
         label="residual",
-        edgecolor= "white",
-        alpha= 0.5,
+        edgecolor="white",
+        alpha=0.5,
         facecolor=palette.OrbitPalette.BLUE.value,
     )
     ax[1, 0].set_title("Residual Distribution")
