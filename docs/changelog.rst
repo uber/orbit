@@ -52,7 +52,7 @@ Changelog
   - Add a new method `make_future_df` to prepare data frame for forecasting (#695)
 
 1.1.2alpha (2022-04-06) (`release notes <https://github.com/uber/orbit/releases/tag/v1.1.2alpha>`__)
--------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------
 :Core changes:
   - Add Conda installation option (#679)
   - Suppress the lengthy Stan logging message (#696)
