@@ -80,7 +80,11 @@ def build_stan_model(target_dir):
             # note: ensure copy target is a directory not a file.
 
             temp_source_file_path = os.path.join(MODEL_SOURCE_DIR, model_name)
-            print("Copying source file from {} to {}".format(temp_source_file_path, cmdstan_dir.parent.resolve()))
+            print(
+                "Copying source file from {} to {}".format(
+                    temp_source_file_path, cmdstan_dir.parent.resolve()
+                )
+            )
             temp_stan_file = copy(temp_source_file_path, cmdstan_dir.parent.resolve())
 
             # temp_stan_file = os.path.join(MODEL_SOURCE_DIR, model_name)
@@ -92,7 +96,7 @@ def build_stan_model(target_dir):
             print("Copying file from {} to {}".format(sm.exe_file, target_file_path))
             copy(sm.exe_file, target_file_path)
 
-        # TODO: some clean up needs to be done 
+        # TODO: some clean up needs to be done
         # 1. with the stan/ folder since it duplicates the .stan files
         # 2. the stanlib packages if it is installed with repackaged directory
         # for f in Path(MODEL_SOURCE_DIR).iterdir():
@@ -102,8 +106,10 @@ def build_stan_model(target_dir):
     if repackage_cmdstan():
         prune_cmdstan(target_cmdstan_dir)
 
+
 def repackage_cmdstan():
     return os.environ.get("ORBIT_REPACKAGE_CMDSTAN", "").lower() not in ["false", "0"]
+
 
 def prune_cmdstan(cmdstan_dir: str) -> None:
     """
