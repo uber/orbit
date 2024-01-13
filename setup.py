@@ -14,7 +14,7 @@ from wheel.bdist_wheel import bdist_wheel
 
 # from setuptools.command.install import install as install_command
 
-# install style is taking reference from prophet package installation:
+# the installation process of stan is taking reference from prophet package:
 # https://github.com/facebook/prophet/
 
 MODEL_SOURCE_DIR = "orbit/stan"
