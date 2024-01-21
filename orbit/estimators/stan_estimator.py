@@ -121,7 +121,7 @@ class StanEstimatorMCMC(StanEstimator):
         data_input.update({"T_STAR": sampling_temperature})
         if self.verbose:
             msg_template = (
-                "Sampling (PyStan) with chains: {:d}, cores: {:d}, temperature: {:.3f}, "
+                "Sampling (CmdStanPy) with chains: {:d}, cores: {:d}, temperature: {:.3f}, "
                 "warmups (per chain): {:d} and samples(per chain): {:d}."
             )
             msg = msg_template.format(
@@ -162,12 +162,6 @@ class StanEstimatorMCMC(StanEstimator):
 
 class StanEstimatorMAP(StanEstimator):
     """Stan Estimator for MAP Posteriors
-
-    Parameters
-    ----------
-    stan_map_args : dict
-        Supplemental stan vi args to pass to PyStan.optimizing()
-
     """
 
     def __init__(self, stan_map_args=None, **kwargs):
@@ -185,7 +179,7 @@ class StanEstimatorMAP(StanEstimator):
         self._stan_map_args = update_dict(default_stan_map_args, self._stan_map_args)
         # TODO: should it be within the fit block?
         if self.verbose:
-            msg_template = "Optimizing (PyStan) with algorithm: {}."
+            msg_template = "Optimizing (CmdStanPy) with algorithm: {}."
             if self.algorithm is None:
                 algorithm = "LBFGS"
             else:
