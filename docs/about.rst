@@ -20,8 +20,8 @@ It also supports the following sampling methods for model estimation:
 -  Stochastic Variational Inference (SVI) as a hybrid-sampling method on approximate
    distribution
    
-Under the hood, the package is leveraging probabilistic program such as `pyro <https://pyro.ai/>`__ and `PyStan 2.0
-<https://pystan2.readthedocs.io/en/latest/>`__.
+Under the hood, the package is leveraging probabilistic program such as `pyro <https://pyro.ai/>`__ and `cmdstanpy
+<https://mc-stan.org/cmdstanpy/>`__.
 
 
 Citation
