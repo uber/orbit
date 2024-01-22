@@ -41,7 +41,7 @@ The default page of the repo is on `dev` branch. To install the dev version, ple
 This project
 
 - is stable and being incubated for long-term support. It may contain new experimental code, for which APIs are subject to change.
-- requires PyStan as a system dependency. PyStan is licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html), which is a free, copyleft license for software.
+- requires [cmdstanpy](https://mc-stan.org/cmdstanpy/) as one of the core dependencies for Bayesian sampling.
 
 # Orbit: A Python Package for Bayesian Forecasting
 

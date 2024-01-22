@@ -11,3 +11,4 @@ arviz
 cmdstanpy>=1.0.4
 setuptools>=42
 importlib_resources
+ipywidgets

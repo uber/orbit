@@ -3,16 +3,16 @@
 Changelog
 =========
 
-1.1.4 (2022-01-22) (`release notes <https://github.com/uber/orbit/releases/tag/v1.1.4>`__)
+1.1.4 (2024-01-21) (`release notes <https://github.com/uber/orbit/releases/tag/v1.1.4>`__)
 -------------------------------------------------------------------------------------------------
 :Core Changes:
-  - replace `PyStan2` by `cmdstanpy` (https://github.com/uber/orbit/pull/801)
-  - update requirement and installation procedures (https://github.com/uber/orbit/commit/073f03fac7c8cecc241909cd20f97124b10ea3f5)
-  - loggers upgrade
+  - replace stan sampling engine `PyStan2` by `cmdstanpy` (https://github.com/uber/orbit/pull/801)
+  - update installation procedures and dependencies (https://github.com/uber/orbit/pull/833), (https://github.com/uber/orbit/pull/835), (https://github.com/uber/orbit/pull/821)
+  - update installation process such that it pre-compile all stan files during wheel building (https://github.com/uber/orbit/pull/833), (https://github.com/uber/orbit/pull/835)
 
 :Documentation:
-  - all tutorial is updated to use `cmdstanpy` in backend
-
+  - update read the doc process and underlying doc with respect to new changes (https://github.com/uber/orbit/pull/836), (https://github.com/uber/orbit/pull/838)
+  - prune old examples and duplicates under the `example/` folder (https://github.com/uber/orbit/pull/838)
 
 1.1.3 (2022-11-30) (`release notes <https://github.com/uber/orbit/releases/tag/v1.1.3>`__)
 -------------------------------------------------------------------------------------------------

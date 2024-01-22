@@ -109,7 +109,7 @@ def get_knot_idx(
             ]
         )
 
-        time_delta = date_array.diff().mean()
+        time_delta = np.diff(date_array).mean()
 
         knot_idx = get_dates_delta(
             start_date=date_array[0], end_date=_knot_dates, time_delta=time_delta
