@@ -161,8 +161,7 @@ class StanEstimatorMCMC(StanEstimator):
 
 
 class StanEstimatorMAP(StanEstimator):
-    """Stan Estimator for MAP Posteriors
-    """
+    """Stan Estimator for MAP Posteriors"""
 
     def __init__(self, stan_map_args=None, **kwargs):
         super().__init__(**kwargs)

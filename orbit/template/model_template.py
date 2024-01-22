@@ -41,8 +41,7 @@ class ModelTemplate(object):
         pass
 
     def set_init_values(self):
-        """Optional; set init as a callable (for Stan ONLY)
-        """
+        """Optional; set init as a callable (for Stan ONLY)"""
         pass
 
     def get_init_values(self):
