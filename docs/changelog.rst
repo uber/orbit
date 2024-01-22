@@ -3,7 +3,7 @@
 Changelog
 =========
 
-1.1.4 (2022-01-22) (`release notes <https://github.com/uber/orbit/releases/tag/v1.1.4>`__)
+1.1.4 (2024-01-21) (`release notes <https://github.com/uber/orbit/releases/tag/v1.1.4>`__)
 -------------------------------------------------------------------------------------------------
 :Core Changes:
   - replace stan sampling engine `PyStan2` by `cmdstanpy` (https://github.com/uber/orbit/pull/801)
