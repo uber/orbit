@@ -27,7 +27,10 @@ jobs:
       - name: Build package
         run:
           python -m build
-          auditwheel repair dis/*linux_x86_64.whl
+      - name: Convert linux wheel to manylinux wheels
+          auditwheel repair -w dist dist/*linux_x86_64.whl
+      - name: Remove platform specific linux wheels
+          rm dist/*-linux_x86_64.whl
       - name: Publish package
         uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
         with:
