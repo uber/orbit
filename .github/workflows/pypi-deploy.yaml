@@ -29,7 +29,7 @@ jobs:
           python -m build
       - name: Convert linux wheel to manylinux wheels
         run:
-          auditwheel repair -w dist dist/*linux_x86_64.whl
+          auditwheel repair --plat manylinux_2_28_x86_64 -w dist dist/*linux_x86_64.whl
       - name: Remove platform specific linux wheels
         run:
           rm dist/*-linux_x86_64.whl
