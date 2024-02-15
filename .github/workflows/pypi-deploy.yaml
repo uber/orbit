@@ -24,17 +24,25 @@ jobs:
           pip install setuptools wheel twine
           pip install build
           pip install auditwheel
-      - name: Build package
-        run:
-          python -m build
+      # - name: Build package
+      #   run:
+      #     python -m build
       # - name: Convert linux wheel to manylinux wheels
       #   run:
       #     auditwheel repair --plat manylinux2014_x86_64 -w dist dist/*linux_x86_64.whl
       # - name: Remove platform specific linux wheels
       #   run:
       #     rm dist/*-linux_x86_64.whl
-      - name: Publish package
-        uses: pypa/gh-action-pypi-publish@v1.4.2
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_PASSWORD }}
+      # - name: Publish package
+      #   uses: pypa/gh-action-pypi-publish@v1.4.2
+      #   with:
+      #     user: __token__
+      #     password: ${{ secrets.PYPI_PASSWORD }}
+      - name: Build and publish
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          pip install .
+          python -m build
+          python -m twine upload dist/*.tar.gz
