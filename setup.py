@@ -49,61 +49,71 @@ def build_stan_model(target_dir):
     target_cmdstan_dir = (Path(target_dir) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
     print("target_cmdstan_dir: {}".format(target_cmdstan_dir))
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        # long paths on windows can cause problems during build
-        if IS_WINDOWS:
-            print("Windows detected. Use tmp_dir: {}".format(tmp_dir))
-            cmdstan_dir = (Path(tmp_dir) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
-        else:
-            cmdstan_dir = target_cmdstan_dir
+    # For windows, install it in tmp file and then mov.
+    # BUT WHY? Why not just do it same as Mac?!a
+    if IS_WINDOWS:
+        tmp_dir = tempfile.TemporaryDirectory()
+        print("Windows detected. Use tmp_dir: {}".format(tmp_dir))
+        cmdstan_dir = (Path(tmp_dir.name) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
+    else:
+        cmdstan_dir = target_cmdstan_dir
 
-        if os.path.isdir(cmdstan_dir):
-            rmtree(cmdstan_dir)
+    if os.path.isdir(cmdstan_dir):
+        rmtree(cmdstan_dir)
 
-        if not cmdstanpy.install_cmdstan(
-            version=CMDSTAN_VERSION,
-            # if we want to do it inside the repo dir, we need to include the folder in
-            # MANIFEST.in
-            dir=cmdstan_dir.parent,
-            overwrite=True,
-            verbose=True,
-            cores=cpu_count(),
-            progress=True,
-        ):
-            raise RuntimeError("CmdStan failed to install in repackaged directory")
-        else:
-            print("Installed cmdstanpy package.")
+    if not cmdstanpy.install_cmdstan(
+        version=CMDSTAN_VERSION,
+        # if we want to do it inside the repo dir, we need to include the folder in
+        # MANIFEST.in
+        dir=cmdstan_dir.parent,
+        overwrite=True,
+        verbose=True,
+        cores=cpu_count(),
+        progress=True,
+        compiler=IS_WINDOWS,
+    ):
+        raise RuntimeError("CmdStan failed to install in repackaged directory")
+    else:
+        print("Installed cmdstanpy package.")
 
-        print("cmdstan_dir: {}".format(cmdstan_dir))
-        for model in MODELS:
-            model_name = "{}.stan".format(model)
-            # note: ensure copy target is a directory not a file.
+    print("cmdstan_dir: {}".format(cmdstan_dir))
+    for model in MODELS:
+        model_name = "{}.stan".format(model)
+        # note: ensure copy target is a directory not a file.
 
-            temp_source_file_path = os.path.join(MODEL_SOURCE_DIR, model_name)
-            print(
-                "Copying source file from {} to {}".format(
-                    temp_source_file_path, cmdstan_dir.parent.resolve()
-                )
+        temp_source_file_path = os.path.join(MODEL_SOURCE_DIR, model_name)
+        print(
+            "Copying source file from {} to {}".format(
+                temp_source_file_path, cmdstan_dir.parent.resolve()
             )
-            temp_stan_file = copy(temp_source_file_path, cmdstan_dir.parent.resolve())
+        )
+        temp_stan_file = copy(temp_source_file_path, cmdstan_dir.parent.resolve())
 
-            # temp_stan_file = os.path.join(MODEL_SOURCE_DIR, model_name)
+        # temp_stan_file = os.path.join(MODEL_SOURCE_DIR, model_name)
 
-            print("Compiling stan file: {}".format(temp_stan_file))
-            sm = cmdstanpy.CmdStanModel(stan_file=temp_stan_file)
-            target_name = "{}.bin".format(model)
-            target_file_path = os.path.join(target_dir, target_name)
-            print("Copying file from {} to {}".format(sm.exe_file, target_file_path))
-            copy(sm.exe_file, target_file_path)
+        print("Compiling stan file: {}".format(temp_stan_file))
+        sm = cmdstanpy.CmdStanModel(stan_file=temp_stan_file)
+        target_name = "{}.bin".format(model)
+        target_file_path = os.path.join(target_dir, target_name)
+        print("Copying file from {} to {}".format(sm.exe_file, target_file_path))
+        copy(sm.exe_file, target_file_path)
 
-        # TODO: some clean up needs to be done
-        # 1. with the stan/ folder since it duplicates the .stan files
-        # 2. the stanlib packages if it is installed with repackaged directory
-        # for f in Path(MODEL_SOURCE_DIR).iterdir():
-        #     if f.is_file() and f.name != model_name:
-        #         os.remove(f)
+    # Cleanup temp folder, copy the content into target dir first
+    copytree(cmdstan_dir, target_cmdstan_dir)
+    tmp_dir.cleanup()
+
+    # TODO: some clean up needs to be done
+    # 1. with the stan/ folder since it duplicates the .stan files
+    # 2. the stanlib packages if it is installed with repackaged directory
+    # for f in Path(MODEL_SOURCE_DIR).iterdir():
+    #     if f.is_file() and f.name != model_name:
+    #         os.remove(f)
 
     if repackage_cmdstan():
+        # TODO: This step is breaking right now, as the cmdstan-2.33.1 is not in the stan_compiled folder. What's the purpose of prune?
+        # Flow:
+        # Windows: Install in temp > build various model files > **copy to target_dir > prune folder
+        # Mac: Install in target_folder > build various model files > prune folder
         prune_cmdstan(target_cmdstan_dir)
 
 
