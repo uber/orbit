@@ -130,6 +130,7 @@ def prune_cmdstan(cmdstan_dir: str) -> None:
 
     rmtree(original_dir)
     temp_dir.rename(original_dir)
+    print("Pruning done")
 
 
 class BuildPyCommand(build_py):
