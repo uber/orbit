@@ -48,15 +48,7 @@ def build_stan_model(target_dir):
 
     target_cmdstan_dir = (Path(target_dir) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
     print("target_cmdstan_dir: {}".format(target_cmdstan_dir))
-
-    # For windows, install it in tmp file and then mov.
-    # BUT WHY? Why not just do it same as Mac?!a
-    if IS_WINDOWS:
-        tmp_dir = tempfile.TemporaryDirectory()
-        print("Windows detected. Use tmp_dir: {}".format(tmp_dir))
-        cmdstan_dir = (Path(tmp_dir.name) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
-    else:
-        cmdstan_dir = target_cmdstan_dir
+    cmdstan_dir = target_cmdstan_dir
 
     if os.path.isdir(cmdstan_dir):
         rmtree(cmdstan_dir)
@@ -98,10 +90,6 @@ def build_stan_model(target_dir):
         print("Copying file from {} to {}".format(sm.exe_file, target_file_path))
         copy(sm.exe_file, target_file_path)
 
-    # Cleanup temp folder, copy the content into target dir first
-    copytree(cmdstan_dir, target_cmdstan_dir)
-    tmp_dir.cleanup()
-
     # TODO: some clean up needs to be done
     # 1. with the stan/ folder since it duplicates the .stan files
     # 2. the stanlib packages if it is installed with repackaged directory
@@ -110,10 +98,6 @@ def build_stan_model(target_dir):
     #         os.remove(f)
 
     if repackage_cmdstan():
-        # TODO: This step is breaking right now, as the cmdstan-2.33.1 is not in the stan_compiled folder. What's the purpose of prune?
-        # Flow:
-        # Windows: Install in temp > build various model files > **copy to target_dir > prune folder
-        # Mac: Install in target_folder > build various model files > prune folder
         prune_cmdstan(target_cmdstan_dir)
 
 
