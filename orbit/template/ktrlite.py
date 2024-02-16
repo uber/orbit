@@ -9,16 +9,15 @@ import matplotlib.pyplot as plt
 
 from ..constants.constants import (
     PredictionKeys,
-    PredictMethod,
     TrainingMetaKeys,
     PredictionMetaKeys,
 )
+from ..constants.palette import OrbitPalette
 from ..exceptions import IllegalArgument, ModelException
 from .model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMAP
 from ..utils.kernels import sandwich_kernel
 from ..utils.features import make_fourier_series_df
-from orbit.constants.palette import OrbitPalette
 from ..utils.knots import get_knot_idx, get_knot_dates
 from ..utils.plot import orbit_style_decorator
 

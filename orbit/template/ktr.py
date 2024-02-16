@@ -13,6 +13,7 @@ from ..constants.constants import (
     TrainingMetaKeys,
     PredictionMetaKeys,
 )
+from ..constants.palette import OrbitPalette
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel, sandwich_kernel
@@ -20,7 +21,6 @@ from ..utils.features import make_seasonal_regressors
 from .model_template import ModelTemplate
 from ..estimators.pyro_estimator import PyroEstimatorSVI
 from ..models import KTRLite
-from ..constants.palette import OrbitPalette
 from ..utils.knots import get_knot_idx, get_knot_dates
 from ..utils.plot import orbit_style_decorator
 
