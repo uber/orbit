@@ -1,7 +1,7 @@
 name: New Deploy PyPI Test
 
-on:
-  workflow_dispatch:
+on: 
+  push:
     branches:
       - cmdstanpy-test-20240215
 
