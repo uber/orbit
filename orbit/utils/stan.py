@@ -67,13 +67,23 @@ def get_compiled_stan_model(stan_model_name):
     # with open(compiled_model, "rb") as f:
     #     return pickle.load(f)
 
+    # TODO: need to fix this .exe_file approach later
+    # model_file = (
+    #     importlib_resources.files("orbit")
+    #     / "stan_compiled"
+    #     / "{}.bin".format(stan_model_name)
+    # )
+
+    # return CmdStanModel(exe_file=str(model_file))
+
     # New approach
     model_file = (
         importlib_resources.files("orbit")
         / "stan_compiled"
-        / "{}.bin".format(stan_model_name)
+        / "{}.stan".format(stan_model_name)
     )
-    return CmdStanModel(exe_file=str(model_file))
+
+    return CmdStanModel(stan_file=str(model_file))
 
 
 def compile_stan_model_simplified(path):

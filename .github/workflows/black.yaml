@@ -6,10 +6,10 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-#      Currently only checking instead of auto formatting
-      - uses: jpetrucciani/black-check@master
-#      - uses: psf/black@stable
+      - uses: actions/checkout@v3
+      - uses: psf/black@stable
+      #      Currently only checking instead of auto formatting
+      # - uses: jpetrucciani/black-check@master
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
