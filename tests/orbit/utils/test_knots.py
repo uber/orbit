@@ -1,7 +1,8 @@
-import pytest
 import numpy as np
 import pandas as pd
-from orbit.utils.knots import get_knot_idx, get_knot_dates
+import pytest
+
+from orbit.utils.knots import get_knot_dates, get_knot_idx
 
 
 @pytest.mark.parametrize("num_of_segments", [0, 1, 3, 10])

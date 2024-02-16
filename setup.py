@@ -1,15 +1,15 @@
-import sys
 import os
 import platform
-from pathlib import Path
+import sys
 import tempfile
+from pathlib import Path
 from shutil import copy, copytree, rmtree
 
-from setuptools import setup, find_packages, Extension
-from setuptools.command.build_py import build_py
-from setuptools.command.test import test as test_command
+from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
+from setuptools.command.build_py import build_py
 from setuptools.command.editable_wheel import editable_wheel
+from setuptools.command.test import test as test_command
 from wheel.bdist_wheel import bdist_wheel
 
 # from setuptools.command.install import install as install_command
@@ -43,8 +43,9 @@ def requirements(filename="requirements.txt"):
 
 def build_stan_model(target_dir):
     print("Importing cmdstanpy...")
-    import cmdstanpy
     from multiprocessing import cpu_count
+
+    import cmdstanpy
 
     target_cmdstan_dir = (Path(target_dir) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
     print("target_cmdstan_dir: {}".format(target_cmdstan_dir))

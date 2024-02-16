@@ -1,14 +1,16 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from copy import deepcopy
 import inspect
+from copy import deepcopy
 
-from .metrics import smape, wmape, mape, mse, mae, rmsse
-from ..exceptions import BacktestException
-from ..constants.constants import TimeSeriesSplitSchemeKeys, BacktestFitKeys
-from ..constants.palette import OrbitPalette as OrbitPal
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
 from orbit.utils.plot import orbit_style_decorator
+
+from ..constants.constants import BacktestFitKeys, TimeSeriesSplitSchemeKeys
+from ..constants.palette import OrbitPalette as OrbitPal
+from ..exceptions import BacktestException
+from .metrics import mae, mape, mse, rmsse, smape, wmape
 
 
 class TimeSeriesSplitter(object):

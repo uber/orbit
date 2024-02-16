@@ -1,8 +1,8 @@
 # from inspect import signature
-from ..template.lgt import LGTModel
-from ..forecaster import MAPForecaster, FullBayesianForecaster, SVIForecaster
-from ..exceptions import IllegalArgument
 from ..constants.constants import EstimatorsKeys
+from ..exceptions import IllegalArgument
+from ..forecaster import FullBayesianForecaster, MAPForecaster, SVIForecaster
+from ..template.lgt import LGTModel
 
 
 def LGT(

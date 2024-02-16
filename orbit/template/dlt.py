@@ -1,23 +1,19 @@
-import numpy as np
-import pandas as pd
-from scipy.stats import nct
 from copy import deepcopy
-import torch
 from enum import Enum
 
-from ..constants.constants import (
-    DEFAULT_REGRESSOR_SIGN,
-    DEFAULT_REGRESSOR_BETA,
-    DEFAULT_REGRESSOR_SIGMA,
-    COEFFICIENT_DF_COLS,
-    PredictMethod,
-    PredictionKeys,
-    TrainingMetaKeys,
-    PredictionMetaKeys,
-)
+import numpy as np
+import pandas as pd
+import torch
+from scipy.stats import nct
+
+from ..constants.constants import (COEFFICIENT_DF_COLS, DEFAULT_REGRESSOR_BETA,
+                                   DEFAULT_REGRESSOR_SIGMA,
+                                   DEFAULT_REGRESSOR_SIGN, PredictionKeys,
+                                   PredictionMetaKeys, PredictMethod,
+                                   TrainingMetaKeys)
+from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
 from ..exceptions import IllegalArgument, ModelException, PredictionException
 from .ets import ETSModel
-from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
 
 
 class DataInputMapper(Enum):

@@ -1,7 +1,7 @@
-import pytest
 import numpy as np
+import pytest
 
-from orbit.models import LGT, DLT, KTR, KTRLite
+from orbit.models import DLT, KTR, LGT, KTRLite
 
 
 @pytest.mark.parametrize("estimator", ["stan-mcmc", "stan-map"])

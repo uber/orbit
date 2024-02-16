@@ -1,9 +1,9 @@
-import pytest
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
 
-from orbit.diagnostics.backtest import TimeSeriesSplitter, BackTester
-from orbit.diagnostics.metrics import smape, wmape, mae
+from orbit.diagnostics.backtest import BackTester, TimeSeriesSplitter
+from orbit.diagnostics.metrics import mae, smape, wmape
 from orbit.models import LGT, KTRLite
 
 

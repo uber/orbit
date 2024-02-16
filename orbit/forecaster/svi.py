@@ -1,10 +1,11 @@
-import numpy as np
-import pandas as pd
 from functools import partial
 
-from ..constants.constants import PredictMethod, PredictionKeys
+import numpy as np
+import pandas as pd
+
+from ..constants.constants import PredictionKeys, PredictMethod
 from ..exceptions import ForecasterException
-from ..utils.predictions import prepend_date_column, compute_percentiles
+from ..utils.predictions import compute_percentiles, prepend_date_column
 from .forecaster import Forecaster
 
 

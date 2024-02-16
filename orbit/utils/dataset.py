@@ -1,6 +1,7 @@
-import pandas as pd
-import numpy as np
 from datetime import datetime
+
+import numpy as np
+import pandas as pd
 
 
 def load_iclaims(end_date="2018-06-24", transform=True):

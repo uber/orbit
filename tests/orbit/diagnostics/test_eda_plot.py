@@ -1,5 +1,5 @@
-import pytest
 import numpy as np
+import pytest
 
 from orbit.eda import eda_plot
 

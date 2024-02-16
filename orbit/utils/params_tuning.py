@@ -1,15 +1,15 @@
-import pandas as pd
 import inspect
-from tqdm.auto import tqdm
+import logging
+from collections.abc import Iterable, Mapping
 from itertools import product
-from collections.abc import Mapping, Iterable
 
-from ..diagnostics.metrics import smape
+import pandas as pd
+from tqdm.auto import tqdm
+
 from ..diagnostics.backtest import BackTester
+from ..diagnostics.metrics import smape
 from ..exceptions import IllegalArgument
 from ..forecaster import MAPForecaster
-
-import logging
 
 logger = logging.getLogger("orbit")
 

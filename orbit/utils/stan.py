@@ -1,11 +1,12 @@
+import os
 import pickle
 
 # import pkg_resources
 import importlib_resources
-
-import os
 from cmdstanpy import CmdStanModel
+
 from orbit.constants.constants import CompiledStanModelPath
+
 from ..utils.logger import get_logger
 
 logger = get_logger("orbit")

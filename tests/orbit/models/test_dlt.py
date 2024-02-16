@@ -1,10 +1,11 @@
 from copy import copy
-import pytest
-import numpy as np
 
-from orbit.models import DLT
+import numpy as np
+import pytest
+
 from orbit.constants.constants import PredictionKeys
 from orbit.exceptions import ModelException, PredictionException
+from orbit.models import DLT
 
 
 @pytest.mark.parametrize("estimator", ["stan-map", "stan-mcmc"])

@@ -1,8 +1,8 @@
-from ..template.ktr import KTRModel
-from ..forecaster import SVIForecaster
-from ..exceptions import IllegalArgument
-from ..estimators.pyro_estimator import PyroEstimatorSVI
 from ..constants.constants import EstimatorsKeys
+from ..estimators.pyro_estimator import PyroEstimatorSVI
+from ..exceptions import IllegalArgument
+from ..forecaster import SVIForecaster
+from ..template.ktr import KTRModel
 
 
 def KTR(

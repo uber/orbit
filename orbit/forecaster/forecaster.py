@@ -1,16 +1,17 @@
+import warnings
 from copy import deepcopy
+from enum import Enum
+from typing import Any, Dict
+
 import numpy as np
 import pandas as pd
-import warnings
-from enum import Enum
 
-from typing import Dict, Any
-
-from ..exceptions import ForecasterException, AbstractMethodException, IllegalArgument
-from ..utils.general import is_ordered_datetime, is_even_gap_datetime
-from ..template.model_template import ModelTemplate
+from ..constants.constants import PredictionMetaKeys, TrainingMetaKeys
 from ..estimators.stan_estimator import StanEstimatorMCMC
-from ..constants.constants import TrainingMetaKeys, PredictionMetaKeys
+from ..exceptions import (AbstractMethodException, ForecasterException,
+                          IllegalArgument)
+from ..template.model_template import ModelTemplate
+from ..utils.general import is_even_gap_datetime, is_ordered_datetime
 
 COMMON_MODEL_CALLABLES = [
     "get_data_input_mapper",

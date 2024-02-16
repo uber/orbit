@@ -1,8 +1,7 @@
 import numpy as np
-import torch
-
 import pyro
 import pyro.distributions as dist
+import torch
 
 torch.set_default_tensor_type("torch.DoubleTensor")
 

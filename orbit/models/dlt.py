@@ -1,8 +1,8 @@
 # from inspect import signature
-from ..template.dlt import DLTModel
-from ..forecaster import MAPForecaster, FullBayesianForecaster
-from ..exceptions import IllegalArgument
 from ..constants.constants import EstimatorsKeys
+from ..exceptions import IllegalArgument
+from ..forecaster import FullBayesianForecaster, MAPForecaster
+from ..template.dlt import DLTModel
 
 
 def DLT(

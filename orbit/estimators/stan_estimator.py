@@ -1,15 +1,14 @@
-from abc import abstractmethod
-from copy import copy
 import logging
 import multiprocessing
+from abc import abstractmethod
+from copy import copy
 from sys import platform, version_info
 
-from .base_estimator import BaseEstimator
 from ..exceptions import EstimatorException
-from ..utils.stan import get_compiled_stan_model, suppress_stdout_stderr
 from ..utils.general import update_dict
 from ..utils.logger import get_logger
-
+from ..utils.stan import get_compiled_stan_model, suppress_stdout_stderr
+from .base_estimator import BaseEstimator
 
 logger = get_logger("orbit")
 

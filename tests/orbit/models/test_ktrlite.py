@@ -1,9 +1,9 @@
-import pytest
 import numpy as np
 import pandas as pd
+import pytest
 
-from orbit.models import KTRLite
 from orbit.diagnostics.metrics import smape
+from orbit.models import KTRLite
 
 # used for in-sample training insanity check
 SMAPE_TOLERANCE = 0.28

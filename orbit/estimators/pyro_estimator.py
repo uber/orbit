@@ -1,15 +1,15 @@
-from abc import abstractmethod
-import numpy as np
 import logging
+from abc import abstractmethod
 
+import numpy as np
 import pyro
 from pyro.infer import SVI, Trace_ELBO
-from pyro.infer.autoguide import AutoLowRankMultivariateNormal, AutoDelta
+from pyro.infer.autoguide import AutoDelta, AutoLowRankMultivariateNormal
 from pyro.optim import ClippedAdam
 
-from .base_estimator import BaseEstimator
 from ..exceptions import EstimatorException
 from ..utils.pyro import get_pyro_model
+from .base_estimator import BaseEstimator
 
 logger = logging.getLogger("orbit")
 

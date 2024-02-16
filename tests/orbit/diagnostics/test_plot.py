@@ -1,16 +1,13 @@
-import pytest
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
 
 from orbit.diagnostics.backtest import BackTester
 from orbit.diagnostics.metrics import smape
-from orbit.models import LGT, DLT
-from orbit.diagnostics.plot import (
-    plot_predicted_data,
-    plot_predicted_components,
-    plot_bt_predictions,
-    plot_bt_predictions2,
-)
+from orbit.diagnostics.plot import (plot_bt_predictions, plot_bt_predictions2,
+                                    plot_predicted_components,
+                                    plot_predicted_data)
+from orbit.models import DLT, LGT
 
 
 @pytest.mark.parametrize(

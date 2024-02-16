@@ -1,29 +1,27 @@
-from orbit.models.ktrlite import KTRLite
-import pandas as pd
-import numpy as np
 import math
-from scipy.stats import nct
-from enum import Enum
-import torch
-import matplotlib.pyplot as plt
 from copy import deepcopy
+from enum import Enum
 
-from ..constants.constants import (
-    KTRTimePointPriorKeys,
-    PredictMethod,
-    TrainingMetaKeys,
-    PredictionMetaKeys,
-)
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import torch
+from scipy.stats import nct
+
+from orbit.constants.palette import OrbitPalette
+from orbit.models.ktrlite import KTRLite
+
+from ..constants.constants import (KTRTimePointPriorKeys, PredictionMetaKeys,
+                                   PredictMethod, TrainingMetaKeys)
+from ..estimators.pyro_estimator import PyroEstimatorSVI
 from ..exceptions import IllegalArgument, ModelException, PredictionException
+from ..models import KTRLite
+from ..utils.features import make_seasonal_regressors
 from ..utils.general import is_ordered_datetime
 from ..utils.kernels import gauss_kernel, sandwich_kernel
-from ..utils.features import make_seasonal_regressors
-from .model_template import ModelTemplate
-from ..estimators.pyro_estimator import PyroEstimatorSVI
-from ..models import KTRLite
-from orbit.constants.palette import OrbitPalette
-from ..utils.knots import get_knot_idx, get_knot_dates
+from ..utils.knots import get_knot_dates, get_knot_idx
 from ..utils.plot import orbit_style_decorator
+from .model_template import ModelTemplate
 
 
 class DataInputMapper(Enum):

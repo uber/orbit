@@ -1,6 +1,7 @@
 from enum import Enum
-import seaborn as sns
+
 import matplotlib.colors as clr
+import seaborn as sns
 
 
 class KTRPalette(Enum):

@@ -1,27 +1,26 @@
 # the following lines are added to fix unit test error
 # or else the following line will give the following error
 # TclError: no display name and no $DISPLAY environment variable
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
-import numpy as np
+import logging
 import math
 import os
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import pkg_resources
+import seaborn as sns
 import statsmodels.api as sm
 from scipy import stats
 
-from ..constants.constants import PredictionKeys
-from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
-from ..constants.constants import BacktestFitKeys
-from ..constants.palette import PredictionPaletteClassic as PredPal
 from orbit.constants import palette
 from orbit.diagnostics.metrics import smape
+from orbit.utils.general import is_empty_dataframe, is_ordered_datetime
 from orbit.utils.plot import orbit_style_decorator
+
+from ..constants.constants import BacktestFitKeys, PredictionKeys
+from ..constants.palette import PredictionPaletteClassic as PredPal
 from ..exceptions import PlotException
-
-
-import logging
 
 logger = logging.getLogger("orbit")
 

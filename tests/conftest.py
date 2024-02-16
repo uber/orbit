@@ -1,10 +1,12 @@
-import pytest
-import pandas as pd
-import numpy as np
-import importlib_resources
 from copy import deepcopy
 
-from orbit.utils.simulation import make_trend, make_seasonality, make_regression
+import importlib_resources
+import numpy as np
+import pandas as pd
+import pytest
+
+from orbit.utils.simulation import (make_regression, make_seasonality,
+                                    make_trend)
 
 
 @pytest.fixture

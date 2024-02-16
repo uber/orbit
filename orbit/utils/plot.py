@@ -1,6 +1,7 @@
-import pkg_resources
 import functools
 import logging
+
+import pkg_resources
 from matplotlib import pyplot as plt
 
 STYLE_FILE_NAME = "plot_style"

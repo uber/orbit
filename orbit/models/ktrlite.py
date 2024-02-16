@@ -1,8 +1,8 @@
-from ..template.ktrlite import KTRLiteModel
-from ..forecaster import MAPForecaster
-from ..exceptions import IllegalArgument
-from ..estimators.stan_estimator import StanEstimatorMAP
 from ..constants.constants import EstimatorsKeys
+from ..estimators.stan_estimator import StanEstimatorMAP
+from ..exceptions import IllegalArgument
+from ..forecaster import MAPForecaster
+from ..template.ktrlite import KTRLiteModel
 
 
 def KTRLite(

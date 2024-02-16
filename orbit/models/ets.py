@@ -1,8 +1,8 @@
 # from inspect import signature
-from ..template.ets import ETSModel
-from ..forecaster import MAPForecaster, FullBayesianForecaster
-from ..exceptions import IllegalArgument
 from ..constants.constants import EstimatorsKeys
+from ..exceptions import IllegalArgument
+from ..forecaster import FullBayesianForecaster, MAPForecaster
+from ..template.ets import ETSModel
 
 
 def ETS(

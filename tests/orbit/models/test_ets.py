@@ -1,9 +1,10 @@
-import pytest
-import numpy as np
 from copy import copy
 
-from orbit.models import ETS
+import numpy as np
+import pytest
+
 from orbit.constants.constants import PredictionKeys
+from orbit.models import ETS
 
 
 @pytest.mark.parametrize("estimator", ["stan-map", "stan-mcmc"])

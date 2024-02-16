@@ -1,13 +1,15 @@
-import numpy as np
 from copy import deepcopy
-import torch
 from enum import Enum
 
-from ..constants.constants import PredictionKeys, TrainingMetaKeys, PredictionMetaKeys
-from ..exceptions import IllegalArgument, DataInputException
-from .model_template import ModelTemplate
-from ..estimators.stan_estimator import StanEstimatorMCMC, StanEstimatorMAP
+import numpy as np
+import torch
+
+from ..constants.constants import (PredictionKeys, PredictionMetaKeys,
+                                   TrainingMetaKeys)
+from ..estimators.stan_estimator import StanEstimatorMAP, StanEstimatorMCMC
+from ..exceptions import DataInputException, IllegalArgument
 from ..utils.features import moving_average
+from .model_template import ModelTemplate
 
 
 # constants for attributes, params and I/Os

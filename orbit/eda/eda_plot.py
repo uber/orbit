@@ -1,7 +1,8 @@
+import math
+
+import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
-import pandas as pd
-import math
 
 from orbit.constants import palette
 from orbit.utils.plot import orbit_style_decorator

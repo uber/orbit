@@ -1,8 +1,9 @@
 import os
-import numpy as np
-import pandas as pd
 from copy import deepcopy
 from itertools import product
+
+import numpy as np
+import pandas as pd
 
 
 def update_dict(original_dict, append_dict):
