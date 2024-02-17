@@ -59,7 +59,7 @@ def build_stan_model(target_dir):
         version=CMDSTAN_VERSION,
         # if we want to do it inside the repo dir, we need to include the folder in
         # MANIFEST.in
-        dir=cmdstan_dir.parent,
+        # dir=cmdstan_dir.parent,
         overwrite=True,
         verbose=True,
         cores=cpu_count(),
