@@ -46,15 +46,13 @@ def build_stan_model(target_dir):
     import cmdstanpy
     from multiprocessing import cpu_count
 
-    target_cmdstan_dir = (Path(target_dir) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
-    print("target_cmdstan_dir: {}".format(target_cmdstan_dir))
-    cmdstan_dir = target_cmdstan_dir
+    # target_cmdstan_dir = (Path(target_dir) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
+    # print("target_cmdstan_dir: {}".format(target_cmdstan_dir))
+    # cmdstan_dir = target_cmdstan_dir
 
-    if os.path.isdir(cmdstan_dir):
-        rmtree(cmdstan_dir)
+    # if os.path.isdir(cmdstan_dir):
+    #     rmtree(cmdstan_dir)
 
-    print("complier=IS_WINDOWS=", IS_WINDOWS)
-    print(sys.version)
     if not cmdstanpy.install_cmdstan(
         version=CMDSTAN_VERSION,
         # if we want to do it inside the repo dir, we need to include the folder in
@@ -69,6 +67,10 @@ def build_stan_model(target_dir):
         raise RuntimeError("CmdStan failed to install in repackaged directory")
     else:
         print("Installed cmdstanpy package.")
+
+    from cmdstanpy import cmdstan_path, set_cmdstan_path
+
+    cmdstan_dir = cmstan_path()
 
     print("cmdstan_dir: {}".format(cmdstan_dir))
     for model in MODELS:
@@ -100,7 +102,7 @@ def build_stan_model(target_dir):
     #         os.remove(f)
 
     if repackage_cmdstan():
-        prune_cmdstan(target_cmdstan_dir)
+        prune_cmdstan(cmdstan_dir)
 
 
 def repackage_cmdstan():
