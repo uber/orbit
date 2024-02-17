@@ -54,6 +54,7 @@ def build_stan_model(target_dir):
         rmtree(cmdstan_dir)
 
     print("complier=IS_WINDOWS=", IS_WINDOWS)
+    print(sys.version)
     if not cmdstanpy.install_cmdstan(
         version=CMDSTAN_VERSION,
         # if we want to do it inside the repo dir, we need to include the folder in
