@@ -41,6 +41,10 @@ def requirements(filename="requirements.txt"):
         return f.readlines()
 
 
+def repackage_cmdstan():
+    return os.environ.get("ORBIT_REPACKAGE_CMDSTAN", "").lower() not in ["false", "0"]
+
+
 def install_cmdstan_toolchain() -> bool:
     """Install C++ compilers required to build stan models on Windows machines."""
     import cmdstanpy
@@ -59,6 +63,33 @@ def install_cmdstan_toolchain() -> bool:
         compiler, tool = cmdstanpy.utils.cxx_toolchain_path()
         print("Toolchain installed. Compiler:", compiler, ", Tools:", tool)
         return True
+
+
+def prune_cmdstan(cmdstan_dir: str) -> None:
+    """
+    Keep only the cmdstan executables and tbb files (minimum required to run a cmdstanpy commands on a pre-compiled model).
+    Note: this is a module taking reference from prophet
+    """
+    print("Prune stan directory: {}".format(cmdstan_dir))
+    original_dir = Path(cmdstan_dir).resolve()
+    parent_dir = original_dir.parent
+    temp_dir = parent_dir / "temp"
+    if temp_dir.is_dir():
+        rmtree(temp_dir)
+    temp_dir.mkdir()
+
+    print("Copying ", original_dir, " to ", temp_dir, " for pruning")
+    copytree(original_dir / BINARIES_DIR, temp_dir / BINARIES_DIR)
+    for f in (temp_dir / BINARIES_DIR).iterdir():
+        if f.is_dir():
+            rmtree(f)
+        elif f.is_file() and f.stem not in BINARIES:
+            os.remove(f)
+    for tbb_dir in TBB_DIRS:
+        copytree(original_dir / TBB_PARENT / tbb_dir, temp_dir / TBB_PARENT / tbb_dir)
+
+    rmtree(original_dir)
+    temp_dir.rename(original_dir)
 
 
 def build_stan_model(target_dir):
@@ -99,26 +130,26 @@ def build_stan_model(target_dir):
             print("Installed cmdstanpy package.")
 
         print("cmdstan_dir: {}".format(cmdstan_dir))
+
         for model in MODELS:
-            model_name = "{}.stan".format(model)
+            model_name = f"{model}.stan"
             # note: ensure copy target is a directory not a file.
 
             temp_source_file_path = os.path.join(MODEL_SOURCE_DIR, model_name)
             print(
-                "Copying source file from {} to {}".format(
-                    temp_source_file_path, cmdstan_dir.parent.resolve()
-                )
+                f"Copying source file from {temp_source_file_path} to {cmdstan_dir.parent.resolve()}"
             )
             temp_stan_file = copy(temp_source_file_path, cmdstan_dir.parent.resolve())
 
-            # temp_stan_file = os.path.join(MODEL_SOURCE_DIR, model_name)
-
-            print("Compiling stan file: {}".format(temp_stan_file))
+            print(f"Compiling stan file: {temp_stan_file}")
             sm = cmdstanpy.CmdStanModel(stan_file=temp_stan_file)
-            target_name = "{}.bin".format(model)
+            target_name = f"{model}.bin"
             target_file_path = os.path.join(target_dir, target_name)
-            print("Copying file from {} to {}".format(sm.exe_file, target_file_path))
+            print(f"Copying file from {sm.exe_file} to {target_file_path}")
             copy(sm.exe_file, target_file_path)
+
+        if IS_WINDOWS and repackage_cmdstan():
+            copytree(cmdstan_dir, target_cmdstan_dir)
 
         # TODO: some clean up needs to be done
         # 1. with the stan/ folder since it duplicates the .stan files
@@ -129,37 +160,6 @@ def build_stan_model(target_dir):
 
     if repackage_cmdstan():
         prune_cmdstan(target_cmdstan_dir)
-
-
-def repackage_cmdstan():
-    return os.environ.get("ORBIT_REPACKAGE_CMDSTAN", "").lower() not in ["false", "0"]
-
-
-def prune_cmdstan(cmdstan_dir: str) -> None:
-    """
-    Keep only the cmdstan executables and tbb files (minimum required to run a cmdstanpy commands on a pre-compiled model).
-    Note: this is a module taking reference from prophet
-    """
-    print("Prune stan directory: {}".format(cmdstan_dir))
-    original_dir = Path(cmdstan_dir).resolve()
-    parent_dir = original_dir.parent
-    temp_dir = parent_dir / "temp"
-    if temp_dir.is_dir():
-        rmtree(temp_dir)
-    temp_dir.mkdir()
-
-    print("Copying ", original_dir, " to ", temp_dir, " for pruning")
-    copytree(original_dir / BINARIES_DIR, temp_dir / BINARIES_DIR)
-    for f in (temp_dir / BINARIES_DIR).iterdir():
-        if f.is_dir():
-            rmtree(f)
-        elif f.is_file() and f.stem not in BINARIES:
-            os.remove(f)
-    for tbb_dir in TBB_DIRS:
-        copytree(original_dir / TBB_PARENT / tbb_dir, temp_dir / TBB_PARENT / tbb_dir)
-
-    rmtree(original_dir)
-    temp_dir.rename(original_dir)
 
 
 class BuildPyCommand(build_py):
