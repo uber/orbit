@@ -45,10 +45,14 @@ def repackage_cmdstan():
     return os.environ.get("ORBIT_REPACKAGE_CMDSTAN", "").lower() not in ["false", "0"]
 
 
-def install_cmdstan_toolchain() -> bool:
-    """Install C++ compilers required to build stan models on Windows machines."""
+def install_rtools() -> bool:
+    """
+    Install C++ compilers required to build stan models on Windows machines.
+    Reference from prophet
+    """
     import cmdstanpy
 
+    print("Windows detected, install C++ Compliers required to build stan models.")
     try:
         cmdstanpy.utils.cxx_toolchain_path()
         return False
@@ -68,7 +72,7 @@ def install_cmdstan_toolchain() -> bool:
 def prune_cmdstan(cmdstan_dir: str) -> None:
     """
     Keep only the cmdstan executables and tbb files (minimum required to run a cmdstanpy commands on a pre-compiled model).
-    Note: this is a module taking reference from prophet
+    Reference from prophet
     """
     print("Prune stan directory: {}".format(cmdstan_dir))
     original_dir = Path(cmdstan_dir).resolve()
@@ -92,10 +96,57 @@ def prune_cmdstan(cmdstan_dir: str) -> None:
     temp_dir.rename(original_dir)
 
 
+def install_stan(cmdstan_dir: Path):
+    """
+    Compile and install stan backend
+    Reference from prophet
+    """
+    import cmdstanpy
+    from multiprocessing import cpu_count
+
+    if repackage_cmdstan():
+        if IS_WINDOWS:
+            install_rtools()
+        print("Installing cmdstan to", cmdstan_dir)
+        if os.path.isdir(cmdstan_dir):
+            rmtree(cmdstan_dir)
+
+        if not cmdstanpy.install_cmdstan(
+            version=CMDSTAN_VERSION,
+            dir=cmdstan_dir.parent,
+            overwrite=True,
+            verbose=True,
+            cores=cpu_count(),
+            progress=True,
+        ):
+            raise RuntimeError("CmdStan failed to install in repackaged directory")
+
+        print("Installed cmdstanpy package.")
+
+
+def build_model(model: str, model_dir, cmdstan_dir, target_dir):
+    import cmdstanpy
+
+    model_name = f"{model}.stan"
+
+    temp_source_file_path = os.path.join(model_dir, model_name)
+    print(
+        f"Copying source file from {temp_source_file_path} to {cmdstan_dir.parent.resolve()}"
+    )
+    temp_stan_file = copy(
+        os.path.join(model_dir, model_name), cmdstan_dir.parent.resolve()
+    )
+    print(f"Compiling stan file: {temp_stan_file}")
+    sm = cmdstanpy.CmdStanModel(stan_file=temp_stan_file)
+    target_name = f"{model}.bin"
+    target_file_path = os.path.join(target_dir, target_name)
+    print(f"Copying file from {sm.exe_file} to {target_file_path}")
+    copy(sm.exe_file, target_file_path)
+
+
 def build_stan_model(target_dir):
     print("Importing cmdstanpy...")
     import cmdstanpy
-    from multiprocessing import cpu_count
 
     target_cmdstan_dir = (Path(target_dir) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
     print("target_cmdstan_dir: {}".format(target_cmdstan_dir))
@@ -105,48 +156,20 @@ def build_stan_model(target_dir):
         if IS_WINDOWS:
             print("Windows detected. Use tmp_dir: {}".format(tmp_dir))
             cmdstan_dir = (Path(tmp_dir) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
-            print(
-                "Windows detected, install C++ Compliers required to build stan models."
-            )
-            install_cmdstan_toolchain()
+            install_rtools()
         else:
             cmdstan_dir = target_cmdstan_dir
-
-        if os.path.isdir(cmdstan_dir):
-            rmtree(cmdstan_dir)
-
-        if not cmdstanpy.install_cmdstan(
-            version=CMDSTAN_VERSION,
-            # if we want to do it inside the repo dir, we need to include the folder in
-            # MANIFEST.in
-            dir=cmdstan_dir.parent,
-            overwrite=True,
-            verbose=True,
-            cores=cpu_count(),
-            progress=True,
-        ):
-            raise RuntimeError("CmdStan failed to install in repackaged directory")
-        else:
-            print("Installed cmdstanpy package.")
-
         print("cmdstan_dir: {}".format(cmdstan_dir))
+        install_stan(cmdstan_dir)
 
         for model in MODELS:
-            model_name = f"{model}.stan"
             # note: ensure copy target is a directory not a file.
-
-            temp_source_file_path = os.path.join(MODEL_SOURCE_DIR, model_name)
-            print(
-                f"Copying source file from {temp_source_file_path} to {cmdstan_dir.parent.resolve()}"
+            build_model(
+                model=model,
+                model_dir=MODEL_SOURCE_DIR,
+                cmdstan_dir=cmdstan_dir,
+                target_dir=target_dir,
             )
-            temp_stan_file = copy(temp_source_file_path, cmdstan_dir.parent.resolve())
-
-            print(f"Compiling stan file: {temp_stan_file}")
-            sm = cmdstanpy.CmdStanModel(stan_file=temp_stan_file)
-            target_name = f"{model}.bin"
-            target_file_path = os.path.join(target_dir, target_name)
-            print(f"Copying file from {sm.exe_file} to {target_file_path}")
-            copy(sm.exe_file, target_file_path)
 
         if IS_WINDOWS and repackage_cmdstan():
             copytree(cmdstan_dir, target_cmdstan_dir)
