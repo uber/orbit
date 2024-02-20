@@ -231,9 +231,9 @@ class LGTModel(ETSModel):
                     -1.0,
                     1.0,
                 )
-                init_values[
-                    LatentSamplingParameters.INITIAL_SEASONALITY.value
-                ] = init_sea
+                init_values[LatentSamplingParameters.INITIAL_SEASONALITY.value] = (
+                    init_sea
+                )
             if self.num_of_positive_regressors > 0:
                 x = np.clip(
                     np.random.normal(
