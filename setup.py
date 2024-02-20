@@ -1,15 +1,16 @@
-import sys
+import json
 import os
 import platform
-from pathlib import Path
+import sys
 import tempfile
+from pathlib import Path
 from shutil import copy, copytree, rmtree
 
-from setuptools import setup, find_packages, Extension
-from setuptools.command.build_py import build_py
-from setuptools.command.test import test as test_command
+from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
+from setuptools.command.build_py import build_py
 from setuptools.command.editable_wheel import editable_wheel
+from setuptools.command.test import test as test_command
 from wheel.bdist_wheel import bdist_wheel
 
 # from setuptools.command.install import install as install_command
@@ -101,8 +102,9 @@ def install_stan(cmdstan_dir: Path):
     Compile and install stan backend
     Reference from prophet
     """
-    import cmdstanpy
     from multiprocessing import cpu_count
+
+    import cmdstanpy
 
     if repackage_cmdstan():
         if IS_WINDOWS:
