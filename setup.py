@@ -41,6 +41,26 @@ def requirements(filename="requirements.txt"):
         return f.readlines()
 
 
+def install_cmdstan_toolchain() -> bool:
+    """Install C++ compilers required to build stan models on Windows machines."""
+    import cmdstanpy
+
+    try:
+        cmdstanpy.utils.cxx_toolchain_path()
+        return False
+    except Exception:
+        try:
+            from cmdstanpy.install_cxx_toolchain import run_rtools_install
+        except ImportError:
+            # older versions
+            from cmdstanpy.install_cxx_toolchain import main as run_rtools_install
+
+        run_rtools_install({"version": None, "dir": None, "verbose": True})
+        compiler, tool = cmdstanpy.utils.cxx_toolchain_path()
+        print("Toolchain installed. Compiler:", compiler, ", Tools:", tool)
+        return True
+
+
 def build_stan_model(target_dir):
     print("Importing cmdstanpy...")
     import cmdstanpy
@@ -54,6 +74,10 @@ def build_stan_model(target_dir):
         if IS_WINDOWS:
             print("Windows detected. Use tmp_dir: {}".format(tmp_dir))
             cmdstan_dir = (Path(tmp_dir) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
+            print(
+                "Windows detected, install C++ Compliers required to build stan models."
+            )
+            install_cmdstan_toolchain()
         else:
             cmdstan_dir = target_cmdstan_dir
 
