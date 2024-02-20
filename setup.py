@@ -23,11 +23,14 @@ MODELS = ["dlt", "ets", "lgt", "ktrlite"]
 MODEL_TARGET_DIR = os.path.join("orbit", "stan_compiled")
 
 DESCRIPTION = "Orbit is a package for Bayesian time series modeling and inference."
-CMDSTAN_VERSION = "2.33.1"
 BINARIES_DIR = "bin"
 BINARIES = ["diagnose", "print", "stanc", "stansummary"]
 TBB_PARENT = "stan/lib/stan_math/lib"
 TBB_DIRS = ["tbb", "tbb_2020.3"]
+
+with open("orbit/cmdstan_version.json") as f:
+    config = json.load(f)
+CMDSTAN_VERSION = config["CMDSTAN_VERSION"]
 IS_WINDOWS = platform.platform().startswith("Win")
 
 
