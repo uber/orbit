@@ -20,10 +20,10 @@ def set_cmdstan_path():
     if local_cmdstan.exists():
         cmdstanpy.set_cmdstan_path(str(local_cmdstan))
         logger.info(
-            "Local/repackaged cmdstan exists, setting path to", str(local_cmdstan)
+            f"Local/repackaged cmdstan exists, setting path to {str(local_cmdstan)}"
         )
         return 1
     logger.warn(
-        "Cannot find local cmdstan in", str(local_cmdstan), ", using default path."
+        f"Cannot find local cmdstan in {str(local_cmdstan)}, using default path."
     )
     return 1
