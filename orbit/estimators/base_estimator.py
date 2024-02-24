@@ -5,6 +5,10 @@ import numpy as np
 # import custom_inherit as ci
 # ci.store["numpy_with_merge_dedup"] = merge_numpy_docs_dedup
 # ci.add_style("numpy_with_merge_dedup", merge_numpy_docs_dedup)
+from ..utils.set_cmdstan_path import set_cmdstan_path
+
+# Make sure models are using the right cmdstan folder
+set_cmdstan_path()
 
 
 class BaseEstimator:

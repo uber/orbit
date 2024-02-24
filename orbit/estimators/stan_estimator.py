@@ -10,7 +10,6 @@ from ..utils.stan import get_compiled_stan_model, suppress_stdout_stderr
 from ..utils.general import update_dict
 from ..utils.logger import get_logger
 
-
 logger = get_logger("orbit")
 
 
