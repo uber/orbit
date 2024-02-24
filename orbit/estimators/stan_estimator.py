@@ -133,6 +133,7 @@ class StanEstimatorMCMC(StanEstimator):
             logger.info(msg)
 
         compiled_mod = get_compiled_stan_model(model_name)
+
         # check https://mc-stan.org/cmdstanpy/api.html#cmdstanpy.CmdStanModel.sample
         # for additional args
         stan_mcmc_fit = compiled_mod.sample(

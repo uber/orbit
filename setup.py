@@ -186,8 +186,9 @@ def build_stan_model(target_dir):
         #     if f.is_file() and f.name != model_name:
         #         os.remove(f)
 
-    if repackage_cmdstan():
-        prune_cmdstan(target_cmdstan_dir)
+    # if repackage_cmdstan():
+    #     prune_cmdstan(target_cmdstan_dir)
+    repackage_cmdstan()
 
 
 class BuildPyCommand(build_py):
