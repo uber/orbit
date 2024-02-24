@@ -167,14 +167,14 @@ def build_stan_model(target_dir):
         print("cmdstan_dir: {}".format(cmdstan_dir))
         install_stan(cmdstan_dir)
 
-        for model in MODELS:
-            # note: ensure copy target is a directory not a file.
-            build_model(
-                model=model,
-                model_dir=MODEL_SOURCE_DIR,
-                cmdstan_dir=cmdstan_dir,
-                target_dir=target_dir,
-            )
+        # for model in MODELS:
+        #     # note: ensure copy target is a directory not a file.
+        #     build_model(
+        #         model=model,
+        #         model_dir=MODEL_SOURCE_DIR,
+        #         cmdstan_dir=cmdstan_dir,
+        #         target_dir=target_dir,
+        #     )
 
         if IS_WINDOWS and repackage_cmdstan():
             copytree(cmdstan_dir, target_cmdstan_dir)

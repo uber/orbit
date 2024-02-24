@@ -9,9 +9,12 @@ from ..exceptions import EstimatorException
 from ..utils.stan import get_compiled_stan_model, suppress_stdout_stderr
 from ..utils.general import update_dict
 from ..utils.logger import get_logger
+from ..utils.set_cmdstan_path import set_cmdstan_path
 
 logger = get_logger("orbit")
 
+# Make sure models are using the right cmdstan folder
+set_cmdstan_path()
 
 class StanEstimator(BaseEstimator):
     """Abstract StanEstimator with shared args for all StanEstimator child classes
