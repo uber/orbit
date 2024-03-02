@@ -11,7 +11,13 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ["ubuntu-latest"] # TODO: add macOS and windows to the build os matrix
+        cibw_arch: ["native"]
+        # Build one wheel (ABI = none) using first build spec, then test on all python versions.
+        cibw_build: ["cp39-*"] # TODO: add cp310+ versions
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
@@ -23,26 +29,45 @@ jobs:
           python -m pip install --upgrade pip
           pip install setuptools wheel twine
           pip install build
-          pip install auditwheel
-      # - name: Build package
-      #   run:
-      #     python -m build
+      - name: "Build wheels"
+        uses: pypa/cibuildwheel@v2.16.5
+        with:
+          package-dir: python
+        env:
+          CIBW_ENVIRONMENT: >
+            STAN_BACKEND="${{ env.STAN_BACKEND }}"
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+          CIBW_BUILD: ${{ matrix.cibw_build }}
+          CIBW_SKIP: "*musllinux*"
+          CIBW_ARCHS: ${{ matrix.cibw_arch }}
+          CIBW_BUILD_FRONTEND: build
+      - name: "Upload wheel as artifact"
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifact-${{ matrix.os }}-${{ matrix.cibw_arch }}-wheel
+          path: "./**/*.whl"
+      - name: Build source
+        run:
+          python -m build --sdist
+      - name: Copy artifacts to dist/ folder
+        run: 
+          find . -name '*.whl' -exec mv '{}' dist/ \;
       # - name: Convert linux wheel to manylinux wheels
       #   run:
       #     auditwheel repair --plat manylinux2014_x86_64 -w dist dist/*linux_x86_64.whl
       # - name: Remove platform specific linux wheels
       #   run:
       #     rm dist/*-linux_x86_64.whl
-      # - name: Publish package
-      #   uses: pypa/gh-action-pypi-publish@v1.4.2
-      #   with:
-      #     user: __token__
-      #     password: ${{ secrets.PYPI_PASSWORD }}
-      - name: Build and publish
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: |
-          pip install .
-          python -m build
-          python -m twine upload dist/*.tar.gz
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish@v1.4.2
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_PASSWORD }}
+      # - name: Build and publish
+      #   env:
+      #     TWINE_USERNAME: __token__
+      #     TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      #   run: |
+      #     pip install .
+      #     python -m build
+      #     python -m twine upload dist/*.tar.gz
