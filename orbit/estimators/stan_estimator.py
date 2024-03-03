@@ -14,8 +14,8 @@ from ..utils.set_cmdstan_path import set_cmdstan_path
 logger = get_logger("orbit")
 
 # Make sure models are using the right cmdstan folder
-set_cmdstan_path()
-
+# set_cmdstan_path()
+   
 class StanEstimator(BaseEstimator):
     """Abstract StanEstimator with shared args for all StanEstimator child classes
 

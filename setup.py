@@ -116,15 +116,22 @@ def install_stan(cmdstan_dir: Path):
         if os.path.isdir(cmdstan_dir):
             rmtree(cmdstan_dir)
 
+        # if not cmdstanpy.install_cmdstan(
+        #     version=CMDSTAN_VERSION,
+        #     dir=cmdstan_dir.parent,
+        #     overwrite=True,
+        #     verbose=True,
+        #     cores=cpu_count(),
+        #     progress=True,
+        # ):
+        #     raise RuntimeError("CmdStan failed to install in repackaged directory")
+
+        # TODO: testing installing on default folder
         if not cmdstanpy.install_cmdstan(
-            version=CMDSTAN_VERSION,
-            dir=cmdstan_dir.parent,
-            overwrite=True,
-            verbose=True,
-            cores=cpu_count(),
-            progress=True,
+            version=CMDSTAN_VERSION, 
+            progress=True
         ):
-            raise RuntimeError("CmdStan failed to install in repackaged directory")
+              raise RuntimeError("CmdStan failed to install in repackaged directory")
 
         print("Installed cmdstanpy package.")
 
