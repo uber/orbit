@@ -142,7 +142,7 @@ class EditableWheel(editable_wheel):
 
             print("Not a dry run, run with editable, target_dir: {}".format(target_dir))
 
-            build_stan_model(target_dir)
+            build_stan_models(target_dir)
 
         editable_wheel.run(self)
 
@@ -167,8 +167,6 @@ setup(
     version=about["__version__"],
     packages=find_packages(),
     name="orbit-ml",
-    author="Edwin Ng, Zhishi Wang, Steve Yang, Yifeng Wu, Jing Pan",
-    author_email="edwinnglabs@gmail.com",
     description=DESCRIPTION,
     include_package_data=True,
     install_requires=requirements("requirements.txt"),
