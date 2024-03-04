@@ -43,6 +43,16 @@ dependencies = [
   "torch>=1.11.0",
   "tqdm>=4.36.1",
 ]
+authors = [
+  {name = "Edwin Ng", email = "edwinnglabs@gmail.com"},
+  {name = "Zhishi Wang"},
+  {name = "Steve Yang"},
+  {name = "Yifeng Wu"},
+  {name = "Jing Pan"},
+]
+maintainers = [
+  {name = "Edwin Ng", email = "edwinnglabs@gmail.com"},
+]
 license = {text = "Apache License 2.0"}
 classifiers = [
   "Programming Language :: Python",
@@ -60,3 +70,6 @@ dev = [
   "pytest",
   "black",
 ]
+[project.urls]
+Documentation = "https://orbit-ml.readthedocs.io/en/stable/"
+Repository = "https://github.com/uber/orbit"

@@ -9,6 +9,7 @@ from shutil import copy, copytree, rmtree
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 from setuptools.command.build_py import build_py
+from setuptools.command.develop import develop
 from setuptools.command.editable_wheel import editable_wheel
 from setuptools.command.test import test as test_command
 from wheel.bdist_wheel import bdist_wheel
@@ -51,6 +52,7 @@ def install_stan():
     Reference from prophet
     """
     from multiprocessing import cpu_count
+    import cmdstanpy
 
     import cmdstanpy
 
@@ -98,6 +100,7 @@ class BuildPyCommand(build_py):
     """Custom build command to make sure install cmdstanpy properly."""
 
     def run(self):
+        print("Running build py command.")
         if not self.dry_run:
             target_dir = os.path.join(self.build_lib, MODEL_TARGET_DIR)
             self.mkpath(target_dir)
@@ -122,39 +125,48 @@ class BuildExtCommand(build_ext):
         pass
 
 
-# class DevelopCommand(develop):
-#     """Custom build command to make sure install cmdstanpy properly."""
+class DevelopCommand(develop):
+    """Custom build command to make sure install cmdstanpy properly."""
 
-#     def run(self):
-#         if not self.dry_run:
-#             install_cmdstanpy()
+    def run(self):
+        print("Running develop command.")
+        if not self.dry_run:
+            target_dir = os.path.join(self.build_lib, MODEL_TARGET_DIR)
+            self.mkpath(target_dir)
 
-#         develop.run(self)
+            print("Not a dry run, run with build, target_dir: {}".format(target_dir))
+
+            install_stan()
+        else:
+            print("Dry run.")
+        develop.run(self)
 
 
 class EditableWheel(editable_wheel):
     """Custom develop command to pre-compile Stan models in-place."""
 
     def run(self):
+        print("Running editable wheel.")
         if not self.dry_run:
-            target_dir = os.path.join(self.project_dir, MODEL_TARGET_DIR)
+            target_dir = os.path.join(self.build_lib, MODEL_TARGET_DIR)
             self.mkpath(target_dir)
 
             print("Not a dry run, run with editable, target_dir: {}".format(target_dir))
 
             build_stan_models(target_dir)
 
+        print("Dry run.")
         editable_wheel.run(self)
 
 
-class BDistWheelABINone(bdist_wheel):
-    def finalize_options(self):
-        bdist_wheel.finalize_options(self)
-        self.root_is_pure = False
+# class BDistWheelABINone(bdist_wheel):
+#     def finalize_options(self):
+#         bdist_wheel.finalize_options(self)
+#         self.root_is_pure = False
 
-    def get_tag(self):
-        _, _, plat = bdist_wheel.get_tag(self)
-        return "py3", "none", plat
+#     def get_tag(self):
+#         _, _, plat = bdist_wheel.get_tag(self)
+#         return "py3", "none", plat
 
 
 about = {}
@@ -176,8 +188,8 @@ setup(
         "build_py": BuildPyCommand,
         # "build_ext": BuildExtCommand,
         "editable_wheel": EditableWheel,
-        "bdist_wheel": BDistWheelABINone,
-        # "develop": DevelopCommand,
+        # "bdist_wheel": BDistWheelABINone,
+        "develop": DevelopCommand,
         # "test": PyTestCommand,
     },
     test_suite="orbit.tests",

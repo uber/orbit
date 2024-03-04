@@ -1,6 +1,5 @@
 import pickle
 
-# import pkg_resources
 import importlib_resources
 
 import os
@@ -10,52 +9,54 @@ from ..utils.logger import get_logger
 
 logger = get_logger("orbit")
 
-# Old approach
-# def set_compiled_stan_path(parent, child="stan_compiled"):
-#     """
-#     Set the path for compiled stan models.
+def set_compiled_stan_path(parent, child="stan_compiled"):
+    """
+    Set the path for compiled stan models.
 
-#     parent: the primary directory level
-#     child: the secondary directory level
-#     """
-#     CompiledStanModelPath.PARENT = parent
-#     CompiledStanModelPath.CHILD = child
+    parent: the primary directory level
+    child: the secondary directory level
+    """
+    CompiledStanModelPath.PARENT = parent
+    CompiledStanModelPath.CHILD = child
 
 
-# def compile_stan_model(stan_model_name):
-#     """
-#     Compile stan model and save as pkl
-#     """
-#     source_model = pkg_resources.resource_filename(
-#         "orbit", "stan/{}.stan".format(stan_model_name)
-#     )
-#     if CompiledStanModelPath.PARENT == "orbit":
-#         compiled_model = pkg_resources.resource_filename(
-#             "orbit", "{}/{}.pkl".format(CompiledStanModelPath.CHILD, stan_model_name)
-#         )
-#     else:
-#         compiled_model = os.path.join(
-#             CompiledStanModelPath.PARENT,
-#             "{}/{}.pkl".format(CompiledStanModelPath.CHILD, stan_model_name),
-#         )
-#     # updated for py3
-#     os.makedirs(os.path.dirname(compiled_model), exist_ok=True)
-#     # compile if compiled file does not exist or stan source has changed (with later datestamp than compiled)
-#     if not os.path.isfile(compiled_model) or os.path.getmtime(
-#         compiled_model
-#     ) < os.path.getmtime(source_model):
+def compile_stan_model(stan_model_name):
+    """
+    Compile stan model and save as pkl
+    """
+    stan_file = (
+        importlib_resources.files("orbit")
+        / f"stan/{stan_model_name}.stan"
+    )
+    
+    if CompiledStanModelPath.PARENT == "orbit":
+        pkl_file = (
+            importlib_resources.files("orbit") 
+            / f"{CompiledStanModelPath.CHILD}/{stan_model_name}.pkl"
+        )
+    else:
+        pkl_file = os.path.join(
+            CompiledStanModelPath.PARENT,
+            f"{CompiledStanModelPath.CHILD} / {stan_model_name}.pkl",
+        )
+    # updated for py3
+    os.makedirs(os.path.dirname(pkl_file), exist_ok=True)
+    # compile if compiled file does not exist or stan source has changed (with later datestamp than compiled)
+    if not os.path.isfile(pkl_file) or os.path.getmtime(
+        pkl_file
+    ) < os.path.getmtime(stan_file):
 
-#         logger.info(
-#             "First time in running stan model:{}. Expect 3 - 5 minutes for compilation.".format(
-#                 stan_model_name
-#             )
-#         )
-#         sm = CmdStanModel(stan_file=source_model)
+        logger.info(
+            "First time in running stan model:{}. Expect 3 - 5 minutes for compilation.".format(
+                stan_model_name
+            )
+        )
+        sm = CmdStanModel(stan_file=stan_file)
 
-#         with open(compiled_model, "wb") as f:
-#             pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(pkl_file, "wb") as f:
+            pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-#     return compiled_model
+    return pkl_file
 
 
 def get_compiled_stan_model(stan_model_name):
@@ -63,17 +64,9 @@ def get_compiled_stan_model(stan_model_name):
     Load compiled Stan model
     """
     # Old approach
-    # compiled_model = compile_stan_model(stan_model_name)
-    # with open(compiled_model, "rb") as f:
-    #     return pickle.load(f)
-
-    # New approach
-    model_file = (
-        importlib_resources.files("orbit")
-        / "stan_compiled"
-        / "{}.bin".format(stan_model_name)
-    )
-    return CmdStanModel(exe_file=str(model_file))
+    compiled_model = compile_stan_model(stan_model_name)
+    with open(compiled_model, "rb") as f:
+        return pickle.load(f)
 
     # # New approach
     # model_file = (

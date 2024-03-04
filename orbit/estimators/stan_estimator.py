@@ -8,7 +8,7 @@ from ..exceptions import EstimatorException
 from ..utils.general import update_dict
 from ..utils.logger import get_logger
 from ..utils.set_cmdstan_path import set_cmdstan_path
-from ..utils.stan import get_compiled_stan_model, suppress_stdout_stderr
+from ..utils.stan import get_compiled_stan_model
 from .base_estimator import BaseEstimator
 
 logger = get_logger("orbit")
