@@ -81,9 +81,6 @@ def build_model(model: str, model_dir: str, target_dir: str):
     # compile stan file in place
     print(f"Compiling stan file: {temp_stan_file}")
     sm = cmdstanpy.CmdStanModel(stan_file=temp_stan_file)
-    # rename executable to .bin universally
-    filename, ext = os.path.splitext(sm.exe_file)
-    os.rename(sm.exe_file, filename + ".bin")
 
 
 def build_stan_models(target_dir: str):
