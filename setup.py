@@ -180,7 +180,6 @@ setup(
     include_package_data=True,
     install_requires=requirements("requirements.txt"),
     tests_require=requirements("requirements-test.txt"),
-    # extras_require=extras_require,
     cmdclass={
         "build_py": BuildPyCommand,
         # "build_ext": BuildExtCommand,
@@ -193,7 +192,5 @@ setup(
     long_description=read_long_description(),
     long_description_content_type="text/markdown",
     url="https://orbit-ml.readthedocs.io/en/stable/",
-    # version=VERSION, # being maintained by source module
-    ext_modules=[Extension("orbit.stan_compiled", [])],
     zip_safe=False,
 )
