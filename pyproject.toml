@@ -43,13 +43,6 @@ dependencies = [
   "torch>=1.11.0",
   "tqdm>=4.36.1",
 ]
-authors = [
-  {name = "Edwin Ng", email = "edwinnglabs@gmail.com"},
-  {name = "Zhishi Wang"},
-  {name = "Steve Yang"},
-  {name = "Yifeng Wu"},
-  {name = "Jing Pan"},
-]
 maintainers = [
   {name = "Edwin Ng", email = "edwinnglabs@gmail.com"},
 ]
