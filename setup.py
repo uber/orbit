@@ -9,6 +9,7 @@ from shutil import copy, copytree, rmtree
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 from setuptools.command.build_py import build_py
+from setuptools.command.develop import develop
 from setuptools.command.editable_wheel import editable_wheel
 from setuptools.command.test import test as test_command
 from wheel.bdist_wheel import bdist_wheel
@@ -44,11 +45,6 @@ def requirements(filename="requirements.txt"):
     with open(filename) as f:
         return f.readlines()
 
-
-def repackage_cmdstan():
-    return os.environ.get("ORBIT_REPACKAGE_CMDSTAN", "").lower() not in ["false", "0"]
-
-
 def install_rtools() -> bool:
     """
     Install C++ compilers required to build stan models on Windows machines.
@@ -72,145 +68,81 @@ def install_rtools() -> bool:
         print("Toolchain installed. Compiler:", compiler, ", Tools:", tool)
         return True
 
-
-def prune_cmdstan(cmdstan_dir: str) -> None:
-    """
-    Keep only the cmdstan executables and tbb files (minimum required to run a cmdstanpy commands on a pre-compiled model).
-    Reference from prophet
-    """
-    print("Prune stan directory: {}".format(cmdstan_dir))
-    original_dir = Path(cmdstan_dir).resolve()
-    parent_dir = original_dir.parent
-    temp_dir = parent_dir / "temp"
-    if temp_dir.is_dir():
-        rmtree(temp_dir)
-    temp_dir.mkdir()
-
-    print("Copying ", original_dir, " to ", temp_dir, " for pruning")
-    copytree(original_dir / BINARIES_DIR, temp_dir / BINARIES_DIR)
-    for f in (temp_dir / BINARIES_DIR).iterdir():
-        if f.is_dir():
-            rmtree(f)
-        elif f.is_file() and f.stem not in BINARIES:
-            os.remove(f)
-    for tbb_dir in TBB_DIRS:
-        copytree(original_dir / TBB_PARENT / tbb_dir, temp_dir / TBB_PARENT / tbb_dir)
-
-    rmtree(original_dir)
-    temp_dir.rename(original_dir)
-
-
-def install_stan(cmdstan_dir: Path):
+def install_stan():
     """
     Compile and install stan backend
     Reference from prophet
     """
     from multiprocessing import cpu_count
-
     import cmdstanpy
 
-    if repackage_cmdstan():
-        if IS_WINDOWS:
-            install_rtools()
-        print("Installing cmdstan to", cmdstan_dir)
-        if os.path.isdir(cmdstan_dir):
-            rmtree(cmdstan_dir)
+    if not cmdstanpy.install_cmdstan(
+        version=CMDSTAN_VERSION, 
+        cores=cpu_count(),
+        progress=True,
+        verbose=False,
+    ):
+        raise RuntimeError("CmdStan failed to install in repackaged directory")
 
-        # if not cmdstanpy.install_cmdstan(
-        #     version=CMDSTAN_VERSION,
-        #     dir=cmdstan_dir.parent,
-        #     overwrite=True,
-        #     verbose=True,
-        #     cores=cpu_count(),
-        #     progress=True,
-        # ):
-        #     raise RuntimeError("CmdStan failed to install in repackaged directory")
-
-        # TODO: testing installing on default folder
-        if not cmdstanpy.install_cmdstan(
-            version=CMDSTAN_VERSION, 
-            progress=True
-        ):
-              raise RuntimeError("CmdStan failed to install in repackaged directory")
-
-        print("Installed cmdstanpy package.")
+    print("Installed cmdstanpy package.")
 
 
-def build_model(model: str, model_dir, cmdstan_dir, target_dir):
-    import cmdstanpy
+# def build_model(model: str, model_dir, cmdstan_dir, target_dir):
+#     import cmdstanpy
 
-    model_name = f"{model}.stan"
+#     model_name = f"{model}.stan"
 
-    temp_source_file_path = os.path.join(model_dir, model_name)
-    print(
-        f"Copying source file from {temp_source_file_path} to {cmdstan_dir.parent.resolve()}"
-    )
-    temp_stan_file = copy(
-        os.path.join(model_dir, model_name), cmdstan_dir.parent.resolve()
-    )
-    print(f"Compiling stan file: {temp_stan_file}")
-    sm = cmdstanpy.CmdStanModel(stan_file=temp_stan_file)
-    target_name = f"{model}.bin"
-    target_file_path = os.path.join(target_dir, target_name)
-    print(f"Copying file from {sm.exe_file} to {target_file_path}")
-    copy(sm.exe_file, target_file_path)
+#     temp_source_file_path = os.path.join(model_dir, model_name)
+#     print(
+#         f"Copying source file from {temp_source_file_path} to {cmdstan_dir.parent.resolve()}"
+#     )
+#     temp_stan_file = copy(
+#         os.path.join(model_dir, model_name), cmdstan_dir.parent.resolve()
+#     )
+#     print(f"Compiling stan file: {temp_stan_file}")
+#     sm = cmdstanpy.CmdStanModel(stan_file=temp_stan_file)
+#     target_name = f"{model}.bin"
+#     target_file_path = os.path.join(target_dir, target_name)
+#     print(f"Copying file from {sm.exe_file} to {target_file_path}")
+#     copy(sm.exe_file, target_file_path)
 
 
-def build_stan_model(target_dir):
-    print("Importing cmdstanpy...")
-    import cmdstanpy
+# def build_stan_model(target_dir):
+#     print("Importing cmdstanpy...")
+#     import cmdstanpy
 
-    target_cmdstan_dir = (Path(target_dir) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
-    print("target_cmdstan_dir: {}".format(target_cmdstan_dir))
+#     target_cmdstan_dir = (Path(target_dir) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
+#     print("target_cmdstan_dir: {}".format(target_cmdstan_dir))
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        # long paths on windows can cause problems during build
-        if IS_WINDOWS:
-            print("Windows detected. Use tmp_dir: {}".format(tmp_dir))
-            cmdstan_dir = (Path(tmp_dir) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
-            install_rtools()
-        else:
-            cmdstan_dir = target_cmdstan_dir
-        print("cmdstan_dir: {}".format(cmdstan_dir))
-        install_stan(cmdstan_dir)
+#     with tempfile.TemporaryDirectory() as tmp_dir:
+#         # long paths on windows can cause problems during build
+#         if IS_WINDOWS:
+#             print("Windows detected. Use tmp_dir: {}".format(tmp_dir))
+#             cmdstan_dir = (Path(tmp_dir) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
+#             install_rtools()
+#         else:
+#             cmdstan_dir = target_cmdstan_dir
+#         # print("cmdstan_dir: {}".format(cmdstan_dir))
+#         install_stan()
 
-        # for model in MODELS:
-        #     # note: ensure copy target is a directory not a file.
-        #     build_model(
-        #         model=model,
-        #         model_dir=MODEL_SOURCE_DIR,
-        #         cmdstan_dir=cmdstan_dir,
-        #         target_dir=target_dir,
-        #     )
-
-        if IS_WINDOWS and repackage_cmdstan():
-            copytree(cmdstan_dir, target_cmdstan_dir)
-
-        # TODO: some clean up needs to be done
-        # 1. with the stan/ folder since it duplicates the .stan files
-        # 2. the stanlib packages if it is installed with repackaged directory
-        # for f in Path(MODEL_SOURCE_DIR).iterdir():
-        #     if f.is_file() and f.name != model_name:
-        #         os.remove(f)
-
-    # if repackage_cmdstan():
-    #     prune_cmdstan(target_cmdstan_dir)
-    repackage_cmdstan()
+#         if IS_WINDOWS and repackage_cmdstan():
+#             copytree(cmdstan_dir, target_cmdstan_dir)
 
 
 class BuildPyCommand(build_py):
     """Custom build command to make sure install cmdstanpy properly."""
 
     def run(self):
+        print("Running build py command.")
         if not self.dry_run:
             target_dir = os.path.join(self.build_lib, MODEL_TARGET_DIR)
             self.mkpath(target_dir)
 
             print("Not a dry run, run with build, target_dir: {}".format(target_dir))
 
-            build_stan_model(target_dir)
-
-        print("Dry run.")
+            install_stan()
+        else:
+            print("Dry run.")
         build_py.run(self)
 
 
@@ -221,39 +153,47 @@ class BuildExtCommand(build_ext):
         pass
 
 
-# class DevelopCommand(develop):
-#     """Custom build command to make sure install cmdstanpy properly."""
+class DevelopCommand(develop):
+    """Custom build command to make sure install cmdstanpy properly."""
 
-#     def run(self):
-#         if not self.dry_run:
-#             install_cmdstanpy()
+    def run(self):
+        print("Running develop command.")
+        if not self.dry_run:
+            target_dir = os.path.join(self.build_lib, MODEL_TARGET_DIR)
+            self.mkpath(target_dir)
 
-#         develop.run(self)
+            print("Not a dry run, run with build, target_dir: {}".format(target_dir))
+
+            install_stan()
+        else:
+            print("Dry run.")
+        develop.run(self)
 
 
 class EditableWheel(editable_wheel):
     """Custom develop command to pre-compile Stan models in-place."""
 
     def run(self):
+        print("Running editable wheel.")
         if not self.dry_run:
-            target_dir = os.path.join(self.project_dir, MODEL_TARGET_DIR)
+            target_dir = os.path.join(self.build_lib, MODEL_TARGET_DIR)
             self.mkpath(target_dir)
 
-            print("Not a dry run, run with editable, target_dir: {}".format(target_dir))
+            print("Not a dry run, run with build, target_dir: {}".format(target_dir))
+            install_stan()
 
-            build_stan_model(target_dir)
-
+        print("Dry run.")
         editable_wheel.run(self)
 
 
-class BDistWheelABINone(bdist_wheel):
-    def finalize_options(self):
-        bdist_wheel.finalize_options(self)
-        self.root_is_pure = False
+# class BDistWheelABINone(bdist_wheel):
+#     def finalize_options(self):
+#         bdist_wheel.finalize_options(self)
+#         self.root_is_pure = False
 
-    def get_tag(self):
-        _, _, plat = bdist_wheel.get_tag(self)
-        return "py3", "none", plat
+#     def get_tag(self):
+#         _, _, plat = bdist_wheel.get_tag(self)
+#         return "py3", "none", plat
 
 
 about = {}
@@ -277,8 +217,8 @@ setup(
         "build_ext": BuildExtCommand,
         "build_py": BuildPyCommand,
         "editable_wheel": EditableWheel,
-        "bdist_wheel": BDistWheelABINone,
-        # "develop": DevelopCommand,
+        # "bdist_wheel": BDistWheelABINone,
+        "develop": DevelopCommand,
         # "test": PyTestCommand,
     },
     test_suite="orbit.tests",
