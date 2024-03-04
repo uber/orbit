@@ -45,28 +45,6 @@ def requirements(filename="requirements.txt"):
     with open(filename) as f:
         return f.readlines()
 
-def install_rtools() -> bool:
-    """
-    Install C++ compilers required to build stan models on Windows machines.
-    Reference from prophet
-    """
-    import cmdstanpy
-
-    print("Windows detected, install C++ Compliers required to build stan models.")
-    try:
-        cmdstanpy.utils.cxx_toolchain_path()
-        return False
-    except Exception:
-        try:
-            from cmdstanpy.install_cxx_toolchain import run_rtools_install
-        except ImportError:
-            # older versions
-            from cmdstanpy.install_cxx_toolchain import main as run_rtools_install
-
-        run_rtools_install({"version": None, "dir": None, "verbose": True})
-        compiler, tool = cmdstanpy.utils.cxx_toolchain_path()
-        print("Toolchain installed. Compiler:", compiler, ", Tools:", tool)
-        return True
 
 def install_stan():
     """
@@ -76,57 +54,46 @@ def install_stan():
     from multiprocessing import cpu_count
     import cmdstanpy
 
+    import cmdstanpy
+
     if not cmdstanpy.install_cmdstan(
-        version=CMDSTAN_VERSION, 
+        version=CMDSTAN_VERSION,
+        overwrite=True,
+        verbose=True,
         cores=cpu_count(),
         progress=True,
-        verbose=False,
+        compiler=IS_WINDOWS,
     ):
         raise RuntimeError("CmdStan failed to install in repackaged directory")
 
     print("Installed cmdstanpy package.")
 
 
-# def build_model(model: str, model_dir, cmdstan_dir, target_dir):
-#     import cmdstanpy
+def build_model(model: str, model_dir: str, target_dir: str):
+    import cmdstanpy
 
-#     model_name = f"{model}.stan"
+    # Copy model.stan file to the target dir
+    model_name = f"{model}.stan"
+    model_path = os.path.join(model_dir, model_name)
+    print(f"Copying source file from {model_path} to {target_dir}")
+    temp_stan_file = copy(model_path, target_dir)
 
-#     temp_source_file_path = os.path.join(model_dir, model_name)
-#     print(
-#         f"Copying source file from {temp_source_file_path} to {cmdstan_dir.parent.resolve()}"
-#     )
-#     temp_stan_file = copy(
-#         os.path.join(model_dir, model_name), cmdstan_dir.parent.resolve()
-#     )
-#     print(f"Compiling stan file: {temp_stan_file}")
-#     sm = cmdstanpy.CmdStanModel(stan_file=temp_stan_file)
-#     target_name = f"{model}.bin"
-#     target_file_path = os.path.join(target_dir, target_name)
-#     print(f"Copying file from {sm.exe_file} to {target_file_path}")
-#     copy(sm.exe_file, target_file_path)
+    # compile stan file in place
+    print(f"Compiling stan file: {temp_stan_file}")
+    sm = cmdstanpy.CmdStanModel(stan_file=temp_stan_file)
+    # rename executable to .bin universally
+    filename, ext = os.path.splitext(sm.exe_file)
+    os.rename(sm.exe_file, filename + ".bin")
 
 
-# def build_stan_model(target_dir):
-#     print("Importing cmdstanpy...")
-#     import cmdstanpy
-
-#     target_cmdstan_dir = (Path(target_dir) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
-#     print("target_cmdstan_dir: {}".format(target_cmdstan_dir))
-
-#     with tempfile.TemporaryDirectory() as tmp_dir:
-#         # long paths on windows can cause problems during build
-#         if IS_WINDOWS:
-#             print("Windows detected. Use tmp_dir: {}".format(tmp_dir))
-#             cmdstan_dir = (Path(tmp_dir) / f"cmdstan-{CMDSTAN_VERSION}").resolve()
-#             install_rtools()
-#         else:
-#             cmdstan_dir = target_cmdstan_dir
-#         # print("cmdstan_dir: {}".format(cmdstan_dir))
-#         install_stan()
-
-#         if IS_WINDOWS and repackage_cmdstan():
-#             copytree(cmdstan_dir, target_cmdstan_dir)
+def build_stan_models(target_dir: str):
+    for model in MODELS:
+        # note: ensure copy target is a directory not a file.
+        build_model(
+            model=model,
+            model_dir=MODEL_SOURCE_DIR,
+            target_dir=target_dir,
+        )
 
 
 class BuildPyCommand(build_py):
@@ -139,10 +106,15 @@ class BuildPyCommand(build_py):
             self.mkpath(target_dir)
 
             print("Not a dry run, run with build, target_dir: {}".format(target_dir))
+            # build_stan_model(target_dir)
 
+            # install cmdstan and compilers, in the default directory for simplicity
             install_stan()
-        else:
-            print("Dry run.")
+
+            # build all stan models
+            build_stan_models(target_dir)
+
+        print("Dry run.")
         build_py.run(self)
 
 
@@ -179,8 +151,9 @@ class EditableWheel(editable_wheel):
             target_dir = os.path.join(self.build_lib, MODEL_TARGET_DIR)
             self.mkpath(target_dir)
 
-            print("Not a dry run, run with build, target_dir: {}".format(target_dir))
-            install_stan()
+            print("Not a dry run, run with editable, target_dir: {}".format(target_dir))
+
+            build_stan_models(target_dir)
 
         print("Dry run.")
         editable_wheel.run(self)
@@ -206,16 +179,14 @@ setup(
     version=about["__version__"],
     packages=find_packages(),
     name="orbit-ml",
-    author="Edwin Ng, Zhishi Wang, Steve Yang, Yifeng Wu, Jing Pan",
-    author_email="edwinnglabs@gmail.com",
     description=DESCRIPTION,
     include_package_data=True,
     install_requires=requirements("requirements.txt"),
     tests_require=requirements("requirements-test.txt"),
     # extras_require=extras_require,
     cmdclass={
-        "build_ext": BuildExtCommand,
         "build_py": BuildPyCommand,
+        # "build_ext": BuildExtCommand,
         "editable_wheel": EditableWheel,
         # "bdist_wheel": BDistWheelABINone,
         "develop": DevelopCommand,

@@ -18,6 +18,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "orbit-ml"
+authors = [
+  {name="Edwin Ng", email="edwinnglabs@gmail.com"}, 
+  {name="Zhishi Wang"}, 
+  {name="Steve Yang"}, 
+  {name="Yifeng Wu"}, 
+  {name="Jing Pan"}
+]
 dynamic = ["version"]
 description = "Orbit is a package for Bayesian time series modeling and inference."
 readme = "README.md"
