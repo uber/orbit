@@ -96,9 +96,7 @@ def compile_stan_model_simplified(path):
         compiled_path
     ) < os.path.getmtime(source_path):
         logger.info(
-            "First time in running stan model:{}. Expect 3 - 5 minutes for compilation.".format(
-                source_filename
-            )
+            f"Pickle file not found in stan model:{source_filename}. Expect up to 3 minutes for creating the file"
         )
         sm = CmdStanModel(stan_file=source_path)
 

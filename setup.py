@@ -125,38 +125,38 @@ class BuildExtCommand(build_ext):
         pass
 
 
-class DevelopCommand(develop):
-    """Custom build command to make sure install cmdstanpy properly."""
+# class DevelopCommand(develop):
+#     """Custom build command to make sure install cmdstanpy properly."""
 
-    def run(self):
-        print("Running develop command.")
-        if not self.dry_run:
-            target_dir = os.path.join(self.build_lib, MODEL_TARGET_DIR)
-            self.mkpath(target_dir)
+#     def run(self):
+#         print("Running develop command.")
+#         if not self.dry_run:
+#             target_dir = os.path.join(self.build_lib, MODEL_TARGET_DIR)
+#             self.mkpath(target_dir)
 
-            print("Not a dry run, run with build, target_dir: {}".format(target_dir))
+#             print("Not a dry run, run with build, target_dir: {}".format(target_dir))
 
-            install_stan()
-        else:
-            print("Dry run.")
-        develop.run(self)
+#             install_stan()
+#         else:
+#             print("Dry run.")
+#         develop.run(self)
 
 
-class EditableWheel(editable_wheel):
-    """Custom develop command to pre-compile Stan models in-place."""
+# class EditableWheel(editable_wheel):
+#     """Custom develop command to pre-compile Stan models in-place."""
 
-    def run(self):
-        print("Running editable wheel.")
-        if not self.dry_run:
-            target_dir = os.path.join(self.build_lib, MODEL_TARGET_DIR)
-            self.mkpath(target_dir)
+#     def run(self):
+#         print("Running editable wheel.")
+#         if not self.dry_run:
+#             target_dir = os.path.join(self.build_lib, MODEL_TARGET_DIR)
+#             self.mkpath(target_dir)
 
-            print("Not a dry run, run with editable, target_dir: {}".format(target_dir))
+#             print("Not a dry run, run with editable, target_dir: {}".format(target_dir))
 
-            build_stan_models(target_dir)
+#             build_stan_models(target_dir)
 
-        print("Dry run.")
-        editable_wheel.run(self)
+#         print("Dry run.")
+#         editable_wheel.run(self)
 
 
 # class BDistWheelABINone(bdist_wheel):
@@ -187,9 +187,9 @@ setup(
     cmdclass={
         "build_py": BuildPyCommand,
         # "build_ext": BuildExtCommand,
-        "editable_wheel": EditableWheel,
+        # "editable_wheel": EditableWheel,
         # "bdist_wheel": BDistWheelABINone,
-        "develop": DevelopCommand,
+        # "develop": DevelopCommand,
         # "test": PyTestCommand,
     },
     test_suite="orbit.tests",

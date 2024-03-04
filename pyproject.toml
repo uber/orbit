@@ -25,6 +25,9 @@ authors = [
   {name="Yifeng Wu"}, 
   {name="Jing Pan"}
 ]
+maintainers = [
+  {name = "Edwin Ng", email = "edwinnglabs@gmail.com"},
+]
 dynamic = ["version"]
 description = "Orbit is a package for Bayesian time series modeling and inference."
 readme = "README.md"
@@ -42,9 +45,6 @@ dependencies = [
   "statsmodels>=0.11.1",
   "torch>=1.11.0",
   "tqdm>=4.36.1",
-]
-maintainers = [
-  {name = "Edwin Ng", email = "edwinnglabs@gmail.com"},
 ]
 license = {text = "Apache License 2.0"}
 classifiers = [
