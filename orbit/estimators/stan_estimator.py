@@ -136,7 +136,7 @@ class StanEstimatorMCMC(StanEstimator):
             )
             logger.info(msg)
 
-        compiled_mod = get_compiled_stan_model(model_name)
+        compiled_mod = get_compiled_stan_model(stan_model_name=model_name)
 
         # check https://mc-stan.org/cmdstanpy/api.html#cmdstanpy.CmdStanModel.sample
         # for additional args
@@ -198,7 +198,7 @@ class StanEstimatorMAP(StanEstimator):
         fitter=None,
         init_values=None,
     ):
-        compiled_mod = get_compiled_stan_model(model_name)
+        compiled_mod = get_compiled_stan_model(stan_model_name=model_name)
         data_input.update({"T_STAR": 1.0})
 
         # passing callable from the model as seen in `initfun1()`
