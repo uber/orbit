@@ -72,15 +72,11 @@ def install_stan():
 def build_model(model: str, model_dir: str, target_dir: str):
     import cmdstanpy
 
-    # Copy model.stan file to the target dir
+    # compile stan file in place
     model_name = f"{model}.stan"
     model_path = os.path.join(model_dir, model_name)
-    print(f"Copying source file from {model_path} to {target_dir}")
-    temp_stan_file = copy(model_path, target_dir)
-
-    # compile stan file in place
-    print(f"Compiling stan file: {temp_stan_file}")
-    sm = cmdstanpy.CmdStanModel(stan_file=temp_stan_file)
+    print(f"Compiling stan file in place: {model_path}")
+    sm = cmdstanpy.CmdStanModel(stan_file=model_path)
 
 
 def build_stan_models(target_dir: str):
