@@ -28,7 +28,7 @@ def get_compiled_stan_model(stan_model_name:str="", stan_file_path: str = "") ->
         A compiled Stan model.
     """
     if stan_model_name not in ['dlt','ets','ktrlite','lgt']:
-      raise ValueError("stan_model_name must be one of dlt, ets, ktrlite, lgt")
+        raise ValueError("stan_model_name must be one of dlt, ets, ktrlite, lgt")
     if stan_file_path != "":
         stan_file = stan_file_path
     else:
