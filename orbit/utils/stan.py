@@ -1,5 +1,4 @@
-import pickle
-
+import platform
 import importlib_resources
 
 import os
@@ -10,10 +9,12 @@ from ..utils.logger import get_logger
 logger = get_logger("orbit")
 
 
-def get_compiled_stan_model(stan_model_name:str="", stan_file_path: str = "") -> CmdStanModel:
-  """Return a compiled Stan model using CmdStan.
+def get_compiled_stan_model(
+    stan_model_name: str = "", stan_file_path: str = ""
+) -> CmdStanModel:
+    """Return a compiled Stan model using CmdStan.
     This includes both prepackaged models as well as user provided models through stan_file_path.
-    
+
     Parameters
     ----------
     stan_model_name : str
@@ -27,14 +28,22 @@ def get_compiled_stan_model(stan_model_name:str="", stan_file_path: str = "") ->
     sm : CmdStanModel
         A compiled Stan model.
     """
-    if stan_model_name not in ['dlt','ets','ktrlite','lgt']:
+
+    if stan_model_name not in ["dlt", "ets", "ktrlite", "lgt"]:
         raise ValueError("stan_model_name must be one of dlt, ets, ktrlite, lgt")
     if stan_file_path != "":
         stan_file = stan_file_path
+        sm = CmdStanModel(stan_file=stan_file)
     else:
+        # Some oddities here. if not providing exe_file, CmdStanModel would delete the actual executable file.
+        # This is a stop gap fix until actual cause is identified.
         stan_file = importlib_resources.files("orbit") / f"stan/{stan_model_name}.stan"
+        EXTENSION = ".exe" if platform.system() == "Windows" else ""
+        exe_file = (
+            importlib_resources.files("orbit") / f"stan/{stan_model_name}{EXTENSION}"
+        )
+        sm = CmdStanModel(stan_file=stan_file, exe_file=exe_file)
 
-    sm = CmdStanModel(stan_file=stan_file)
     return sm
 
 
