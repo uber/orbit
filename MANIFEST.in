@@ -6,7 +6,7 @@ include requirements.txt
 include requirements-test.txt
 include orbit/stan/*
 include orbit/stylelib/*.mplstyle
-include orbit/cmdstan_version.json
+include orbit/config.json
 
 recursive-include tests *
 recursive-exclude * __pycache__

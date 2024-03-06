@@ -1,12 +1,17 @@
-import platform
-import importlib_resources
-
+import json
 import os
+import platform
+from multiprocessing import cpu_count
+
+import cmdstanpy
+import importlib_resources
 from cmdstanpy import CmdStanModel
-from orbit.constants.constants import CompiledStanModelPath
+
 from ..utils.logger import get_logger
 
 logger = get_logger("orbit")
+# Update this to read from orbit/config.json/ORBIT_MODELS for consistency?
+MODELS = ["dlt", "ets", "lgt", "ktrlite"]
 
 
 def get_compiled_stan_model(
@@ -28,13 +33,33 @@ def get_compiled_stan_model(
     sm : CmdStanModel
         A compiled Stan model.
     """
-
-    if stan_model_name not in ["dlt", "ets", "ktrlite", "lgt"]:
+    if stan_model_name not in MODELS:
         raise ValueError("stan_model_name must be one of dlt, ets, ktrlite, lgt")
     if stan_file_path != "":
+        # On windows, compiler path is often not set properly after cmdstanpy_install
+        # For safety, consider running it again. Below is the function from setup.py
+        """
+        IS_WINDOWS = platform.platform().startswith("Win")
+        with open("orbit/config.json") as f: # Need to fix path to read from proper package.
+            config = json.load(f)
+        CMDSTAN_VERSION = config["CMDSTAN_VERSION"]
+
+        if not cmdstanpy.install_cmdstan(
+            version=CMDSTAN_VERSION,
+            overwrite=True,
+            verbose=True,
+            cores=cpu_count(),
+            progress=True,
+            compiler=IS_WINDOWS,
+        ):
+            raise RuntimeError("CmdStan failed to install.")
+        print(f"Installed cmdstanpy (cmdstan v.{CMDSTAN_VERSION}) and compiler.")
+        """
+
         stan_file = stan_file_path
         sm = CmdStanModel(stan_file=stan_file)
     else:
+        # Load orbit included cmdstan models
         # Some oddities here. if not providing exe_file, CmdStanModel would delete the actual executable file.
         # This is a stop gap fix until actual cause is identified.
         stan_file = importlib_resources.files("orbit") / f"stan/{stan_model_name}.stan"
