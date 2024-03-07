@@ -22,6 +22,6 @@ ets = ETS(
         "show_console": True
     },
 )
-
+ets.fit(df=train_df)
 predicted_df = ets.predict(df=test_df)
 print(predicted_df)
