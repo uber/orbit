@@ -1,0 +1,11 @@
+{
+    "CMDSTAN_VERSION": "2.34.1",
+    "ORBIT_MODELS": [
+        [
+            "dlt",
+            "ets",
+            "ktrlite",
+            "lgt"
+        ]
+    ]
+}

@@ -8,7 +8,7 @@ logger = get_logger("orbit")
 
 
 def set_cmdstan_path():
-    with open(importlib_resources.files("orbit") / "cmdstan_version.json") as f:
+    with open(importlib_resources.files("orbit") / "config.json") as f:
         config = json.load(f)
     CMDSTAN_VERSION = config["CMDSTAN_VERSION"]
 
@@ -23,7 +23,7 @@ def set_cmdstan_path():
             f"Local/repackaged cmdstan exists, setting path to {str(local_cmdstan)}"
         )
         return 1
-    logger.warn(
-        f"Cannot find local cmdstan in {str(local_cmdstan)}, using default path."
+    logger.info(
+        f"Cannot find local cmdstan in {str(local_cmdstan)}, using default path at ~/.cmdstan."
     )
     return 1
