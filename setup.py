@@ -1,8 +1,7 @@
 import json
 import os
 import platform
-import sys
-import tempfile
+import shutil
 from pathlib import Path
 from shutil import copy
 
@@ -11,12 +10,11 @@ from setuptools.command.build_py import build_py
 
 MODEL_SOURCE_DIR = "orbit/stan"
 MODELS = ["dlt", "ets", "lgt", "ktrlite"]
-MODEL_TARGET_DIR = os.path.join("orbit", "stan_compiled")
 
 DESCRIPTION = "Orbit is a package for Bayesian time series modeling and inference."
 BINARIES = ["diagnose", "print", "stanc", "stansummary"]
 
-with open("orbit/cmdstan_version.json") as f:
+with open("orbit/config.json") as f:
     config = json.load(f)
 CMDSTAN_VERSION = config["CMDSTAN_VERSION"]
 IS_WINDOWS = platform.platform().startswith("Win")
@@ -33,6 +31,35 @@ def requirements(filename="requirements.txt"):
         return f.readlines()
 
 
+def remove_older_cmdstan(cmdstan_version):
+    """
+    Checks the default CmdStan path (~/.cmdstan) for folders with older versions
+    and removes them.
+
+    Args:
+        cmdstan_version (str): The current CmdStan version.
+    """
+    default_path = os.path.expanduser("~/.cmdstan")
+
+    if not os.path.exists(default_path):
+        # Path doesn't exist, nothing to remove
+        return
+
+    for folder in os.listdir(default_path):
+        if folder.startswith("cmdstan-"):
+            # Extract version number from folder name
+            folder_version = folder.split("-")[1]
+            if folder_version < cmdstan_version:
+                # Remove folder if version is older
+                full_path = os.path.join(default_path, folder)
+                try:
+                    print(f"Removing older CmdStan version: {folder} : {full_path}")
+                    shutil.rmtree(full_path)
+                    print(f"Done.")
+                except OSError as e:
+                    print(f"Error removing {folder}: {e}")
+
+
 def install_stan():
     """
     Compile and install stan backend
@@ -41,7 +68,7 @@ def install_stan():
     from multiprocessing import cpu_count
     import cmdstanpy
 
-    import cmdstanpy
+    remove_older_cmdstan(CMDSTAN_VERSION)
 
     if not cmdstanpy.install_cmdstan(
         version=CMDSTAN_VERSION,
@@ -56,27 +83,22 @@ def install_stan():
     print("Installed cmdstanpy package.")
 
 
-def build_model(model: str, model_dir: str, target_dir: str):
+def build_model(model: str, model_dir: str):
     import cmdstanpy
 
-    # Copy model.stan file to the target dir
+    # compile stan file in place
     model_name = f"{model}.stan"
     model_path = os.path.join(model_dir, model_name)
-    print(f"Copying source file from {model_path} to {target_dir}")
-    temp_stan_file = copy(model_path, target_dir)
-
-    # compile stan file in place
-    print(f"Compiling stan file: {temp_stan_file}")
-    cmdstanpy.CmdStanModel(stan_file=temp_stan_file)
+    print(f"Compiling stan file in place: {model_path}")
+    sm = cmdstanpy.CmdStanModel(stan_file=model_path)
 
 
-def build_stan_models(target_dir: str):
+def build_stan_models():
     for model in MODELS:
         # note: ensure copy target is a directory not a file.
         build_model(
             model=model,
             model_dir=MODEL_SOURCE_DIR,
-            target_dir=target_dir,
         )
 
 
@@ -86,17 +108,14 @@ class BuildPyCommand(build_py):
     def run(self):
         print("Running build py command.")
         if not self.dry_run:
-            target_dir = os.path.join(self.build_lib, MODEL_TARGET_DIR)
-            self.mkpath(target_dir)
-
-            print("Not a dry run, run with build, target_dir: {}".format(target_dir))
+            print("Not a dry run, run with build")
             # build_stan_model(target_dir)
 
             # install cmdstan and compilers, in the default directory for simplicity
             install_stan()
 
             # build all stan models
-            build_stan_models(target_dir)
+            build_stan_models()
 
         print("Dry run.")
         build_py.run(self)

@@ -1,123 +1,78 @@
-import pickle
-
-import importlib_resources
-
+import json
 import os
+import platform
+from multiprocessing import cpu_count
+
+import cmdstanpy
+import importlib_resources
 from cmdstanpy import CmdStanModel
-from orbit.constants.constants import CompiledStanModelPath
+
 from ..utils.logger import get_logger
 
 logger = get_logger("orbit")
+# Update this to read from orbit/config.json/ORBIT_MODELS for consistency?
+MODELS = ["dlt", "ets", "lgt", "ktrlite"]
 
-def set_compiled_stan_path(parent, child="stan_compiled"):
+
+def get_compiled_stan_model(
+    stan_model_name: str = "", stan_file_path: str = ""
+) -> CmdStanModel:
+    """Return a compiled Stan model using CmdStan.
+    This includes both prepackaged models as well as user provided models through stan_file_path.
+
+    Parameters
+    ----------
+    stan_model_name : str
+        The name of the Stan model to use. Use this for the built in models (dlt, ets, ktrlite, lgt)
+    stan_file_path : str, optional
+        The path to the Stan file to use. If not provided, the default is to search for the file in the 'orbit' package.
+        If provided, function will ignore the stan_model_name parameter, and will compile the provide stan_file_path
+        into executable in place (same folder as stan_file_path)
+    Returns
+    -------
+    sm : CmdStanModel
+        A compiled Stan model.
     """
-    Set the path for compiled stan models.
+    if stan_model_name not in MODELS:
+        raise ValueError("stan_model_name must be one of dlt, ets, ktrlite, lgt")
+    if stan_file_path != "":
+        # On windows, compiler path is often not set properly after cmdstanpy_install
+        # For safety, consider running it again. Below is the function from setup.py
+        """
+        IS_WINDOWS = platform.platform().startswith("Win")
+        with open("orbit/config.json") as f: # Need to fix path to read from proper package.
+            config = json.load(f)
+        CMDSTAN_VERSION = config["CMDSTAN_VERSION"]
 
-    parent: the primary directory level
-    child: the secondary directory level
-    """
-    CompiledStanModelPath.PARENT = parent
-    CompiledStanModelPath.CHILD = child
+        if not cmdstanpy.install_cmdstan(
+            version=CMDSTAN_VERSION,
+            overwrite=True,
+            verbose=True,
+            cores=cpu_count(),
+            progress=True,
+            compiler=IS_WINDOWS,
+        ):
+            raise RuntimeError("CmdStan failed to install.")
+        print(f"Installed cmdstanpy (cmdstan v.{CMDSTAN_VERSION}) and compiler.")
+        """
 
-
-def compile_stan_model(stan_model_name):
-    """
-    Compile stan model and save as pkl
-    """
-    stan_file = (
-        importlib_resources.files("orbit")
-        / f"stan/{stan_model_name}.stan"
-    )
-    
-    if CompiledStanModelPath.PARENT == "orbit":
-        pkl_file = (
-            importlib_resources.files("orbit") 
-            / f"{CompiledStanModelPath.CHILD}/{stan_model_name}.pkl"
-        )
-    else:
-        pkl_file = os.path.join(
-            CompiledStanModelPath.PARENT,
-            f"{CompiledStanModelPath.CHILD} / {stan_model_name}.pkl",
-        )
-    # updated for py3
-    os.makedirs(os.path.dirname(pkl_file), exist_ok=True)
-    # compile if compiled file does not exist or stan source has changed (with later datestamp than compiled)
-    if not os.path.isfile(pkl_file) or os.path.getmtime(
-        pkl_file
-    ) < os.path.getmtime(stan_file):
-
-        logger.info(
-            f"Pickle file not found in stan model:{stan_model_name}. Expect up to 3 minutes for creating the file"
-        )
+        stan_file = stan_file_path
         sm = CmdStanModel(stan_file=stan_file)
-
-        with open(pkl_file, "wb") as f:
-            pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
-
-    return pkl_file
-
-
-def get_compiled_stan_model(stan_model_name):
-    """
-    Load compiled Stan model
-    """
-    # Old approach
-    compiled_model = compile_stan_model(stan_model_name)
-    with open(compiled_model, "rb") as f:
-        return pickle.load(f)
-
-    # # New approach
-    # model_file = (
-    #     importlib_resources.files("orbit")
-    #     / "stan_compiled"
-    #     / "{}.stan".format(stan_model_name)
-    # )
-    # return CmdStanModel(stan_file=str(model_file))
-
-
-def compile_stan_model_simplified(path):
-    """A more flexible way to load compile stan model with a path provided
-    Parameters
-    ----------
-    path
-
-    Returns
-    -------
-
-    """
-    source_path = os.path.abspath(path)
-    source_filename, source_file_ext = os.path.splitext(source_path)
-    compiled_path = "{}.pkl".format(source_filename)
-
-    # compile if stan source has changed
-    if not os.path.isfile(compiled_path) or os.path.getmtime(
-        compiled_path
-    ) < os.path.getmtime(source_path):
-        logger.info(
-            f"Pickle file not found in stan model:{source_filename}. Expect up to 3 minutes for creating the file"
+    else:
+        # Load orbit included cmdstan models
+        # Some oddities here. if not providing exe_file, CmdStanModel would delete the actual executable file.
+        # This is a stop gap fix until actual cause is identified.
+        stan_file = importlib_resources.files("orbit") / f"stan/{stan_model_name}.stan"
+        EXTENSION = ".exe" if platform.system() == "Windows" else ""
+        exe_file = (
+            importlib_resources.files("orbit") / f"stan/{stan_model_name}{EXTENSION}"
         )
-        sm = CmdStanModel(stan_file=source_path)
+        sm = CmdStanModel(stan_file=stan_file, exe_file=exe_file)
 
-        with open(compiled_path, "wb") as f:
-            pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
-
-    return compiled_path
+    return sm
 
 
-def get_compiled_stan_model_simplified(path):
-    """A more flexible way to load pre-compiled model
-    Parameters
-    ----------
-    path
-
-    Returns
-    -------
-
-    """
-    with open(path, "rb") as f:
-        return pickle.load(f)
-
-
+# TODO: Is this needed?
 class suppress_stdout_stderr:
     """
     A context manager for doing a "deep suppression" of stdout and stderr in
