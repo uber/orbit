@@ -1,11 +1,11 @@
 import json
 import os
 import platform
-from multiprocessing import cpu_count
 
-import cmdstanpy
 import importlib_resources
 from cmdstanpy import CmdStanModel
+
+from typing import Optional
 
 from ..utils.logger import get_logger
 
@@ -31,27 +31,33 @@ if IS_WINDOWS:
 
 
 def get_compiled_stan_model(
-    stan_model_name: str = "", stan_file_path: str = ""
+    stan_model_name: str = "", 
+    stan_file_path: Optional[str] = None,
+    exe_file_path: Optional[str] = None,
+    force_compile: bool = False,
 ) -> CmdStanModel:
     """Return a compiled Stan model using CmdStan.
     This includes both prepackaged models as well as user provided models through stan_file_path.
 
     Parameters
     ----------
-    stan_model_name : str
+    stan_model_name :
         The name of the Stan model to use. Use this for the built in models (dlt, ets, ktrlite, lgt)
-    stan_file_path : str, optional
+    stan_file_path : 
         The path to the Stan file to use. If not provided, the default is to search for the file in the 'orbit' package.
         If provided, function will ignore the stan_model_name parameter, and will compile the provide stan_file_path
         into executable in place (same folder as stan_file_path)
+    exe_file_path : 
+        The path to the Stan-exe file to use. If not provided, the default is to search for the file 
+        in the 'orbit' package. If provided, function will ignore the stan_model_name parameter,
+        and will compile the provide stan_file_path into executable in place (same folder as stan_file_path)
     Returns
     -------
     sm : CmdStanModel
         A compiled Stan model.
     """
-    if stan_file_path != "":
-        stan_file = stan_file_path
-        sm = CmdStanModel(stan_file=stan_file)
+    if (stan_file_path is not None) or (exe_file_path is not None):
+        sm = CmdStanModel(stan_file=stan_file, exe_file=exe_file_path, force_compile=force_compile)
     else:
         # Load orbit included cmdstan models
         # Some oddities here. if not providing exe_file, CmdStanModel would delete the actual executable file.
@@ -63,9 +69,11 @@ def get_compiled_stan_model(
         )
         # Check if exe is older than .stan file.
         # This behavior is default on CmdStanModel if we don't have to specify the exe_file.
-        if not os.path.isfile(exe_file) or (
-            os.path.getmtime(exe_file) <= os.path.getmtime(stan_file)
-        ):
+        # if not os.path.isfile(exe_file) or (
+        #     os.path.getmtime(exe_file) <= os.path.getmtime(stan_file)
+        # ):
+
+        if not os.path.isfile(exe_file) or force_compile:
             logger.info(f"Compiling stan model:{stan_file}. ETA 3 - 5 mins.")
             sm = CmdStanModel(stan_file=stan_file)
         else:

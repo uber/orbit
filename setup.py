@@ -3,7 +3,6 @@ import os
 import platform
 import shutil
 from pathlib import Path
-from shutil import copy
 
 from setuptools import find_packages, setup
 from setuptools.command.build_py import build_py
@@ -90,7 +89,7 @@ def build_model(model: str, model_dir: str):
     model_name = f"{model}.stan"
     model_path = os.path.join(model_dir, model_name)
     print(f"Compiling stan file in place: {model_path}")
-    sm = cmdstanpy.CmdStanModel(stan_file=model_path)
+    _ = cmdstanpy.CmdStanModel(stan_file=model_path)
 
 
 def build_stan_models():
