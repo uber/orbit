@@ -15,15 +15,19 @@ MODELS = ["dlt", "ets", "lgt", "ktrlite"]
 
 # Properly set up compiler paths again
 orbit_config = importlib_resources.files("orbit") / "config.json"
-with open(orbit_config) as f:
-    config = json.load(f)
-CMDSTAN_VERSION = config["CMDSTAN_VERSION"]
 IS_WINDOWS = platform.platform().startswith("Win")
-paths = [f"~/.cmdstan/cmdstan-{CMDSTAN_VERSION}/stan/lib/stan_math/lib/tbb"]
 if IS_WINDOWS:
-    paths += ["~/.cmdstan/RTools40/mingw64/bin", "~/.cmdstan/RTools40/usr/bin"]
-for path_string in paths:
-    os.environ["Path"] += ";" + os.path.normpath(os.path.expanduser(path_string))
+    with open(orbit_config) as f:
+        config = json.load(f)
+    CMDSTAN_VERSION = config["CMDSTAN_VERSION"]
+    paths = [
+        f"~/.cmdstan/cmdstan-{CMDSTAN_VERSION}/stan/lib/stan_math/lib/tbb",
+        "~/.cmdstan/RTools40/mingw64/bin",
+        "~/.cmdstan/RTools40/usr/bin",
+    ]
+    for path_string in paths:
+        # or use sys.path.append, potentially works across platforms
+        os.environ["Path"] += ";" + os.path.normpath(os.path.expanduser(path_string))
 
 
 def get_compiled_stan_model(
