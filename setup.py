@@ -115,8 +115,7 @@ class BuildPyCommand(build_py):
             install_stan()
 
             # build all stan models
-            if not platform.platform().startswith("Linux"):
-                build_stan_models()
+            build_stan_models()
 
         print("Dry run.")
         build_py.run(self)
