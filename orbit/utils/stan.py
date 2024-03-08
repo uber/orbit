@@ -68,7 +68,8 @@ def get_compiled_stan_model(
         ):
             logger.info(f"Compiling stan model:{stan_file}. ETA 3 - 5 mins.")
             sm = CmdStanModel(stan_file=stan_file)
-        sm = CmdStanModel(stan_file=stan_file, exe_file=exe_file)
+        else:
+            sm = CmdStanModel(stan_file=stan_file, exe_file=exe_file)
 
     return sm
 

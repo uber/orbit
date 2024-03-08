@@ -4,7 +4,7 @@ include pyproject.toml
 include *.txt
 include requirements.txt
 include requirements-test.txt
-include orbit/stan/*.stan
+include orbit/stan/*
 include orbit/stylelib/*.mplstyle
 include orbit/config.json
 
