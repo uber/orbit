@@ -13,6 +13,22 @@ logger = get_logger("orbit")
 # Update this to read from orbit/config.json/ORBIT_MODELS for consistency?
 MODELS = ["dlt", "ets", "lgt", "ktrlite"]
 
+# Properly set up compiler paths again
+orbit_config = importlib_resources.files("orbit") / "config.json"
+IS_WINDOWS = platform.platform().startswith("Win")
+if IS_WINDOWS:
+    with open(orbit_config) as f:
+        config = json.load(f)
+    CMDSTAN_VERSION = config["CMDSTAN_VERSION"]
+    paths = [
+        f"~/.cmdstan/cmdstan-{CMDSTAN_VERSION}/stan/lib/stan_math/lib/tbb",
+        "~/.cmdstan/RTools40/mingw64/bin",
+        "~/.cmdstan/RTools40/usr/bin",
+    ]
+    for path_string in paths:
+        # or use sys.path.append, potentially works across platforms
+        os.environ["Path"] += ";" + os.path.normpath(os.path.expanduser(path_string))
+
 
 def get_compiled_stan_model(
     stan_model_name: str = "", stan_file_path: str = ""
@@ -33,29 +49,7 @@ def get_compiled_stan_model(
     sm : CmdStanModel
         A compiled Stan model.
     """
-    if stan_model_name not in MODELS:
-        raise ValueError("stan_model_name must be one of dlt, ets, ktrlite, lgt")
     if stan_file_path != "":
-        # On windows, compiler path is often not set properly after cmdstanpy_install
-        # For safety, consider running it again. Below is the function from setup.py
-        """
-        IS_WINDOWS = platform.platform().startswith("Win")
-        with open("orbit/config.json") as f: # Need to fix path to read from proper package.
-            config = json.load(f)
-        CMDSTAN_VERSION = config["CMDSTAN_VERSION"]
-
-        if not cmdstanpy.install_cmdstan(
-            version=CMDSTAN_VERSION,
-            overwrite=True,
-            verbose=True,
-            cores=cpu_count(),
-            progress=True,
-            compiler=IS_WINDOWS,
-        ):
-            raise RuntimeError("CmdStan failed to install.")
-        print(f"Installed cmdstanpy (cmdstan v.{CMDSTAN_VERSION}) and compiler.")
-        """
-
         stan_file = stan_file_path
         sm = CmdStanModel(stan_file=stan_file)
     else:
@@ -67,6 +61,13 @@ def get_compiled_stan_model(
         exe_file = (
             importlib_resources.files("orbit") / f"stan/{stan_model_name}{EXTENSION}"
         )
+        # Check if exe is older than .stan file.
+        # This behavior is default on CmdStanModel if we don't have to specify the exe_file.
+        if not os.path.isfile(exe_file) or (
+            os.path.getmtime(exe_file) <= os.path.getmtime(stan_file)
+        ):
+            logger.info(f"Compiling stan model:{stan_file}. ETA 3 - 5 mins.")
+            sm = CmdStanModel(stan_file=stan_file)
         sm = CmdStanModel(stan_file=stan_file, exe_file=exe_file)
 
     return sm
