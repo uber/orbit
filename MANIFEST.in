@@ -11,7 +11,5 @@ include orbit/config.json
 recursive-include tests *
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
-recursive-exclude orbit/stan/ *.exe
-recursive-exclude orbit/stan/ *.
 
 recursive-include docs *.rst conf.py Makefile
