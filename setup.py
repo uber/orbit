@@ -89,7 +89,7 @@ def build_model(model: str, model_dir: str):
     model_name = f"{model}.stan"
     model_path = os.path.join(model_dir, model_name)
     print(f"Compiling stan file in place: {model_path}")
-    _ = cmdstanpy.CmdStanModel(stan_file=model_path)
+    _ = cmdstanpy.CmdStanModel(stan_file=model_path, force_compile=True)
 
 
 def build_stan_models():
