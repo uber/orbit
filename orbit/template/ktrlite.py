@@ -9,16 +9,15 @@ import matplotlib.pyplot as plt
 
 from ..constants.constants import (
     PredictionKeys,
-    PredictMethod,
     TrainingMetaKeys,
     PredictionMetaKeys,
 )
+from ..constants.palette import OrbitPalette
 from ..exceptions import IllegalArgument, ModelException
 from .model_template import ModelTemplate
 from ..estimators.stan_estimator import StanEstimatorMAP
 from ..utils.kernels import sandwich_kernel
 from ..utils.features import make_fourier_series_df
-from orbit.constants.palette import OrbitPalette
 from ..utils.knots import get_knot_idx, get_knot_dates
 from ..utils.plot import orbit_style_decorator
 
@@ -190,9 +189,9 @@ class KTRLiteModel(ModelTemplate):
         init_values = None
         if len(self._seasonality) > 1 and self.num_of_regressors > 0:
             init_values = dict()
-            init_values[
-                RegressionSamplingParameters.COEFFICIENTS_KNOT.value
-            ] = np.zeros((self.num_of_regressors, self.num_knots_coefficients))
+            init_values[RegressionSamplingParameters.COEFFICIENTS_KNOT.value] = (
+                np.zeros((self.num_of_regressors, self.num_knots_coefficients))
+            )
             self._init_values = init_values
 
     def _set_default_args(self):
@@ -497,9 +496,9 @@ class KTRLiteModel(ModelTemplate):
                 seas_regression = np.sum(
                     seas_coef * seasonal_regressor_matrix.transpose(1, 0), axis=-2
                 )
-                seas_decomp[
-                    "seasonality_{}".format(self._seasonality[idx])
-                ] = seas_regression
+                seas_decomp["seasonality_{}".format(self._seasonality[idx])] = (
+                    seas_regression
+                )
                 pos += len(cols)
                 total_seas_regression += seas_regression
         if include_error:

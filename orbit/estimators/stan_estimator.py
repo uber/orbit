@@ -1,17 +1,20 @@
-from abc import abstractmethod
-from copy import copy
 import logging
 import multiprocessing
+from abc import abstractmethod
+from copy import copy
 from sys import platform, version_info
 
-from .base_estimator import BaseEstimator
 from ..exceptions import EstimatorException
-from ..utils.stan import get_compiled_stan_model, suppress_stdout_stderr
 from ..utils.general import update_dict
 from ..utils.logger import get_logger
-
+from ..utils.set_cmdstan_path import set_cmdstan_path
+from ..utils.stan import get_compiled_stan_model
+from .base_estimator import BaseEstimator
 
 logger = get_logger("orbit")
+
+# Make sure models are using the right cmdstan folder
+set_cmdstan_path()
 
 
 class StanEstimator(BaseEstimator):
@@ -133,7 +136,8 @@ class StanEstimatorMCMC(StanEstimator):
             )
             logger.info(msg)
 
-        compiled_mod = get_compiled_stan_model(model_name)
+        compiled_mod = get_compiled_stan_model(stan_model_name=model_name)
+
         # check https://mc-stan.org/cmdstanpy/api.html#cmdstanpy.CmdStanModel.sample
         # for additional args
         stan_mcmc_fit = compiled_mod.sample(
@@ -194,7 +198,7 @@ class StanEstimatorMAP(StanEstimator):
         fitter=None,
         init_values=None,
     ):
-        compiled_mod = get_compiled_stan_model(model_name)
+        compiled_mod = get_compiled_stan_model(stan_model_name=model_name)
         data_input.update({"T_STAR": 1.0})
 
         # passing callable from the model as seen in `initfun1()`

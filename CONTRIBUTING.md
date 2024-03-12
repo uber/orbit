@@ -14,6 +14,7 @@ If you'd like to contribute to something else, open an issue for discussion firs
 # Setup
 
 First fork the repository on `dev` branch
+
 ```bash
 $ git clone --single-branch --branch dev https://github.com/uber/orbit.git
 ```
@@ -21,6 +22,7 @@ $ git clone --single-branch --branch dev https://github.com/uber/orbit.git
 # Making Changes
 
 Create a new branch to develop new code
+
 ```bash
 $ cd orbit
 $ git checkout feat-my-new-feature # our branch naming convention
@@ -31,14 +33,11 @@ $ pip install -e . # install with dev mode
 # Test
 
 ## Prerequisites
+
 Install orbit required dependencies for test.
+
 ```bash
 $ pip install -r requirements-test.txt
-```
-
-In order to run tests, you need to build the Cython modules
-```bash
-$ python setup.py build_ext --inplace
 ```
 
 ## Testing
@@ -55,16 +54,19 @@ $ pytest -vs tests/ --cov orbit/
 You can run black linting to lint the code style.
 
 ### Linting one single file
+
 ```bash
 $ black <file path>
 ```
 
 ### Linting every file under the current directory
+
 ```bash
 $ black .
 ```
 
 ### Outputting the code change black would have done without actually making change
+
 ```bash
 $ black --diff <file path>
 ```
@@ -72,6 +74,7 @@ $ black --diff <file path>
 # Submission
 
 In your PR, please include:
+
 - Changes made
 - Links to related issues/PRs
 - Tests
@@ -81,5 +84,6 @@ In your PR, please include:
 Please add the core Orbit contributors as reviewers.
 
 ## Merging and Releasing versions
-We use squash and merge for changes onto `dev` branch.  However, due to history comparison, from `dev` to `release`
-and `master`, we use rebase and merge.  For release details, please refer to [RELEASE.md](./RELEASE.md)
+
+We use squash and merge for changes onto `dev` branch. However, due to history comparison, from `dev` to `release`
+and `master`, we use rebase and merge. For release details, please refer to [RELEASE.md](./RELEASE.md)

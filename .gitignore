@@ -79,10 +79,12 @@ tramp
 ############
 *_netbeans
 
+.DS_Store
 .arcconfig
 .ipynb_checkpoints
 .vscode
 __pycache__
+.pytest_cache
 build/
 dist/
 orbit.egg-info/
@@ -102,6 +104,7 @@ tutorial/_build/
 !.gitmodules
 !.jenkins/
 !.scaffold.yaml
+!.readthedocs.yml
 
 # Java
 *.class
@@ -124,9 +127,7 @@ ins.xml
 *.bak-*
 
 # ignore stan compiled files due to cmdstanpy
-stan_compiled/
 *.hpp
-orbit/stan_model/
 orbit/stan_compiled/
 orbit/stan/ets
 orbit/stan/dlt
