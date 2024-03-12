@@ -18,22 +18,33 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "orbit-ml"
+authors = [
+  {name="Edwin Ng", email="edwinnglabs@gmail.com"}, 
+  {name="Zhishi Wang"}, 
+  {name="Steve Yang"}, 
+  {name="Yifeng Wu"}, 
+  {name="Jing Pan"}
+]
+maintainers = [
+  {name = "Edwin Ng", email = "edwinnglabs@gmail.com"},
+]
 dynamic = ["version"]
 description = "Orbit is a package for Bayesian time series modeling and inference."
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
+  "arviz",
   "cmdstanpy>=1.0.4",
-  "numpy>=1.18",
-  "pandas>=1.0.3",
-  "tqdm>=4.36.1",
   "importlib_resources",
   "matplotlib>=3.3.2",
-  "scipy>=1.4.1",
-  "torch>=1.11.0",
-  "seaborn>=0.10.0",
+  "numpy>=1.18",
+  "pandas>=1.0.3",
   "pyro-ppl>=1.4.0",
-  "arviz",
+  "scipy>=1.4.1",
+  "seaborn>=0.10.0",
+  "statsmodels>=0.11.1",
+  "torch>=1.11.0",
+  "tqdm>=4.36.1",
 ]
 license = {text = "Apache License 2.0"}
 classifiers = [
@@ -52,3 +63,6 @@ dev = [
   "pytest",
   "black",
 ]
+[project.urls]
+Documentation = "https://orbit-ml.readthedocs.io/en/stable/"
+Repository = "https://github.com/uber/orbit"
