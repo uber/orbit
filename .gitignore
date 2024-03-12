@@ -105,6 +105,7 @@ tutorial/_build/
 !.jenkins/
 !.scaffold.yaml
 !.readthedocs.yml
+!.github/
 
 # Java
 *.class
