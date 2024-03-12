@@ -2,4 +2,3 @@ pytest
 pytest-cov
 mock
 black
-wheel

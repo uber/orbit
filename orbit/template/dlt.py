@@ -751,9 +751,10 @@ class DLTModel(ETSModel):
                         global_trend_level + global_trend_slope * idx * self._time_delta
                     )
                 elif self.global_trend_option == GlobalTrendOption.loglinear.name:
-                    full_global_trend[:, idx] = (
-                        global_trend_level
-                        + global_trend_slope * np.log(1 + idx * self._time_delta)
+                    full_global_trend[
+                        :, idx
+                    ] = global_trend_level + global_trend_slope * np.log(
+                        1 + idx * self._time_delta
                     )
                 elif self.global_trend_option == GlobalTrendOption.logistic.name:
                     full_global_trend[:, idx] = self.global_floor + (

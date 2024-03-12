@@ -1,88 +1,126 @@
-import json
-import os
-import platform
+import pickle
 
+# import pkg_resources
 import importlib_resources
+
+import os
 from cmdstanpy import CmdStanModel
-
-from typing import Optional
-
+from orbit.constants.constants import CompiledStanModelPath
 from ..utils.logger import get_logger
 
 logger = get_logger("orbit")
-# Update this to read from orbit/config.json/ORBIT_MODELS for consistency?
-MODELS = ["dlt", "ets", "lgt", "ktrlite"]
 
-# Properly set up compiler paths again
-orbit_config = importlib_resources.files("orbit") / "config.json"
-IS_WINDOWS = platform.platform().startswith("Win")
-if IS_WINDOWS:
-    with open(orbit_config) as f:
-        config = json.load(f)
-    CMDSTAN_VERSION = config["CMDSTAN_VERSION"]
-    paths = [
-        f"~/.cmdstan/cmdstan-{CMDSTAN_VERSION}/stan/lib/stan_math/lib/tbb",
-        "~/.cmdstan/RTools40/mingw64/bin",
-        "~/.cmdstan/RTools40/usr/bin",
-    ]
-    for path_string in paths:
-        # or use sys.path.append, potentially works across platforms
-        os.environ["Path"] += ";" + os.path.normpath(os.path.expanduser(path_string))
+# Old approach
+# def set_compiled_stan_path(parent, child="stan_compiled"):
+#     """
+#     Set the path for compiled stan models.
+
+#     parent: the primary directory level
+#     child: the secondary directory level
+#     """
+#     CompiledStanModelPath.PARENT = parent
+#     CompiledStanModelPath.CHILD = child
 
 
-def get_compiled_stan_model(
-    stan_model_name: str = "", 
-    stan_file_path: Optional[str] = None,
-    exe_file_path: Optional[str] = None,
-    force_compile: bool = False,
-) -> CmdStanModel:
-    """Return a compiled Stan model using CmdStan.
-    This includes both prepackaged models as well as user provided models through stan_file_path.
+# def compile_stan_model(stan_model_name):
+#     """
+#     Compile stan model and save as pkl
+#     """
+#     source_model = pkg_resources.resource_filename(
+#         "orbit", "stan/{}.stan".format(stan_model_name)
+#     )
+#     if CompiledStanModelPath.PARENT == "orbit":
+#         compiled_model = pkg_resources.resource_filename(
+#             "orbit", "{}/{}.pkl".format(CompiledStanModelPath.CHILD, stan_model_name)
+#         )
+#     else:
+#         compiled_model = os.path.join(
+#             CompiledStanModelPath.PARENT,
+#             "{}/{}.pkl".format(CompiledStanModelPath.CHILD, stan_model_name),
+#         )
+#     # updated for py3
+#     os.makedirs(os.path.dirname(compiled_model), exist_ok=True)
+#     # compile if compiled file does not exist or stan source has changed (with later datestamp than compiled)
+#     if not os.path.isfile(compiled_model) or os.path.getmtime(
+#         compiled_model
+#     ) < os.path.getmtime(source_model):
 
+#         logger.info(
+#             "First time in running stan model:{}. Expect 3 - 5 minutes for compilation.".format(
+#                 stan_model_name
+#             )
+#         )
+#         sm = CmdStanModel(stan_file=source_model)
+
+#         with open(compiled_model, "wb") as f:
+#             pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+#     return compiled_model
+
+
+def get_compiled_stan_model(stan_model_name):
+    """
+    Load compiled Stan model
+    """
+    # Old approach
+    # compiled_model = compile_stan_model(stan_model_name)
+    # with open(compiled_model, "rb") as f:
+    #     return pickle.load(f)
+
+    # New approach
+    model_file = (
+        importlib_resources.files("orbit")
+        / "stan_compiled"
+        / "{}.bin".format(stan_model_name)
+    )
+    return CmdStanModel(exe_file=str(model_file))
+
+
+def compile_stan_model_simplified(path):
+    """A more flexible way to load compile stan model with a path provided
     Parameters
     ----------
-    stan_model_name :
-        The name of the Stan model to use. Use this for the built in models (dlt, ets, ktrlite, lgt)
-    stan_file_path : 
-        The path to the Stan file to use. If not provided, the default is to search for the file in the 'orbit' package.
-        If provided, function will ignore the stan_model_name parameter, and will compile the provide stan_file_path
-        into executable in place (same folder as stan_file_path)
-    exe_file_path : 
-        The path to the Stan-exe file to use. If not provided, the default is to search for the file 
-        in the 'orbit' package. If provided, function will ignore the stan_model_name parameter,
-        and will compile the provide stan_file_path into executable in place (same folder as stan_file_path)
+    path
+
     Returns
     -------
-    sm : CmdStanModel
-        A compiled Stan model.
+
     """
-    if (stan_file_path is not None) or (exe_file_path is not None):
-        sm = CmdStanModel(stan_file=stan_file, exe_file=exe_file_path, force_compile=force_compile)
-    else:
-        # Load orbit included cmdstan models
-        # Some oddities here. if not providing exe_file, CmdStanModel would delete the actual executable file.
-        # This is a stop gap fix until actual cause is identified.
-        stan_file = importlib_resources.files("orbit") / f"stan/{stan_model_name}.stan"
-        EXTENSION = ".exe" if platform.system() == "Windows" else ""
-        exe_file = (
-            importlib_resources.files("orbit") / f"stan/{stan_model_name}{EXTENSION}"
+    source_path = os.path.abspath(path)
+    source_filename, source_file_ext = os.path.splitext(source_path)
+    compiled_path = "{}.pkl".format(source_filename)
+
+    # compile if stan source has changed
+    if not os.path.isfile(compiled_path) or os.path.getmtime(
+        compiled_path
+    ) < os.path.getmtime(source_path):
+        logger.info(
+            "First time in running stan model:{}. Expect 3 - 5 minutes for compilation.".format(
+                source_filename
+            )
         )
-        # Check if exe is older than .stan file.
-        # This behavior is default on CmdStanModel if we don't have to specify the exe_file.
-        # if not os.path.isfile(exe_file) or (
-        #     os.path.getmtime(exe_file) <= os.path.getmtime(stan_file)
-        # ):
+        sm = CmdStanModel(stan_file=source_path)
 
-        if not os.path.isfile(exe_file) or force_compile:
-            logger.info(f"Compiling stan model:{stan_file}. ETA 3 - 5 mins.")
-            sm = CmdStanModel(stan_file=stan_file)
-        else:
-            sm = CmdStanModel(stan_file=stan_file, exe_file=exe_file)
+        with open(compiled_path, "wb") as f:
+            pickle.dump(sm, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    return sm
+    return compiled_path
 
 
-# TODO: Is this needed?
+def get_compiled_stan_model_simplified(path):
+    """A more flexible way to load pre-compiled model
+    Parameters
+    ----------
+    path
+
+    Returns
+    -------
+
+    """
+    with open(path, "rb") as f:
+        return pickle.load(f)
+
+
 class suppress_stdout_stderr:
     """
     A context manager for doing a "deep suppression" of stdout and stderr in

@@ -147,4 +147,4 @@ class CompiledStanModelPath:
     """
 
     PARENT = "orbit"
-    CHILD = "stan"
+    CHILD = "stan_compiled"
