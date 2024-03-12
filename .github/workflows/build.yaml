@@ -1,9 +1,12 @@
-name: build
+name: unit_test
 
-on: [push]
+on:
+  workflow_run:
+    workflows: [Lint]
+    types: [completed]
 
 jobs:
-  build:
+  on_success:
     # [macos-latest, macos-latest, windows-latest]
     runs-on: ubuntu-latest
     strategy:
@@ -23,9 +26,9 @@ jobs:
         run: python -c "import sys; print(sys.version)"
       - name: Install dependencies
         run: |
-            pip install -U pip
-            pip install -U setuptools
-            pip install -r requirements.txt
-            python -m pip install -U --editable ".[dev]"
+          pip install -U pip
+          pip install -U setuptools
+          pip install -r requirements.txt
+          python -m pip install -U --editable ".[dev]"
       - name: Test with pytest
-        run:  python -m pytest tests/
+        run: python -m pytest tests/
