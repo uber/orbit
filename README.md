@@ -15,8 +15,8 @@
 <!--- BADGES: START --->
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/uber/orbit)
 [![PyPI](https://img.shields.io/pypi/v/orbit-ml)][#pypi-package]
-[![Build and Test](https://github.com/uber/orbit/actions/workflows/test.yaml/badge.svg?branch=dev)](https://github.com/uber/orbit/actions/workflows/test.yaml)
-[![Documentation Status](https://readthedocs.org/projects/orbit-ml/badge/?version=latest)](https://orbit-ml.readthedocs.io/en/latest/?badge=latest)
+[![Build and Test](https://github.com/uber/orbit/actions/workflows/test.yaml/badge.svg?branch=master)](https://github.com/uber/orbit/actions/workflows/test.yaml)
+[![Documentation Status](https://readthedocs.org/projects/orbit-ml/badge/?version=stable)](https://orbit-ml.readthedocs.io/en/latest/?badge=latest)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/orbit-ml)][#pypi-package]
 [![Downloads](https://pepy.tech/badge/orbit-ml)](https://pepy.tech/project/orbit-ml)
 [![Conda Recipe](https://img.shields.io/static/v1?logo=conda-forge&style=flat&color=green&label=recipe&message=orbit-ml)][#conda-forge-feedstock]
