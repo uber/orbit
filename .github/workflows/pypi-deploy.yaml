@@ -24,5 +24,6 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: |
           find ./orbit/stan/ -type f ! -name "*.stan" -delete
+          pip install .
           python -m build --sdist
           python -m twine upload dist/*.tar.gz
