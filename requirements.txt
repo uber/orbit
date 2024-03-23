@@ -1,5 +1,5 @@
 arviz
-cmdstanpy>=1.0.4
+cmdstanpy>=1.2.1
 importlib_resources
 ipywidgets
 matplotlib>=3.3.2
