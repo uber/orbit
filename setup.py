@@ -110,7 +110,6 @@ class BuildPyCommand(build_py):
         print("Running build py command.")
         if not self.dry_run:
             print("Not a dry run, run with build")
-            # build_stan_model(target_dir)
 
             # install cmdstan and compilers, in the default directory for simplicity
             install_stan()
@@ -118,7 +117,6 @@ class BuildPyCommand(build_py):
             # build all stan models
             build_stan_models()
 
-        print("Dry run.")
         build_py.run(self)
 
 
