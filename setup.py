@@ -2,6 +2,7 @@ import json
 import os
 import platform
 import shutil
+import sys
 from pathlib import Path
 
 from setuptools import find_packages, setup
@@ -65,6 +66,7 @@ def install_stan():
     Reference from prophet
     """
     from multiprocessing import cpu_count
+
     import cmdstanpy
 
     remove_older_cmdstan(CMDSTAN_VERSION)
@@ -93,12 +95,12 @@ def build_model(model: str, model_dir: str):
 
 
 def build_stan_models():
-    for model in MODELS:
-        # note: ensure copy target is a directory not a file.
-        build_model(
-            model=model,
-            model_dir=MODEL_SOURCE_DIR,
-        )
+    if "conda" not in sys.prefix.lower():
+        for model in MODELS:
+            build_model(
+                model=model,
+                model_dir=MODEL_SOURCE_DIR,
+            )
 
 
 class BuildPyCommand(build_py):
@@ -108,7 +110,6 @@ class BuildPyCommand(build_py):
         print("Running build py command.")
         if not self.dry_run:
             print("Not a dry run, run with build")
-            # build_stan_model(target_dir)
 
             # install cmdstan and compilers, in the default directory for simplicity
             install_stan()
@@ -116,7 +117,6 @@ class BuildPyCommand(build_py):
             # build all stan models
             build_stan_models()
 
-        print("Dry run.")
         build_py.run(self)
 
 

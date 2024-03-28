@@ -1,4 +1,3 @@
-from datetime import datetime
 import json
 import os
 import platform
@@ -29,12 +28,6 @@ if IS_WINDOWS:
     for path_string in paths:
         # or use sys.path.append, potentially works across platforms
         os.environ["Path"] += ";" + os.path.normpath(os.path.expanduser(path_string))
-
-
-def get_file_time(path: str):
-    return datetime.fromtimestamp(os.path.getmtime(path)).replace(
-        second=0, microsecond=0
-    )
 
 
 def get_compiled_stan_model(
@@ -78,14 +71,13 @@ def get_compiled_stan_model(
         )
         # Check if exe is older than .stan file.
         # This behavior is default on CmdStanModel if we don't have to specify the exe_file.
-        if not os.path.isfile(exe_file) or (
-            get_file_time(exe_file) <= get_file_time(stan_file)
-        ):
-            force_compile = True
+        # if not os.path.isfile(exe_file) or (
+        #     os.path.getmtime(exe_file) <= os.path.getmtime(stan_file)
+        # ):
 
         if not os.path.isfile(exe_file) or force_compile:
             logger.info(f"Compiling stan model:{stan_file}. ETA 3 - 5 mins.")
-            sm = CmdStanModel(stan_file=stan_file, force_compile=force_compile)
+            sm = CmdStanModel(stan_file=stan_file)
         else:
             sm = CmdStanModel(stan_file=stan_file, exe_file=exe_file)
 
