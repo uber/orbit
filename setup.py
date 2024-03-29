@@ -101,6 +101,8 @@ def build_stan_models():
                 model=model,
                 model_dir=MODEL_SOURCE_DIR,
             )
+    else:
+        print("Conda env is detected in the package path. Skip compilation.")
 
 
 class BuildPyCommand(build_py):
