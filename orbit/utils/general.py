@@ -19,7 +19,9 @@ def is_ordered_datetime(array):
     By default pandas .diff() would generate a NaT for the first period
     instead of skipping like np.diff. So dropna() to remove.
     """
-    diff = array.to_series().diff().dropna().values
+    if isinstance(array, np.ndarray):
+        array = pd.Series(array)
+    diff = array.diff().dropna().values
     return np.all(diff.astype(float) > 0)
 
 
