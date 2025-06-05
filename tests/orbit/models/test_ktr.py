@@ -8,7 +8,7 @@ from orbit.diagnostics.metrics import smape
 SMAPE_TOLERANCE = 0.2
 
 
-@pytest.mark.parametrize("make_daily_data", [({"seasonality": None})], indirect=True)
+@pytest.mark.parametrize("make_daily_data", [{"seasonality": None}], indirect=True)
 def test_ktr_basic(make_daily_data):
     train_df, _, _ = make_daily_data
 
@@ -101,7 +101,7 @@ def test_ktr_seasonality(make_daily_data, seasonality, seas_segments):
 
 @pytest.mark.parametrize("regressor_col", [None, ["a", "b", "c"]])
 @pytest.mark.parametrize(
-    "make_daily_data", [({"seasonality": "dual", "with_coef": True})], indirect=True
+    "make_daily_data", [{"seasonality": "dual", "with_coef": True}], indirect=True
 )
 def test_ktr_regression(make_daily_data, regressor_col):
     train_df, test_df, coef = make_daily_data
@@ -134,7 +134,7 @@ def test_ktr_regression(make_daily_data, regressor_col):
     [pd.date_range(start="2016-03-01", end="2019-01-01", freq="3M")],
 )
 @pytest.mark.parametrize(
-    "make_daily_data", [({"seasonality": "dual", "with_coef": True})], indirect=True
+    "make_daily_data", [{"seasonality": "dual", "with_coef": True}], indirect=True
 )
 def test_ktrx_coef_knot_dates(make_daily_data, regression_knot_dates):
     train_df, test_df, coef = make_daily_data
@@ -167,7 +167,7 @@ def test_ktrx_coef_knot_dates(make_daily_data, regression_knot_dates):
 
 @pytest.mark.parametrize("regression_knot_distance", [90, 120])
 @pytest.mark.parametrize(
-    "make_daily_data", [({"seasonality": "dual", "with_coef": True})], indirect=True
+    "make_daily_data", [{"seasonality": "dual", "with_coef": True}], indirect=True
 )
 def test_ktrx_coef_knot_distance(make_daily_data, regression_knot_distance):
     train_df, test_df, coef = make_daily_data
@@ -203,7 +203,7 @@ def test_ktrx_coef_knot_distance(make_daily_data, regression_knot_distance):
     ids=["positive_only", "negative_only", "regular_only", "mixed_signs"],
 )
 @pytest.mark.parametrize(
-    "make_daily_data", [({"seasonality": "dual", "with_coef": True})], indirect=True
+    "make_daily_data", [{"seasonality": "dual", "with_coef": True}], indirect=True
 )
 def test_ktrx_regressor_sign(make_daily_data, regressor_signs):
     train_df, test_df, coef = make_daily_data
@@ -256,7 +256,7 @@ def test_ktrx_regressor_sign(make_daily_data, regressor_signs):
     ],
 )
 @pytest.mark.parametrize(
-    "make_daily_data", [({"seasonality": "dual", "with_coef": True})], indirect=True
+    "make_daily_data", [{"seasonality": "dual", "with_coef": True}], indirect=True
 )
 def test_ktrx_prior_ingestion(make_daily_data, coef_prior_list):
     train_df, test_df, coef = make_daily_data

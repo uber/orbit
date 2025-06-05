@@ -13,7 +13,7 @@ SMAPE_TOLERANCE = 0.28
     "seasonality_fs_order", [None, [5]], ids=["default_order", "manual_order"]
 )
 @pytest.mark.parametrize(
-    "make_daily_data", [({"seasonality": "single", "with_coef": False})], indirect=True
+    "make_daily_data", [{"seasonality": "single", "with_coef": False}], indirect=True
 )
 def test_ktrlite_single_seas(make_daily_data, seasonality_fs_order):
     train_df, _, _ = make_daily_data
@@ -45,7 +45,7 @@ def test_ktrlite_single_seas(make_daily_data, seasonality_fs_order):
     "seasonality_fs_order", [None, [2, 5]], ids=["default_order", "manual_order"]
 )
 @pytest.mark.parametrize(
-    "make_daily_data", [({"with_dual_sea": True, "with_coef": False})], indirect=True
+    "make_daily_data", [{"with_dual_sea": True, "with_coef": False}], indirect=True
 )
 def test_ktrlite_dual_seas(make_daily_data, seasonality_fs_order):
     train_df, _, _ = make_daily_data
@@ -74,7 +74,7 @@ def test_ktrlite_dual_seas(make_daily_data, seasonality_fs_order):
 
 
 @pytest.mark.parametrize(
-    "make_daily_data", [({"with_dual_sea": True, "with_coef": False})], indirect=True
+    "make_daily_data", [{"with_dual_sea": True, "with_coef": False}], indirect=True
 )
 @pytest.mark.parametrize("level_segments", [20, 10, 2])
 def test_ktrlite_level_segments(make_daily_data, level_segments):
@@ -112,7 +112,7 @@ def test_ktrlite_level_segments(make_daily_data, level_segments):
     ],
 )
 @pytest.mark.parametrize(
-    "make_daily_data", [({"seasonality": "single", "with_coef": False})], indirect=True
+    "make_daily_data", [{"seasonality": "single", "with_coef": False}], indirect=True
 )
 def test_ktrlite_level_knot_dates(make_daily_data, level_knot_dates):
     train_df, test_df, coef = make_daily_data
@@ -141,7 +141,7 @@ def test_ktrlite_level_knot_dates(make_daily_data, level_knot_dates):
 
 @pytest.mark.parametrize("level_knot_distance", [90, 120])
 @pytest.mark.parametrize(
-    "make_daily_data", [({"seasonality": "single", "with_coef": False})], indirect=True
+    "make_daily_data", [{"seasonality": "single", "with_coef": False}], indirect=True
 )
 def test_ktrlite_level_knot_distance(make_daily_data, level_knot_distance):
     train_df, test_df, coef = make_daily_data
@@ -175,7 +175,7 @@ def test_ktrlite_level_knot_distance(make_daily_data, level_knot_distance):
     ],
 )
 @pytest.mark.parametrize(
-    "make_daily_data", [({"seasonality": "single", "with_coef": False})], indirect=True
+    "make_daily_data", [{"seasonality": "single", "with_coef": False}], indirect=True
 )
 def test_ktrlite_seas_segments(make_daily_data, seas_segments):
     train_df, test_df, coef = make_daily_data
@@ -204,7 +204,7 @@ def test_ktrlite_seas_segments(make_daily_data, seas_segments):
 
 
 @pytest.mark.parametrize(
-    "make_daily_data", [({"seasonality": "single", "with_coef": False})], indirect=True
+    "make_daily_data", [{"seasonality": "single", "with_coef": False}], indirect=True
 )
 def test_ktrlite_predict_decompose(make_daily_data):
     train_df, test_df, coef = make_daily_data
@@ -245,7 +245,7 @@ def test_ktrlite_predict_decompose(make_daily_data):
 
 
 @pytest.mark.parametrize(
-    "make_daily_data", [({"seasonality": "single", "with_coef": False})], indirect=True
+    "make_daily_data", [{"seasonality": "single", "with_coef": False}], indirect=True
 )
 def test_ktrlite_predict_decompose_point_estimate(make_daily_data):
     train_df, test_df, coef = make_daily_data
