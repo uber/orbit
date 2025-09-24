@@ -2,19 +2,22 @@ import logging
 import multiprocessing
 from abc import abstractmethod
 from copy import copy
-from sys import platform, version_info
 
 from ..exceptions import EstimatorException
 from ..utils.general import update_dict
 from ..utils.logger import get_logger
 from ..utils.set_cmdstan_path import set_cmdstan_path
 from ..utils.stan import get_compiled_stan_model
+from ..utils.cmdstanpy_compat import patch_tqdm_progress_hook
 from .base_estimator import BaseEstimator
 
 logger = get_logger("orbit")
 
 # Make sure models are using the right cmdstan folder
 set_cmdstan_path()
+
+# Apply cmdstanpy compatibility patches
+patch_tqdm_progress_hook()
 
 
 class StanEstimator(BaseEstimator):
