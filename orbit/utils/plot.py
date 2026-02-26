@@ -27,7 +27,7 @@ def orbit_style_decorator(func):
             try:
                 with plt.style.context(orbit_style_path):  # type: ignore[reportGeneralTypeIssues]
                     return func(*args, **kwargs)
-            except:
+            except Exception:
                 logging.info(
                     "Cannot find path:{}. Use default plot style.".format(
                         orbit_style_path
