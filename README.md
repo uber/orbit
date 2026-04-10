@@ -212,3 +212,6 @@ Bibtex:
 - [Rlgt](https://cran.r-project.org/web/packages/Rlgt/index.html)
 - [forecast](https://github.com/robjhyndman/forecast)
 - [prophet](https://facebook.github.io/prophet/)
+## Third-party integrations
+
+- [orbit-mlflow](https://github.com/benjaminbluhm/orbit-mlflow) — Community package to log Orbit models to MLflow and deploy them to real-time endpoints using MLflow deployment tools.
