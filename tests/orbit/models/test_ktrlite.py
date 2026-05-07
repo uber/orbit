@@ -107,8 +107,8 @@ def test_ktrlite_level_segments(make_daily_data, level_segments):
 @pytest.mark.parametrize(
     "level_knot_dates",
     [
-        pd.date_range(start="2016-03-01", end="2019-01-01", freq="3M"),
-        pd.date_range(start="2016-03-01", end="2019-01-01", freq="6M"),
+        pd.date_range(start="2016-03-01", end="2019-01-01", freq="3ME"),
+        pd.date_range(start="2016-03-01", end="2019-01-01", freq="6ME"),
     ],
 )
 @pytest.mark.parametrize(

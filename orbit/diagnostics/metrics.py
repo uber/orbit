@@ -60,7 +60,7 @@ def rmsse(test_actual, test_prediction, train_actual):
     compared to a naive lag-1 predictor.
 
     .. math::
-        \sqrt{\frac{1}{h}\frac{\sum^{n+h}_{t=n+1}(Y_t-\hat{Y}_t)^2}{\frac{1}{n-1}\sum^{n}_{t=2}{(Y_t-Y_{t-1})^2}
+        \\sqrt{\\frac{1}{h}\\frac{\\sum^{n+h}_{t=n+1}(Y_t-\\hat{Y}_t)^2}{\\frac{1}{n-1}\\sum^{n}_{t=2}{(Y_t-Y_{t-1})^2}
 
     Notes
     -----

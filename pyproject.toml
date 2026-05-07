@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 88
-target-version = ['py39', 'py310', 'py311']
+target-version = ['py312', 'py313']
 include = '\.pyi?$'
 extend-exclude = '''
 # A regex preceded with ^/ will apply only to files and directories
@@ -31,27 +31,26 @@ maintainers = [
 version = "1.1.5.0"
 description = "Orbit is a package for Bayesian time series modeling and inference."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 dependencies = [
   "arviz",
   "cmdstanpy>=1.2.1",
   "importlib_resources",
-  "matplotlib>=3.3.2",
-  "numpy>=1.18",
-  "pandas>=1.0.3",
+  "matplotlib>=3.9.2",
+  "numpy>=2.1.0",
+  "pandas>=2.2.3",
   "pyro-ppl>=1.4.0",
-  "scipy>=1.4.1",
-  "seaborn>=0.10.0",
-  "statsmodels>=0.11.1",
-  "torch>=1.11.0",
+  "scipy>=1.14.1",
+  "seaborn>=0.13.2",
+  "statsmodels>=0.14.3",
+  "torch>=2.5.0",
   "tqdm>=4.36.1",
 ]
 license = {text = "Apache License 2.0"}
 classifiers = [
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
 [project.optional-dependencies]
 dev = [

@@ -156,7 +156,7 @@ def test_invalid_regressor(make_weekly_data, regressor_signs, invalid_input):
     train_df, test_df, coef = make_weekly_data
     regressor_col = train_df.columns.tolist()[2:]
     # make invalid values
-    train_df[regressor_col[0]][36] = invalid_input
+    train_df.loc[train_df.index[36], regressor_col[0]] = invalid_input
     expected_flag = False
     try:
         dlt = DLT(
@@ -186,7 +186,7 @@ def test_invalid_predict_regressor(make_weekly_data, invalid_input):
     train_df, test_df, coef = make_weekly_data
     regressor_col = train_df.columns.tolist()[2:]
     # make invalid values
-    test_df[regressor_col[0]][3] = invalid_input
+    test_df.loc[test_df.index[3], regressor_col[0]] = invalid_input
     expected_flag = False
     try:
         dlt = DLT(

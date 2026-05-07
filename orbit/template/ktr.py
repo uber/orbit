@@ -760,7 +760,7 @@ class KTRModel(ModelTemplate):
         """Used in _generate_seas"""
         train_date_array = training_meta[TrainingMetaKeys.DATE_ARRAY.value]
         num_of_observations = training_meta[TrainingMetaKeys.NUM_OF_OBS.value]
-        idx = np.nonzero(np.in1d(train_date_array, date_array))[0]
+        idx = np.nonzero(np.isin(train_date_array, date_array))[0]
         tp = (idx + 1) / num_of_observations
         return tp
 

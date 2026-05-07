@@ -131,7 +131,7 @@ def test_ktr_regression(make_daily_data, regressor_col):
 
 @pytest.mark.parametrize(
     "regression_knot_dates",
-    [pd.date_range(start="2016-03-01", end="2019-01-01", freq="3M")],
+    [pd.date_range(start="2016-03-01", end="2019-01-01", freq="3ME")],
 )
 @pytest.mark.parametrize(
     "make_daily_data", [{"seasonality": "dual", "with_coef": True}], indirect=True
