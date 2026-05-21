@@ -3,6 +3,26 @@
 Changelog
 =========
 
+1.1.5.1 (2026-05-20) (`release notes <https://github.com/uber/orbit/releases/tag/v1.1.5.1>`__)
+-------------------------------------------------------------------------------------------------
+:Python Version Support:
+  - Drop Python 3.9–3.11; require Python ≥ 3.12
+  - Add support for Python 3.13 (#894)
+  - Update Trove classifiers for Python 3.12 and 3.13
+
+:Core Changes:
+  - Bump minimum dependency versions (numpy≥2.1.0, pandas≥2.2.3, matplotlib≥3.9.2, etc.) for Python 3.13 wheel availability
+  - Replace deprecated ``np.in1d`` with ``np.isin`` (removed in NumPy 2.x)
+  - Fix deprecated pandas frequency aliases (``M`` → ``ME``) in tests
+  - Fix chained assignment for pandas Copy-on-Write compatibility
+  - Fix invalid escape sequence in ``rmsse`` docstring
+
+:CI/CD:
+  - Update GitHub Actions (``checkout`` to v4, ``setup-python`` to v5)
+  - Update test matrix to [3.12, 3.13]
+  - Update ``tox`` envlist to ``py312, py313``
+  - Update ``black`` target-version to ``py312, py313``
+
 1.1.5.0 (2026-03-02) (`release notes <https://github.com/uber/orbit/releases/tag/v1.1.5.0>`__)
 -------------------------------------------------------------------------------------------------
 :Core Changes:
