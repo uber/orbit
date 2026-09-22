@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 from orbit.models import KTR
+from orbit.template.ktr import KTRModel
 from orbit.diagnostics.metrics import smape
 
 SMAPE_TOLERANCE = 0.2
@@ -335,3 +336,38 @@ def test_ktr_regressor_sizes(iclaims_training_data, regression_segments, regress
     assert knot_df.columns.tolist() == expected_columns_knot
     assert coef_df.shape[0] == df.shape[0]
     assert knot_df.shape[0] == regression_segments + 1
+
+
+@pytest.mark.parametrize("start", ["2020-01-01", "2020-02-01"])
+@pytest.mark.parametrize("include_error", [False, True])
+@pytest.mark.parametrize("num_samples", [1, 3])
+def test_ktr_predict_single_level_knot(start, include_error, num_samples):
+    model = KTRModel(level_segments=0)
+    model.knots_tp_level = np.array([1.0])
+    model._seasonality_labels = []
+    dates = pd.date_range("2020-01-01", periods=20)
+    prediction_dates = pd.date_range(start, periods=5)
+    df = pd.DataFrame({"date": prediction_dates})
+    levels = np.arange(num_samples, dtype=float).reshape(-1, 1) + 10
+    posterior = {"lev_knot": levels.copy(), "obs_scale": np.full(num_samples, 0.1)}
+    training_meta = {
+        "date_array": dates.values,
+        "num_of_obs": len(dates),
+        "training_end": dates[-1],
+    }
+    prediction_meta = {"df_length": len(df), "prediction_start": prediction_dates[0]}
+
+    result = model.predict(
+        posterior, df, training_meta, prediction_meta, include_error=include_error
+    )
+
+    expected = np.repeat(levels, len(df), axis=1)
+    assert result["prediction"].shape == expected.shape
+    assert np.all(np.isfinite(result["prediction"]))
+    np.testing.assert_array_equal(result["prediction"], result["trend"])
+    np.testing.assert_array_equal(result["regression"], np.zeros_like(expected))
+    np.testing.assert_array_equal(posterior["lev_knot"], levels)
+    if include_error:
+        assert not np.array_equal(result["prediction"], expected)
+    else:
+        np.testing.assert_allclose(result["prediction"], expected)

@@ -1080,7 +1080,7 @@ class KTRModel(ModelTemplate):
             start = pd.Index(date_array).get_loc(prediction_start)
 
         new_tp = np.arange(start + 1, start + output_len + 1) / num_of_observations
-        if include_error:
+        if include_error and len(self.knots_tp_level) > 1:
             # in-sample knots
             lev_knot_in = model.get(BaseSamplingParameters.LEVEL_KNOT.value)
             # TODO: hacky way; let's just assume last two knot distance is knots distance for all knots
